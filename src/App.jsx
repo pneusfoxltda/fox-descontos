@@ -1,5 +1,42 @@
 import { useState, useEffect, useMemo } from "react";
 
+
+// ── Supabase Client ──────────────────────────────────────────────
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+
+const supa = {
+  async from(table) {
+    const base = SUPA_URL + "/rest/v1/" + table;
+    const headers = {
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
+    return {
+      async select(cols="*") {
+        const r = await fetch(base + "?select=" + cols, { headers });
+        return { data: await r.json(), error: r.ok ? null : "erro" };
+      },
+      async insert(obj) {
+        const r = await fetch(base, { method:"POST", headers, body: JSON.stringify(obj) });
+        return { data: await r.json(), error: r.ok ? null : "erro" };
+      },
+      async update(obj, match) {
+        const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
+        const r = await fetch(base+"?"+q, { method:"PATCH", headers, body: JSON.stringify(obj) });
+        return { data: await r.json(), error: r.ok ? null : "erro" };
+      },
+      async delete(match) {
+        const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
+        const r = await fetch(base+"?"+q, { method:"DELETE", headers });
+        return { error: r.ok ? null : "erro" };
+      }
+    };
+  }
+};
+
 const ADMIN_USER="admin@foxpneus.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO PVH","MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
@@ -142,12 +179,22 @@ export default function App(){
   const[exportRows,setExportRows]=useState([]);
 
   useEffect(()=>{(async()=>{try{
-    const qu=await window.storage.get("fox_q3",true); if(qu?.value)setQuotes(JSON.parse(qu.value));
-    const us=await window.storage.get("fox_users",true); if(us?.value)setUsers(JSON.parse(us.value));
-  }catch{}})();}, []);
+    const db = await supa.from("descontos");
+    const {data:qu} = await db.select();
+    if(qu) setQuotes(qu.map(q=>({
+      tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
+      loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
+      liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,
+      liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
+      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id
+    })));
+    const ub = await supa.from("usuarios");
+    const {data:us} = await ub.select();
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+  }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
-  const saveQ=async q=>{setQuotes(q);try{await window.storage.set("fox_q3",JSON.stringify(q),true);}catch{}};
-  const saveU=async u=>{setUsers(u);try{await window.storage.set("fox_users",JSON.stringify(u),true);}catch{}};
+  const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
+  const saveU=async u=>{setUsers(u);}; // dados salvos direto no Supabase
   const toast_=(msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3200);};
 
   const doExport=(data)=>{
@@ -181,12 +228,29 @@ export default function App(){
   const doAdd=async()=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
-    const upd=[{...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email},...quotes];
-    await saveQ(upd);
-    setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
-    toast_("Desconto cadastrado!");
+    try{
+      const db = await supa.from("descontos");
+      const {error} = await db.insert({
+        tipo:form.tipo, numero:form.numero.trim(), cba:form.cba, medida:form.medida,
+        segmento:form.segmento, loja:form.loja, valor:form.valor, pgto:form.pgto,
+        validade:form.validade, obs:form.obs, liberado:false,
+        negociador_nome:session.username, negociador_email:session.email
+      });
+      if(error){toast_("Erro ao salvar.",false);return;}
+      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false};
+      setQuotes(prev=>[novo,...prev]);
+      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
+      toast_("Desconto cadastrado!");
+    }catch(e){toast_("Erro ao salvar.",false);}
   };
-  const doDel=async id=>{await saveQ(quotes.filter(q=>!(q.numero===id.numero&&q.tipo===id.tipo)));toast_("Removido.");};
+  const doDel=async id=>{
+    try{
+      const db = await supa.from("descontos");
+      await db.delete({numero:id.numero, tipo:id.tipo});
+      setQuotes(prev=>prev.filter(q=>!(q.numero===id.numero&&q.tipo===id.tipo)));
+      toast_("Removido.");
+    }catch(e){toast_("Erro ao remover.",false);}
+  };
 
   const doSearch=()=>{
     const q=quotes.find(q=>q.numero.toLowerCase()===search.trim().toLowerCase());
@@ -198,10 +262,18 @@ export default function App(){
     if(e)e.stopPropagation();
     const nowLib=!q.liberado;
     const ldata=nowLib?{liberadorNome:session.username,liberadorEmail:session.email,liberadoEm:new Date().toISOString()}:{liberadorNome:null,liberadorEmail:null,liberadoEm:null};
-    const upd=quotes.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,...ldata}:x);
-    await saveQ(upd);
-    if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,...ldata}));
-    toast_(nowLib?"Desconto liberado!":"Liberação removida.");
+    try{
+      const db = await supa.from("descontos");
+      await db.update({
+        liberado:nowLib,
+        liberador_nome:ldata.liberadorNome,
+        liberador_email:ldata.liberadorEmail,
+        liberado_em:ldata.liberadoEm
+      },{numero:q.numero,tipo:q.tipo});
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,...ldata}:x));
+      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,...ldata}));
+      toast_(nowLib?"Desconto liberado!":"Liberação removida.");
+    }catch(e){toast_("Erro.",false);}
   };
 
   const doAddUser=async()=>{
@@ -209,10 +281,22 @@ export default function App(){
     if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
     if(em===ADMIN_USER){toast_("E-mail reservado.",false);return;}
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
-    await saveU([...users,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.role}]);
-    setNewUser({nome:"",email:"",pass:"",role:"televendas"});toast_("Usuário criado!");
+    try{
+      const db = await supa.from("usuarios");
+      const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:newUser.role});
+      if(error){toast_("Erro ao criar usuário.",false);return;}
+      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.role}]);
+      setNewUser({nome:"",email:"",pass:"",role:"televendas"});toast_("Usuário criado!");
+    }catch(e){toast_("Erro.",false);}
   };
-  const doDelUser=async em=>{await saveU(users.filter(x=>x.email!==em));toast_("Usuário removido.");};
+  const doDelUser=async em=>{
+    try{
+      const db = await supa.from("usuarios");
+      await db.delete({email:em});
+      setUsers(prev=>prev.filter(x=>x.email!==em));
+      toast_("Usuário removido.");
+    }catch(e){toast_("Erro.",false);}
+  };
 
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(dash.loja&&q.loja!==dash.loja)return false;
