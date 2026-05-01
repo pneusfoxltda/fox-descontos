@@ -168,11 +168,11 @@ export default function App(){
     lk.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>";
   },[]);
 
-  const[session,setSession]=useState(null);
+  const[session,setSession]=useState(()=>{try{const s=localStorage.getItem("fox_session");return s?JSON.parse(s):null;}catch{return null;}});
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
   const[users,setUsers]=useState([]);
-  const[tab,setTab]=useState("main");
+  const[tab,setTab]=useState(()=>{try{const s=localStorage.getItem("fox_session");if(s){const r=JSON.parse(s).role;return r==="admin"?"dashboard":r==="televendas"?"cadastrar":"consultar";}return "main";}catch{return "main";}});
   const[quotes,setQuotes]=useState([]);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
   const[search,setSearch]=useState("");
@@ -292,12 +292,12 @@ export default function App(){
 
   const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){setSession({username:"admin",email:"admin",role:"admin"});setTab("dashboard");setLoginErr("");return;}
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){setSession({username:f.nome||f.email,email:f.email,role:f.role});setTab(f.role==="televendas"?"cadastrar":"consultar");setLoginErr("");return;}
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(f.role==="televendas"?"cadastrar":"consultar");setLoginErr("");return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
-  const doLogout=()=>{setSession(null);setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
+  const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
 
   const doAdd=async()=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
