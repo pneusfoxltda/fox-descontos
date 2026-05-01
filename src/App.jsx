@@ -20,8 +20,10 @@ const supa = {
         return { data: await r.json(), error: r.ok ? null : "erro" };
       },
       async insert(obj) {
-        const r = await fetch(base, { method:"POST", headers, body: JSON.stringify(obj) });
-        return { data: await r.json(), error: r.ok ? null : "erro" };
+        const h = {...headers, "Prefer":"return=minimal"};
+        const r = await fetch(base, { method:"POST", headers:h, body: JSON.stringify(obj) });
+        if(!r.ok){ const e=await r.text(); return {data:null,error:e}; }
+        return { data:null, error:null };
       },
       async update(obj, match) {
         const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
@@ -40,8 +42,10 @@ const supa = {
 const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO PVH","MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
-const PGTO=["À vista dinheiro","À vista PIX","À vista cartão","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão"];
+const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
+const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão"];
 const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
+const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
 
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -128,7 +132,10 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
 .t-ok{background:#2E7D32;}.t-err{background:#CC1F1F;}
 @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1001;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .edit-modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:24px;width:100%;max-width:440px;}
+  .edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:#fff;margin-bottom:18px;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:22px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;gap:14px;}
 .modal-t{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:#fff;}
 .exp-table{overflow-x:auto;overflow-y:auto;max-height:58vh;border-radius:8px;border:1px solid #2E2E2E;}
@@ -167,7 +174,7 @@ export default function App(){
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[quotes,setQuotes]=useState([]);
-  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
+  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
   const[notFound,setNotFound]=useState(false);
@@ -176,6 +183,10 @@ export default function App(){
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[showExport,setShowExport]=useState(false);
+  const[anexo,setAnexo]=useState(null);
+  const[imgModal,setImgModal]=useState(null); // {src, nome}
+  const[editModal,setEditModal]=useState(null);
+  const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
   const[exportRows,setExportRows]=useState([]);
 
   useEffect(()=>{(async()=>{try{
@@ -186,7 +197,8 @@ export default function App(){
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
-      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id
+      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id, vendedor:q.vendedor,
+      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
     })));
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
@@ -197,7 +209,69 @@ export default function App(){
   const saveU=async u=>{setUsers(u);}; // dados salvos direto no Supabase
   const toast_=(msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3200);};
 
+  const handleAnexo=(e)=>{
+    const file = e.target.files[0];
+    if(!file)return;
+    const maxMB = file.type.startsWith("audio") ? 5 : 3;
+    if(file.size > maxMB*1024*1024){toast_("Arquivo muito grande. Máx "+maxMB+"MB.",false);return;}
+    const reader = new FileReader();
+    reader.onload=(ev)=>setAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
+    reader.readAsDataURL(file);
+  };
+
+  const doEdit=(q)=>{
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:q.obs||""});
+    setEditModal(q);
+  };
+
+  const doSaveEdit=async()=>{
+    if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
+    try{
+      const db = await supa.from("descontos");
+      await db.update({
+        cba:editForm.cba, medida:editForm.medida, segmento:editForm.segmento,
+        loja:editForm.loja, valor:editForm.valor, pgto:editForm.pgto,
+        validade:editForm.validade, obs:editForm.obs
+      },{numero:editModal.numero,tipo:editModal.tipo});
+      const updated={...editForm};
+      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated}:x));
+      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...updated}));
+      setEditModal(null);
+      toast_("Desconto atualizado!");
+    }catch(e){toast_("Erro ao atualizar.",false);}
+  };
+
   const doExport=(data)=>{
+    // Build CSV with BOM - opens perfectly in Excel
+    const headers=["Cadastro (Responsável)","Loja","Medida","Segmento","Preço negociado","Forma Pagamento","Liberação","Data Liberação","Número","Tipo","CBA","Validade","Obs"];
+    const rows2=data.map(q=>[
+      q.negociadorNome||"",
+      q.loja||"",
+      q.medida||"",
+      q.segmento||"",
+      (parseFloat(q.valor)||0).toFixed(2),
+      q.pgto||"",
+      q.liberado?"Liberado":"Pendente",
+      q.liberadoEm?new Date(q.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"",
+      q.numero||"",
+      q.tipo==="os"?"O.S.":"Orçamento",
+      q.cba||"",
+      q.validade?q.validade.split("-").reverse().join("/"):"",
+      (q.obs||"").replace(/"/g,"'")
+    ]);
+    const csvLines = [headers, ...rows2]
+      .map(row => row.map(v => '"'+String(v||"").replace(/"/g,"''")+'"').join(";"))
+      .join("\r\n");
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvLines], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url;
+    a.download="Fox_Negociacoes_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast_("Planilha gerada! Abra o arquivo .csv no Excel.");
+    return;
     const rows=data.map(q=>({
       "Cadastro (Responsável negociação)": q.negociadorNome||"",
       "Loja":        q.loja||"",
@@ -226,7 +300,7 @@ export default function App(){
   const doLogout=()=>{setSession(null);setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
 
   const doAdd=async()=>{
-    if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
+    if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
     try{
       const db = await supa.from("descontos");
@@ -234,12 +308,16 @@ export default function App(){
         tipo:form.tipo, numero:form.numero.trim(), cba:form.cba, medida:form.medida,
         segmento:form.segmento, loja:form.loja, valor:form.valor, pgto:form.pgto,
         validade:form.validade, obs:form.obs, liberado:false,
-        negociador_nome:session.username, negociador_email:session.email
+        negociador_nome:session.username, negociador_email:session.email, vendedor:form.vendedor||null,
+        anexo_base64:anexo?anexo.base64:null,
+        anexo_tipo:anexo?anexo.tipo:null,
+        anexo_nome:anexo?anexo.nome:null
       });
-      if(error){toast_("Erro ao salvar.",false);return;}
+      if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
       const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false};
       setQuotes(prev=>[novo,...prev]);
-      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
+      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
+      setAnexo(null);
       toast_("Desconto cadastrado!");
     }catch(e){toast_("Erro ao salvar.",false);}
   };
@@ -350,118 +428,171 @@ export default function App(){
 
     {/* DASHBOARD */}
     {tab==="dashboard"&&session.role==="admin"&&(<>
-      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise das negociações por medida, segmento, loja e colaborador.</p></div>
-
-      </div>
-      <div className="card" style={{marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>Filtros</div>
-        <div className="filter-row">
-          <div className="field" style={{flex:1}}><label>Data inicial</label><input type="date" value={dash.dataIni} onChange={e=>setDash(d=>({...d,dataIni:e.target.value}))}/></div>
-          <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
-          <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-          <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
+          <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
+          <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
         </div>
-      </div>
-      <div className="stat-grid">
-        <div className="stat-card" style={{borderTop:"3px solid "+RED}}><div className="stat-lbl">Negociações</div><div className="stat-val" style={{color:RED}}>{filtered.length}</div><div className="stat-sub">{filtered.filter(q=>q.liberado).length} lib · {filtered.filter(q=>!q.liberado).length} pend</div></div>
-        <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}><div className="stat-lbl">Valor Total</div><div className="stat-val" style={{fontSize:18,marginTop:6}}>{fmtVal(totVal)}</div><div className="stat-sub">com desconto</div></div>
-        <div className="stat-card" style={{borderTop:"3px solid "+BLUE}}><div className="stat-lbl">Medidas únicas</div><div className="stat-val" style={{color:BLUE}}>{mChart.length}</div><div className="stat-sub">tamanhos distintos</div></div>
-        <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}><div className="stat-lbl">Lojas ativas</div><div className="stat-val" style={{color:GREEN}}>{lChart.length}</div><div className="stat-sub">de {LOJAS.length} unidades</div></div>
-      </div>
-      {filtered.length===0?(<div className="card"><div className="empty"><span style={{fontSize:36,opacity:.2}}>📊</span><p>Nenhum dado para os filtros.</p></div></div>):(<>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          {/* Ranking medidas */}
-          <div className="chart-card">
-            <div className="chart-t"><span style={{color:RED,fontSize:14}}>🏆</span>Ranking — Medidas Mais Negociadas</div>
+
+        {/* Filtros */}
+        <div className="card" style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Filtros</div>
+          <div className="filter-row">
+            <div className="field" style={{flex:1}}><label>Data inicial</label><input type="date" value={dash.dataIni} onChange={e=>setDash(d=>({...d,dataIni:e.target.value}))}/></div>
+            <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
+            <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="stat-grid">
+          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
+            <div className="stat-lbl">Total negociações</div>
+            <div className="stat-val" style={{color:RED}}>{filtered.length}</div>
+            <div className="stat-sub">todas as negociações</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
+            <div className="stat-lbl">Fechadas (Liberadas)</div>
+            <div className="stat-val" style={{color:GREEN}}>{filtered.filter(q=>q.liberado).length}</div>
+            <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
+            <div className="stat-lbl">Pendentes</div>
+            <div className="stat-val" style={{color:AMBER}}>{filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}</div>
+            <div className="stat-sub">aguardando aprovação</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
+            <div className="stat-lbl">Vencidas</div>
+            <div className="stat-val" style={{color:MUTED}}>{filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}</div>
+            <div className="stat-sub">não fechadas no prazo</div>
+          </div>
+        </div>
+
+        {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
+
+        {/* Grid: Medidas + Segmentos */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+
+          {/* Ranking Medidas */}
+          <div className="chart-card" style={{marginBottom:0}}>
+            <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Medida","Qtd","%"].map(h=><th key={h} style={{padding:"6px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Medida","Qtd","Fechou","%"].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{mChart.map((m,i)=>{
                 const pct=filtered.length>0?((m.value/filtered.length)*100).toFixed(1):0;
-                return(<tr key={m.name} style={{borderBottom:"1px solid #222",background:i===0?"#2E1A1A":"transparent"}}>
+                const lib=filtered.filter(q=>q.medida===m.name&&q.liberado).length;
+                return(<tr key={m.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
                   <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i<3?[RED,"#888","#663300"][i]:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
                   <td style={{padding:"8px 8px",fontWeight:i===0?700:500,color:i===0?RED:TEXT,fontSize:13}}>{m.name}</td>
-                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",border:"1px solid "+RED+"44",color:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
-                  <td style={{padding:"8px 8px",textAlign:"right",fontSize:11,color:MUTED}}>{pct}%</td>
+                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
+                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
+                  <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
                 </tr>);})}
               </tbody>
             </table>
           </div>
-          {/* Segmento */}
-          <div className="chart-card">
-            <div className="chart-t"><span style={{color:AMBER,fontSize:14}}>🏷️</span>Por Segmento</div>
+
+          {/* Ranking Segmentos */}
+          <div className="chart-card" style={{marginBottom:0}}>
+            <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Segmento","Qtd","%"].map(h=><th key={h} style={{padding:"6px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Segmento","Total","Fechou","Pend."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{sChart.map((s,i)=>{
-                const pct=filtered.length>0?((s.value/filtered.length)*100).toFixed(1):0;
-                return(<tr key={s.name} style={{borderBottom:"1px solid #222"}}>
-                  <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:CC[i%8]+"33",color:CC[i%8],fontSize:9,fontWeight:700}}>{i+1}</span></td>
+                const lib=filtered.filter(q=>q.segmento===s.name&&q.liberado).length;
+                const pend=filtered.filter(q=>q.segmento===s.name&&!q.liberado&&!isExp(q.validade)).length;
+                return(<tr key={s.name} style={{borderBottom:"1px solid #1C1C1C"}}>
+                  <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:CC[i%8]+"44",color:CC[i%8],fontSize:9,fontWeight:700}}>{i+1}</span></td>
                   <td style={{padding:"8px 8px",color:TEXT,fontSize:13}}>{s.name}</td>
-                  <td style={{padding:"8px 8px",textAlign:"center",fontWeight:700,color:TEXT}}>{s.value}</td>
-                  <td style={{padding:"8px 8px",textAlign:"right",fontSize:11,color:MUTED}}>{pct}%</td>
+                  <td style={{padding:"8px 8px",fontWeight:700,color:TEXT}}>{s.value}</td>
+                  <td style={{padding:"8px 8px"}}><span style={{color:GREEN,fontWeight:700,fontSize:12}}>{lib}</span></td>
+                  <td style={{padding:"8px 8px"}}><span style={{color:AMBER,fontWeight:700,fontSize:12}}>{pend}</span></td>
                 </tr>);})}
               </tbody>
             </table>
           </div>
         </div>
-        {/* Loja */}
+
+        {/* Ranking Lojas */}
         <div className="chart-card">
-          <div className="chart-t"><span style={{color:GREEN,fontSize:14}}>📍</span>Por Loja / Cidade</div>
+          <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-              {["#","Loja","Qtd","%","Valor total"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Valor Total","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
             <tbody>{lChart.map((l,i)=>{
-              const pct=filtered.length>0?((l.value/filtered.length)*100).toFixed(1):0;
-              const val=filtered.filter(q=>q.loja===l.name).reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
-              return(<tr key={l.name} style={{borderBottom:"1px solid #222",background:i===0?"#2E1A1A":"transparent"}}>
+              const items=filtered.filter(q=>q.loja===l.name);
+              const lib=items.filter(q=>q.liberado).length;
+              const pend=items.filter(q=>!q.liberado&&!isExp(q.validade)).length;
+              const venc=items.filter(q=>isExp(q.validade)&&!q.liberado).length;
+              const val=items.reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
+              const conv=l.value>0?((lib/l.value)*100).toFixed(0):0;
+              return(<tr key={l.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
                 <td style={{padding:"9px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i===0?RED:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
                 <td style={{padding:"9px 10px",color:i===0?RED:TEXT,fontWeight:i===0?700:500,fontSize:13}}>{l.name}</td>
-                <td style={{padding:"9px 10px",fontWeight:700,color:i===0?RED:TEXT}}>{l.value}</td>
-                <td style={{padding:"9px 10px",fontSize:11,color:MUTED}}>{pct}%</td>
-                <td style={{padding:"9px 10px",fontWeight:600,color:TEXT}}>{fmtVal(val)}</td>
+                <td style={{padding:"9px 10px",fontWeight:700,color:TEXT}}>{l.value}</td>
+                <td style={{padding:"9px 10px"}}><span style={{color:GREEN,fontWeight:700}}>{lib}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontWeight:700}}>{venc}</span></td>
+                <td style={{padding:"9px 10px",fontWeight:600,color:TEXT,fontSize:12}}>{fmtVal(val)}</td>
+                <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED+"22",color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
               </tr>);})}
             </tbody>
           </table>
         </div>
-        {/* Colaboradores */}
+
+        {/* Ranking Vendedores */}
         {(()=>{
-          const byU={};filtered.filter(q=>q.negociadorEmail).forEach(q=>{
-            if(!byU[q.negociadorEmail])byU[q.negociadorEmail]={nome:q.negociadorNome,email:q.negociadorEmail,total:0,lib:0,val:0};
-            byU[q.negociadorEmail].total++;if(q.liberado)byU[q.negociadorEmail].lib++;
-            byU[q.negociadorEmail].val+=(parseFloat(q.valor)||0);
+          const byV={};
+          filtered.filter(q=>q.vendedor).forEach(q=>{
+            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,venc:0,val:0};
+            byV[q.vendedor].total++;
+            if(q.liberado)byV[q.vendedor].lib++;
+            else if(isExp(q.validade))byV[q.vendedor].venc++;
+            else byV[q.vendedor].pend++;
+            byV[q.vendedor].val+=(parseFloat(q.valor)||0);
           });
-          const ul=Object.values(byU).sort((a,b)=>b.total-a.total);
-          if(!ul.length)return null;
+          const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
+          if(!vList.length)return(<div className="chart-card"><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
           return(<div className="chart-card">
-            <div className="chart-t"><span style={{color:RED,fontSize:14}}>🥇</span>Ranking de Colaboradores</div>
+            <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Colaborador","E-mail","Total","Liberadas","Valor"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Negociações","Fechou","Pendentes","Vencidas","Valor","Conversão"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
-              <tbody>{ul.map((u,i)=>(
-                <tr key={u.email} style={{borderBottom:"1px solid #222",background:i===0?"#2E1A1A":"transparent"}}>
-                  <td style={{padding:"9px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i<3?[RED,"#888","#663300"][i]:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
-                  <td style={{padding:"9px 10px",color:i===0?RED:TEXT,fontWeight:i===0?700:500,fontSize:13}}>{u.nome}</td>
-                  <td style={{padding:"9px 10px",color:MUTED,fontSize:12}}>{u.email}</td>
-                  <td style={{padding:"9px 10px"}}><span style={{background:RED+"22",border:"1px solid "+RED+"44",color:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{u.total}</span></td>
-                  <td style={{padding:"9px 10px"}}><span style={{background:"#1A2E1A",border:"1px solid #2E4A2E",color:GREEN,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{u.lib}</span></td>
-                  <td style={{padding:"9px 10px",fontWeight:600,color:TEXT}}>{fmtVal(u.val)}</td>
-                </tr>
-              ))}</tbody>
+              <tbody>{vList.map((v,i)=>{
+                const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
+                const barW=Math.max(4,parseInt(conv));
+                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent"}}>
+                  <td style={{padding:"10px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:24,height:24,borderRadius:"50%",background:i<3?[GREEN,"#888","#663300"][i]:"#2E2E2E",color:"#fff",fontSize:10,fontWeight:700}}>{i+1}</span></td>
+                  <td style={{padding:"10px 10px",fontWeight:700,color:i===0?GREEN:TEXT,fontSize:14}}>{v.nome}</td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
+                  <td style={{padding:"10px 10px",fontWeight:600,color:TEXT,fontSize:12}}>{fmtVal(v.val)}</td>
+                  <td style={{padding:"10px 10px",minWidth:120}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
+                        <div style={{width:barW+"%",height:"100%",background:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,borderRadius:4,transition:"width .3s"}}/>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:700,color:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,minWidth:35}}>{conv}%</span>
+                    </div>
+                  </td>
+                </tr>);})}
+              </tbody>
             </table>
           </div>);
         })()}
-      </>)}
-    </>)}
 
-    {/* CADASTRAR */}
-    {tab==="cadastrar"&&(<>
+        </>)}
+      </>)}
+
+      {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
@@ -478,6 +609,7 @@ export default function App(){
         <div className="fg2">
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+          <div className="field"><label>Vendedor *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
@@ -490,6 +622,23 @@ export default function App(){
           <div className="field"><label>Validade *</label><input type="date" value={form.validade} onChange={e=>setForm(f=>({...f,validade:e.target.value}))}/></div>
         </div>
         <div className="field mb"><label>Observações</label><input placeholder="Opcional" value={form.obs} onChange={e=>setForm(f=>({...f,obs:e.target.value}))}/></div>
+        {/* Anexo opcional */}
+        <div className="field mb" style={{marginTop:6}}>
+          <label>Anexo — imagem ou áudio (opcional)</label>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:4}}>
+            <label style={{background:"#161616",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
+              📎 Selecionar arquivo
+              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a" style={{display:"none"}} onChange={handleAnexo}/>
+            </label>
+            {anexo&&(
+              <div style={{display:"flex",alignItems:"center",gap:8,background:"#1A2E1A",border:"1px solid #2E4A2E",borderRadius:7,padding:"6px 14px"}}>
+                <span style={{fontSize:16}}>{anexo.tipo.startsWith("audio")?"🎵":"🖼️"}</span>
+                <span style={{fontSize:12,color:"#4CAF50",fontWeight:600}}>{anexo.nome}</span>
+                <button onClick={()=>setAnexo(null)} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
+              </div>
+            )}
+          </div>
+        </div>
         <button className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
       </div>
     </>)}
@@ -522,6 +671,9 @@ export default function App(){
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
             <span className="rt">{isExp(result.validade)?"⚠ EXPIRADO":"✓ VÁLIDO"}</span>
             <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
+              {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
+              {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
+              {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
             <button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
               {result.liberado?"✓ LIBERADO — Remover":"Liberar Desconto"}
             </button>
@@ -537,12 +689,46 @@ export default function App(){
           <div className="rcell"><div className="rl">Segmento</div><div className="rv">{result.segmento}</div></div>
           <div className="rcell"><div className="rl">Pagamento</div><div className="rv">{result.pgto}</div></div>
           <div className="rcell"><div className="rl">Loja</div><div className="rv">{result.loja}</div></div>
-          <div className="rcell"><div className="rl">Validade</div><div className={isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
-          <div className="rcell"><div className="rl">Status</div><div className={isExp(result.validade)?"rv-exp":"rv-ok"}>{isExp(result.validade)?"Fora da validade":"Desconto liberado"}</div></div>
-          {result.liberado&&result.liberadorNome&&<div className="rcell" style={{background:"#1A2E1A",borderTop:"1px solid #2E4A2E"}}><div className="rl" style={{color:GREEN}}>Liberado por</div><div className="rv" style={{fontWeight:700,color:GREEN}}>{result.liberadorNome} <span style={{fontSize:11,color:MUTED,fontWeight:400}}>· {result.liberadoEm?new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):""}</span></div></div>}
+                    {result.vendedor&&<div className="rcell"><div className="rl">Vendedor</div><div className="rv" style={{color:AMBER,fontWeight:600}}>{result.vendedor}</div></div>}
+          <div className="rcell"><div className="rl">Validade</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
+          <div className="rcell"><div className="rl">Status</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{result.liberado?"Venda liberada":isExp(result.validade)?"Fora da validade":"Pendente de liberação"}</div></div>
+          
           {result.obs&&<div className="rcell full"><div className="rl">Obs</div><div className="rv">{result.obs}</div></div>}
         </div>
-        {isExp(result.validade)&&<div className="warn-bar"><span>⚠</span>Desconto fora do prazo. Contate o Televendas antes de aplicar.</div>}
+        {/* ANEXO — somente admin */}
+        {result.anexoBase64&&session.role==="admin"&&(
+          <div style={{background:"#0D1117",borderTop:"2px solid #1A1E3A",padding:"18px 22px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <span style={{fontSize:14}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"}</span>
+              <span style={{fontSize:11,fontWeight:700,color:BLUE,letterSpacing:1,textTransform:"uppercase"}}>Anexo — somente você (admin) vê isso</span>
+            </div>
+            {result.anexoTipo&&result.anexoTipo.startsWith("image")
+              ?<div>
+                <img
+                  src={result.anexoBase64}
+                  alt={result.anexoNome}
+                  onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})}
+                  style={{maxWidth:"100%",maxHeight:260,borderRadius:8,border:"1px solid #2E2E3E",cursor:"zoom-in",display:"block"}}
+                  title="Clique para ver em tela cheia"
+                />
+                <div style={{display:"flex",gap:10,marginTop:10}}>
+                  <button onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>🔍 Tela cheia</button>
+                  <a href={result.anexoBase64} download={result.anexoNome} style={{background:RED,color:"#fff",borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>⬇ Baixar</a>
+                </div>
+              </div>
+              :<div>
+                <audio controls src={result.anexoBase64} style={{width:"100%",outline:"none",marginBottom:10}}><track kind="captions"/></audio>
+                <a href={result.anexoBase64} download={result.anexoNome} style={{background:RED,color:"#fff",borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>⬇ Baixar áudio</a>
+              </div>
+            }
+            <div style={{fontSize:11,color:MUTED,marginTop:8}}>{result.anexoNome}</div>
+          </div>
+        )}
+        {isExp(result.validade)&&!result.liberado&&<div className="warn-bar"><span>⚠</span>Desconto fora do prazo. Contate o setor de Descontos antes de aplicar.</div>}
+          {result.liberado&&<div style={{background:"#1A2E1A",borderTop:"1px solid #2E4A2E",padding:"13px 22px",color:"#4CAF50",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"#888",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
+          </div>}
       </div>)}
       {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
 
@@ -550,15 +736,33 @@ export default function App(){
       <div style={{marginTop:8,marginBottom:12}}>
         <p className="sec-t">Todos os Descontos</p>
         <div style={{display:"flex",gap:8,marginBottom:14,marginTop:8,flexWrap:"wrap"}}>
-          {[["todos","Todos","#555"],["pendente","Pendentes",AMBER],["liberado","Liberados",GREEN]].map(([v,l,c])=>(
-            <button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
-              {l} ({v==="todos"?quotes.length:v==="pendente"?quotes.filter(q=>!q.liberado).length:quotes.filter(q=>q.liberado).length})
-            </button>
-          ))}
+          {[
+            ["todos","Todos","#555"],
+            ["validos","Válidos",GREEN],
+            ["pendente","Pendentes",AMBER],
+            ["liberado","Liberados",GREEN],
+            ["vencido","Vencidas","#CC1F1F"]
+          ].map(([v,l,c])=>{
+            const cnt = v==="todos"?quotes.length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
+              :v==="pendente"?quotes.filter(q=>!q.liberado).length
+              :v==="liberado"?quotes.filter(q=>q.liberado).length
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
+            return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
+              {l} ({cnt})
+            </button>);
+          })}
         </div>
       </div>
       {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
-        <div className="card-np">{quotes.filter(q=>filtroStatus==="todos"?true:filtroStatus==="liberado"?!!q.liberado:!q.liberado).map((q,i)=>(
+        <div className="card-np">{quotes.filter(q=>{
+            if(filtroStatus==="todos")return true;
+            if(filtroStatus==="liberado")return !!q.liberado;
+            if(filtroStatus==="pendente")return !q.liberado;
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
+            return true;
+          }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
             <span className="list-num">#{q.numero}</span>
             <div style={{flex:1}}>
@@ -567,7 +771,7 @@ export default function App(){
             </div>
             <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
             <span className="list-val">{fmtVal(q.valor)}</span>
-            <span className={`badge ${isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{isExp(q.validade)?"Expirado":"Válido"}</span>
+            <span className={`badge ${q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
               <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
               {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
@@ -575,6 +779,7 @@ export default function App(){
             <button onClick={e=>doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"#1A2E1A":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
               {q.liberado?"✓":"Liberar"}
             </button>
+            {session.role==="admin"&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"#E57373",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
           </div>
         ))}</div>
       )}
@@ -613,6 +818,70 @@ export default function App(){
     </div>
 
     {/* EXPORT MODAL */}
+    {imgModal&&(
+      <div onClick={()=>setImgModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,cursor:"zoom-out"}}>
+        <div style={{position:"absolute",top:16,right:20,display:"flex",gap:12}}>
+          <a href={imgModal.src} download={imgModal.nome} onClick={e=>e.stopPropagation()} style={{background:RED,color:"#fff",borderRadius:8,padding:"9px 22px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:7}}>⬇ Baixar</a>
+          <button onClick={()=>setImgModal(null)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <img src={imgModal.src} alt={imgModal.nome} onClick={e=>e.stopPropagation()} style={{maxWidth:"94vw",maxHeight:"88vh",borderRadius:10,border:"1px solid #3A3A3A",objectFit:"contain"}}/>
+        <div style={{color:"#888",fontSize:12,marginTop:10}}>{imgModal.nome}</div>
+      </div>
+    )}
+    {editModal&&(
+      <div className="edit-overlay" onClick={()=>setEditModal(null)}>
+        <div className="edit-modal" onClick={e=>e.stopPropagation()}>
+          <div className="edit-title">✏ Editar — #{editModal.numero}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+            <div className="field">
+              <label>CBA</label>
+              <input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/>
+            </div>
+            <div className="field">
+              <label>Medida *</label>
+              <input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value}))}/>
+            </div>
+            <div className="field">
+              <label>Segmento</label>
+              <select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}>
+                <option value="">Selecione...</option>
+                {SEGS.map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Loja</label>
+              <select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}>
+                <option value="">Selecione...</option>
+                {LOJAS.map(l=><option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Valor com Desconto *</label>
+              <input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/>
+            </div>
+            <div className="field">
+              <label>Forma de Pagamento</label>
+              <select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}>
+                <option value="">Selecione...</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Validade *</label>
+              <input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/>
+            </div>
+            <div className="field">
+              <label>Observações</label>
+              <input placeholder="Motivo / obs" value={editForm.obs} onChange={e=>setEditForm(f=>({...f,obs:e.target.value}))}/>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
+            <button className="btn-red" style={{flex:2}} onClick={doSaveEdit}>Salvar Atualização</button>
+          </div>
+        </div>
+      </div>
+    )}
     {showExport&&exportRows.length>0&&(
       <div className="overlay" onClick={()=>setShowExport(false)}>
         <div className="modal" onClick={e=>e.stopPropagation()}>
