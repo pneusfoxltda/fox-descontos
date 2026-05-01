@@ -522,7 +522,7 @@ export default function App(){
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Valor Total","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
             <tbody>{lChart.map((l,i)=>{
               const items=filtered.filter(q=>q.loja===l.name);
@@ -538,7 +538,6 @@ export default function App(){
                 <td style={{padding:"9px 10px"}}><span style={{color:GREEN,fontWeight:700}}>{lib}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontWeight:700}}>{venc}</span></td>
-                <td style={{padding:"9px 10px",fontWeight:600,color:TEXT,fontSize:12}}>{fmtVal(val)}</td>
                 <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED+"22",color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
               </tr>);})}
             </tbody>
