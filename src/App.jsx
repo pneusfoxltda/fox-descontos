@@ -168,11 +168,11 @@ export default function App(){
     lk.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>";
   },[]);
 
-  const[session,setSession]=useState(()=>{try{const s=localStorage.getItem("fox_session");return s?JSON.parse(s):null;}catch{return null;}});
+  const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
   const[users,setUsers]=useState([]);
-  const[tab,setTab]=useState(()=>{try{const s=localStorage.getItem("fox_session");if(s){const r=JSON.parse(s).role;return r==="admin"?"dashboard":r==="televendas"?"cadastrar":"consultar";}return "main";}catch{return "main";}});
+  const[tab,setTab]=useState("main");
   const[quotes,setQuotes]=useState([]);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
   const[search,setSearch]=useState("");
@@ -188,6 +188,17 @@ export default function App(){
   const[editModal,setEditModal]=useState(null);
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
   const[exportRows,setExportRows]=useState([]);
+
+  useEffect(()=>{
+    try{
+      const saved=localStorage.getItem("fox_session");
+      if(saved){
+        const s=JSON.parse(saved);
+        setSession(s);
+        setTab(s.role==="admin"?"dashboard":s.role==="televendas"?"cadastrar":"consultar");
+      }
+    }catch(e){}
+  },[]);
 
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
