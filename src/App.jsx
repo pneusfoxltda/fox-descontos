@@ -774,7 +774,7 @@ export default function App(){
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
-            <span className="list-num">#{q.numero}</span>
+            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
             <div style={{flex:1}}>
               <div className="list-d">{q.medida} — {q.segmento}</div>
               <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
