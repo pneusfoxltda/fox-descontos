@@ -325,7 +325,7 @@ export default function App(){
         anexo_nome:anexo?anexo.nome:null
       });
       if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
-      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false};
+      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null};
       setQuotes(prev=>[novo,...prev]);
       setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
       setAnexo(null);
