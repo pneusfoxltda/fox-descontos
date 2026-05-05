@@ -180,7 +180,7 @@ export default function App(){
   const[notFound,setNotFound]=useState(false);
   const[toast,setToast]=useState(null);
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",role:"televendas"});
-  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:""});
+  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
@@ -391,6 +391,7 @@ export default function App(){
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(dash.loja&&q.loja!==dash.loja)return false;
     if(dash.segmento&&q.segmento!==dash.segmento)return false;
+    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
     if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
     if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
     return true;
@@ -453,7 +454,8 @@ export default function App(){
             <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
             <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
+            <div className="field" style={{flex:1,minWidth:140}}><label>Medida</label><input type="text" placeholder="Ex: 175/75R13" value={dash.medida} onChange={e=>setDash(d=>({...d,medida:e.target.value}))}/></div>
+            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
           </div>
         </div>
 
