@@ -188,6 +188,8 @@ export default function App(){
   const[editModal,setEditModal]=useState(null);
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
   const[exportRows,setExportRows]=useState([]);
+  const[pesqCidade,setPesqCidade]=useState("");
+  const[pesqMedida,setPesqMedida]=useState("");
 
   useEffect(()=>{
     try{
@@ -325,7 +327,7 @@ export default function App(){
         anexo_nome:anexo?anexo.nome:null
       });
       if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
-      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null};
+      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false};
       setQuotes(prev=>[novo,...prev]);
       setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
       setAnexo(null);
@@ -599,6 +601,68 @@ export default function App(){
           </div>);
         })()}
 
+
+        {/* ── PESQUISA POR CIDADE + MEDIDA ── */}
+        <div className="chart-card" style={{marginTop:16}}>
+          <div className="chart-t">🔍 Pesquisa por Cidade e Medida</div>
+          <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+            <div className="field" style={{flex:1,minWidth:200}}>
+              <label>Cidade / Loja</label>
+              <select value={pesqCidade} onChange={e=>setPesqCidade(e.target.value)} style={{width:"100%"}}>
+                <option value="">Todas as cidades</option>
+                {LOJAS.map(l=><option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="field" style={{flex:1,minWidth:200}}>
+              <label>Medida do Pneu</label>
+              <input type="text" placeholder="Ex: 205/55R16" value={pesqMedida} onChange={e=>setPesqMedida(e.target.value)} style={{width:"100%"}}/>
+            </div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:8}}>
+              <button className="btn-sm" onClick={()=>{setPesqCidade("");setPesqMedida("");}} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button>
+            </div>
+          </div>
+          {(()=>{
+            const r=quotes.filter(q=>{
+              if(pesqCidade&&q.loja!==pesqCidade)return false;
+              if(pesqMedida&&!q.medida.toLowerCase().includes(pesqMedida.toLowerCase().trim()))return false;
+              if(!pesqCidade&&!pesqMedida)return false;
+              return true;
+            });
+            if(!pesqCidade&&!pesqMedida)return(<div className="empty" style={{padding:"24px"}}><div style={{fontSize:32,opacity:.2,marginBottom:8}}>🔍</div><p style={{color:MUTED}}>Selecione uma cidade ou digite uma medida para pesquisar.</p></div>);
+            if(!r.length)return(<div className="empty" style={{padding:"24px"}}><div style={{fontSize:32,opacity:.2,marginBottom:8}}>🔎</div><p style={{color:MUTED}}>Nenhum resultado encontrado.</p></div>);
+            return(<>
+              <div style={{fontSize:11,color:MUTED,marginBottom:10,fontWeight:600}}>{r.length} resultado{r.length!==1?"s":""} encontrado{r.length!==1?"s":""}</div>
+              <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",minWidth:700}}>
+                <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                  {["CBA","Medida","Segmento","Valor Negociado","Parcela","Anexo","Data Negociação"].map(h=>(
+                    <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>{r.map((q,i)=>(
+                  <tr key={q.numero+q.tipo} style={{borderBottom:"1px solid #1C1C1C",background:i%2===0?"transparent":"#161616"}}>
+                    <td style={{padding:"10px 10px",fontWeight:700,color:TEXT,fontSize:13}}>{q.cba}</td>
+                    <td style={{padding:"10px 10px",fontWeight:700,color:AMBER,fontSize:13,whiteSpace:"nowrap"}}>{q.medida}</td>
+                    <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span></td>
+                    <td style={{padding:"10px 10px",fontWeight:700,color:GREEN,fontSize:14,whiteSpace:"nowrap"}}>{fmtVal(q.valor)}</td>
+                    <td style={{padding:"10px 10px",color:TEXT,fontSize:12,whiteSpace:"nowrap"}}>{q.pgto}</td>
+                    <td style={{padding:"10px 10px"}}>
+                      {q.anexoBase64
+                        ?<button onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                          {q.anexoTipo&&q.anexoTipo.startsWith("audio")?"🎵 Áudio":"🖼️ Ver Imagem"}
+                        </button>
+                        :<span style={{color:MUTED,fontSize:11}}>—</span>
+                      }
+                    </td>
+                    <td style={{padding:"10px 10px",color:MUTED,fontSize:12,whiteSpace:"nowrap"}}>{q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}):"—"}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+              </div>
+            </>);
+          })()}
+        </div>
+
         </>)}
       </>)}
 
@@ -774,7 +838,7 @@ export default function App(){
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
-            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
+            <span className="list-num">#{q.numero}</span>
             <div style={{flex:1}}>
               <div className="list-d">{q.medida} — {q.segmento}</div>
               <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
