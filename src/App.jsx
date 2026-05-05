@@ -180,7 +180,7 @@ export default function App(){
   const[notFound,setNotFound]=useState(false);
   const[toast,setToast]=useState(null);
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",role:"televendas"});
-  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
+  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
@@ -188,6 +188,7 @@ export default function App(){
   const[editModal,setEditModal]=useState(null);
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
   const[exportRows,setExportRows]=useState([]);
+  const[galeriaModal,setGaleriaModal]=useState(null);
 
   useEffect(()=>{
     try{
@@ -390,7 +391,6 @@ export default function App(){
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(dash.loja&&q.loja!==dash.loja)return false;
     if(dash.segmento&&q.segmento!==dash.segmento)return false;
-    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
     if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
     if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
     return true;
@@ -453,8 +453,7 @@ export default function App(){
             <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
             <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="field" style={{flex:1,minWidth:140}}><label>Medida</label><input type="text" placeholder="Ex: 175/75R13" value={dash.medida} onChange={e=>setDash(d=>({...d,medida:e.target.value}))}/></div>
-            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
+            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
           </div>
         </div>
 
@@ -492,7 +491,7 @@ export default function App(){
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Medida","Qtd","Fechou","%"].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Medida","Qtd","Fechou","%",""].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{mChart.map((m,i)=>{
                 const pct=filtered.length>0?((m.value/filtered.length)*100).toFixed(1):0;
@@ -503,6 +502,7 @@ export default function App(){
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
+                  <td style={{padding:"8px 8px"}}>{(()=>{const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));return imgs.length>0?(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>):(<span style={{color:MUTED,fontSize:11}}>—</span>);})()}</td>
                 </tr>);})}
               </tbody>
             </table>
@@ -918,6 +918,41 @@ export default function App(){
       </div>
     )}
 
+
+    {galeriaModal&&(
+      <div onClick={()=>setGaleriaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 16px",overflowY:"auto"}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1100}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes — {galeriaModal.medida}</div>
+              <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} encontrada{galeriaModal.imagens.length!==1?"s":""}</div>
+            </div>
+            <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
+            {galeriaModal.imagens.map((q,i)=>(
+              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E2E2E"}}>
+                <img
+                  src={q.anexoBase64}
+                  alt={q.anexoNome}
+                  onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
+                  style={{width:"100%",height:200,objectFit:"cover",display:"block",cursor:"zoom-in"}}
+                  title="Clique para ampliar"
+                />
+                <div style={{padding:"10px 12px"}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:RED,letterSpacing:1,marginBottom:4}}>#{q.numero}</div>
+                  <div style={{fontSize:11,color:MUTED}}>{q.loja}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
+                    <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{fmtVal(q.valor)}</span>
+                    <span style={{fontSize:10,color:MUTED}}>{q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
   </div></>);
 }
