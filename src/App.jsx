@@ -506,7 +506,7 @@ export default function App(){
     </div>
 
     <div className="tabs">
-      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>setTab("dashboard");setDashKey(k=>k+1)}><span className="tab-dot"/>Dashboard</div>}
+      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
       {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Descontos — Cadastrar</div>}
       {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Comercial — Consultar</div>}
       {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
@@ -515,7 +515,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey} style={{animation:"fadeUp .3s ease"}}><>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}><>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -536,22 +536,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+RED}}>
+          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.0s both"}} style={{borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}>{filtered.length}</div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+GREEN}}>
+          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.1s both"}} style={{borderTop:"3px solid "+GREEN}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}>{filtered.filter(q=>q.liberado).length}</div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+AMBER}}>
+          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.2s both"}} style={{borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}>{filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}</div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid #888"}}>
+          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.3s both"}} style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}>{filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}</div>
             <div className="stat-sub">não fechadas no prazo</div>
@@ -564,7 +564,7 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
 
           {/* Ranking Medidas */}
-          <div className="chart-card dash-card-anim" style={{marginBottom:0}}>
+          <div style={{animation:"fadeUp .5s ease 0s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -592,7 +592,7 @@ export default function App(){
           </div>
 
           {/* Ranking Segmentos */}
-          <div className="chart-card dash-card-anim" style={{marginBottom:0}}>
+          <div style={{animation:"fadeUp .5s ease 0.1s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -614,7 +614,7 @@ export default function App(){
         </div>
 
         {/* Ranking Lojas */}
-        <div className="chart-card dash-card-anim">
+        <div style={{animation:"fadeUp .5s ease 0.2s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -653,8 +653,8 @@ export default function App(){
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
-          if(!vList.length)return(<div className="chart-card dash-card-anim"><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div className="chart-card dash-card-anim">
+          if(!vList.length)return(<div style={{animation:"fadeUp .5s ease 0.3s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div style={{animation:"fadeUp .5s ease 0.4s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -736,7 +736,7 @@ export default function App(){
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
 
           return(
-            <div className="chart-card dash-card-anim" style={{marginTop:0}}>
+            <div style={{animation:"fadeUp .5s ease 0.5s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
 
@@ -825,7 +825,7 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div className="chart-card dash-card-anim" style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+            <div style={{animation:"fadeUp .5s ease 0.6s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -923,7 +923,7 @@ export default function App(){
         </>)}
       </>)}
 
-      </div>)}
+      </>)}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
