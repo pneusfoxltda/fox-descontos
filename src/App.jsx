@@ -99,7 +99,7 @@ body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
 .logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
 .content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100vh;}
-.main{padding:22px 28px;width:100%;box-sizing:border-box;}
+.main{padding:20px 24px;width:100%;box-sizing:border-box;max-width:1600px;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
@@ -148,7 +148,7 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
 .rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
 .warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;width:100%;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
 .stat-card{background:#161616;border:1px solid #252525;border-radius:12px;padding:20px 22px;position:relative;overflow:hidden;}
 .stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;color:#fff;line-height:1;margin:8px 0 6px;}.stat-sub{font-size:11px;color:#666;margin-top:2px;letter-spacing:.5px;}
@@ -707,7 +707,7 @@ export default function App(){
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Vendedor","Negociações","Fechou","Pendentes","Vencidas","Valor","Conversão"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Valor","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
