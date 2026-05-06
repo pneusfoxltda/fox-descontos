@@ -79,21 +79,17 @@ function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER}[r]||MUTE
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
-@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideLeft{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
-@keyframes scaleIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 8px rgba(204,31,31,0)}}
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes countUp{from{opacity:0;transform:translateY(8px) scale(.85)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes glowBar{from{filter:brightness(.6)}to{filter:brightness(1)}}
-@keyframes borderFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-.dash-card-anim{animation:fadeUp .5s ease both;}
-.dash-stat-anim{animation:fadeUp .4s ease both;}
-.rank-row-anim{animation:slideLeft .4s ease both;}
-.avatar-anim{animation:scaleIn .5s cubic-bezier(.34,1.56,.64,1) both;}
-.kpi-num-anim{animation:countUp .6s cubic-bezier(.34,1.2,.64,1) both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes popIn{0%{opacity:0;transform:scale(.3)}60%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.5)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(204,31,31,.3)}50%{box-shadow:0 0 20px rgba(204,31,31,.7)}}
+.rank-row-anim{animation:slideLeft .45s cubic-bezier(.25,.46,.45,.94) both;}
+.avatar-anim{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
 .pulse-red{animation:pulse 2s infinite;}
-.bar-anim{animation:glowBar .8s ease both;}
+.glow-red{animation:glow 2s infinite;}
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0D0D0D;font-family:'Inter',sans-serif;color:#F0F0F0;}
@@ -199,6 +195,23 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .btn-login:hover{background:#E02020;}
 .login-hint{font-size:11px;color:#555;text-align:center;margin-top:12px;}
 `;
+
+
+function AnimatedNumber({value, duration=1200, style={}}){
+  const [display, setDisplay] = React.useState(0);
+  React.useEffect(()=>{
+    let start=0; const end=parseFloat(value)||0;
+    if(end===0){setDisplay(0);return;}
+    const step=end/Math.max(1,Math.floor(duration/16));
+    const timer=setInterval(()=>{
+      start+=step;
+      if(start>=end){setDisplay(end);clearInterval(timer);}
+      else setDisplay(Math.floor(start));
+    },16);
+    return()=>clearInterval(timer);
+  },[value,duration]);
+  return <span style={style}>{display}</span>;
+}
 
 export default function App(){
   useEffect(()=>{
@@ -536,24 +549,24 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.0s both"}} style={{borderTop:"3px solid "+RED}}>
+          <div className="stat-card" style={{animation:"fadeUp .55s ease 0.00s both",borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
-            <div className="stat-val" style={{color:RED}}>{filtered.length}</div>
+            <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.1s both"}} style={{borderTop:"3px solid "+GREEN}}>
+          <div className="stat-card" style={{animation:"fadeUp .55s ease 0.12s both",borderTop:"3px solid "+GREEN}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
-            <div className="stat-val" style={{color:GREEN}}>{filtered.filter(q=>q.liberado).length}</div>
+            <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.2s both"}} style={{borderTop:"3px solid "+AMBER}}>
+          <div className="stat-card" style={{animation:"fadeUp .55s ease 0.24s both",borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Pendentes</div>
-            <div className="stat-val" style={{color:AMBER}}>{filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}</div>
+            <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{animation:"fadeUp .5s ease 0.3s both"}} style={{borderTop:"3px solid #888"}}>
+          <div className="stat-card" style={{animation:"fadeUp .55s ease 0.36s both",borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
-            <div className="stat-val" style={{color:MUTED}}>{filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}</div>
+            <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
           </div>
         </div>
@@ -564,7 +577,7 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
 
           {/* Ranking Medidas */}
-          <div style={{animation:"fadeUp .5s ease 0s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
+          <div style={{animation:"fadeUp .55s ease 0.48s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -592,7 +605,7 @@ export default function App(){
           </div>
 
           {/* Ranking Segmentos */}
-          <div style={{animation:"fadeUp .5s ease 0.1s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
+          <div style={{animation:"fadeUp .55s ease 0.60s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -614,7 +627,7 @@ export default function App(){
         </div>
 
         {/* Ranking Lojas */}
-        <div style={{animation:"fadeUp .5s ease 0.2s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+        <div style={{animation:"fadeUp .55s ease 0.72s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -653,8 +666,8 @@ export default function App(){
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
-          if(!vList.length)return(<div style={{animation:"fadeUp .5s ease 0.3s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div style={{animation:"fadeUp .5s ease 0.4s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+          if(!vList.length)return(<div style={{animation:"fadeUp .55s ease 0.84s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div style={{animation:"fadeUp .55s ease 0.96s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -736,7 +749,7 @@ export default function App(){
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
 
           return(
-            <div style={{animation:"fadeUp .5s ease 0.5s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0}}>
+            <div style={{animation:"fadeUp .55s ease 1.08s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
 
@@ -825,7 +838,7 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div style={{animation:"fadeUp .5s ease 0.6s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+            <div style={{animation:"fadeUp .55s ease 1.20s both",background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
