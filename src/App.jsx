@@ -84,22 +84,22 @@ const css=`
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .wrap{height:100vh;width:100vw;background:#0A0A0A;display:flex;overflow:hidden;position:fixed;top:0;left:0;}
-.sidebar{width:220px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
-.sb-brand{padding:20px 18px 16px;border-bottom:1px solid #1E1E1E;}
+.sidebar{width:180px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
+.sb-brand{padding:14px 14px 12px;border-bottom:1px solid #1E1E1E;}
 .brand-icon{width:40px;height:40px;background:#CC1F1F;border-radius:8px;display:flex;align-items:center;justify-content:center;}
-.brand-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;margin-top:10px;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;margin-top:8px;}
 .brand-sub{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;}
 .sb-nav{flex:1;padding:12px 0;}
-.tab{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;color:#666;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
+.tab{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#666;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
 .tab:hover{color:#F0F0F0;background:#1A1A1A;}
 .tab.active{color:#fff;border-left-color:#CC1F1F;background:#1A1A1A;}
 .tab-dot{width:7px;height:7px;border-radius:50%;background:#333;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
-.sb-footer{padding:14px 18px;border-top:1px solid #1E1E1E;}
+.sb-footer{padding:10px 14px;border-top:1px solid #1E1E1E;}
 .chip{display:flex;align-items:center;gap:8px;background:#161616;border:1px solid #222;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
 .logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
 .logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
 .content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100vh;}
-.main{padding:20px 24px;width:100%;box-sizing:border-box;max-width:1600px;}
+.main{padding:14px 18px;width:100%;box-sizing:border-box;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
@@ -148,12 +148,12 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
 .rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
 .warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-.stat-card{background:#161616;border:1px solid #252525;border-radius:12px;padding:20px 22px;position:relative;overflow:hidden;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.stat-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
 .stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;color:#fff;line-height:1;margin:8px 0 6px;}.stat-sub{font-size:11px;color:#666;margin-top:2px;letter-spacing:.5px;}
-.chart-card{background:#161616;border:1px solid #222;border-radius:12px;padding:22px;margin-bottom:14px;}
-.chart-t{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;color:#fff;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:#fff;line-height:1;margin:6px 0 4px;}.stat-sub{font-size:10px;color:#666;margin-top:2px;letter-spacing:.5px;}
+.chart-card{background:#161616;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:10px;}
+.chart-t{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:#fff;}
 .filter-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
 .empty{text-align:center;padding:40px 20px;color:#888;}
 .divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
@@ -567,7 +567,7 @@ export default function App(){
         </div>
 
         {/* Filtros */}
-        <div className="card" style={{marginBottom:16}}>
+        <div className="card" style={{marginBottom:10,padding:"12px 16px"}}>
           <div style={{fontSize:11,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Filtros</div>
           <div className="filter-row">
             <div className="field" style={{flex:1}}><label>Data inicial</label><input type="date" value={dash.dataIni} onChange={e=>setDash(d=>({...d,dataIni:e.target.value}))}/></div>
@@ -606,7 +606,7 @@ export default function App(){
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
 
         {/* Grid: Medidas + Segmentos */}
-        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:14,marginBottom:14}}>
+        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:10,marginBottom:10}}>
 
           {/* Ranking Medidas */}
           <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
@@ -658,7 +658,7 @@ export default function App(){
           </div>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignItems:"start"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
         <div>
         {/* Ranking Lojas */}
         <div style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
@@ -715,7 +715,7 @@ export default function App(){
                 return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animation:"foxLeft .4s ease "+(0.4+i*0.07)+"s both"}}>
                   <td style={{padding:"8px 10px"}}>
                     {fotoMap[v.nome]
-                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .6s ease "+(0.4+i*0.1)+"s both"}}/>
+                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .6s ease "+(0.4+i*0.1)+"s both"}}/>
                       :<div style={{width:40,height:40,borderRadius:"50%",background:i===0?GREEN+"33":i===1?"#88888833":"#66330033",border:"2px solid "+(i===0?GREEN:i===1?"#888":"#8B4513"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:i===0?GREEN:i===1?"#888":"#CD853F"}}>
                         {v.nome.charAt(0).toUpperCase()}
                       </div>
