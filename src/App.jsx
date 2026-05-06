@@ -212,6 +212,7 @@ export default function App(){
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
+  const[copiedNum,setCopiedNum]=useState(null);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
   useEffect(()=>{
@@ -1191,40 +1192,57 @@ export default function App(){
             <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
-            {galeriaModal.imagens.map((q,i)=>(
-              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E2E2E"}}>
+            {galeriaModal.imagens.map((q,i)=>{
+              const conc=parseConcObs(q.obs);
+              const isCopied=copiedNum===q.numero;
+              const copyNum=()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});};
+              return(
+              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E2E2E",display:"flex",flexDirection:"column"}}>
+                {/* Número + copy em destaque ANTES da imagem */}
+                <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
+                  </div>
+                  <button onClick={copyNum} title="Copiar número" style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}>
+                    {isCopied?"✓ Copiado!":"📋 Copiar"}
+                  </button>
+                </div>
+                {/* Imagem */}
                 <img
                   src={q.anexoBase64}
                   alt={q.anexoNome}
                   onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
-                  style={{width:"100%",height:200,objectFit:"cover",display:"block",cursor:"zoom-in"}}
+                  style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
                   title="Clique para ampliar"
                 />
-                <div style={{padding:"10px 12px"}}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:RED,letterSpacing:1,marginBottom:4}}>#{q.numero}</div>
-                  <div style={{fontSize:11,color:MUTED}}>{q.loja}</div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                    <div>
-                      <div style={{fontSize:9,color:MUTED,fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>Nosso preço</div>
-                      <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{fmtVal(q.valor)}</span>
-                    </div>
-                    <span style={{fontSize:10,color:MUTED}}>{q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</span>
-                  </div>
-                  {(()=>{const conc=parseConcObs(q.obs);if(!conc.length)return null;return(<div style={{marginTop:8,borderTop:"1px solid #2E2E2E",paddingTop:8}}>
-                    <div style={{fontSize:9,color:MUTED,fontWeight:600,textTransform:"uppercase",letterSpacing:.5,marginBottom:5}}>Concorrentes nessa negociação</div>
-                    {conc.map((item,ci)=>(
-                      <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-                        <span style={{fontSize:11,color:"#C0C0C0",fontWeight:600}}>{item.empresa}</span>
-                        <div style={{textAlign:"right"}}>
-                          <span style={{fontSize:12,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</span>
-                          {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                {/* Corpo do card */}
+                <div style={{padding:"10px 12px",flex:1}}>
+                  <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                  {/* Concorrentes em destaque */}
+                  {conc.length>0&&(
+                    <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+                      <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
+                      {conc.map((item,ci)=>(
+                        <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
+                          <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
+                          <div style={{textAlign:"right"}}>
+                            <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</div>
+                            {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>);})()}
+                      ))}
+                    </div>
+                  )}
+                  {/* Nosso preço */}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
+                    <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
