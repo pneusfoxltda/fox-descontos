@@ -82,7 +82,7 @@ const css=`
 
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0D0D0D;font-family:'Inter',sans-serif;color:#F0F0F0;}
+body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .wrap{min-height:100vh;background:#0D0D0D;}
 .topbar{background:#161616;border-bottom:2px solid #CC1F1F;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;}
 .brand{display:flex;align-items:center;gap:12px;}
@@ -96,7 +96,7 @@ body{background:#0D0D0D;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .tab{padding:14px 18px;font-size:13px;font-weight:600;cursor:pointer;color:#888;border-bottom:3px solid transparent;transition:all .15s;position:relative;top:1px;display:flex;align-items:center;gap:7px;white-space:nowrap;}
 .tab:hover{color:#F0F0F0;}.tab.active{color:#fff;border-bottom-color:#CC1F1F;}
 .tab-dot{width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
-.main{padding:24px;max-width:1100px;margin:0 auto;}
+.main{padding:20px 28px;width:100%;box-sizing:border-box;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
@@ -145,11 +145,11 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
 .rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
 .warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
-.stat-card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;padding:16px;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.stat-card{background:#161616;border:1px solid #252525;border-radius:12px;padding:20px 22px;position:relative;overflow:hidden;}
 .stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:#fff;line-height:1;}.stat-sub{font-size:11px;color:#888;margin-top:4px;}
-.chart-card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;padding:20px;margin-bottom:16px;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;color:#fff;line-height:1;margin:8px 0 6px;}.stat-sub{font-size:11px;color:#666;margin-top:2px;letter-spacing:.5px;}
+.chart-card{background:#161616;border:1px solid #222;border-radius:12px;padding:22px;margin-bottom:14px;}
 .chart-t{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;color:#fff;}
 .filter-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
 .empty{text-align:center;padding:40px 20px;color:#888;}
@@ -551,9 +551,15 @@ export default function App(){
 
     {/* DASHBOARD */}
     {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
-          <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
-          <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA COMERCIAL</div>
+              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>FOX PNEUS — SISTEMA DE DESCONTOS</div>
+            </div>
+          </div>
+          <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar ({(filtered.length>0?filtered:quotes).length})</button>
         </div>
 
         {/* Filtros */}
@@ -596,7 +602,7 @@ export default function App(){
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
 
         {/* Grid: Medidas + Segmentos */}
-        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14,marginBottom:14}}>
 
           {/* Ranking Medidas */}
           <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
