@@ -155,15 +155,13 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .empty{text-align:center;padding:40px 20px;color:#888;}
 .divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
 .info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
-.scroll-anim{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease;}
-.scroll-anim.in-view{opacity:1;transform:translateY(0);}
 @keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
-.scroll-anim{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease;}
+.scroll-anim{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.25,.46,.45,.94),transform .7s cubic-bezier(.25,.46,.45,.94);}
 .scroll-anim.in-view{opacity:1;transform:translateY(0);}
 @keyframes foxUp{0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
@@ -596,7 +594,7 @@ export default function App(){
         <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
 
           {/* Ranking Medidas */}
-          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
+          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -624,7 +622,7 @@ export default function App(){
           </div>
 
           {/* Ranking Segmentos */}
-          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
+          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -686,7 +684,7 @@ export default function App(){
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
           if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+          return(<div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -768,7 +766,7 @@ export default function App(){
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
 
           return(
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0}}>
+            <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
 
@@ -857,7 +855,7 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+            <div className="scroll-anim" style={{background:"#141414",border:"1px solid #222",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
