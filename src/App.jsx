@@ -200,6 +200,14 @@ export default function App(){
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",role:"televendas"});
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
+  const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
+    if(filtroStatus==="todos")return true;
+    if(filtroStatus==="liberado")return !!q.liberado;
+    if(filtroStatus==="pendente")return !q.liberado;
+    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
+    return true;
+  }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
@@ -955,7 +963,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotes)}>Gerar Planilha ({quotes.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
