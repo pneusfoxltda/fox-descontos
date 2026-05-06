@@ -262,6 +262,15 @@ export default function App(){
   const[showConcAviso,setShowConcAviso]=useState(false);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
+
+  // Trigger dashboard animations
+  useEffect(()=>{
+    if(tab!=="dashboard")return;
+    setDashAnim(false);
+    const t=setTimeout(()=>setDashAnim(true),30);
+    return()=>clearTimeout(t);
+  },[tab,dashKey]);
+
   useEffect(()=>{
     try{
       const saved=localStorage.getItem("fox_session");
