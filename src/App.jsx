@@ -221,6 +221,7 @@ export default function App(){
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
+  const[dashAnim,setDashAnim]=useState(false);
   const[quotes,setQuotes]=useState([]);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
@@ -543,22 +544,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .5s ease 0s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease 0s, transform .5s ease 0s"}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .5s ease .12s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .12s, transform .5s ease .12s"}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .5s ease .24s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .24s, transform .5s ease .24s"}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .5s ease .36s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888",opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .36s, transform .5s ease .36s"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
