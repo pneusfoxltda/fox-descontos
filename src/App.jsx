@@ -161,7 +161,7 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
-@keyframes foxUp{0%{opacity:0;transform:translateY(28px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes foxUp{0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
 .toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
@@ -286,14 +286,14 @@ export default function App(){
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
     const {data:qu} = await db.select();
-    if(qu) setQuotes(qu.map(q=>({
+    if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id, vendedor:q.vendedor,
       anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
-    })));
+    })));}
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
@@ -554,22 +554,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .55s ease 0s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .7s ease 0s both"}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .55s ease .12s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .7s ease .15s both"}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .55s ease .24s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .7s ease .3s both"}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .55s ease .36s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .7s ease .45s both"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
