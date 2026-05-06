@@ -822,76 +822,58 @@ export default function App(){
                 ))}
               </div>
               {/* Chart area */}
-              <div style={{background:"#0D0D0D",borderRadius:12,border:"1px solid #1E1E1E",padding:"16px 16px 0",overflowX:"auto"}}>
-                {/* Scrollable inner — grid + bars together */}
-                <div style={{
-                  position:"relative",
-                  minWidth:volPeriodo==="mes"?rows.length*36:0,
-                  paddingBottom:volPeriodo==="semana"?52:44,
-                }}>
-                  {/* Grid lines (relative to this div) */}
-                  {[25,50,75,100].map(pct=>(
-                    <div key={pct} style={{
-                      position:"absolute",left:0,right:0,
-                      bottom:(volPeriodo==="semana"?52:44)+((pct/100)*180),
-                      borderTop:"1px dashed #222",pointerEvents:"none",zIndex:0,
-                      display:"flex",alignItems:"center"
-                    }}>
-                      <span style={{fontSize:9,color:"#3A3A3A",fontWeight:700,marginRight:4,whiteSpace:"nowrap"}}>{Math.round(max*(pct/100))}</span>
-                    </div>
-                  ))}
-                  {/* Bars */}
-                  <div style={{
-                    display:"flex",alignItems:"flex-end",
-                    gap:volPeriodo==="semana"?10:5,
-                    height:180,position:"relative",zIndex:1,
-                  }}>
-                    {rows.map((r,i)=>{
-                      const pct=max>0?(r.count/max):0;
-                      const isTop=r.count===max&&r.count>0;
-                      const isHoje=r.key===hojeKey;
-                      const barH=pct>0?Math.max(pct*180,10):4;
-                      const barColor=isTop?"#22c55e":isHoje?AMBER:r.count===0?"#1E1E1E":"#CC1F1F";
-                      const glowColor=isTop?"rgba(34,197,94,.4)":isHoje?"rgba(245,158,11,.4)":"rgba(204,31,31,.3)";
-                      return(
-                        <div key={r.key} title={r.diaSem+" "+r.label+" — "+r.count+" negociação(ões)"}
-                          style={{
-                            display:"flex",flexDirection:"column",alignItems:"center",
-                            flex:volPeriodo==="semana"?1:"0 0 30px",
-                            minWidth:volPeriodo==="semana"?36:30,
-                            position:"relative",cursor:"default",
-                          }}>
-                          {r.count>0&&(
-                            <div style={{
-                              fontSize:volPeriodo==="semana"?13:11,fontWeight:900,color:barColor,
-                              marginBottom:6,whiteSpace:"nowrap",
-                              textShadow:"0 0 10px "+barColor,
-                            }}>{r.count}</div>
-                          )}
-                          <div style={{
-                            width:"100%",height:barH,
-                            background:r.count===0?"#181818":`linear-gradient(180deg,${barColor} 0%,${barColor}AA 100%)`,
-                            borderRadius:"5px 5px 0 0",
-                            boxShadow:r.count>0?"0 0 16px "+glowColor+",inset 0 1px 0 rgba(255,255,255,0.15)":"none",
-                            transition:"height .5s cubic-bezier(.4,0,.2,1)",
-                            position:"relative",overflow:"hidden",
-                          }}>
-                            {r.count>0&&<div style={{position:"absolute",top:0,left:0,right:0,height:"35%",background:"rgba(255,255,255,0.08)",borderRadius:"5px 5px 0 0"}}/>}
-                          </div>
-                          <div style={{
-                            position:"absolute",
-                            bottom: volPeriodo==="semana"?-38:-22,
-                            fontSize:volPeriodo==="semana"?10:9,
-                            color:isHoje?AMBER:"#555",fontWeight:isHoje?800:500,
-                            textAlign:"center",whiteSpace:"nowrap",
-                          }}>{r.label}</div>
-                          {volPeriodo==="semana"&&(
-                            <div style={{position:"absolute",bottom:-52,fontSize:9,color:isHoje?AMBER:"#3A3A3A",fontWeight:isHoje?700:400,textAlign:"center"}}>{r.diaSem}</div>
-                          )}
+              <div style={{background:"#0D0D0D",borderRadius:12,border:"1px solid #1E1E1E",overflowX:"auto"}}>
+                <div style={{minWidth:volPeriodo==="mes"?rows.length*34+20:0,padding:"16px 16px 0"}}>
+                  {/* Bars + grid rows stacked */}
+                  {(()=>{
+                    const BAR_H=180;
+                    const GRID=[100,75,50,25];
+                    return(
+                      <div style={{position:"relative"}}>
+                        {/* Grid rows behind bars */}
+                        <div style={{position:"absolute",top:0,left:0,right:0,height:BAR_H,pointerEvents:"none"}}>
+                          {GRID.map(pct=>(
+                            <div key={pct} style={{position:"absolute",left:0,right:0,top:BAR_H-(BAR_H*(pct/100)),borderTop:"1px dashed #1E1E1E"}}>
+                              <span style={{position:"absolute",right:"100%",paddingRight:4,top:-8,fontSize:9,color:"#333",fontWeight:600,whiteSpace:"nowrap"}}>{Math.round(max*(pct/100))}</span>
+                            </div>
+                          ))}
                         </div>
-                      );
-                    })}
-                  </div>
+                        {/* Bars row */}
+                        <div style={{display:"flex",alignItems:"flex-end",gap:volPeriodo==="semana"?10:4,height:BAR_H,position:"relative",zIndex:1}}>
+                          {rows.map((r)=>{
+                            const pct=max>0?(r.count/max):0;
+                            const isTop=r.count===max&&r.count>0;
+                            const isHoje=r.key===hojeKey;
+                            const barH=pct>0?Math.max(Math.round(pct*BAR_H),8):3;
+                            const col=isTop?"#22c55e":isHoje?AMBER:r.count===0?"#1C1C1C":"#CC1F1F";
+                            const glow=isTop?"rgba(34,197,94,.35)":isHoje?"rgba(245,158,11,.35)":"rgba(204,31,31,.25)";
+                            return(
+                              <div key={r.key} style={{flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?32:28,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%",position:"relative"}}>
+                                {r.count>0&&<div style={{fontSize:volPeriodo==="semana"?13:10,fontWeight:900,color:col,marginBottom:5,textShadow:"0 0 8px "+col,whiteSpace:"nowrap"}}>{r.count}</div>}
+                                <div style={{width:"100%",height:barH,background:r.count===0?"#181818":`linear-gradient(180deg,${col} 0%,${col}BB 100%)`,borderRadius:"4px 4px 0 0",boxShadow:r.count>0?"0 0 14px "+glow+",inset 0 1px 0 rgba(255,255,255,0.12)":"none",position:"relative",overflow:"hidden",transition:"height .4s ease"}}>
+                                  {r.count>0&&<div style={{position:"absolute",inset:"0 0 60% 0",background:"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0"}}/>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Separator line */}
+                        <div style={{height:1,background:"#1E1E1E",margin:"0 0 8px"}}/>
+                        {/* Date labels row */}
+                        <div style={{display:"flex",gap:volPeriodo==="semana"?10:4,paddingBottom:volPeriodo==="semana"?6:10}}>
+                          {rows.map((r)=>{
+                            const isHoje=r.key===hojeKey;
+                            return(
+                              <div key={r.key} style={{flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?32:28,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                                <div style={{fontSize:volPeriodo==="semana"?10:8,color:isHoje?AMBER:"#4A4A4A",fontWeight:isHoje?800:500,whiteSpace:"nowrap"}}>{r.label}</div>
+                                {volPeriodo==="semana"&&<div style={{fontSize:9,color:isHoje?AMBER:"#333",fontWeight:isHoje?700:400}}>{r.diaSem}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               {/* Legend */}
