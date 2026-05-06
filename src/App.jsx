@@ -222,10 +222,7 @@ export default function App(){
   const[loginErr,setLoginErr]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
-  const[dashKey,setDashKey]=useState(0);
-  const[dashAnim,setDashAnim]=useState(false);
     const[quotes,setQuotes]=useState([]);
-  const[quotesLoaded,setQuotesLoaded]=useState(false);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
@@ -266,15 +263,6 @@ export default function App(){
   const[galeriaModal,setGaleriaModal]=useState(null);
 
 
-
-  // Animate dashboard AFTER data loads
-  useEffect(()=>{
-    if(tab!=="dashboard"||quotes.length===0)return;
-    setDashAnim(false);
-    const t=setTimeout(()=>setDashAnim(true),80);
-    return()=>clearTimeout(t);
-  },[tab,dashKey,quotes.length]);
-
   useEffect(()=>{
     try{
       const saved=localStorage.getItem("fox_session");
@@ -289,7 +277,7 @@ export default function App(){
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
     const {data:qu} = await db.select();
-    if(qu){setQuotesLoaded(true);setQuotes(qu.map(q=>({
+    if(qu) setQuotes(qu.map(q=>({
       tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
@@ -527,7 +515,7 @@ export default function App(){
     </div>
 
     <div className="tabs">
-      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>setTab("dashboard")}><span className="tab-dot"/>Dashboard</div>}
       {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Descontos — Cadastrar</div>}
       {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Comercial — Consultar</div>}
       {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
@@ -536,7 +524,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(!quotesLoaded?(<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888",fontSize:14,gap:10}}><div style={{width:20,height:20,border:"3px solid #333",borderTop:"3px solid #CC1F1F",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>Carregando dados...</div>):(<div key={dashKey} style={{animation:"foxIn 1.2s ease both"}}>
+    {tab==="dashboard"&&session.role==="admin"&&(<>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -557,22 +545,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(20px)",transition:"opacity .5s ease 0s,transform .5s ease 0s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(20px)",transition:"opacity .5s ease .12s,transform .5s ease .12s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(20px)",transition:"opacity .5s ease .24s,transform .5s ease .24s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888",opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(20px)",transition:"opacity .5s ease .36s,transform .5s ease .36s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
@@ -941,7 +929,7 @@ export default function App(){
           );
         })()}
 
-        </div>))}
+        </>)}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
