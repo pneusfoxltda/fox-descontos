@@ -50,6 +50,21 @@ const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555",
 
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function parseConcObs(obs){
+  if(!obs||!obs.includes("\u{1F4CA} CONCORRENTES:"))return[];
+  const block=(obs.split("\u{1F4CA} CONCORRENTES:")[1]||"").trim();
+  return block.split("\n").filter(l=>l.trim().startsWith("\u2022")).map(l=>{
+    const sem=l.trim().slice(1).trim();
+    const ci=sem.indexOf(":");if(ci===-1)return null;
+    const empresa=sem.slice(0,ci).trim();
+    const resto=sem.slice(ci+1).trim();
+    const mVal=resto.match(/R\$\s*([\d.,]+)/);
+    const mPgto=resto.match(/\(([^)]+)\)/);
+    const valor=mVal?parseFloat(mVal[1].replace(/\./g,"").replace(",",".")):0;
+    const pgto=mPgto?mPgto[1]:"";
+    return empresa?{empresa,valor,pgto}:null;
+  }).filter(Boolean);
+}
 function fmtDate(d){if(!d)return"-";const[y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
 function roleName(r){return{admin:"Gerente",televendas:"Descontos",comercial:"Comercial"}[r]||r;}
 function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER}[r]||MUTED;}
@@ -196,6 +211,7 @@ export default function App(){
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
+  const[concIntelSel,setConcIntelSel]=useState(null);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
   useEffect(()=>{
@@ -612,6 +628,115 @@ export default function App(){
           </div>);
         })()}
 
+
+
+        {/* ── INTELIGÊNCIA DE CONCORRÊNCIA ── */}
+        {(()=>{
+          // collect all concorrentes from filtered quotes
+          const allConc=[];
+          filtered.forEach(q=>{
+            const items=parseConcObs(q.obs);
+            items.forEach(item=>{
+              allConc.push({...item, medida:q.medida, numero:q.numero, criadoEm:q.criadoEm, loja:q.loja, valorFox:q.valor});
+            });
+          });
+          if(!allConc.length)return null;
+
+          // rank by frequency
+          const empMap={};
+          allConc.forEach(item=>{
+            if(!empMap[item.empresa])empMap[item.empresa]={empresa:item.empresa,count:0,medidas:[]};
+            empMap[item.empresa].count++;
+            empMap[item.empresa].medidas.push({medida:item.medida,valor:item.valor,pgto:item.pgto,criadoEm:item.criadoEm,loja:item.loja,valorFox:item.valorFox});
+          });
+          const ranked=Object.values(empMap).sort((a,b)=>b.count-a.count);
+          const selEmp=concIntelSel||ranked[0]?.empresa;
+          const selData=empMap[selEmp];
+
+          // group medidas for selected competitor — best (lowest) price per medida
+          const medMap={};
+          (selData?.medidas||[]).forEach(m=>{
+            if(!medMap[m.medida])medMap[m.medida]={medida:m.medida,count:0,melhor:null,pgto:"",criadoEm:"",loja:"",valorFox:m.valorFox};
+            medMap[m.medida].count++;
+            if(m.valor>0&&(medMap[m.medida].melhor===null||m.valor<medMap[m.medida].melhor)){
+              medMap[m.medida].melhor=m.valor;
+              medMap[m.medida].pgto=m.pgto;
+              medMap[m.medida].criadoEm=m.criadoEm;
+              medMap[m.medida].loja=m.loja;
+              medMap[m.medida].valorFox=m.valorFox;
+            }
+          });
+          const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
+
+          return(
+            <div className="chart-card" style={{marginTop:0}}>
+              <div className="chart-t">🏢 Inteligência de Concorrência</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
+
+                {/* LEFT — ranking */}
+                <div>
+                  <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Empresas que mais negociamos</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {ranked.map((emp,i)=>{
+                      const isSel=emp.empresa===selEmp;
+                      const pct=Math.round((emp.count/ranked[0].count)*100);
+                      return(
+                        <div key={emp.empresa} onClick={()=>setConcIntelSel(emp.empresa)} style={{background:isSel?"#1A1E2E":"#161616",border:"1px solid "+(isSel?BLUE:"#2E2E2E"),borderRadius:8,padding:"10px 12px",cursor:"pointer",transition:"all .15s"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isSel?6:0}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <span style={{fontSize:11,fontWeight:800,color:i===0?RED:MUTED,minWidth:18}}>#{i+1}</span>
+                              <span style={{fontSize:13,fontWeight:700,color:isSel?"#fff":"#C0C0C0"}}>{emp.empresa}</span>
+                            </div>
+                            <span style={{background:isSel?BLUE+"33":RED+"22",color:isSel?BLUE:RED,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:800}}>{emp.count}x</span>
+                          </div>
+                          <div style={{height:4,background:"#2E2E2E",borderRadius:2,overflow:"hidden",marginTop:6}}>
+                            <div style={{width:pct+"%",height:"100%",background:i===0?RED:isSel?BLUE:"#3E3E3E",borderRadius:2,transition:"width .4s"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* RIGHT — medidas do selecionado */}
+                <div>
+                  <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>
+                    Melhores preços de <span style={{color:BLUE}}>{selEmp}</span> por medida
+                  </div>
+                  {medList.length===0?<div style={{color:MUTED,fontSize:13}}>Nenhum dado disponível.</div>:(
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {medList.map(m=>{
+                        const diff=m.valorFox&&m.melhor?m.valorFox-m.melhor:null;
+                        return(
+                          <div key={m.medida} style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px"}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
+                              <div>
+                                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:17,color:AMBER,letterSpacing:1}}>{m.medida}</div>
+                                <div style={{fontSize:10,color:MUTED,marginTop:1}}>{m.loja} · {m.criadoEm?new Date(m.criadoEm).toLocaleDateString("pt-BR"):""}</div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontSize:15,fontWeight:800,color:RED}}>{m.melhor?fmtVal(m.melhor):"—"}</div>
+                                {m.pgto&&<div style={{fontSize:10,color:MUTED}}>{m.pgto}</div>}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,flexWrap:"wrap",gap:6}}>
+                              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                                <span style={{fontSize:10,color:MUTED}}>Nosso preço:</span>
+                                <span style={{fontSize:12,fontWeight:700,color:GREEN}}>{m.valorFox?fmtVal(m.valorFox):"—"}</span>
+                                {diff!==null&&<span style={{fontSize:11,fontWeight:700,color:diff<0?GREEN:diff>0?RED:MUTED,background:(diff<0?GREEN:diff>0?RED:MUTED)+"22",borderRadius:4,padding:"1px 7px"}}>{diff<0?"▼ "+fmtVal(Math.abs(diff))+" mais barato":diff>0?"▲ "+fmtVal(diff)+" mais caro":"= Mesmo preço"}</span>}
+                              </div>
+                              <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700}}>Negociado {m.count}x</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── VOLUME DE NEGOCIAÇÕES POR DIA ── */}
         {(()=>{
@@ -1079,9 +1204,24 @@ export default function App(){
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:RED,letterSpacing:1,marginBottom:4}}>#{q.numero}</div>
                   <div style={{fontSize:11,color:MUTED}}>{q.loja}</div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                    <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{fmtVal(q.valor)}</span>
+                    <div>
+                      <div style={{fontSize:9,color:MUTED,fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>Nosso preço</div>
+                      <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{fmtVal(q.valor)}</span>
+                    </div>
                     <span style={{fontSize:10,color:MUTED}}>{q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</span>
                   </div>
+                  {(()=>{const conc=parseConcObs(q.obs);if(!conc.length)return null;return(<div style={{marginTop:8,borderTop:"1px solid #2E2E2E",paddingTop:8}}>
+                    <div style={{fontSize:9,color:MUTED,fontWeight:600,textTransform:"uppercase",letterSpacing:.5,marginBottom:5}}>Concorrentes nessa negociação</div>
+                    {conc.map((item,ci)=>(
+                      <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                        <span style={{fontSize:11,color:"#C0C0C0",fontWeight:600}}>{item.empresa}</span>
+                        <div style={{textAlign:"right"}}>
+                          <span style={{fontSize:12,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</span>
+                          {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>);})()}
                 </div>
               </div>
             ))}
