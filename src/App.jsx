@@ -79,6 +79,22 @@ function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER}[r]||MUTE
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 8px rgba(204,31,31,0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px) scale(.85)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes glowBar{from{filter:brightness(.6)}to{filter:brightness(1)}}
+@keyframes borderFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.dash-card-anim{animation:fadeUp .5s ease both;}
+.dash-stat-anim{animation:fadeUp .4s ease both;}
+.rank-row-anim{animation:slideLeft .4s ease both;}
+.avatar-anim{animation:scaleIn .5s cubic-bezier(.34,1.56,.64,1) both;}
+.kpi-num-anim{animation:countUp .6s cubic-bezier(.34,1.2,.64,1) both;}
+.pulse-red{animation:pulse 2s infinite;}
+.bar-anim{animation:glowBar .8s ease both;}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0D0D0D;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .wrap{min-height:100vh;background:#0D0D0D;}
@@ -232,6 +248,7 @@ export default function App(){
   const[editConcDrop,setEditConcDrop]=useState(false);
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
+  const[dashKey,setDashKey]=useState(0);
   const[concIntelSel,setConcIntelSel]=useState(null);
   const[copiedNum,setCopiedNum]=useState(null);
   const[showConcAviso,setShowConcAviso]=useState(false);
@@ -359,7 +376,7 @@ export default function App(){
 
   const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setDashKey(k=>k+1);setLoginErr("");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
     if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(f.role==="televendas"?"cadastrar":"consultar");setLoginErr("");return;}
     setLoginErr("Usuário ou senha incorretos.");
@@ -489,7 +506,7 @@ export default function App(){
     </div>
 
     <div className="tabs">
-      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>setTab("dashboard")}><span className="tab-dot"/>Dashboard</div>}
+      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>setTab("dashboard");setDashKey(k=>k+1)}><span className="tab-dot"/>Dashboard</div>}
       {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Descontos — Cadastrar</div>}
       {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Comercial — Consultar</div>}
       {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
@@ -498,7 +515,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey} style={{animation:"fadeUp .3s ease"}}><>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -519,22 +536,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
+          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}>{filtered.length}</div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
+          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+GREEN}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}>{filtered.filter(q=>q.liberado).length}</div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
+          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}>{filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}</div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
+          <div className="stat-card dash-stat-anim" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}>{filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}</div>
             <div className="stat-sub">não fechadas no prazo</div>
@@ -547,7 +564,7 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
 
           {/* Ranking Medidas */}
-          <div className="chart-card" style={{marginBottom:0}}>
+          <div className="chart-card dash-card-anim" style={{marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -575,7 +592,7 @@ export default function App(){
           </div>
 
           {/* Ranking Segmentos */}
-          <div className="chart-card" style={{marginBottom:0}}>
+          <div className="chart-card dash-card-anim" style={{marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -597,7 +614,7 @@ export default function App(){
         </div>
 
         {/* Ranking Lojas */}
-        <div className="chart-card">
+        <div className="chart-card dash-card-anim">
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -636,8 +653,8 @@ export default function App(){
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
-          if(!vList.length)return(<div className="chart-card"><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div className="chart-card">
+          if(!vList.length)return(<div className="chart-card dash-card-anim"><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div className="chart-card dash-card-anim">
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -646,10 +663,10 @@ export default function App(){
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
                 const barW=Math.max(4,parseInt(conv));
-                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent"}}>
+                return(<tr key={v.nome} className="rank-row-anim" style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animationDelay:(i*0.08)+"s"}}>
                   <td style={{padding:"8px 10px"}}>
                     {fotoMap[v.nome]
-                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block"}}/>
+                      ?<img src={fotoMap[v.nome]} alt={v.nome} className="avatar-anim" style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animationDelay:(i*0.1)+"s"}}/>
                       :<div style={{width:40,height:40,borderRadius:"50%",background:i===0?GREEN+"33":i===1?"#88888833":"#66330033",border:"2px solid "+(i===0?GREEN:i===1?"#888":"#8B4513"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:i===0?GREEN:i===1?"#888":"#CD853F"}}>
                         {v.nome.charAt(0).toUpperCase()}
                       </div>
@@ -719,7 +736,7 @@ export default function App(){
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
 
           return(
-            <div className="chart-card" style={{marginTop:0}}>
+            <div className="chart-card dash-card-anim" style={{marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
 
@@ -808,7 +825,7 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div className="chart-card" style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+            <div className="chart-card dash-card-anim" style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -827,13 +844,13 @@ export default function App(){
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:24}}>
                 {[
                   {label:"Total",val:total,cor:RED,icon:"📊"},
-                  {label:"Hoje",val:hojeCount,cor:AMBER,icon:"📅"},
+                  {label:"Hoje",val:hojeCount,cor:AMBER,icon:"📅",pulse:true},
                   {label:"Recorde",val:topDia?.count||0,cor:GREEN,icon:"🏆"},
                   {label:"Média/dia",val:media,cor:BLUE,icon:"📈"},
                 ].map(k=>(
-                  <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
+                  <div key={k.label} className={k.pulse&&hojeCount>0?"pulse-red":""} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor,transition:"all .3s"}}>
                     <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
-                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1}}>{k.val}</div>
+                    <div className="kpi-num-anim" style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1,animationDelay:(.1+i*.12)+"s"}}>{k.val}</div>
                     {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
                   </div>
                 ))}
@@ -906,6 +923,7 @@ export default function App(){
         </>)}
       </>)}
 
+      </div>)}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
