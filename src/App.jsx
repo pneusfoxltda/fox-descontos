@@ -193,20 +193,25 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 `;
 
 
-function AnimatedNumber({value, duration=1200, style={}}){
+function AnimatedNumber({value, duration=1200}){
   const [display, setDisplay] = useState(0);
+  const end = parseFloat(value)||0;
   useEffect(()=>{
-    let start=0; const end=parseFloat(value)||0;
+    let current=0;
     if(end===0){setDisplay(0);return;}
-    const step=end/Math.max(1,Math.floor(duration/16));
+    const totalFrames=Math.max(1,Math.round(duration/16));
+    let frame=0;
     const timer=setInterval(()=>{
-      start+=step;
-      if(start>=end){setDisplay(end);clearInterval(timer);}
-      else setDisplay(Math.floor(start));
+      frame++;
+      const progress=frame/totalFrames;
+      const eased=1-Math.pow(1-progress,3);
+      current=Math.round(eased*end);
+      setDisplay(current);
+      if(frame>=totalFrames){setDisplay(end);clearInterval(timer);}
     },16);
     return()=>clearInterval(timer);
-  },[value,duration]);
-  return <span style={style}>{display}</span>;
+  },[end]);
+  return <span>{display}</span>;
 }
 
 export default function App(){
@@ -930,6 +935,7 @@ export default function App(){
         })()}
 
         </>)}
+      </>)}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
