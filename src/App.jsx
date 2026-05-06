@@ -155,12 +155,16 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .empty{text-align:center;padding:40px 20px;color:#888;}
 .divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
 .info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
+.scroll-anim{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease;}
+.scroll-anim.in-view{opacity:1;transform:translateY(0);}
 @keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
+.scroll-anim{opacity:0;transform:translateY(32px);transition:opacity .65s ease,transform .65s ease;}
+.scroll-anim.in-view{opacity:1;transform:translateY(0);}
 @keyframes foxUp{0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
@@ -271,6 +275,16 @@ export default function App(){
   const[showConcAviso,setShowConcAviso]=useState(false);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
+
+
+  useEffect(()=>{
+    const els=document.querySelectorAll('.scroll-anim');
+    const obs=new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in-view');}});
+    },{threshold:0.08});
+    els.forEach(el=>obs.observe(el));
+    return()=>obs.disconnect();
+  },[tab,dashKey]);
 
   useEffect(()=>{
     try{
@@ -554,22 +568,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .7s ease 0s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .7s ease .15s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .7s ease .3s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .7s ease .45s both"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
@@ -579,10 +593,10 @@ export default function App(){
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
 
         {/* Grid: Medidas + Segmentos */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
 
           {/* Ranking Medidas */}
-          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0,animation:"foxUp .6s ease .5s both"}}>
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -610,7 +624,7 @@ export default function App(){
           </div>
 
           {/* Ranking Segmentos */}
-          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease .7s both"}} style={{marginBottom:0}}>
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -632,7 +646,7 @@ export default function App(){
         </div>
 
         {/* Ranking Lojas */}
-        <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease .8s both"}}>
+        <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -671,8 +685,8 @@ export default function App(){
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
-          if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease .9s both"}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease 1.0s both"}}>
+          if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -754,7 +768,7 @@ export default function App(){
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
 
           return(
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease 1.1s both"}} style={{marginTop:0}}>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
 
@@ -843,7 +857,7 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,animation:"foxUp .6s ease 1.2s both"}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}} style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -868,7 +882,7 @@ export default function App(){
                 ].map((k,i)=>(
                   <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
                     <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
-                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1,animation:"foxUp .5s ease "+(.1+i*.12)+"s both"}}>{k.val}</div>
+                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1+(.1+i*.12)+"s both"}}>{k.val}</div>
                     {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
                   </div>
                 ))}
