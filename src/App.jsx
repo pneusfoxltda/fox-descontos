@@ -853,6 +853,8 @@ export default function App(){
           );
         })()}
 
+        </div></div>
+
         {/* ── VOLUME DE NEGOCIAÇÕES POR DIA ── */}
         {(()=>{
           const hoje = new Date();
@@ -967,7 +969,6 @@ export default function App(){
             </div>
           );
         })()}
-        </div></div>
 
         </>)}
         </div>)}
