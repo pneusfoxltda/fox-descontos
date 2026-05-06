@@ -83,20 +83,23 @@ const css=`
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
-.wrap{min-height:100vh;background:#0A0A0A;width:100%;}
-.topbar{background:#161616;border-bottom:2px solid #CC1F1F;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;}
-.brand{display:flex;align-items:center;gap:12px;}
+.wrap{min-height:100vh;background:#0A0A0A;display:flex;}
+.sidebar{width:220px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
+.sb-brand{padding:20px 18px 16px;border-bottom:1px solid #1E1E1E;}
 .brand-icon{width:40px;height:40px;background:#CC1F1F;border-radius:8px;display:flex;align-items:center;justify-content:center;}
-.brand-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;}
-.brand-sub{font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase;}
-.chip{display:flex;align-items:center;gap:8px;background:#1C1C1C;border:1px solid #2E2E2E;border-radius:6px;padding:6px 14px;font-size:13px;}
-.logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:6px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;margin-top:10px;}
+.brand-sub{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;}
+.sb-nav{flex:1;padding:12px 0;}
+.tab{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;color:#666;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
+.tab:hover{color:#F0F0F0;background:#1A1A1A;}
+.tab.active{color:#fff;border-left-color:#CC1F1F;background:#1A1A1A;}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:#333;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
+.sb-footer{padding:14px 18px;border-top:1px solid #1E1E1E;}
+.chip{display:flex;align-items:center;gap:8px;background:#161616;border:1px solid #222;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
+.logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
 .logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
-.tabs{display:flex;background:#161616;border-bottom:1px solid #2E2E2E;padding:0 24px;overflow-x:auto;}
-.tab{padding:14px 18px;font-size:13px;font-weight:600;cursor:pointer;color:#888;border-bottom:3px solid transparent;transition:all .15s;position:relative;top:1px;display:flex;align-items:center;gap:7px;white-space:nowrap;}
-.tab:hover{color:#F0F0F0;}.tab.active{color:#fff;border-bottom-color:#CC1F1F;}
-.tab-dot{width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
-.main{padding:20px 28px;width:100%;box-sizing:border-box;}
+.content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-x:hidden;}
+.main{padding:22px 28px;width:100%;box-sizing:border-box;flex:1;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
@@ -525,29 +528,30 @@ export default function App(){
   </div></div></>);
 
   return(<><style>{css}</style><div className="wrap">
-    <div className="topbar">
-      <div className="brand">
+    {/* ── SIDEBAR ── */}
+    <div className="sidebar">
+      <div className="sb-brand">
         <div className="brand-icon"><span style={{fontSize:22}}>🦊</span></div>
-        <div><div className="brand-name">Fox Pneus</div><div className="brand-sub">Sistema de Descontos</div></div>
+        <div className="brand-name">Fox Pneus</div>
+        <div className="brand-sub">Sistema de Descontos</div>
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <nav className="sb-nav">
+        {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
+        {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+      </nav>
+      <div className="sb-footer">
         <div className="chip">
-          <span style={{fontSize:18}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":"🤝"}</span>
-          <span style={{fontSize:13,fontWeight:600}}>{session.username}</span>
-          <span style={{fontSize:11,color:roleColor(session.role)}}>{roleName(session.role)}</span>
+          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":"🤝"}</span>
+          <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
         </div>
         <button className="logout" onClick={doLogout}>Sair</button>
       </div>
     </div>
-
-    <div className="tabs">
-      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
-      {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Descontos — Cadastrar</div>}
-      {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Comercial — Consultar</div>}
-      {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
-    </div>
-
-    <div className="main" style={{width:"100%",maxWidth:"none",boxSizing:"border-box"}}>
+    {/* ── CONTEÚDO ── */}
+    <div className="content-wrap">
+    <div className="main">
 
     {/* DASHBOARD */}
     {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
@@ -1472,5 +1476,5 @@ export default function App(){
       </div>
     )}
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
-  </div></>);
+  </div></div></>);
 }
