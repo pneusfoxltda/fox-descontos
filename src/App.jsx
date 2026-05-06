@@ -780,65 +780,92 @@ export default function App(){
             const d=new Date(hoje);d.setDate(hoje.getDate()-i);
             const key=d.toISOString().slice(0,10);
             const label=d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
-            const diaSem=d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");
+            const diaSem=d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","").toUpperCase();
             const count=filtered.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)===key).length;
             rows.push({key,label,diaSem,count});
           }
           const max=Math.max(...rows.map(r=>r.count),1);
           const total=rows.reduce((a,r)=>a+r.count,0);
+          const media=total>0?(total/rows.filter(r=>r.count>0).length||1).toFixed(1):0;
           const topDia=rows.reduce((a,r)=>r.count>a.count?r:a,rows[0]);
+          const hojeKey=hoje.toISOString().slice(0,10);
+          const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div className="chart-card" style={{marginTop:0}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
-                <div className="chart-t" style={{marginBottom:0}}>📅 Volume de Negociações</div>
-                <div style={{display:"flex",gap:6}}>
+            <div className="chart-card" style={{marginTop:0,background:"#141414",border:"1px solid #222"}}>
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:4,height:22,background:RED,borderRadius:2}}/>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff"}}>VOLUME DE NEGOCIAÇÕES</span>
+                </div>
+                <div style={{display:"flex",gap:6,background:"#0D0D0D",padding:4,borderRadius:8,border:"1px solid #222"}}>
                   {["semana","mes"].map(p=>(
-                    <button key={p} onClick={()=>setVolPeriodo(p)} style={{background:volPeriodo===p?RED:"#161616",color:volPeriodo===p?"#fff":MUTED,border:"1px solid "+(volPeriodo===p?RED:"#2E2E2E"),borderRadius:6,padding:"5px 16px",fontSize:12,fontWeight:700,cursor:"pointer",textTransform:"capitalize",transition:"all .15s"}}>
-                      {p==="semana"?"Semana":"Mês"}
+                    <button key={p} onClick={()=>setVolPeriodo(p)} style={{background:volPeriodo===p?RED:"transparent",color:volPeriodo===p?"#fff":MUTED,border:"none",borderRadius:6,padding:"6px 18px",fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:1,textTransform:"uppercase",transition:"all .2s"}}>
+                      {p==="semana"?"7 DIAS":"30 DIAS"}
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:24,marginBottom:20,flexWrap:"wrap"}}>
-                <div style={{background:"#161616",borderRadius:8,padding:"10px 18px",borderLeft:"3px solid "+RED}}>
-                  <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Total no período</div>
-                  <div style={{fontSize:24,fontWeight:800,color:"#fff",marginTop:2}}>{total}</div>
-                </div>
-                {topDia&&topDia.count>0&&(
-                  <div style={{background:"#161616",borderRadius:8,padding:"10px 18px",borderLeft:"3px solid "+GREEN}}>
-                    <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Dia mais movimentado</div>
-                    <div style={{fontSize:18,fontWeight:800,color:GREEN,marginTop:2}}>{topDia.label} <span style={{fontSize:12,color:MUTED}}>({topDia.count} negoc.)</span></div>
+              {/* KPI strip */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:24}}>
+                {[
+                  {label:"Total",val:total,cor:RED,icon:"📊"},
+                  {label:"Hoje",val:hojeCount,cor:AMBER,icon:"📅"},
+                  {label:"Recorde",val:topDia?.count||0,cor:GREEN,icon:"🏆"},
+                  {label:"Média/dia",val:media,cor:BLUE,icon:"📈"},
+                ].map(k=>(
+                  <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
+                    <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
+                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1}}>{k.val}</div>
+                    {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
                   </div>
-                )}
+                ))}
               </div>
-              <div style={{display:"flex",alignItems:"flex-end",gap:volPeriodo==="semana"?12:4,height:140,paddingBottom:32,position:"relative",overflowX:"auto"}}>
-                {rows.map((r,i)=>{
-                  const pct=max>0?(r.count/max)*100:0;
-                  const isTop=r.count===max&&r.count>0;
-                  const isHoje=r.key===hoje.toISOString().slice(0,10);
-                  return(
-                    <div key={r.key} style={{display:"flex",flexDirection:"column",alignItems:"center",flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?40:28,position:"relative"}}>
-                      {r.count>0&&<div style={{fontSize:10,fontWeight:700,color:isTop?GREEN:"#888",marginBottom:4,whiteSpace:"nowrap"}}>{r.count}</div>}
-                      <div title={r.label+" — "+r.count+" negociação(ões)"} style={{
-                        width:"100%",
-                        height:pct>0?Math.max(pct*1.1,8)+"%":"4px",
-                        background:isTop?GREEN:isHoje?AMBER:RED,
-                        borderRadius:"4px 4px 0 0",
-                        opacity:r.count===0?0.15:1,
-                        transition:"height .4s",
-                        cursor:"default",
-                        minHeight:4
-                      }}/>
-                      <div style={{position:"absolute",bottom:-28,fontSize:9,color:isHoje?AMBER:MUTED,fontWeight:isHoje?700:400,textAlign:"center",whiteSpace:"nowrap"}}>{r.label}</div>
-                      {volPeriodo==="semana"&&<div style={{position:"absolute",bottom:-44,fontSize:9,color:MUTED,textAlign:"center",textTransform:"capitalize"}}>{r.diaSem}</div>}
-                    </div>
-                  );
-                })}
+              {/* Chart area */}
+              <div style={{background:"#0D0D0D",borderRadius:12,padding:"20px 16px 48px",position:"relative",border:"1px solid #1E1E1E",overflowX:"auto"}}>
+                {/* Grid lines */}
+                {[25,50,75,100].map(pct=>(
+                  <div key={pct} style={{position:"absolute",left:16,right:16,bottom:48+((pct/100)*(180)),borderTop:"1px dashed #1E1E1E",pointerEvents:"none"}}>
+                    <span style={{position:"absolute",left:-2,top:-8,fontSize:8,color:"#333",fontWeight:600}}>{Math.round(max*(pct/100))}</span>
+                  </div>
+                ))}
+                {/* Bars */}
+                <div style={{display:"flex",alignItems:"flex-end",gap:volPeriodo==="semana"?10:3,height:180,position:"relative"}}>
+                  {rows.map((r,i)=>{
+                    const pct=max>0?(r.count/max):0;
+                    const isTop=r.count===max&&r.count>0;
+                    const isHoje=r.key===hojeKey;
+                    const barH=pct>0?Math.max(pct*180,8):3;
+                    const barColor=isTop?"#22c55e":isHoje?AMBER:r.count===0?"#1E1E1E":"#CC1F1F";
+                    const glowColor=isTop?"rgba(34,197,94,.3)":isHoje?"rgba(245,158,11,.3)":"rgba(204,31,31,.2)";
+                    return(
+                      <div key={r.key} title={r.diaSem+" "+r.label+" — "+r.count+" negociação(ões)"} style={{display:"flex",flexDirection:"column",alignItems:"center",flex:volPeriodo==="semana"?1:"0 0 24px",minWidth:volPeriodo==="semana"?36:22,position:"relative",cursor:"default"}}>
+                        {/* Count label */}
+                        {r.count>0&&<div style={{fontSize:volPeriodo==="semana"?13:10,fontWeight:900,color:barColor,marginBottom:6,textShadow:isTop||isHoje?"0 0 10px "+barColor:"none"}}>{r.count}</div>}
+                        {/* Bar */}
+                        <div style={{
+                          width:"100%",height:barH,
+                          background:r.count===0?"#1A1A1A":`linear-gradient(180deg, ${barColor} 0%, ${barColor}99 100%)`,
+                          borderRadius:"5px 5px 0 0",
+                          boxShadow:r.count>0?"0 0 12px "+glowColor+", inset 0 1px 0 rgba(255,255,255,0.15)":"none",
+                          transition:"height .5s cubic-bezier(.4,0,.2,1)",
+                          position:"relative",overflow:"hidden"
+                        }}>
+                          {r.count>0&&<div style={{position:"absolute",top:0,left:0,right:0,height:"40%",background:"rgba(255,255,255,0.08)",borderRadius:"5px 5px 0 0"}}/>}
+                        </div>
+                        {/* Date label */}
+                        <div style={{position:"absolute",bottom:-22,fontSize:volPeriodo==="semana"?10:8,color:isHoje?AMBER:"#555",fontWeight:isHoje?800:500,textAlign:"center",whiteSpace:"nowrap"}}>{r.label}</div>
+                        {volPeriodo==="semana"&&<div style={{position:"absolute",bottom:-36,fontSize:9,color:isHoje?AMBER:"#3A3A3A",fontWeight:isHoje?700:400,textAlign:"center"}}>{r.diaSem}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div style={{display:"flex",gap:16,marginTop:volPeriodo==="semana"?28:16,flexWrap:"wrap"}}>
-                <span style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:MUTED}}><span style={{width:10,height:10,borderRadius:2,background:GREEN,display:"inline-block"}}/>Dia mais movimentado</span>
-                <span style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:MUTED}}><span style={{width:10,height:10,borderRadius:2,background:AMBER,display:"inline-block"}}/>Hoje</span>
-                <span style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:MUTED}}><span style={{width:10,height:10,borderRadius:2,background:RED,display:"inline-block"}}/>Outros dias</span>
+              {/* Legend */}
+              <div style={{display:"flex",gap:20,marginTop:14,flexWrap:"wrap"}}>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:"#22c55e",boxShadow:"0 0 6px rgba(34,197,94,.4)",display:"inline-block"}}/>Recorde do período</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:AMBER,boxShadow:"0 0 6px rgba(245,158,11,.4)",display:"inline-block"}}/>Hoje</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:RED,boxShadow:"0 0 6px rgba(204,31,31,.3)",display:"inline-block"}}/>Outros dias</span>
               </div>
             </div>
           );
