@@ -276,12 +276,17 @@ export default function App(){
 
 
   useEffect(()=>{
-    const els=document.querySelectorAll('.scroll-anim');
-    const obs=new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in-view');}});
-    },{threshold:0.08});
-    els.forEach(el=>obs.observe(el));
-    return()=>obs.disconnect();
+    if(tab!=="dashboard")return;
+    window.scrollTo({top:0,behavior:"instant"});
+    const timer=setTimeout(()=>{
+      const els=document.querySelectorAll('.scroll-anim');
+      els.forEach(el=>el.classList.remove('in-view'));
+      const obs=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in-view');}});
+      },{threshold:0.05,rootMargin:"0px 0px -40px 0px"});
+      els.forEach(el=>obs.observe(el));
+    },100);
+    return()=>clearTimeout(timer);
   },[tab,dashKey]);
 
   useEffect(()=>{
