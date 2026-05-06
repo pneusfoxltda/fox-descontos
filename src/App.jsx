@@ -707,7 +707,7 @@ export default function App(){
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Valor","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
@@ -729,7 +729,6 @@ export default function App(){
                   <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
-                  <td style={{padding:"10px 10px",fontWeight:600,color:TEXT,fontSize:12}}>{fmtVal(v.val)}</td>
                   <td style={{padding:"10px 10px",minWidth:120}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
