@@ -193,8 +193,8 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 
 
 function AnimatedNumber({value, duration=1200, style={}}){
-  const [display, setDisplay] = React.useState(0);
-  React.useEffect(()=>{
+  const [display, setDisplay] = useState(0);
+  useEffect(()=>{
     let start=0; const end=parseFloat(value)||0;
     if(end===0){setDisplay(0);return;}
     const step=end/Math.max(1,Math.floor(duration/16));
