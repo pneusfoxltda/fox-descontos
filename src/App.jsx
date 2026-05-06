@@ -161,6 +161,9 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
+@keyframes foxUp{0%{opacity:0;transform:translateY(28px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes foxPop{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
 .toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
 .t-ok{background:#2E7D32;}.t-err{background:#CC1F1F;}
 @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -227,6 +230,7 @@ export default function App(){
   const[loginErr,setLoginErr]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
+  const[dashKey,setDashKey]=useState(0);
     const[quotes,setQuotes]=useState([]);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
@@ -520,7 +524,7 @@ export default function App(){
     </div>
 
     <div className="tabs">
-      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>setTab("dashboard")}><span className="tab-dot"/>Dashboard</div>}
+      {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
       {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Descontos — Cadastrar</div>}
       {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Comercial — Consultar</div>}
       {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
@@ -529,7 +533,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -550,22 +554,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .55s ease 0s both"}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .55s ease .12s both"}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .55s ease .24s both"}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .55s ease .36s both"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
@@ -677,10 +681,10 @@ export default function App(){
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
                 const barW=Math.max(4,parseInt(conv));
-                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animationDelay:(i*0.08)+"s"}}>
+                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animation:"foxLeft .4s ease "+(0.4+i*0.07)+"s both"}}>
                   <td style={{padding:"8px 10px"}}>
                     {fotoMap[v.nome]
-                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .5s cubic-bezier(.34,1.56,.64,1) "+(i*0.1)+"s both"}}/>
+                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .6s ease "+(0.4+i*0.1)+"s both"}}/>
                       :<div style={{width:40,height:40,borderRadius:"50%",background:i===0?GREEN+"33":i===1?"#88888833":"#66330033",border:"2px solid "+(i===0?GREEN:i===1?"#888":"#8B4513"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:i===0?GREEN:i===1?"#888":"#CD853F"}}>
                         {v.nome.charAt(0).toUpperCase()}
                       </div>
@@ -861,10 +865,10 @@ export default function App(){
                   {label:"Hoje",val:hojeCount,cor:AMBER,icon:"📅",pulse:true},
                   {label:"Recorde",val:topDia?.count||0,cor:GREEN,icon:"🏆"},
                   {label:"Média/dia",val:media,cor:BLUE,icon:"📈"},
-                ].map(k=>(
-                  <div key={k.label}  style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor,transition:"all .3s"}}>
+                ].map((k,i)=>(
+                  <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
                     <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
-                    <div className="kpi-num-anim" style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1,animationDelay:(.1+i*.12)+"s"}}>{k.val}</div>
+                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1,animation:"foxUp .5s ease "+(.1+i*.12)+"s both"}}>{k.val}</div>
                     {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
                   </div>
                 ))}
@@ -935,7 +939,7 @@ export default function App(){
         })()}
 
         </>)}
-      </>)}
+        </div>)}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
