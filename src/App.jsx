@@ -190,7 +190,7 @@ export default function App(){
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[quotes,setQuotes]=useState([]);
-  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
+  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
   const[notFound,setNotFound]=useState(false);
@@ -232,7 +232,7 @@ export default function App(){
     if(qu) setQuotes(qu.map(q=>({
       tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
-      liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,
+      liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id, vendedor:q.vendedor,
       anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
@@ -353,7 +353,7 @@ export default function App(){
       if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
       const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false};
       setQuotes(prev=>[novo,...prev]);
-      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
+      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
       setAnexo(null);
       setConcAdicionados([]);setConcQuery("");setConcValor("");setConcPgto("");
       toast_("Desconto cadastrado!");
@@ -415,6 +415,7 @@ export default function App(){
   };
 
   const filtered=useMemo(()=>quotes.filter(q=>{
+    if(q.erroInterno)return false;
     if(dash.loja&&q.loja!==dash.loja)return false;
     if(dash.segmento&&q.segmento!==dash.segmento)return false;
     if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
@@ -530,7 +531,13 @@ export default function App(){
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
-                  <td style={{padding:"8px 8px"}}>{(()=>{const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));return imgs.length>0?(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>):(<span style={{color:MUTED,fontSize:11}}>—</span>);})()}</td>
+                  <td style={{padding:"8px 8px"}}>{(()=>{
+  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
+  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoBase64&&parseConcObs(q.obs).length>0);
+  if(imgs.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs,semFoto})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
+  return(<span style={{color:MUTED,fontSize:11}}>—</span>);
+})()}</td>
                 </tr>);})}
               </tbody>
             </table>
@@ -913,6 +920,13 @@ export default function App(){
             )}
           </div>
         </div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,marginTop:4}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",padding:"8px 14px",background:form.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(form.erroInterno?"#CC1F1F":"#2E2E2E"),borderRadius:8,transition:"all .2s"}}>
+            <input type="checkbox" checked={form.erroInterno} onChange={e=>setForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:"#CC1F1F",cursor:"pointer"}}/>
+            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"#CC1F1F":"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+          </label>
+          {form.erroInterno&&<span style={{fontSize:11,color:"#888",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
+        </div>
         <button className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
       </div>
     </>)}
@@ -1187,7 +1201,7 @@ export default function App(){
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
             <div>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes — {galeriaModal.medida}</div>
-              <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} encontrada{galeriaModal.imagens.length!==1?"s":""}</div>
+              <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} · {(galeriaModal.semFoto||[]).length} sem foto com concorrentes</div>
             </div>
             <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
           </div>
@@ -1244,6 +1258,52 @@ export default function App(){
               );
             })}
           </div>
+          {/* Cards sem foto mas com concorrentes */}
+          {(galeriaModal.semFoto||[]).length>0&&(
+            <div style={{marginTop:20}}>
+              <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Negociações sem foto — dados de concorrência</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+                {(galeriaModal.semFoto||[]).map((q,i)=>{
+                  const conc=parseConcObs(q.obs);
+                  const isCopied=copiedNum===q.numero;
+                  return(
+                    <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E3E2E"}}>
+                      <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div>
+                          <div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
+                        </div>
+                        <button onClick={()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});}} style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>
+                          {isCopied?"✓ Copiado!":"📋 Copiar"}
+                        </button>
+                      </div>
+                      <div style={{padding:"10px 12px"}}>
+                        <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                        {conc.length>0&&(
+                          <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+                            <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
+                            {conc.map((item,ci)=>(
+                              <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
+                                <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
+                                <div style={{textAlign:"right"}}>
+                                  <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</div>
+                                  {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
+                          <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )}
