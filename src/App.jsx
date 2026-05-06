@@ -43,7 +43,8 @@ const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
 const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
-const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão"];
+const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
+const CONCORRENTES_PADRAO=["Atacado Pneus","GBIM Pneus","Bono Pneus","Camargo Pneus","Espantalho","GP Pneus","Iccap Randon","JK Pneus","Japurá","Morena Pneus","Muniz","Pemaza","Pneu Fácil","Pneu Paulista","Queiroz Pneus","Rei dos Pneus","Rondobras","Shopping dos Pneus","Toyota","Vip Pneus"];
 const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
 const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
 
@@ -184,6 +185,12 @@ export default function App(){
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
+  const[concAdicionados,setConcAdicionados]=useState([]);
+  const[concQuery,setConcQuery]=useState("");
+  const[concValor,setConcValor]=useState("");
+  const[concPgto,setConcPgto]=useState("");
+  const[concShowDrop,setConcShowDrop]=useState(false);
+  const[concExtras,setConcExtras]=useState(()=>{try{return JSON.parse(localStorage.getItem("fox_concorrentes")||"[]");}catch{return[];}});
   const[imgModal,setImgModal]=useState(null); // {src, nome}
   const[editModal,setEditModal]=useState(null);
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
@@ -330,6 +337,7 @@ export default function App(){
       setQuotes(prev=>[novo,...prev]);
       setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:""});
       setAnexo(null);
+      setConcAdicionados([]);setConcQuery("");setConcValor("");setConcPgto("");
       toast_("Desconto cadastrado!");
     }catch(e){toast_("Erro ao salvar.",false);}
   };
@@ -623,7 +631,7 @@ export default function App(){
         <div className="fg2">
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field"><label>Vendedor *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
@@ -636,6 +644,57 @@ export default function App(){
           <div className="field"><label>Validade *</label><input type="date" value={form.validade} onChange={e=>setForm(f=>({...f,validade:e.target.value}))}/></div>
         </div>
         <div className="field mb"><label>Observações</label><input placeholder="Opcional" value={form.obs} onChange={e=>setForm(f=>({...f,obs:e.target.value}))}/></div>
+        {/* Concorrentes */}
+        <div className="field mb" style={{marginTop:6}}>
+          <label>🏢 Concorrentes (opcional)</label>
+          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:2,minWidth:180,position:"relative"}}>
+              <input
+                placeholder="Digite para buscar concorrente..."
+                value={concQuery}
+                onChange={e=>{setConcQuery(e.target.value);setConcShowDrop(true);}}
+                onFocus={()=>setConcShowDrop(true)}
+                onBlur={()=>setTimeout(()=>setConcShowDrop(false),180)}
+                style={{width:"100%",boxSizing:"border-box"}}
+                autoComplete="off"
+              />
+              {concShowDrop&&concQuery.length>0&&(()=>{
+                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery.toLowerCase()));
+                const novaOpc=concQuery.trim()&&!todas.map(x=>x.toLowerCase()).includes(concQuery.trim().toLowerCase());
+                if(!sug.length&&!novaOpc)return null;
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                  {sug.map(s=>(
+                    <div key={s} onMouseDown={()=>{setConcQuery(s);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>
+                  ))}
+                  {novaOpc&&(<div onMouseDown={()=>{const n=concQuery.trim();const upd=[...concExtras,n];setConcExtras(upd);localStorage.setItem("fox_concorrentes",JSON.stringify(upd));setConcQuery(n);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#6090E0",borderTop:"1px solid #2E2E2E"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>➕ Adicionar "{concQuery.trim()}"</div>)}
+                </div>);
+              })()}
+            </div>
+            <div style={{flex:1,minWidth:110}}>
+              <input type="number" step="0.01" placeholder="Valor deles" value={concValor} onChange={e=>setConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{flex:1,minWidth:130}}>
+              <select value={concPgto} onChange={e=>setConcPgto(e.target.value)} style={{width:"100%"}}>
+                <option value="">Pagamento</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <button type="button" onClick={()=>{if(!concQuery.trim())return;setConcAdicionados(a=>[...a,{empresa:concQuery.trim(),valor:concValor,pgto:concPgto}]);setConcQuery("");setConcValor("");setConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 16px",height:40,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontSize:13}}>+ Adicionar</button>
+          </div>
+          {concAdicionados.length>0&&(
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+              {concAdicionados.map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"7px 12px"}}>
+                  <span style={{fontWeight:700,color:"#F0F0F0",fontSize:13,flex:2}}>{item.empresa}</span>
+                  {item.valor&&<span style={{color:"#CC1F1F",fontWeight:700,fontSize:13}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
+                  {item.pgto&&<span style={{color:"#888",fontSize:12}}>{item.pgto}</span>}
+                  <button onClick={()=>setConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:18,lineHeight:1,marginLeft:"auto"}}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {/* Anexo opcional */}
         <div className="field mb" style={{marginTop:6}}>
           <label>Anexo — imagem ou áudio (opcional)</label>
