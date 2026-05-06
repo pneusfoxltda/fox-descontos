@@ -83,7 +83,7 @@ const css=`
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
-.wrap{min-height:100vh;background:#0D0D0D;}
+.wrap{min-height:100vh;background:#0A0A0A;width:100%;}
 .topbar{background:#161616;border-bottom:2px solid #CC1F1F;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;}
 .brand{display:flex;align-items:center;gap:12px;}
 .brand-icon{width:40px;height:40px;background:#CC1F1F;border-radius:8px;display:flex;align-items:center;justify-content:center;}
@@ -145,7 +145,7 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
 .rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
 .warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;width:100%;}
 .stat-card{background:#161616;border:1px solid #252525;border-radius:12px;padding:20px 22px;position:relative;overflow:hidden;}
 .stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;color:#fff;line-height:1;margin:8px 0 6px;}.stat-sub{font-size:11px;color:#666;margin-top:2px;letter-spacing:.5px;}
@@ -547,7 +547,7 @@ export default function App(){
       {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
     </div>
 
-    <div className="main">
+    <div className="main" style={{width:"100%",maxWidth:"none",boxSizing:"border-box"}}>
 
     {/* DASHBOARD */}
     {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
@@ -602,7 +602,7 @@ export default function App(){
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
 
         {/* Grid: Medidas + Segmentos */}
-        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:14,marginBottom:14}}>
+        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:14,marginBottom:14}}>
 
           {/* Ranking Medidas */}
           <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
@@ -654,8 +654,10 @@ export default function App(){
           </div>
         </div>
 
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignItems:"start"}}>
+        <div>
         {/* Ranking Lojas */}
-        <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+        <div style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
@@ -681,6 +683,8 @@ export default function App(){
           </table>
         </div>
 
+        </div>
+        <div>
         {/* Ranking Vendedores */}
         {(()=>{
           const byV={};
@@ -960,6 +964,7 @@ export default function App(){
             </div>
           );
         })()}
+        </div></div>
 
         </>)}
         </div>)}
