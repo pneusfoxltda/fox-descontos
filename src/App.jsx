@@ -289,7 +289,7 @@ export default function App(){
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
     const {data:qu} = await db.select();
-    if(qu) setQuotes(qu.map(q=>({
+    if(qu){setQuotesLoaded(true);setQuotes(qu.map(q=>({
       tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
