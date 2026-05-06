@@ -156,6 +156,7 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
 .info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
 @keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes foxIn{0%{opacity:0}100%{opacity:1}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
@@ -221,8 +222,7 @@ export default function App(){
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
-  const[dashAnim,setDashAnim]=useState(false);
-  const[quotes,setQuotes]=useState([]);
+    const[quotes,setQuotes]=useState([]);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
@@ -262,14 +262,6 @@ export default function App(){
   const[showConcAviso,setShowConcAviso]=useState(false);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
-
-  // Trigger dashboard animations
-  useEffect(()=>{
-    if(tab!=="dashboard")return;
-    setDashAnim(false);
-    const t=setTimeout(()=>setDashAnim(true),30);
-    return()=>clearTimeout(t);
-  },[tab,dashKey]);
 
   useEffect(()=>{
     try{
@@ -532,7 +524,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey} style={{animation:"foxIn .4s ease both"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -553,22 +545,22 @@ export default function App(){
 
         {/* KPIs */}
         <div className="stat-grid">
-          <div className="stat-card" style={{borderTop:"3px solid "+RED,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease 0s, transform .5s ease 0s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+RED,animation:"foxUp .5s ease .0s both"}}>
             <div className="stat-lbl">Total negociações</div>
             <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
             <div className="stat-sub">todas as negociações</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .12s, transform .5s ease .12s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN,animation:"foxUp .5s ease .15s both"}}>
             <div className="stat-lbl">Fechadas (Liberadas)</div>
             <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .24s, transform .5s ease .24s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER,animation:"foxUp .5s ease .3s both"}}>
             <div className="stat-lbl">Pendentes</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
             <div className="stat-sub">aguardando aprovação</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #888",opacity:dashAnim?1:0,transform:dashAnim?"translateY(0)":"translateY(24px)",transition:"opacity .5s ease .36s, transform .5s ease .36s"}}>
+          <div className="stat-card" style={{borderTop:"3px solid #888",animation:"foxUp .5s ease .45s both"}}>
             <div className="stat-lbl">Vencidas</div>
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
