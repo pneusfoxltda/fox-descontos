@@ -28,7 +28,9 @@ const supa = {
       async update(obj, match) {
         const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
         const r = await fetch(base+"?"+q, { method:"PATCH", headers, body: JSON.stringify(obj) });
-        return { data: await r.json(), error: r.ok ? null : "erro" };
+        if(!r.ok){ const e=await r.text(); return {data:null,error:e}; }
+        const txt=await r.text();
+        return { data:txt?JSON.parse(txt):null, error:null };
       },
       async delete(match) {
         const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
@@ -208,11 +210,17 @@ export default function App(){
   const[concExtras,setConcExtras]=useState(()=>{try{return JSON.parse(localStorage.getItem("fox_concorrentes")||"[]");}catch{return[];}});
   const[imgModal,setImgModal]=useState(null); // {src, nome}
   const[editModal,setEditModal]=useState(null);
-  const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:""});
+  const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+  const[editConcAdicionados,setEditConcAdicionados]=useState([]);
+  const[editConcQuery,setEditConcQuery]=useState("");
+  const[editConcValor,setEditConcValor]=useState("");
+  const[editConcPgto,setEditConcPgto]=useState("");
+  const[editConcDrop,setEditConcDrop]=useState(false);
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
   const[copiedNum,setCopiedNum]=useState(null);
+  const[showConcAviso,setShowConcAviso]=useState(false);
   const[galeriaModal,setGaleriaModal]=useState(null);
 
   useEffect(()=>{
@@ -257,7 +265,11 @@ export default function App(){
   };
 
   const doEdit=(q)=>{
-    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:q.obs||""});
+    const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
+    const concExist=parseConcObs(q.obs||"");
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:obsLimpa,erroInterno:q.erroInterno||false});
+    setEditConcAdicionados(concExist);
+    setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
     setEditModal(q);
   };
 
@@ -265,13 +277,17 @@ export default function App(){
     if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
     try{
       const db = await supa.from("descontos");
-      await db.update({
+      const {error:eUpd} = await db.update({
         cba:editForm.cba, medida:editForm.medida, segmento:editForm.segmento,
         loja:editForm.loja, valor:editForm.valor, pgto:editForm.pgto,
-        validade:editForm.validade, obs:editForm.obs
+        validade:editForm.validade,
+        erro_interno:editForm.erroInterno,
+        obs:editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"")
       },{numero:editModal.numero,tipo:editModal.tipo});
+      if(eUpd){toast_("Erro ao atualizar: "+eUpd,false);return;}
       const updated={...editForm};
-      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated}:x));
+      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
+      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated,obs:obsFinal,erroInterno:editForm.erroInterno}:x));
       if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...updated}));
       setEditModal(null);
       toast_("Desconto atualizado!");
@@ -336,9 +352,10 @@ export default function App(){
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
 
-  const doAdd=async()=>{
+  const doAdd=async(forcar=false)=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
+    if(!forcar&&concAdicionados.length===0&&!form.erroInterno){setShowConcAviso(true);return;}
     try{
       const db = await supa.from("descontos");
       const {error} = await db.insert({
@@ -1118,51 +1135,55 @@ export default function App(){
     )}
     {editModal&&(
       <div className="edit-overlay" onClick={()=>setEditModal(null)}>
-        <div className="edit-modal" onClick={e=>e.stopPropagation()}>
+        <div className="edit-modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560,width:"100%"}}>
           <div className="edit-title">✏ Editar — #{editModal.numero}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-            <div className="field">
-              <label>CBA</label>
-              <input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/>
-            </div>
-            <div className="field">
-              <label>Medida *</label>
-              <input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value}))}/>
-            </div>
-            <div className="field">
-              <label>Segmento</label>
-              <select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}>
-                <option value="">Selecione...</option>
-                {SEGS.map(s=><option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Loja</label>
-              <select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}>
-                <option value="">Selecione...</option>
-                {LOJAS.map(l=><option key={l}>{l}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Valor com Desconto *</label>
-              <input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/>
-            </div>
-            <div className="field">
-              <label>Forma de Pagamento</label>
-              <select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}>
-                <option value="">Selecione...</option>
-                {PGTO.map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>Validade *</label>
-              <input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/>
-            </div>
-            <div className="field">
-              <label>Observações</label>
-              <input placeholder="Motivo / obs" value={editForm.obs} onChange={e=>setEditForm(f=>({...f,obs:e.target.value}))}/>
-            </div>
+            <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
+            <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value}))}/></div>
+            <div className="field"><label>Segmento</label><select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="field"><label>Loja</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/></div>
+            <div className="field"><label>Forma de Pagamento</label><select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+            <div className="field"><label>Validade *</label><input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/></div>
+            <div className="field"><label>Observações</label><input placeholder="Motivo / obs" value={editForm.obs} onChange={e=>setEditForm(f=>({...f,obs:e.target.value}))}/></div>
           </div>
+          {/* Concorrentes no edit */}
+          <div style={{borderTop:"1px solid #2E2E2E",paddingTop:14,marginBottom:14}}>
+            <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Concorrentes</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:8}}>
+              <div style={{flex:2,minWidth:150,position:"relative"}}>
+                <input placeholder="Buscar concorrente..." value={editConcQuery} onChange={e=>{setEditConcQuery(e.target.value);setEditConcDrop(true);}} onFocus={()=>setEditConcDrop(true)} onBlur={()=>setTimeout(()=>setEditConcDrop(false),180)} style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+                {editConcDrop&&editConcQuery.length>0&&(()=>{
+                  const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                  const sug=todas.filter(x=>x.toLowerCase().includes(editConcQuery.toLowerCase()));
+                  if(!sug.length)return null;
+                  return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:160,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                    {sug.map(s=>(<div key={s} onMouseDown={()=>{setEditConcQuery(s);setEditConcDrop(false);}} style={{padding:"7px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                  </div>);
+                })()}
+              </div>
+              <div style={{flex:1,minWidth:90}}><input type="number" step="0.01" placeholder="Valor deles" value={editConcValor} onChange={e=>setEditConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/></div>
+              <div style={{flex:1,minWidth:110}}><select value={editConcPgto} onChange={e=>setEditConcPgto(e.target.value)} style={{width:"100%"}}><option value="">Pagamento</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+              <button type="button" onClick={()=>{if(!editConcQuery.trim())return;setEditConcAdicionados(a=>[...a,{empresa:editConcQuery.trim(),valor:editConcValor,pgto:editConcPgto}]);setEditConcQuery("");setEditConcValor("");setEditConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 14px",height:40,fontWeight:700,cursor:"pointer",fontSize:13}}>+ Add</button>
+            </div>
+            {editConcAdicionados.length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                {editConcAdicionados.map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"6px 10px"}}>
+                    <span style={{fontWeight:700,color:"#F0F0F0",fontSize:12,flex:2}}>{item.empresa}</span>
+                    {item.valor&&<span style={{color:RED,fontWeight:700,fontSize:12}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
+                    {item.pgto&&<span style={{color:MUTED,fontSize:11}}>{item.pgto}</span>}
+                    <button onClick={()=>setEditConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,marginLeft:"auto"}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Erro interno */}
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"8px 12px",background:editForm.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(editForm.erroInterno?RED:"#2E2E2E"),borderRadius:8,marginBottom:12,transition:"all .2s"}}>
+            <input type="checkbox" checked={editForm.erroInterno} onChange={e=>setEditForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:RED,cursor:"pointer"}}/>
+            <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+          </label>
           <div style={{display:"flex",gap:10}}>
             <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
             <button className="btn-red" style={{flex:2}} onClick={doSaveEdit}>Salvar Atualização</button>
@@ -1304,6 +1325,20 @@ export default function App(){
               </div>
             </div>
           )}
+        </div>
+      </div>
+    )}
+
+    {showConcAviso&&(
+      <div onClick={()=>setShowConcAviso(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:8}}>Nenhum concorrente adicionado</div>
+          <p style={{fontSize:13,color:"#888",marginBottom:24,lineHeight:1.6}}>Você não informou nenhum concorrente nessa negociação. Tem certeza que deseja salvar assim? Se foi um <strong style={{color:"#fff"}}>erro interno</strong>, marque a opção correspondente antes de salvar.</p>
+          <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+            <button onClick={()=>setShowConcAviso(false)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Voltar e adicionar</button>
+            <button onClick={()=>{setShowConcAviso(false);doAdd(true);}} style={{background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar mesmo assim</button>
+          </div>
         </div>
       </div>
     )}
