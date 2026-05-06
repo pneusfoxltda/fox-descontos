@@ -156,7 +156,8 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
 .info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
 @keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
-@keyframes foxIn{0%{opacity:0}100%{opacity:1}}
+@keyframes foxIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
@@ -224,6 +225,7 @@ export default function App(){
   const[dashKey,setDashKey]=useState(0);
   const[dashAnim,setDashAnim]=useState(false);
     const[quotes,setQuotes]=useState([]);
+  const[quotesLoaded,setQuotesLoaded]=useState(false);
   const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
@@ -534,7 +536,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey} style={{animation:"foxIn .4s ease both"}}>
+    {tab==="dashboard"&&session.role==="admin"&&(!quotesLoaded?(<div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,color:"#888",fontSize:14,gap:10}}><div style={{width:20,height:20,border:"3px solid #333",borderTop:"3px solid #CC1F1F",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>Carregando dados...</div>):(<div key={dashKey} style={{animation:"foxIn 1.2s ease both"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:12}}>
           <div><p className="sec-t">Dashboard — Inteligência Comercial</p><p className="sec-s">Análise completa por medida, segmento, loja e vendedor.</p></div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar Dados ({(filtered.length>0?filtered:quotes).length})</button>
@@ -939,7 +941,7 @@ export default function App(){
           );
         })()}
 
-        </div>)}
+        </div>))}
       {tab==="cadastrar"&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
