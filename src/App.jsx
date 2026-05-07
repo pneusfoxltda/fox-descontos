@@ -59,10 +59,13 @@ const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555",
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseConcObs(obs){
-  if(!obs||!obs.includes("\u{1F4CA} CONCORRENTES:"))return[];
-  const block=(obs.split("\u{1F4CA} CONCORRENTES:")[1]||"").trim();
-  return block.split("\n").filter(l=>l.trim().startsWith("\u2022")).map(l=>{
-    const sem=l.trim().slice(1).trim();
+  if(!obs)return[];
+  const marker="CONCORRENTES:";
+  const idx=obs.indexOf(marker);
+  if(idx===-1)return[];
+  const block=obs.slice(idx+marker.length).trim();
+  return block.split("\n").filter(l=>l.trim().startsWith("•")||l.trim().startsWith("\u2022")).map(l=>{
+    const sem=l.trim().replace(/^[•\u2022]\s*/,"");
     const ci=sem.indexOf(":");if(ci===-1)return null;
     const empresa=sem.slice(0,ci).trim();
     const resto=sem.slice(ci+1).trim();
