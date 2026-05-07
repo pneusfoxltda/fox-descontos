@@ -151,7 +151,7 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
 .rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
 .warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
 .stat-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
 .stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:#fff;line-height:1;margin:6px 0 4px;}.stat-sub{font-size:10px;color:#666;margin-top:2px;letter-spacing:.5px;}
@@ -253,7 +253,8 @@ export default function App(){
     if(filtroStatus==="liberado")return !!q.liberado;
     if(filtroStatus==="pendente")return !q.liberado;
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
-    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="perdida")return !!q.perdida;
     return true;
   }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
@@ -277,6 +278,8 @@ export default function App(){
   const[concIntelSel,setConcIntelSel]=useState(null);
   const[copiedNum,setCopiedNum]=useState(null);
   const[showConcAviso,setShowConcAviso]=useState(false);
+  const[perdidaModal,setPerdidaModal]=useState(null);
+  const[motivoInput,setMotivoInput]=useState("");
   const[galeriaModal,setGaleriaModal]=useState(null);
 
 
@@ -314,7 +317,7 @@ export default function App(){
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
-      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id, vendedor:q.vendedor,
+      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
       anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
     })));}
     const ub = await supa.from("usuarios");
@@ -334,6 +337,19 @@ export default function App(){
     const reader = new FileReader();
     reader.onload=(ev)=>setAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
     reader.readAsDataURL(file);
+  };
+
+
+  const doPerdida=async(q,motivo)=>{
+    try{
+      const db=await supa.from("descontos");
+      const {error}=await db.update({perdida:true,motivo_perda:motivo},{numero:q.numero,tipo:q.tipo});
+      if(error){toast_("Erro ao marcar perdida.",false);return;}
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,perdida:true,motivoPerda:motivo}:x));
+      if(result&&result.numero===q.numero)setResult(prev=>({...prev,perdida:true,motivoPerda:motivo}));
+      setPerdidaModal(null);setMotivoInput("");
+      toast_("Negociação marcada como perdida.");
+    }catch(e){toast_("Erro.",false);}
   };
 
   const doEdit=(q)=>{
@@ -506,6 +522,7 @@ export default function App(){
 
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(q.erroInterno)return false;
+    if(q.perdida)return false;
     if(dash.loja&&q.loja!==dash.loja)return false;
     if(dash.segmento&&q.segmento!==dash.segmento)return false;
     if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
@@ -1234,7 +1251,7 @@ export default function App(){
             </div>
             <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
             <span className="list-val">{fmtVal(q.valor)}</span>
-            <span className={`badge ${q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
+            <span className={`badge ${q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
               <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
               {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
@@ -1487,6 +1504,31 @@ export default function App(){
       </div>
     )}
 
+
+    {perdidaModal&&(
+      <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}>💔 Marcar como Perdida</div>
+          <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> — {perdidaModal.medida}</div>
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
+            <input
+              type="text"
+              placeholder="Ex: Cliente fechou na Pemaza por R$ 280,00"
+              value={motivoInput}
+              onChange={e=>setMotivoInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())}
+              style={{width:"100%",boxSizing:"border-box",background:"#0D0D0D",border:"1px solid #8B0000",borderRadius:8,padding:"10px 14px",color:"#fff",fontSize:13,outline:"none"}}
+              autoFocus
+            />
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setPerdidaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"#8B0000":"#3E1A1A",color:motivoInput.trim()?"#fff":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>💔 Confirmar Perda</button>
+          </div>
+        </div>
+      </div>
+    )}
     {showConcAviso&&(
       <div onClick={()=>setShowConcAviso(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
