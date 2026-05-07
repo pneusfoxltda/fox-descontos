@@ -59,7 +59,6 @@ const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555",
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseConcObs(obs){
-<<<<<<< HEAD
   if(!obs)return[];
   const marker="CONCORRENTES:";
   const idx=obs.indexOf(marker);
@@ -67,12 +66,6 @@ function parseConcObs(obs){
   const block=obs.slice(idx+marker.length).trim();
   return block.split("\n").filter(l=>l.trim().startsWith("•")||l.trim().startsWith("\u2022")).map(l=>{
     const sem=l.trim().replace(/^[•\u2022]\s*/,"");
-=======
-  if(!obs||!obs.includes("\u{1F4CA} CONCORRENTES:"))return[];
-  const block=(obs.split("\u{1F4CA} CONCORRENTES:")[1]||"").trim();
-  return block.split("\n").filter(l=>l.trim().startsWith("\u2022")).map(l=>{
-    const sem=l.trim().slice(1).trim();
->>>>>>> 84f7da95308730a390f32c17e11943dbdbede1fa
     const ci=sem.indexOf(":");if(ci===-1)return null;
     const empresa=sem.slice(0,ci).trim();
     const resto=sem.slice(ci+1).trim();
@@ -1173,6 +1166,27 @@ export default function App(){
             <div style={{fontSize:11,color:MUTED,marginTop:8}}>{result.anexoNome}</div>
           </div>
         )}
+        {/* Concorrentes na consulta */}
+        {(()=>{
+          const conc=parseConcObs(result.obs);
+          if(!conc.length)return null;
+          return(
+            <div style={{background:"#0D0D0D",border:"1px solid #CC1F1F44",borderRadius:10,padding:"14px 18px",margin:"0 0 0 0"}}>
+              <div style={{fontSize:10,color:RED,fontWeight:800,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>🏢 Concorrentes nesta negociação</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {conc.map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#161616",borderRadius:8,padding:"10px 14px"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:"#E0E0E0"}}>{item.empresa}</span>
+                    <div style={{textAlign:"right"}}>
+                      {item.valor>0&&<div style={{fontSize:16,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(item.valor)}</div>}
+                      {item.pgto&&<div style={{fontSize:11,color:MUTED}}>{item.pgto}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
         {isExp(result.validade)&&!result.liberado&&<div className="warn-bar"><span>⚠</span>Desconto fora do prazo. Contate o setor de Descontos antes de aplicar.</div>}
           {result.liberado&&<div style={{background:"#1A2E1A",borderTop:"1px solid #2E4A2E",padding:"13px 22px",color:"#4CAF50",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1414,11 +1428,7 @@ export default function App(){
                     </div>
                   )}
                   {/* Nosso preço */}
-<<<<<<< HEAD
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
-=======
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
->>>>>>> 84f7da95308730a390f32c17e11943dbdbede1fa
                     <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
                     <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
                   </div>
