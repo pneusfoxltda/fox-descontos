@@ -1412,21 +1412,6 @@ export default function App(){
                 {/* Corpo do card */}
                 <div style={{padding:"10px 12px",flex:1}}>
                   <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
-                  {/* Concorrentes em destaque */}
-                  {conc.length>0&&(
-                    <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
-                      <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
-                      {conc.map((item,ci)=>(
-                        <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
-                          <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</div>
-                            {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                   {/* Nosso preço */}
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
                     <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
