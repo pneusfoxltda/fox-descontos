@@ -685,43 +685,6 @@ export default function App(){
         </div>
 
 
-        {/* ── ANÁLISE DE PERDAS POR CONCORRENTE ── */}
-        {(()=>{
-          const perdas=quotes.filter(q=>q.perdida&&q.motivoPerda);
-          if(!perdas.length)return null;
-          const concMap={};
-          perdas.forEach(p=>{
-            const m=p.motivoPerda||"";
-            const conc=parseConcObs(p.obs);
-            if(conc.length>0){
-              conc.forEach(c=>{
-                concMap[c.empresa]=(concMap[c.empresa]||0)+1;
-              });
-            } else {
-              concMap["Motivo registrado"]=(concMap["Motivo registrado"]||0)+1;
-            }
-          });
-          const ranked=Object.entries(concMap).sort((a,b)=>b[1]-a[1]);
-          return(
-            <div className="scroll-anim" style={{background:"#161616",border:"1px solid #8B000066",borderRadius:10,padding:16,marginBottom:10}}>
-              <div className="chart-t" style={{color:"#CC4444"}}>💔 Perdas por Concorrente</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {ranked.map(([nome,qtd],i)=>(
-                  <div key={nome} style={{display:"flex",alignItems:"center",gap:10,background:"#0D0D0D",borderRadius:8,padding:"8px 12px"}}>
-                    <span style={{fontSize:12,fontWeight:800,color:"#8B0000",minWidth:20}}>#{i+1}</span>
-                    <span style={{flex:1,fontSize:13,fontWeight:700,color:"#E0E0E0"}}>{nome}</span>
-                    <span style={{background:"#8B000033",color:"#f87171",borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:800}}>{qtd}x</span>
-                    <div style={{width:80,height:6,background:"#2E2E2E",borderRadius:3,overflow:"hidden"}}>
-                      <div style={{width:((qtd/ranked[0][1])*100)+"%",height:"100%",background:"#8B0000",borderRadius:3}}/>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginTop:10,fontSize:11,color:"#555"}}>{perdas.length} negociação{perdas.length!==1?"ões":""} perdida{perdas.length!==1?"s":""} no total</div>
-            </div>
-          );
-        })()}
-
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
         <div>
         {/* Ranking Lojas */}
