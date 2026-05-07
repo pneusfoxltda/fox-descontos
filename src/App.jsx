@@ -59,6 +59,7 @@ const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555",
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseConcObs(obs){
+<<<<<<< HEAD
   if(!obs)return[];
   const marker="CONCORRENTES:";
   const idx=obs.indexOf(marker);
@@ -66,6 +67,12 @@ function parseConcObs(obs){
   const block=obs.slice(idx+marker.length).trim();
   return block.split("\n").filter(l=>l.trim().startsWith("•")||l.trim().startsWith("\u2022")).map(l=>{
     const sem=l.trim().replace(/^[•\u2022]\s*/,"");
+=======
+  if(!obs||!obs.includes("\u{1F4CA} CONCORRENTES:"))return[];
+  const block=(obs.split("\u{1F4CA} CONCORRENTES:")[1]||"").trim();
+  return block.split("\n").filter(l=>l.trim().startsWith("\u2022")).map(l=>{
+    const sem=l.trim().slice(1).trim();
+>>>>>>> 84f7da95308730a390f32c17e11943dbdbede1fa
     const ci=sem.indexOf(":");if(ci===-1)return null;
     const empresa=sem.slice(0,ci).trim();
     const resto=sem.slice(ci+1).trim();
@@ -1407,7 +1414,11 @@ export default function App(){
                     </div>
                   )}
                   {/* Nosso preço */}
+<<<<<<< HEAD
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
+=======
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+>>>>>>> 84f7da95308730a390f32c17e11943dbdbede1fa
                     <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
                     <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
                   </div>
