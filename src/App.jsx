@@ -1131,6 +1131,15 @@ export default function App(){
             <span className="rt">{isExp(result.validade)?"⚠ EXPIRADO":"✓ VÁLIDO"}</span>
             <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
               {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
+              {session.role==="admin"&&!result.perdida&&(
+                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>💔 Perdida</button>
+              )}
+              {result.perdida&&(
+                <div style={{background:"#1A0000",border:"1px solid #8B0000",borderRadius:7,padding:"6px 12px",marginTop:4}}>
+                  <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>💔 Negociação Perdida</div>
+                  <div style={{fontSize:12,color:"#F0F0F0",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
+                </div>
+              )}
               {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
               {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
             <button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
