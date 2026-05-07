@@ -1132,11 +1132,11 @@ export default function App(){
             <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
               {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
               {session.role==="admin"&&!result.perdida&&(
-                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>💔 Perdida</button>
+                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}><svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>Perdida</button>
               )}
               {result.perdida&&(
                 <div style={{background:"#1A0000",border:"1px solid #8B0000",borderRadius:7,padding:"6px 12px",marginTop:4}}>
-                  <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}>💔 Negociação Perdida</div>
+                  <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}><svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Negociação Perdida</div>
                   <div style={{fontSize:12,color:"#F0F0F0",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
                 </div>
               )}
@@ -1517,7 +1517,7 @@ export default function App(){
     {perdidaModal&&(
       <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}>💔 Marcar como Perdida</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Marcar como Perdida</div>
           <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> — {perdidaModal.medida}</div>
           <div style={{marginBottom:16}}>
             <label style={{fontSize:11,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
@@ -1533,7 +1533,7 @@ export default function App(){
           </div>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setPerdidaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"#8B0000":"#3E1A1A",color:motivoInput.trim()?"#fff":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>💔 Confirmar Perda</button>
+            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"#8B0000":"#3E1A1A",color:motivoInput.trim()?"#fff":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>Confirmar Perda</button>
           </div>
         </div>
       </div>
