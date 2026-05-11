@@ -77,7 +77,17 @@ function parseConcObs(obs){
   }).filter(Boolean);
 }
 function fmtDate(d){if(!d)return"-";const[y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
-function roleName(r){return{admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"}[r]||r;}
+function hasRole(session,role){
+  if(!session)return false;
+  if(session.role==="admin")return true;
+  const roles=(session.role||"").split(",");
+  return roles.includes(role);
+}
+function roleName(r){
+  if(!r)return"";
+  const map={admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"};
+  return r.split(",").map(x=>map[x]||x).join(" + ");
+}
 function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
 
 const css=`
@@ -245,7 +255,7 @@ export default function App(){
   const[result,setResult]=useState(null);
   const[notFound,setNotFound]=useState(false);
   const[toast,setToast]=useState(null);
-  const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",role:"televendas",foto:null});
+  const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
@@ -307,7 +317,7 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"?"dashboard":s.role==="televendas"||s.role==="cadastrar1"||s.role==="cadastrar2"?"cadastrar":"consultar");
+        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
@@ -473,7 +483,7 @@ export default function App(){
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
     if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(f.role==="televendas"||f.role==="cadastrar1"||f.role==="cadastrar2"?"cadastrar":"consultar");setLoginErr("");return;}
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
@@ -543,10 +553,10 @@ export default function App(){
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
     try{
       const db = await supa.from("usuarios");
-      const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:newUser.role,foto:newUser.foto||null});
+      const rolesStr=newUser.roles.join(",");const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:rolesStr,foto:newUser.foto||null});
       if(error){toast_("Erro ao criar usuário.",false);return;}
-      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.role,foto:newUser.foto||null}]);
-      setNewUser({nome:"",email:"",pass:"",role:"televendas",foto:null});toast_("Usuário criado!");
+      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.roles.join(","),foto:newUser.foto||null}]);
+      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});toast_("Usuário criado!");
     }catch(e){toast_("Erro.",false);}
   };
   const doDelUser=async em=>{
@@ -595,10 +605,10 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
-        {(session.role==="televendas"||session.role==="admin"||session.role==="cadastrar1"||session.role==="cadastrar2")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
-        {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
-        {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
+        {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -1037,7 +1047,7 @@ export default function App(){
 
         </>)}
         </div>)}
-      {tab==="cadastrar"&&session.role==="cadastrar1"&&(<>
+      {tab==="cadastrar"&&hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&(<>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
         <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
         <div>
@@ -1107,7 +1117,7 @@ export default function App(){
       </div>
       </>)}
 
-      {tab==="cadastrar"&&(session.role==="televendas"||session.role==="admin"||session.role==="cadastrar2")&&(<>
+      {tab==="cadastrar"&&(hasRole(session,"televendas")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
@@ -1217,7 +1227,7 @@ export default function App(){
     </>)}
 
     {/* CONSULTAR */}
-    {tab==="consultar"&&(<>
+    {tab==="consultar"&&(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
@@ -1399,7 +1409,16 @@ export default function App(){
         </div>
         <div className="fg2">
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
-          <div className="field"><label>Setor</label><select value={newUser.role} onChange={e=>setNewUser(f=>({...f,role:e.target.value}))}><option value="televendas">Descontos — cadastro completo</option><option value="comercial">Comercial — consulta</option><option value="cadastrar1">Inteligência — só concorrentes</option><option value="cadastrar2">Cadastro Completo + Comercial</option></select></div>
+          <div className="field"><label>Permissões</label>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
+                {[["televendas","📞 Descontos — cadastro completo"],["comercial","🤝 Comercial — consultar"],["cadastrar1","🔍 Inteligência — só concorrentes"],["cadastrar2","✏️ Cadastro Completo + Consultar"]].map(([val,lbl])=>(
+                  <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
+                    <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
+                    {lbl}
+                  </label>
+                ))}
+              </div>
+            </div>
         </div>
         <button className="btn-red" onClick={doAddUser}>Criar Usuário</button>
       </div>
