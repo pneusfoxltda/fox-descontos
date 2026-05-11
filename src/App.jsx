@@ -517,7 +517,7 @@ export default function App(){
       });
       if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
       const obsCompleto=form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
-      const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
+      form.medida=form.medida.toUpperCase();const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
       setQuotes(prev=>[novo,...prev]);
       setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
       setAnexo(null);
@@ -655,7 +655,7 @@ export default function App(){
             <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
             <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="field" style={{flex:1,minWidth:140}}><label>Medida</label><input type="text" placeholder="Ex: 175/75R13" value={dash.medida} onChange={e=>setDash(d=>({...d,medida:e.target.value}))}/></div>
+            <div className="field" style={{flex:1,minWidth:140}}><label>Medida</label><input type="text" placeholder="Ex: 175/75R13" value={dash.medida} onChange={e=>setDash(d=>({...d,medida:e.target.value.toUpperCase()}))}/></div>
             <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
           </div>
         </div>
@@ -1071,7 +1071,7 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div className="field">
             <label>Medida do Pneu *</label>
-            <input placeholder="Ex: 175/65R14" value={concForm1.medida} onChange={e=>setConcForm1(f=>({...f,medida:e.target.value}))}/>
+            <input placeholder="Ex: 175/65R14" value={concForm1.medida} onChange={e=>setConcForm1(f=>({...f,medida:e.target.value.toUpperCase()}))}/>
           </div>
           <div className="field">
             <label>Segmento *</label>
@@ -1150,7 +1150,7 @@ export default function App(){
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
-          <div className="field"><label>Medida do Pneu *</label><input placeholder="Ex: 175/65R17" value={form.medida} onChange={e=>setForm(f=>({...f,medida:e.target.value}))}/></div>
+          <div className="field"><label>Medida do Pneu *</label><input placeholder="Ex: 175/65R17" value={form.medida} onChange={e=>setForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
           <div className="field"><label>Segmento *</label><select value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
         </div>
         <div className="fg3">
@@ -1521,7 +1521,7 @@ export default function App(){
           <div className="edit-title">✏ Editar — #{editModal.numero}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
             <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
-            <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value}))}/></div>
+            <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
             <div className="field"><label>Segmento</label><select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
             <div className="field"><label>Loja</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/></div>
@@ -1649,11 +1649,11 @@ export default function App(){
                     </div>
                     :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
                   }
-                  {/* Nosso preço */}
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
+                  {/* Nosso preço - só para não-conc */}
+                  {!isConc&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
                     <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
                     <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
-                  </div>
+                  </div>}
                   {/* Concorrentes abaixo do preço */}
                   {conc.length>0&&(
                     <div style={{borderTop:"1px solid #2E2E2E",paddingTop:8,marginTop:4}}>
