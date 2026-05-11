@@ -400,6 +400,18 @@ export default function App(){
     }catch(e){toast_("Erro.",false);}
   };
 
+
+  const doToggleRole=async(u,role)=>{
+    const current=(u.role||"").split(",").filter(Boolean);
+    const updated=current.includes(role)?current.filter(r=>r!==role):[...current,role];
+    const newRole=updated.join(",");
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({role:newRole},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,role:newRole}:x));
+    }catch(e){toast_("Erro ao atualizar.",false);}
+  };
+
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
@@ -1424,16 +1436,69 @@ export default function App(){
       </div>
       <hr className="divider"/>
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
-      {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(
-        <div className="card-np">{users.map(u=>(
-          <div className="list-row" key={u.email}>
-            <div style={{width:36,height:36,borderRadius:"50%",background:CARD,border:"2px solid "+roleColor(u.role),display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:roleColor(u.role),flexShrink:0}}>{(u.nome||u.email)[0].toUpperCase()}</div>
-            <div style={{flex:1}}><div className="list-d" style={{fontWeight:600}}>{u.nome}</div><div className="list-m">{u.email} — {roleName(u.role)}</div></div>
-            <span className={`badge ${u.role==="televendas"?"b-tv":"b-com"}`}>{roleName(u.role)}</span>
-            <button className="btn-sm" style={{marginLeft:12}} onClick={()=>doDelUser(u.email)}>Remover</button>
+      {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
+        {/* Permission matrix header */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+          <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
+            <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
+          ))}
+          <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
+        </div>
+        <div className="card-np" style={{borderRadius:"0 0 10px 10px",border:"1px solid #2E2E2E"}}>{users.map(u=>{
+          const roles=(u.role||"").split(",").filter(Boolean);
+          const has=r=>roles.includes(r);
+          return(
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+            {/* User info */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
+                {u.foto
+                  ?<img src={u.foto} alt={u.nome} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid #333",display:"block"}}/>
+                  :<div style={{width:34,height:34,borderRadius:"50%",background:"#1C1C1C",border:"2px solid #333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#888"}}>{(u.nome||u.email)[0].toUpperCase()}</div>
+                }
+                <div style={{position:"absolute",bottom:-2,right:-2,background:RED,borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700}}>+</div>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={async e=>{
+                  const file=e.target.files[0];if(!file)return;
+                  const reader=new FileReader();
+                  reader.onload=async ev=>{
+                    const b64=ev.target.result;
+                    const db=await supa.from("usuarios");
+                    await db.update({foto:b64},{email:u.email});
+                    setUsers(prev=>prev.map(x=>x.email===u.email?{...x,foto:b64}:x));
+                    toast_("Foto atualizada!");
+                  };
+                  reader.readAsDataURL(file);
+                }}/>
+              </label>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{u.nome}</div>
+                <div style={{fontSize:10,color:MUTED}}>{u.email}</div>
+              </div>
+            </div>
+            {/* Permission toggles */}
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
+              <div key={role} style={{display:"flex",justifyContent:"center"}}>
+                <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
+                  width:28,height:28,borderRadius:"50%",cursor:"pointer",
+                  background:has(role)?cor+"33":"#1A1A1A",
+                  border:"2px solid "+(has(role)?cor:"#333"),
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  transition:"all .2s",
+                  boxShadow:has(role)?"0 0 8px "+cor+"55":"none"
+                }}>
+                  {has(role)&&<div style={{width:10,height:10,borderRadius:"50%",background:cor}}/>}
+                </div>
+              </div>
+            ))}
+            {/* Remove button */}
+            <div style={{display:"flex",justifyContent:"center"}}>
+              <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+            </div>
           </div>
-        ))}</div>
-      )}
+          );
+        })}</div>
+      </>)}
       <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
     </>)}
 
