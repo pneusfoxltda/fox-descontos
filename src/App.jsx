@@ -26,6 +26,18 @@ const supa = {
         return { data:null, error:null };
       },
       async update(obj, match) {
+        // Use RPC instead of PATCH to avoid CORS preflight issues
+        const table = base.split("/").pop();
+        const rpcName = table==="descontos"?"update_desconto":table==="usuarios"?"update_usuario":null;
+        if(rpcName){
+          const body = table==="descontos"
+            ? {p_numero:match.numero,p_tipo:match.tipo,p_fields:obj}
+            : {p_email:match.email,p_fields:obj};
+          const r = await fetch(SUPA_URL+"/rest/v1/rpc/"+rpcName,{method:"POST",headers,body:JSON.stringify(body)});
+          if(!r.ok){const e=await r.text();return{data:null,error:e};}
+          return{data:null,error:null};
+        }
+        // fallback para PATCH
         const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
         const r = await fetch(base+"?"+q, { method:"PATCH", headers, body: JSON.stringify(obj) });
         if(!r.ok){ const e=await r.text(); return {data:null,error:e}; }
