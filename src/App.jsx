@@ -77,8 +77,8 @@ function parseConcObs(obs){
   }).filter(Boolean);
 }
 function fmtDate(d){if(!d)return"-";const[y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
-function roleName(r){return{admin:"Gerente",televendas:"Descontos",comercial:"Comercial"}[r]||r;}
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER}[r]||MUTED;}
+function roleName(r){return{admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"}[r]||r;}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -260,6 +260,9 @@ export default function App(){
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
+  const[concQuery1,setConcQuery1]=useState("");
+  const[concDrop1,setConcDrop1]=useState(false);
   const[concQuery,setConcQuery]=useState("");
   const[concValor,setConcValor]=useState("");
   const[concPgto,setConcPgto]=useState("");
@@ -304,7 +307,7 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"?"dashboard":s.role==="televendas"?"cadastrar":"consultar");
+        setTab(s.role==="admin"?"dashboard":s.role==="televendas"||s.role==="cadastrar1"||s.role==="cadastrar2"?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
@@ -313,7 +316,7 @@ export default function App(){
     const db = await supa.from("descontos");
     const {data:qu} = await db.select();
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
-      tipo:q.tipo,numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
+      tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
@@ -349,6 +352,41 @@ export default function App(){
       if(result&&result.numero===q.numero)setResult(prev=>({...prev,perdida:true,motivoPerda:motivo}));
       setPerdidaModal(null);setMotivoInput("");
       toast_("Negociação marcada como perdida.");
+    }catch(e){toast_("Erro.",false);}
+  };
+
+
+  const doAddConc1=async()=>{
+    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
+    try{
+      const auto="#CONC"+Date.now().toString().slice(-6);
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")";
+      const db=await supa.from("descontos");
+      const {error}=await db.insert({
+        tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
+        obs:obsVal,liberado:false,
+        negociador_nome:session.username,negociador_email:session.email,
+        erro_interno:false,
+        anexo_base64:concForm1.anexo?concForm1.anexo.base64:null,
+        anexo_tipo:concForm1.anexo?concForm1.anexo.tipo:null,
+        anexo_nome:concForm1.anexo?concForm1.anexo.nome:null,
+      });
+      if(error){toast_("Erro ao salvar.",false);return;}
+      const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
+        obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
+        criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
+        anexoBase64:concForm1.anexo?concForm1.anexo.base64:null,
+        anexoTipo:concForm1.anexo?concForm1.anexo.tipo:null,
+        anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
+      };
+      setQuotes(prev=>[novo,...prev]);
+      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
+      setConcQuery1("");
+      toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
   };
 
@@ -435,7 +473,7 @@ export default function App(){
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
     if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(f.role==="televendas"?"cadastrar":"consultar");setLoginErr("");return;}
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(f.role==="televendas"||f.role==="cadastrar1"||f.role==="cadastrar2"?"cadastrar":"consultar");setLoginErr("");return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
@@ -558,13 +596,13 @@ export default function App(){
       </div>
       <nav className="sb-nav">
         {session.role==="admin"&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
-        {(session.role==="televendas"||session.role==="admin")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
+        {(session.role==="televendas"||session.role==="admin"||session.role==="cadastrar1"||session.role==="cadastrar2")&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(session.role==="comercial"||session.role==="admin")&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {session.role==="admin"&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
-          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":"🤝"}</span>
+          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":session.role==="cadastrar1"?"🔍":session.role==="cadastrar2"?"✏️":"🤝"}</span>
           <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
         </div>
         <button className="logout" onClick={doLogout}>Sair</button>
@@ -999,7 +1037,77 @@ export default function App(){
 
         </>)}
         </div>)}
-      {tab==="cadastrar"&&(<>
+      {tab==="cadastrar"&&session.role==="cadastrar1"&&(<>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+        <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência para análise</div>
+        </div>
+      </div>
+      <div className="card">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div className="field">
+            <label>Medida do Pneu *</label>
+            <input placeholder="Ex: 175/65R14" value={concForm1.medida} onChange={e=>setConcForm1(f=>({...f,medida:e.target.value}))}/>
+          </div>
+          <div className="field">
+            <label>Segmento *</label>
+            <select value={concForm1.segmento} onChange={e=>setConcForm1(f=>({...f,segmento:e.target.value}))}>
+              <option value="">Selecione...</option>
+              {SEGS.map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="field mb" style={{marginBottom:12}}>
+          <label>🏢 Concorrente *</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:2,minWidth:180,position:"relative"}}>
+              <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+                onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+                onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+                style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+              {concDrop1&&concQuery1.length>0&&(()=>{
+                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+                if(!sug.length)return null;
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                  {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                </div>);
+              })()}
+            </div>
+            <div style={{flex:1,minWidth:110}}>
+              <input type="number" step="0.01" placeholder="Valor deles" value={concForm1.valor}
+                onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{flex:1,minWidth:130}}>
+              <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+                <option value="">Pagamento</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="field mb" style={{marginBottom:16}}>
+          <label>📸 Foto do Concorrente (opcional)</label>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",fontSize:13,color:"#888"}}>
+              <span>📎</span>{concForm1.anexo?"✅ "+concForm1.anexo.nome:"Selecionar arquivo"}
+              <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
+                const file=e.target.files[0];if(!file)return;
+                const reader=new FileReader();
+                reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
+                reader.readAsDataURL(file);
+              }}/>
+            </label>
+            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:18}}>×</button>}
+          </div>
+        </div>
+        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
+      </div>
+      </>)}
+
+      {tab==="cadastrar"&&(session.role==="televendas"||session.role==="admin"||session.role==="cadastrar2")&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
@@ -1291,7 +1399,7 @@ export default function App(){
         </div>
         <div className="fg2">
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
-          <div className="field"><label>Setor</label><select value={newUser.role} onChange={e=>setNewUser(f=>({...f,role:e.target.value}))}><option value="televendas">Descontos — cadastra</option><option value="comercial">Comercial — consulta</option></select></div>
+          <div className="field"><label>Setor</label><select value={newUser.role} onChange={e=>setNewUser(f=>({...f,role:e.target.value}))}><option value="televendas">Descontos — cadastro completo</option><option value="comercial">Comercial — consulta</option><option value="cadastrar1">Inteligência — só concorrentes</option><option value="cadastrar2">Cadastro Completo + Comercial</option></select></div>
         </div>
         <button className="btn-red" onClick={doAddUser}>Criar Usuário</button>
       </div>
@@ -1420,18 +1528,23 @@ export default function App(){
             {galeriaModal.imagens.map((q,i)=>{
               const conc=parseConcObs(q.obs);
               const isCopied=copiedNum===q.numero;
+              const isConc=q.tipo==="conc";
               const copyNum=()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});};
               return(
-              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E2E2E",display:"flex",flexDirection:"column"}}>
-                {/* Número + copy em destaque ANTES da imagem */}
+              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid "+(isConc?"#9B59B644":"#2E2E2E"),display:"flex",flexDirection:"column"}}>
+                {/* Header */}
                 <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div>
-                    <div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
+                    {isConc
+                      ?<><div style={{fontSize:9,color:"#9B59B6",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>🔍 Inteligência de Concorrência</div>
+                        <div style={{fontSize:11,color:MUTED,marginTop:2}}>por {q.negociadorNome} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div></>
+                      :<><div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div></>
+                    }
                   </div>
-                  <button onClick={copyNum} title="Copiar número" style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}>
+                  {!isConc&&<button onClick={copyNum} title="Copiar número" style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}>
                     {isCopied?"✓ Copiado!":"📋 Copiar"}
-                  </button>
+                  </button>}
                 </div>
                 {/* Imagem */}
                 <img
@@ -1443,7 +1556,15 @@ export default function App(){
                 />
                 {/* Corpo do card */}
                 <div style={{padding:"10px 12px",flex:1}}>
-                  <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                  {isConc
+                    ?<div style={{marginBottom:8}}>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                        <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{q.medida}</span>
+                        <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span>
+                      </div>
+                    </div>
+                    :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                  }
                   {/* Nosso preço */}
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
                     <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
