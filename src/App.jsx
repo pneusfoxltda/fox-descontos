@@ -33,7 +33,8 @@ const supa = {
           const body = table==="descontos"
             ? {p_numero:match.numero,p_tipo:match.tipo,p_fields:obj}
             : {p_email:match.email,p_fields:obj};
-          const r = await fetch(SUPA_URL+"/rest/v1/rpc/"+rpcName,{method:"POST",headers,body:JSON.stringify(body)});
+          const rpcHeaders={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+          const r = await fetch(SUPA_URL+"/rest/v1/rpc/"+rpcName,{method:"POST",headers:rpcHeaders,body:JSON.stringify(body)});
           if(!r.ok){const e=await r.text();return{data:null,error:e};}
           return{data:null,error:null};
         }
