@@ -299,7 +299,9 @@ export default function App(){
   const[editConcValor,setEditConcValor]=useState("");
   const[editConcPgto,setEditConcPgto]=useState("");
   const[editConcDrop,setEditConcDrop]=useState(false);
-  const[editAnexo,setEditAnexo]=useState(null); // {base64,tipo,nome} ou null
+  const[editAnexo,setEditAnexo]=useState(null);
+  const[anotacao,setAnotacao]=useState(()=>{try{return localStorage.getItem("fox_anotacao_"+(session?.email||""))||"";}catch{return"";}});
+  const[anotacaoSalva,setAnotacaoSalva]=useState(false);
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
@@ -637,6 +639,7 @@ export default function App(){
       <nav className="sb-nav">
         {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
+        {hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&<div className={`tab ${tab==="anotacao"?"active":""}`} onClick={()=>setTab("anotacao")}><span className="tab-dot"/>Anotação</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
       </nav>
@@ -1159,6 +1162,46 @@ export default function App(){
         <button className="btn-red" onClick={doAddConc1} style={{width:"100%",padding:"14px",fontSize:15,letterSpacing:1}}>
           ✅ SALVAR REGISTRO DE CONCORRÊNCIA
         </button>
+      </div>
+      </>)}
+
+      {/* ── ABA ANOTAÇÃO — só para cadastrar1 ── */}
+      {tab==="anotacao"&&hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&(<>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+        <div style={{width:4,height:28,background:"#F39C12",borderRadius:2}}/>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>ANOTAÇÕES</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Anote informações importantes — salvo automaticamente no seu navegador</div>
+        </div>
+      </div>
+      <div className="card" style={{maxWidth:640}}>
+        <textarea
+          value={anotacao}
+          onChange={e=>{setAnotacao(e.target.value);setAnotacaoSalva(false);}}
+          placeholder={"✏️ Escreva suas anotações aqui...\n\nExemplos:\n• Nome do cliente que pediu preço\n• Observação de concorrente\n• Lembrete importante"}
+          style={{width:"100%",boxSizing:"border-box",minHeight:280,background:"#111",border:"1px solid #2E2E2E",borderRadius:8,color:"#F0F0F0",fontSize:14,lineHeight:1.7,padding:"14px 16px",resize:"vertical",fontFamily:"'Inter',sans-serif",outline:"none"}}
+        />
+        <div style={{display:"flex",alignItems:"center",gap:12,marginTop:12}}>
+          <button
+            onClick={()=>{
+              try{localStorage.setItem("fox_anotacao_"+(session?.email||""),anotacao);setAnotacaoSalva(true);toast_("Anotação salva! 📝");}
+              catch{toast_("Erro ao salvar.",false);}
+            }}
+            className="btn-red"
+            style={{flex:1,padding:"12px",fontSize:14,letterSpacing:1}}
+          >
+            💾 SALVAR ANOTAÇÃO
+          </button>
+          {anotacaoSalva&&<span style={{fontSize:12,color:"#4CAF50",fontWeight:700}}>✅ Salvo</span>}
+          {anotacao&&<button
+            onClick={()=>{if(window.confirm("Limpar todas as anotações?")){{setAnotacao("");setAnotacaoSalva(false);try{localStorage.removeItem("fox_anotacao_"+(session?.email||""));}catch{}}}}}
+            style={{background:"transparent",border:"1px solid #3A3A3A",color:"#666",borderRadius:7,padding:"12px 18px",cursor:"pointer",fontSize:12,fontWeight:700}}
+          >🗑 Limpar</button>}
+        </div>
+        <div style={{marginTop:14,padding:"10px 14px",background:"#0D0D0D",borderRadius:8,border:"1px solid #1E1E1E"}}>
+          <div style={{fontSize:11,color:"#444",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>ℹ️ Informação</div>
+          <div style={{fontSize:12,color:"#555",lineHeight:1.6}}>As anotações ficam salvas neste navegador. Clique em <strong style={{color:"#666"}}>Salvar</strong> para não perder.</div>
+        </div>
       </div>
       </>)}
 
