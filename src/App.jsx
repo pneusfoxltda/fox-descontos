@@ -299,6 +299,7 @@ export default function App(){
   const[editConcValor,setEditConcValor]=useState("");
   const[editConcPgto,setEditConcPgto]=useState("");
   const[editConcDrop,setEditConcDrop]=useState(false);
+  const[editAnexo,setEditAnexo]=useState(null); // {base64,tipo,nome} ou null
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
@@ -428,10 +429,11 @@ export default function App(){
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
-    const valNorm=(q.validade||"").split("T")[0]; // garante YYYY-MM-DD mesmo se vier como timestamp do Supabase
+    const valNorm=(q.validade||"").split("T")[0];
     setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
     setEditConcAdicionados(concExist);
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
+    setEditAnexo(q.anexoBase64?{base64:q.anexoBase64,tipo:q.anexoTipo||"image/jpeg",nome:q.anexoNome||"anexo"}:null);
     setEditModal(q);
   };
 
@@ -439,20 +441,22 @@ export default function App(){
     if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
     try{
       const db = await supa.from("descontos");
+      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
       const {error:eUpd} = await db.update({
         cba:editForm.cba, medida:editForm.medida, segmento:editForm.segmento,
         loja:editForm.loja, valor:editForm.valor, pgto:editForm.pgto,
         validade:editForm.validade,
         erro_interno:editForm.erroInterno,
-        obs:editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"")
+        obs:obsFinal,
+        anexo_base64:editAnexo?editAnexo.base64:null,
+        anexo_tipo:editAnexo?editAnexo.tipo:null,
+        anexo_nome:editAnexo?editAnexo.nome:null,
       },{numero:editModal.numero,tipo:editModal.tipo});
       if(eUpd){console.error("update_desconto error:",eUpd);toast_("Erro ao atualizar: "+String(eUpd).slice(0,120),false);return;}
-      const updated={...editForm};
-      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
-      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated,obs:obsFinal,erroInterno:editForm.erroInterno}:x));
-      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...updated}));
+      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...editForm,obs:obsFinal,erroInterno:editForm.erroInterno,anexoBase64:editAnexo?.base64||null,anexoTipo:editAnexo?.tipo||null,anexoNome:editAnexo?.nome||null}:x));
+      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...editForm,obs:obsFinal,anexoBase64:editAnexo?.base64||null,anexoTipo:editAnexo?.tipo||null,anexoNome:editAnexo?.nome||null}));
       setEditModal(null);
-      toast_("Desconto atualizado!");
+      toast_("Desconto atualizado! ✅");
     }catch(e){toast_("Erro ao atualizar.",false);}
   };
 
@@ -1595,6 +1599,49 @@ export default function App(){
             <input type="checkbox" checked={editForm.erroInterno} onChange={e=>setEditForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:RED,cursor:"pointer"}}/>
             <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
           </label>
+          {/* Comprovante / Anexo */}
+          <div style={{borderTop:"1px solid #2E2E2E",paddingTop:14,marginBottom:14}}>
+            <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>📎 Comprovante / Imagem</div>
+            {editAnexo?(
+              <div style={{display:"flex",alignItems:"center",gap:12,background:"#0D1117",border:"1px solid #1A3A1A",borderRadius:8,padding:"10px 14px"}}>
+                {editAnexo.tipo&&editAnexo.tipo.startsWith("image")&&(
+                  <img src={editAnexo.base64} alt="preview" style={{width:56,height:56,objectFit:"cover",borderRadius:6,border:"1px solid #2E4A2E",cursor:"zoom-in"}} onClick={()=>setImgModal({src:editAnexo.base64,nome:editAnexo.nome})}/>
+                )}
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,color:"#4CAF50",fontWeight:700}}>✅ {editAnexo.nome}</div>
+                  <div style={{fontSize:10,color:MUTED,marginTop:2}}>Clique na imagem para ampliar</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <label style={{cursor:"pointer",background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,textAlign:"center"}}>
+                    🔄 Trocar
+                    <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+                      const file=e.target.files[0];if(!file)return;
+                      if(file.size>5*1024*1024){toast_("Imagem muito grande. Máx 5MB.",false);return;}
+                      const reader=new FileReader();
+                      reader.onload=ev=>setEditAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
+                      reader.readAsDataURL(file);
+                    }}/>
+                  </label>
+                  <button onClick={()=>setEditAnexo(null)} style={{background:"transparent",border:"1px solid "+RED,color:RED,borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Remover</button>
+                </div>
+              </div>
+            ):(
+              <label style={{cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:"#111",border:"2px dashed #2E2E2E",borderRadius:8,padding:"16px 20px",color:"#666",transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=BLUE;e.currentTarget.style.color=BLUE;}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#2E2E2E";e.currentTarget.style.color="#666";}}>
+                <span style={{fontSize:22}}>📸</span>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700}}>Adicionar comprovante</div>
+                  <div style={{fontSize:11,marginTop:2}}>Imagem até 5MB</div>
+                </div>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+                  const file=e.target.files[0];if(!file)return;
+                  if(file.size>5*1024*1024){toast_("Imagem muito grande. Máx 5MB.",false);return;}
+                  const reader=new FileReader();
+                  reader.onload=ev=>setEditAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
+                  reader.readAsDataURL(file);
+                }}/>
+              </label>
+            )}
+          </div>
           <div style={{display:"flex",gap:10}}>
             <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
             <button className="btn-red" style={{flex:2}} onClick={doSaveEdit}>Salvar Atualização</button>
