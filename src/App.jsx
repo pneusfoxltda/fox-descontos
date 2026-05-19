@@ -302,6 +302,10 @@ export default function App(){
   const[editAnexo,setEditAnexo]=useState(null);
   const[anotacao,setAnotacao]=useState(()=>{try{return localStorage.getItem("fox_anotacao_"+(session?.email||""))||"";}catch{return"";}});
   const[anotacaoSalva,setAnotacaoSalva]=useState(false);
+  const[curtidaCooldown,setCurtidaCooldown]=useState({});
+  const[holdProgress,setHoldProgress]=useState({});
+  const holdTimers=useRef({});
+  const holdIntervals=useRef({});
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
@@ -347,7 +351,7 @@ export default function App(){
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
+      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
     })));}
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
@@ -627,6 +631,51 @@ export default function App(){
     <button className="btn-login" onClick={doLogin}>Entrar</button>
     <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
   </div></div></>);
+
+  const doCurtida=async(q)=>{
+    const now=Date.now();
+    if(curtidaCooldown[q.numero]&&now<curtidaCooldown[q.numero]){
+      const rem=Math.ceil((curtidaCooldown[q.numero]-now)/1000);
+      toast_(`⏳ Aguarde ${rem}s para registrar novamente.`,false);return;
+    }
+    const nova=(q.curtidas||0)+1;
+    const db=await supa.from("descontos");
+    await db.update({curtidas:nova},{numero:q.numero,tipo:q.tipo});
+    const upd=x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,curtidas:nova}:x;
+    setQuotes(prev=>prev.map(upd));
+    setGaleriaModal(prev=>prev?{...prev,imagens:prev.imagens.map(upd)}:prev);
+    setCurtidaCooldown(prev=>({...prev,[q.numero]:now+5000}));
+    toast_(`👍 Uso registrado! Total: ${nova}x`);
+  };
+  const startHold=(q)=>{
+    let prog=0;
+    holdIntervals.current[q.numero]=setInterval(()=>{
+      prog+=5;
+      setHoldProgress(prev=>({...prev,[q.numero]:Math.min(prog,100)}));
+      if(prog>=100){clearInterval(holdIntervals.current[q.numero]);}
+    },100);
+    holdTimers.current[q.numero]=setTimeout(async()=>{
+      clearInterval(holdIntervals.current[q.numero]);
+      setHoldProgress(prev=>({...prev,[q.numero]:0}));
+      const now=Date.now();
+      if(curtidaCooldown[q.numero]&&now<curtidaCooldown[q.numero]){toast_("⏳ Aguarde antes de desfazer.",false);return;}
+      if((q.curtidas||0)<=0){toast_("Não há curtidas para remover.",false);return;}
+      const nova=(q.curtidas||0)-1;
+      const db=await supa.from("descontos");
+      await db.update({curtidas:nova},{numero:q.numero,tipo:q.tipo});
+      const upd=x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,curtidas:nova}:x;
+      setQuotes(prev=>prev.map(upd));
+      setGaleriaModal(prev=>prev?{...prev,imagens:prev.imagens.map(upd)}:prev);
+      setCurtidaCooldown(prev=>({...prev,[q.numero]:now+5000}));
+      toast_("↩️ Registro removido.");
+    },2000);
+  };
+  const cancelHold=(numero)=>{
+    clearTimeout(holdTimers.current[numero]);
+    clearInterval(holdIntervals.current[numero]);
+    delete holdTimers.current[numero];
+    setHoldProgress(prev=>({...prev,[numero]:0}));
+  };
 
   return(<><style>{css}</style><div className="wrap">
     {/* ── SIDEBAR ── */}
@@ -1758,6 +1807,36 @@ export default function App(){
                     </div>
                   )}
                 </div>
+                {/* Botão curtida — só admin/gerente */}
+                {(session.role==="admin"||hasRole(session,"gerente"))&&(()=>{
+                  const isCool=!!(curtidaCooldown[q.numero]&&Date.now()<curtidaCooldown[q.numero]);
+                  const prog=holdProgress[q.numero]||0;
+                  return(
+                  <div style={{borderTop:"1px solid #2E2E2E",padding:"8px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,background:"#161616"}}>
+                    <div style={{fontSize:10,color:isCool?AMBER:MUTED,fontWeight:600}}>
+                      {isCool?"⏳ Aguarde para registrar novamente":"Segure 2s para desfazer"}
+                    </div>
+                    <div style={{position:"relative",flexShrink:0}}>
+                      {prog>0&&<div style={{position:"absolute",inset:0,borderRadius:20,overflow:"hidden",zIndex:1}}>
+                        <div style={{height:"100%",width:prog+"%",background:RED+"55",transition:"width .1s linear"}}/>
+                      </div>}
+                      <button
+                        onMouseDown={()=>{if(!isCool)startHold(q);}}
+                        onMouseUp={()=>cancelHold(q.numero)}
+                        onMouseLeave={()=>cancelHold(q.numero)}
+                        onTouchStart={()=>{if(!isCool)startHold(q);}}
+                        onTouchEnd={()=>cancelHold(q.numero)}
+                        onClick={()=>doCurtida(q)}
+                        style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",gap:6,background:isCool?"#1A1A1A":"#0D2010",border:"2px solid "+(isCool?"#333":GREEN),borderRadius:20,padding:"5px 16px",cursor:isCool?"not-allowed":"pointer",transition:"all .2s",outline:"none",userSelect:"none"}}
+                        title={isCool?"Aguarde 5s":"Clique para registrar uso · Segure 2s para desfazer"}
+                      >
+                        <span style={{fontSize:15}}>👍</span>
+                        <span style={{fontSize:14,fontWeight:800,color:isCool?MUTED:GREEN}}>{q.curtidas||0}</span>
+                      </button>
+                    </div>
+                  </div>
+                  );
+                })()}
               </div>
               );
             })}
