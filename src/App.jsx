@@ -1483,9 +1483,9 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
@@ -1494,7 +1494,7 @@ export default function App(){
           const roles=(u.role||"").split(",").filter(Boolean);
           const has=r=>roles.includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1522,7 +1522,7 @@ export default function App(){
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
