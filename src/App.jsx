@@ -98,10 +98,10 @@ function hasRole(session,role){
 }
 function roleName(r){
   if(!r)return"";
-  const map={admin:"Gerente",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons."};
+  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
   return r.split(",").map(x=>map[x]||x).join(" + ");
 }
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -333,7 +333,7 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+        setTab(s.role==="admin"||s.role==="gerente"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
@@ -637,14 +637,14 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
-          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":hasRole(session,"cadastrar2")?"✏️":hasRole(session,"cadastrar1")?"🔍":hasRole(session,"televendas")?"📞":"🤝"}</span>
+          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":hasRole(session,"gerente")?"📊":hasRole(session,"cadastrar2")?"✏️":hasRole(session,"cadastrar1")?"🔍":hasRole(session,"televendas")?"📞":"🤝"}</span>
           <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
         </div>
         <button className="logout" onClick={doLogout}>Sair</button>
@@ -655,7 +655,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
+    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
@@ -1468,7 +1468,7 @@ export default function App(){
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência (form simples)"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"]].map(([val,lbl])=>(
+                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência (form simples)"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
