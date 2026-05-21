@@ -283,7 +283,7 @@ export default function App(){
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
-  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",loja:"",anotacao:"",anexo:null});
   const[concQuery1,setConcQuery1]=useState("");
   const[concDrop1,setConcDrop1]=useState(false);
   const[concQuery,setConcQuery]=useState("");
@@ -387,14 +387,14 @@ export default function App(){
 
 
   const doAddConc1=async()=>{
-    if(!concForm1.medida||!concForm1.segmento||!concForm1.empresa){toast_("Preencha medida, segmento e concorrente.",false);return;}
+    if(!concForm1.medida||!concForm1.segmento||!concForm1.empresa||!concForm1.loja){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
     try{
       const auto="#CONC"+Date.now().toString().slice(-6);
       const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")"+(concForm1.anotacao?"\n\n📝 ANOTAÇÃO:\n"+concForm1.anotacao:"");
       const db=await supa.from("descontos");
       const {error}=await db.insert({
         tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida||"—",segmento:concForm1.segmento||"—",
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,
         negociador_nome:session.username,negociador_email:session.email,
@@ -405,7 +405,7 @@ export default function App(){
       });
       if(error){console.error("doAddConc1:",error);toast_("Erro ao salvar.",false);return;}
       const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida||"—",segmento:concForm1.segmento||"—",
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
         criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
@@ -414,7 +414,7 @@ export default function App(){
         anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
       };
       setQuotes(prev=>[novo,...prev]);
-      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",loja:"",anotacao:"",anexo:null});
       setConcQuery1("");
       toast_("Registrado com sucesso! 🎯");
     }catch(e){toast_("Erro.",false);}
@@ -436,7 +436,7 @@ export default function App(){
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
     const valNorm=(q.validade||"").split("T")[0];
-    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:(q.loja==="—"?"":q.loja||""),valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
     setEditConcAdicionados(concExist);
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
     setEditAnexo(q.anexoBase64?{base64:q.anexoBase64,tipo:q.anexoTipo||"image/jpeg",nome:q.anexoNome||"anexo"}:null);
@@ -444,7 +444,7 @@ export default function App(){
   };
 
   const doSaveEdit=async()=>{
-    if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
+    if(!editForm.validade||!editForm.medida||!editForm.valor||!editForm.loja){toast_("Preencha os campos obrigatórios (medida, loja, valor, validade).",false);return;}
     try{
       const db = await supa.from("descontos");
       const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
@@ -1153,6 +1153,15 @@ export default function App(){
             </select>
           </div>
         </div>
+        {/* Loja */}
+        <div className="field" style={{marginBottom:14}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#E74C3C":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
         {/* Concorrente */}
         <div className="field" style={{marginBottom:14}}>
           <label>🏢 Nome do Concorrente *</label>
@@ -1617,7 +1626,7 @@ export default function App(){
             <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
             <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
             <div className="field"><label>Segmento</label><select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="field"><label>Loja</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field"><label>Loja *{!editForm.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))} style={{border:"1px solid "+(!editForm.loja?RED:"#2E2E2E"),width:"100%"}}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/></div>
             <div className="field"><label>Forma de Pagamento</label><select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
             <div className="field"><label>Validade *</label><input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/></div>
