@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 
 // ── Supabase Client ──────────────────────────────────────────────
@@ -57,7 +57,7 @@ const supa = {
 const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
-const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
+const VENDEDORES=["Clebe Higa","Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte"];
 const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
 const FOTOS_VENDEDORES={
   "Ana Clara":"data:image/jpeg;base64,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",
@@ -98,10 +98,10 @@ function hasRole(session,role){
 }
 function roleName(r){
   if(!r)return"";
-  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
+  const map={admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"};
   return r.split(",").map(x=>map[x]||x).join(" + ");
 }
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -283,7 +283,7 @@ export default function App(){
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
-  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",loja:"",anotacao:"",anexo:null});
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
   const[concQuery1,setConcQuery1]=useState("");
   const[concDrop1,setConcDrop1]=useState(false);
   const[concQuery,setConcQuery]=useState("");
@@ -299,13 +299,6 @@ export default function App(){
   const[editConcValor,setEditConcValor]=useState("");
   const[editConcPgto,setEditConcPgto]=useState("");
   const[editConcDrop,setEditConcDrop]=useState(false);
-  const[editAnexo,setEditAnexo]=useState(null);
-  const[anotacao,setAnotacao]=useState(()=>{try{return localStorage.getItem("fox_anotacao_"+(session?.email||""))||"";}catch{return"";}});
-  const[anotacaoSalva,setAnotacaoSalva]=useState(false);
-  const[curtidaCooldown,setCurtidaCooldown]=useState({});
-  const[holdProgress,setHoldProgress]=useState({});
-  const holdTimers=useRef({});
-  const holdIntervals=useRef({});
   const[exportRows,setExportRows]=useState([]);
   const[volPeriodo,setVolPeriodo]=useState("semana");
   const[concIntelSel,setConcIntelSel]=useState(null);
@@ -337,7 +330,7 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"||s.role==="gerente"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
@@ -351,7 +344,7 @@ export default function App(){
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
+      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
     })));}
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
@@ -387,14 +380,14 @@ export default function App(){
 
 
   const doAddConc1=async()=>{
-    if(!concForm1.medida||!concForm1.segmento||!concForm1.empresa||!concForm1.loja){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
     try{
       const auto="#CONC"+Date.now().toString().slice(-6);
-      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")"+(concForm1.anotacao?"\n\n📝 ANOTAÇÃO:\n"+concForm1.anotacao:"");
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")";
       const db=await supa.from("descontos");
       const {error}=await db.insert({
-        tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida||"—",segmento:concForm1.segmento||"—",
-        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,
         negociador_nome:session.username,negociador_email:session.email,
@@ -403,9 +396,9 @@ export default function App(){
         anexo_tipo:concForm1.anexo?concForm1.anexo.tipo:null,
         anexo_nome:concForm1.anexo?concForm1.anexo.nome:null,
       });
-      if(error){console.error("doAddConc1:",error);toast_("Erro ao salvar.",false);return;}
-      const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida||"—",segmento:concForm1.segmento||"—",
-        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+      if(error){toast_("Erro ao salvar.",false);return;}
+      const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
         criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
@@ -414,9 +407,9 @@ export default function App(){
         anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
       };
       setQuotes(prev=>[novo,...prev]);
-      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",loja:"",anotacao:"",anexo:null});
+      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
       setConcQuery1("");
-      toast_("Registrado com sucesso! 🎯");
+      toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
   };
 
@@ -435,34 +428,30 @@ export default function App(){
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
-    const valNorm=(q.validade||"").split("T")[0];
-    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:(q.loja==="—"?"":q.loja||""),valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:obsLimpa,erroInterno:q.erroInterno||false});
     setEditConcAdicionados(concExist);
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
-    setEditAnexo(q.anexoBase64?{base64:q.anexoBase64,tipo:q.anexoTipo||"image/jpeg",nome:q.anexoNome||"anexo"}:null);
     setEditModal(q);
   };
 
   const doSaveEdit=async()=>{
-    if(!editForm.validade||!editForm.medida||!editForm.valor||!editForm.loja){toast_("Preencha os campos obrigatórios (medida, loja, valor, validade).",false);return;}
+    if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
     try{
       const db = await supa.from("descontos");
-      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
       const {error:eUpd} = await db.update({
         cba:editForm.cba, medida:editForm.medida, segmento:editForm.segmento,
         loja:editForm.loja, valor:editForm.valor, pgto:editForm.pgto,
         validade:editForm.validade,
         erro_interno:editForm.erroInterno,
-        obs:obsFinal,
-        anexo_base64:editAnexo?editAnexo.base64:null,
-        anexo_tipo:editAnexo?editAnexo.tipo:null,
-        anexo_nome:editAnexo?editAnexo.nome:null,
+        obs:editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"")
       },{numero:editModal.numero,tipo:editModal.tipo});
-      if(eUpd){console.error("update_desconto error:",eUpd);toast_("Erro ao atualizar: "+String(eUpd).slice(0,120),false);return;}
-      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...editForm,obs:obsFinal,erroInterno:editForm.erroInterno,anexoBase64:editAnexo?.base64||null,anexoTipo:editAnexo?.tipo||null,anexoNome:editAnexo?.nome||null}:x));
-      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...editForm,obs:obsFinal,anexoBase64:editAnexo?.base64||null,anexoTipo:editAnexo?.tipo||null,anexoNome:editAnexo?.nome||null}));
+      if(eUpd){toast_("Erro ao atualizar: "+eUpd,false);return;}
+      const updated={...editForm};
+      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
+      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated,obs:obsFinal,erroInterno:editForm.erroInterno}:x));
+      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...updated}));
       setEditModal(null);
-      toast_("Desconto atualizado! ✅");
+      toast_("Desconto atualizado!");
     }catch(e){toast_("Erro ao atualizar.",false);}
   };
 
@@ -632,51 +621,6 @@ export default function App(){
     <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
   </div></div></>);
 
-  const doCurtida=async(q)=>{
-    const now=Date.now();
-    if(curtidaCooldown[q.numero]&&now<curtidaCooldown[q.numero]){
-      const rem=Math.ceil((curtidaCooldown[q.numero]-now)/1000);
-      toast_(`⏳ Aguarde ${rem}s para registrar novamente.`,false);return;
-    }
-    const nova=(q.curtidas||0)+1;
-    const db=await supa.from("descontos");
-    await db.update({curtidas:nova},{numero:q.numero,tipo:q.tipo});
-    const upd=x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,curtidas:nova}:x;
-    setQuotes(prev=>prev.map(upd));
-    setGaleriaModal(prev=>prev?{...prev,imagens:prev.imagens.map(upd)}:prev);
-    setCurtidaCooldown(prev=>({...prev,[q.numero]:now+5000}));
-    toast_(`👍 Uso registrado! Total: ${nova}x`);
-  };
-  const startHold=(q)=>{
-    let prog=0;
-    holdIntervals.current[q.numero]=setInterval(()=>{
-      prog+=5;
-      setHoldProgress(prev=>({...prev,[q.numero]:Math.min(prog,100)}));
-      if(prog>=100){clearInterval(holdIntervals.current[q.numero]);}
-    },100);
-    holdTimers.current[q.numero]=setTimeout(async()=>{
-      clearInterval(holdIntervals.current[q.numero]);
-      setHoldProgress(prev=>({...prev,[q.numero]:0}));
-      const now=Date.now();
-      if(curtidaCooldown[q.numero]&&now<curtidaCooldown[q.numero]){toast_("⏳ Aguarde antes de desfazer.",false);return;}
-      if((q.curtidas||0)<=0){toast_("Não há curtidas para remover.",false);return;}
-      const nova=(q.curtidas||0)-1;
-      const db=await supa.from("descontos");
-      await db.update({curtidas:nova},{numero:q.numero,tipo:q.tipo});
-      const upd=x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,curtidas:nova}:x;
-      setQuotes(prev=>prev.map(upd));
-      setGaleriaModal(prev=>prev?{...prev,imagens:prev.imagens.map(upd)}:prev);
-      setCurtidaCooldown(prev=>({...prev,[q.numero]:now+5000}));
-      toast_("↩️ Registro removido.");
-    },2000);
-  };
-  const cancelHold=(numero)=>{
-    clearTimeout(holdTimers.current[numero]);
-    clearInterval(holdIntervals.current[numero]);
-    delete holdTimers.current[numero];
-    setHoldProgress(prev=>({...prev,[numero]:0}));
-  };
-
   return(<><style>{css}</style><div className="wrap">
     {/* ── SIDEBAR ── */}
     <div className="sidebar">
@@ -686,14 +630,14 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
-        {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
-          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":hasRole(session,"gerente")?"📊":hasRole(session,"cadastrar2")?"✏️":hasRole(session,"cadastrar1")?"🔍":hasRole(session,"televendas")?"📞":"🤝"}</span>
+          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":session.role==="cadastrar1"?"🔍":session.role==="cadastrar2"?"✏️":"🤝"}</span>
           <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
         </div>
         <button className="logout" onClick={doLogout}>Sair</button>
@@ -704,7 +648,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
@@ -1133,102 +1077,68 @@ export default function App(){
         <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
         <div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre o preço do concorrente para análise de mercado</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência para análise</div>
         </div>
       </div>
-      <div className="card" style={{maxWidth:600}}>
-        {/* Medida + Segmento */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+      <div className="card">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div className="field">
-            <label>🔵 Medida do Pneu *</label>
-            <input placeholder="Ex: 175/65R14" value={concForm1.medida}
-              onChange={e=>setConcForm1(f=>({...f,medida:e.target.value.toUpperCase()}))}
-              style={{width:"100%",boxSizing:"border-box"}}/>
+            <label>Medida do Pneu *</label>
+            <input placeholder="Ex: 175/65R14" value={concForm1.medida} onChange={e=>setConcForm1(f=>({...f,medida:e.target.value.toUpperCase()}))}/>
           </div>
           <div className="field">
-            <label>📦 Segmento *</label>
-            <select value={concForm1.segmento} onChange={e=>setConcForm1(f=>({...f,segmento:e.target.value}))} style={{width:"100%"}}>
+            <label>Segmento *</label>
+            <select value={concForm1.segmento} onChange={e=>setConcForm1(f=>({...f,segmento:e.target.value}))}>
               <option value="">Selecione...</option>
               {SEGS.map(s=><option key={s}>{s}</option>)}
             </select>
           </div>
         </div>
-        {/* Loja */}
-        <div className="field" style={{marginBottom:14}}>
-          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
-          <select value={concForm1.loja} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
-            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#E74C3C":"#2E2E2E")}}>
-            <option value="">Selecione a loja...</option>
-            {LOJAS.map(l=><option key={l}>{l}</option>)}
-          </select>
-        </div>
-        {/* Concorrente */}
-        <div className="field" style={{marginBottom:14}}>
-          <label>🏢 Nome do Concorrente *</label>
-          <div style={{position:"relative"}}>
-            <input placeholder="Digite para buscar concorrente..." value={concQuery1}
-              onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
-              onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
-              style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
-            {concDrop1&&concQuery1.length>0&&(()=>{
-              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
-              if(!sug.length)return null;
-              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
-              </div>);
-            })()}
+        <div className="field mb" style={{marginBottom:12}}>
+          <label>🏢 Concorrente *</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:2,minWidth:180,position:"relative"}}>
+              <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+                onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+                onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+                style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+              {concDrop1&&concQuery1.length>0&&(()=>{
+                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+                if(!sug.length)return null;
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                  {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                </div>);
+              })()}
+            </div>
+            <div style={{flex:1,minWidth:110}}>
+              <input type="number" step="0.01" placeholder="Valor deles" value={concForm1.valor}
+                onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{flex:1,minWidth:130}}>
+              <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+                <option value="">Pagamento</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
           </div>
         </div>
-        {/* Valor + Pgto */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-          <div className="field">
-            <label>💰 Valor do Concorrente</label>
-            <input type="number" step="0.01" placeholder="Ex: 350.00" value={concForm1.valor}
-              onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
-          </div>
-          <div className="field">
-            <label>💳 Forma de Pagamento</label>
-            <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
-              <option value="">Selecione...</option>
-              {PGTO.map(o=><option key={o}>{o}</option>)}
-            </select>
-          </div>
-        </div>
-        {/* Foto */}
-        <div className="field" style={{marginBottom:18}}>
-          <label>📝 Anotação (opcional)</label>
-          <textarea
-            placeholder="Anote informações importantes sobre esta concorrência..."
-            value={concForm1.anotacao}
-            onChange={e=>setConcForm1(f=>({...f,anotacao:e.target.value}))}
-            style={{width:"100%",boxSizing:"border-box",minHeight:80,background:"#111",border:"1px solid #2E2E2E",borderRadius:8,color:"#F0F0F0",fontSize:13,lineHeight:1.6,padding:"10px 12px",resize:"vertical",fontFamily:"'Inter',sans-serif",outline:"none",marginTop:4}}
-          />
-        </div>
-        {/* Foto / Print */}
-        <div className="field" style={{marginBottom:18}}>
-          <label>📸 Foto / Print do Concorrente (opcional)</label>
+        <div className="field mb" style={{marginBottom:16}}>
+          <label>📸 Foto do Concorrente (opcional)</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
-            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed "+(concForm1.anexo?"#9B59B6":"#3A3A3A"),borderRadius:8,padding:"12px 20px",fontSize:13,color:concForm1.anexo?"#9B59B6":"#888",transition:"all .2s"}}>
-              <span>{concForm1.anexo?"✅":"📎"}</span>
-              {concForm1.anexo?concForm1.anexo.nome:"Selecionar imagem"}
-              <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",fontSize:13,color:"#888"}}>
+              <span>📎</span>{concForm1.anexo?"✅ "+concForm1.anexo.nome:"Selecionar arquivo"}
+              <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
                 const file=e.target.files[0];if(!file)return;
-                if(file.size>3*1024*1024){toast_("Imagem muito grande. Máx 3MB.",false);return;}
                 const reader=new FileReader();
                 reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
                 reader.readAsDataURL(file);
               }}/>
             </label>
-            {concForm1.anexo&&<>
-              <img src={concForm1.anexo.base64} alt="preview" style={{width:56,height:56,objectFit:"cover",borderRadius:8,border:"1px solid #9B59B6"}}/>
-              <button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:20,padding:4}}>×</button>
-            </>}
+            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:18}}>×</button>}
           </div>
         </div>
-        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",padding:"14px",fontSize:15,letterSpacing:1}}>
-          ✅ SALVAR REGISTRO DE CONCORRÊNCIA
-        </button>
+        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
       </div>
       </>)}
 
@@ -1526,7 +1436,7 @@ export default function App(){
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência (form simples)"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
+                {[["televendas","📞 Descontos — cadastro completo"],["comercial","🤝 Comercial — consultar"],["cadastrar1","🔍 Inteligência — só concorrentes"],["cadastrar2","✏️ Cadastro Completo + Consultar"]].map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
@@ -1541,9 +1451,9 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
@@ -1552,7 +1462,7 @@ export default function App(){
           const roles=(u.role||"").split(",").filter(Boolean);
           const has=r=>roles.includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1580,7 +1490,7 @@ export default function App(){
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
@@ -1626,7 +1536,7 @@ export default function App(){
             <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
             <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
             <div className="field"><label>Segmento</label><select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="field"><label>Loja *{!editForm.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))} style={{border:"1px solid "+(!editForm.loja?RED:"#2E2E2E"),width:"100%"}}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field"><label>Loja</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
             <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/></div>
             <div className="field"><label>Forma de Pagamento</label><select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
             <div className="field"><label>Validade *</label><input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/></div>
@@ -1669,49 +1579,6 @@ export default function App(){
             <input type="checkbox" checked={editForm.erroInterno} onChange={e=>setEditForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:RED,cursor:"pointer"}}/>
             <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
           </label>
-          {/* Comprovante / Anexo */}
-          <div style={{borderTop:"1px solid #2E2E2E",paddingTop:14,marginBottom:14}}>
-            <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>📎 Comprovante / Imagem</div>
-            {editAnexo?(
-              <div style={{display:"flex",alignItems:"center",gap:12,background:"#0D1117",border:"1px solid #1A3A1A",borderRadius:8,padding:"10px 14px"}}>
-                {editAnexo.tipo&&editAnexo.tipo.startsWith("image")&&(
-                  <img src={editAnexo.base64} alt="preview" style={{width:56,height:56,objectFit:"cover",borderRadius:6,border:"1px solid #2E4A2E",cursor:"zoom-in"}} onClick={()=>setImgModal({src:editAnexo.base64,nome:editAnexo.nome})}/>
-                )}
-                <div style={{flex:1}}>
-                  <div style={{fontSize:12,color:"#4CAF50",fontWeight:700}}>✅ {editAnexo.nome}</div>
-                  <div style={{fontSize:10,color:MUTED,marginTop:2}}>Clique na imagem para ampliar</div>
-                </div>
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  <label style={{cursor:"pointer",background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,textAlign:"center"}}>
-                    🔄 Trocar
-                    <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
-                      const file=e.target.files[0];if(!file)return;
-                      if(file.size>5*1024*1024){toast_("Imagem muito grande. Máx 5MB.",false);return;}
-                      const reader=new FileReader();
-                      reader.onload=ev=>setEditAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
-                      reader.readAsDataURL(file);
-                    }}/>
-                  </label>
-                  <button onClick={()=>setEditAnexo(null)} style={{background:"transparent",border:"1px solid "+RED,color:RED,borderRadius:6,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑 Remover</button>
-                </div>
-              </div>
-            ):(
-              <label style={{cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:"#111",border:"2px dashed #2E2E2E",borderRadius:8,padding:"16px 20px",color:"#666",transition:"all .2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=BLUE;e.currentTarget.style.color=BLUE;}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#2E2E2E";e.currentTarget.style.color="#666";}}>
-                <span style={{fontSize:22}}>📸</span>
-                <div>
-                  <div style={{fontSize:13,fontWeight:700}}>Adicionar comprovante</div>
-                  <div style={{fontSize:11,marginTop:2}}>Imagem até 5MB</div>
-                </div>
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
-                  const file=e.target.files[0];if(!file)return;
-                  if(file.size>5*1024*1024){toast_("Imagem muito grande. Máx 5MB.",false);return;}
-                  const reader=new FileReader();
-                  reader.onload=ev=>setEditAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
-                  reader.readAsDataURL(file);
-                }}/>
-              </label>
-            )}
-          </div>
           <div style={{display:"flex",gap:10}}>
             <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
             <button className="btn-red" style={{flex:2}} onClick={doSaveEdit}>Salvar Atualização</button>
@@ -1816,36 +1683,6 @@ export default function App(){
                     </div>
                   )}
                 </div>
-                {/* Botão curtida — só admin/gerente */}
-                {(session.role==="admin"||hasRole(session,"gerente"))&&(()=>{
-                  const isCool=!!(curtidaCooldown[q.numero]&&Date.now()<curtidaCooldown[q.numero]);
-                  const prog=holdProgress[q.numero]||0;
-                  return(
-                  <div style={{borderTop:"1px solid #2E2E2E",padding:"8px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,background:"#161616"}}>
-                    <div style={{fontSize:10,color:isCool?AMBER:MUTED,fontWeight:600}}>
-                      {isCool?"⏳ Aguarde para registrar novamente":"Segure 2s para desfazer"}
-                    </div>
-                    <div style={{position:"relative",flexShrink:0}}>
-                      {prog>0&&<div style={{position:"absolute",inset:0,borderRadius:20,overflow:"hidden",zIndex:1}}>
-                        <div style={{height:"100%",width:prog+"%",background:RED+"55",transition:"width .1s linear"}}/>
-                      </div>}
-                      <button
-                        onMouseDown={()=>{if(!isCool)startHold(q);}}
-                        onMouseUp={()=>cancelHold(q.numero)}
-                        onMouseLeave={()=>cancelHold(q.numero)}
-                        onTouchStart={()=>{if(!isCool)startHold(q);}}
-                        onTouchEnd={()=>cancelHold(q.numero)}
-                        onClick={()=>doCurtida(q)}
-                        style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",gap:6,background:isCool?"#1A1A1A":"#0D2010",border:"2px solid "+(isCool?"#333":GREEN),borderRadius:20,padding:"5px 16px",cursor:isCool?"not-allowed":"pointer",transition:"all .2s",outline:"none",userSelect:"none"}}
-                        title={isCool?"Aguarde 5s":"Clique para registrar uso · Segure 2s para desfazer"}
-                      >
-                        <span style={{fontSize:15}}>👍</span>
-                        <span style={{fontSize:14,fontWeight:800,color:isCool?MUTED:GREEN}}>{q.curtidas||0}</span>
-                      </button>
-                    </div>
-                  </div>
-                  );
-                })()}
               </div>
               );
             })}
