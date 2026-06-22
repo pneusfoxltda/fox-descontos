@@ -345,7 +345,17 @@ export default function App(){
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
       anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
-    })));}
+    })));
+    // Auto-marcar expiradas como perdidas
+    const vencidas=qu.filter(q=>!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date());
+    if(vencidas.length>0){
+      const db2=await supa.from("descontos");
+      for(const q of vencidas){
+        await db2.update({perdida:true,motivo_perda:"Validade expirada automaticamente"},{numero:q.numero,tipo:q.tipo});
+      }
+      setQuotes(prev=>prev.map(q=>vencidas.find(v=>v.numero===q.numero&&v.tipo===q.tipo)?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }
+    }
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
@@ -1266,7 +1276,7 @@ export default function App(){
           <button className="s-btn" onClick={doSearch}>BUSCAR</button>
         </div>
       </div>
-      {result&&session.role!=="admin"&&isExp(result.validade)&&!result.liberado&&(
+      {result&&session.role!=="admin"&&(isExp(result.validade)||result.perdida)&&!result.liberado&&(
         <div className="card" style={{marginBottom:16,textAlign:"center",padding:"40px 24px"}}>
           <div style={{fontSize:48,marginBottom:16}}>⏰</div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2,color:RED,marginBottom:8}}>NEGOCIAÇÃO EXPIRADA</div>
@@ -1279,7 +1289,7 @@ export default function App(){
           </div>
         </div>
       )}
-      {result&&(session.role==="admin"||!isExp(result.validade)||result.liberado)&&(<div className="rc">
+      {result&&(session.role==="admin"||(!isExp(result.validade)&&!result.perdida)||result.liberado)&&(<div className="rc">
         <div className="rh">
           <div>
             {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
