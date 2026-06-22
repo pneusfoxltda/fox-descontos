@@ -1266,7 +1266,20 @@ export default function App(){
           <button className="s-btn" onClick={doSearch}>BUSCAR</button>
         </div>
       </div>
-      {result&&(<div className="rc">
+      {result&&session.role!=="admin"&&isExp(result.validade)&&!result.liberado&&(
+        <div className="card" style={{marginBottom:16,textAlign:"center",padding:"40px 24px"}}>
+          <div style={{fontSize:48,marginBottom:16}}>⏰</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2,color:RED,marginBottom:8}}>NEGOCIAÇÃO EXPIRADA</div>
+          <div style={{fontSize:14,color:"#888",lineHeight:1.7,marginBottom:20}}>
+            O prazo desta negociação foi encerrado.<br/>
+            Entre em contato com o <strong style={{color:"#F0F0F0"}}>Administrador</strong> para verificar<br/>se ainda é possível prosseguir.
+          </div>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1A1A1A",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 20px",fontSize:13,color:"#666"}}>
+            🦊 Fox Pneus — Setor de Descontos
+          </div>
+        </div>
+      )}
+      {result&&(session.role==="admin"||!isExp(result.validade)||result.liberado)&&(<div className="rc">
         <div className="rh">
           <div>
             {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
