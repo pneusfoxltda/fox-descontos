@@ -272,13 +272,13 @@ export default function App(){
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
-    if(filtroStatus==="todos")return !q.perdida;
+    if(filtroStatus==="todos")return true;
     if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
-    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida;
+    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="perdida")return !!q.perdida;
-    return !q.perdida;
+    return true;
   }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
@@ -345,17 +345,11 @@ export default function App(){
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
       anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
-    })));
-    // Auto-marcar expiradas como perdidas
-    const vencidas=qu.filter(q=>!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date());
-    if(vencidas.length>0){
-      const db2=await supa.from("descontos");
-      for(const q of vencidas){
-        await db2.update({perdida:true,motivo_perda:"Validade expirada automaticamente"},{numero:q.numero,tipo:q.tipo});
-      }
-      setQuotes(prev=>prev.map(q=>vencidas.find(v=>v.numero===q.numero&&v.tipo===q.tipo)?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
-    }
-    }
+    })));}
+    // Auto-marcar expiradas como perdidas — uma única chamada rápida
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    await fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})});
+    setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
@@ -1268,7 +1262,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":filtroStatus==="perdida"?"Perdidas":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1402,13 +1396,15 @@ export default function App(){
             ["validos","Válidos",GREEN],
             ["pendente","Pendentes",AMBER],
             ["liberado","Liberados",GREEN],
-            ["vencido","Vencidas","#CC1F1F"]
+            ["vencido","Vencidas","#CC1F1F"],
+            ["perdida","Perdidas","#9B59B6"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
-              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
-              :v==="pendente"?quotes.filter(q=>!q.liberado).length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
+              :v==="pendente"?quotes.filter(q=>!q.liberado&&!q.perdida&&!isExp(q.validade)).length
               :v==="liberado"?quotes.filter(q=>q.liberado).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
+              :v==="perdida"?quotes.filter(q=>q.perdida).length
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
@@ -1419,6 +1415,8 @@ export default function App(){
         <div className="card-np">{quotes.filter(q=>{
             if(filtroStatus==="todos")return true;
             if(filtroStatus==="liberado")return !!q.liberado;
+            if(filtroStatus==="perdida")return !!q.perdida;
+            if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
             if(filtroStatus==="pendente")return !q.liberado;
             if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
             if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
