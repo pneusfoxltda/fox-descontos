@@ -54,7 +54,20 @@ const supa = {
   }
 };
 
-const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
+const ADMIN_EMAIL="ti@redefox.com.br"; // só referência de e-mail; senha NÃO fica no código
+// Login seguro: valida no Supabase via função fox_login (a senha nunca volta ao navegador)
+async function foxLogin(email, senha){
+  try{
+    const r = await fetch(SUPA_URL+"/rest/v1/rpc/fox_login",{
+      method:"POST",
+      headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_email:email,p_senha:senha})
+    });
+    if(!r.ok)return null;
+    const data=await r.json();
+    return (Array.isArray(data)&&data.length>0)?data[0]:null;
+  }catch(e){return null;}
+}
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
 const VENDEDORES=["Clebe Higa","Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte"];
@@ -351,8 +364,8 @@ export default function App(){
     await fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})});
     setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
     const ub = await supa.from("usuarios");
-    const {data:us} = await ub.select();
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+    const {data:us} = await ub.select("nome,email,role,foto");
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,role:u.role,foto:u.foto})));
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
@@ -508,11 +521,17 @@ export default function App(){
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
 
-  const doLogin=()=>{
+  const doLogin=async()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
-    const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
+    if(!u||!p){setLoginErr("Preencha e-mail e senha.");return;}
+    setLoginErr("Entrando...");
+    const f=await foxLogin(u,p);
+    if(f){
+      const s={username:f.nome||f.email,email:f.email,role:f.role};
+      setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
+      setTab(s.role==="admin"?"dashboard":(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar"));
+      setLoginErr("");return;
+    }
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
@@ -578,13 +597,17 @@ export default function App(){
   const doAddUser=async()=>{
     const em=newUser.email.trim().toLowerCase();
     if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
-    if(em===ADMIN_USER){toast_("E-mail reservado.",false);return;}
+    if(em===ADMIN_EMAIL){toast_("E-mail reservado.",false);return;}
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
     try{
-      const db = await supa.from("usuarios");
-      const rolesStr=newUser.roles.join(",");const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:rolesStr,foto:newUser.foto||null});
-      if(error){toast_("Erro ao criar usuário.",false);return;}
-      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.roles.join(","),foto:newUser.foto||null}]);
+      const rolesStr=newUser.roles.join(",");
+      const r = await fetch(SUPA_URL+"/rest/v1/rpc/fox_criar_usuario",{
+        method:"POST",
+        headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({p_nome:newUser.nome.trim(),p_email:em,p_senha:newUser.pass,p_role:rolesStr,p_foto:newUser.foto||null})
+      });
+      if(!r.ok){toast_("Erro ao criar usuário.",false);return;}
+      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,role:rolesStr,foto:newUser.foto||null}]);
       setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});toast_("Usuário criado!");
     }catch(e){toast_("Erro.",false);}
   };
@@ -1533,7 +1556,7 @@ export default function App(){
           );
         })}</div>
       </>)}
-      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>ti@redefox.com.br</strong>. A senha fica protegida (com hash) no banco e nunca trafega em texto puro.</div>
     </>)}
 
     </div>
