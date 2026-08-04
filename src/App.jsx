@@ -827,6 +827,7 @@ export default function App(){
         {/* Ranking Vendedores */}
         {(()=>{
           const byV={};
+          // Segue o filtro de data do dashboard normalmente
           filtered.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
             if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,perdido:0,val:0};
             byV[q.vendedor].total++;
