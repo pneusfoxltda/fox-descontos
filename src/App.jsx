@@ -567,12 +567,15 @@ export default function App(){
       const db = await supa.from("descontos");
       await db.update({
         liberado:nowLib,
+        // Ao liberar: remove o flag de perdida para ficar como "Liberado"
+        perdida:nowLib?false:q.perdida,
+        motivo_perda:nowLib?null:q.motivoPerda,
         liberador_nome:ldata.liberadorNome,
         liberador_email:ldata.liberadorEmail,
         liberado_em:ldata.liberadoEm
       },{numero:q.numero,tipo:q.tipo});
-      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,...ldata}:x));
-      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,...ldata}));
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,perdida:nowLib?false:x.perdida,motivoPerda:nowLib?null:x.motivoPerda,...ldata}:x));
+      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,perdida:nowLib?false:prev.perdida,motivoPerda:nowLib?null:prev.motivoPerda,...ldata}));
       toast_(nowLib?"Desconto liberado!":"Liberação removida.");
     }catch(e){toast_("Erro.",false);}
   };
@@ -1283,21 +1286,14 @@ export default function App(){
           <button className="s-btn" onClick={doSearch}>BUSCAR</button>
         </div>
       </div>
-      {result&&(
-        // Bloqueia somente PERDIDA para não-admin
-        session.role!=="admin"&&result.perdida&&!result.liberado?(
-          <div className="card" style={{marginBottom:16,textAlign:"center",padding:"40px 24px"}}>
-            <div style={{fontSize:48,marginBottom:16}}>⛔</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2,color:RED,marginBottom:8}}>NEGOCIAÇÃO PERDIDA</div>
-            <div style={{fontSize:14,color:"#888",lineHeight:1.7,marginBottom:20}}>
-              Esta negociação foi encerrada e não pode mais ser utilizada.<br/>
-              Entre em contato com o <strong style={{color:"#F0F0F0"}}>Administrador</strong> para mais informações.
-            </div>
-            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1A1A1A",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 20px",fontSize:13,color:"#666"}}>
-              🦊 Fox Pneus — Setor de Descontos
-            </div>
+      {result&&(<div className="rc">
+        {result.perdida&&!result.liberado&&<div style={{background:"#1A0800",border:"1px solid #5A2000",borderRadius:8,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18}}>⚠️</span>
+          <div>
+            <div style={{fontSize:11,fontWeight:800,color:"#E07020",textTransform:"uppercase",letterSpacing:1}}>Negociação Encerrada</div>
+            <div style={{fontSize:12,color:"#888",marginTop:2}}>Esta negociação está encerrada — você ainda pode liberá-la abaixo se o cliente fechar.</div>
           </div>
-        ):(<div className="rc">
+        </div>}
         <div className="rh">
           <div>
             {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
@@ -1398,8 +1394,7 @@ export default function App(){
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"#888",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
           </div>}
-      </div>)
-      )}
+      </div>)}
       {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
 
       {/* Lista */}
