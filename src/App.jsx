@@ -624,6 +624,17 @@ export default function App(){
     return true;
   }),[quotes,dash]);
 
+  // Filtro para ranking — inclui perdidas para contagem real
+  const filteredRanking=useMemo(()=>quotes.filter(q=>{
+    if(q.erroInterno)return false;
+    if(dash.loja&&q.loja!==dash.loja)return false;
+    if(dash.segmento&&q.segmento!==dash.segmento)return false;
+    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
+    if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
+    if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
+    return true;
+  }),[quotes,dash]);
+
   const mChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.medida]=(c[q.medida]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,value])=>({name,value}));},[filtered]);
   const sChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.segmento]=(c[q.segmento]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
@@ -828,7 +839,7 @@ export default function App(){
         {(()=>{
           const byV={};
           // Segue o filtro de data do dashboard normalmente
-          filtered.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
+          filteredRanking.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
             if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,perdido:0,val:0};
             byV[q.vendedor].total++;
             if(q.liberado)byV[q.vendedor].lib++;
