@@ -827,11 +827,11 @@ export default function App(){
         {/* Ranking Vendedores */}
         {(()=>{
           const byV={};
-          filtered.filter(q=>q.vendedor).forEach(q=>{
-            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,venc:0,val:0};
+          filtered.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
+            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,perdido:0,val:0};
             byV[q.vendedor].total++;
             if(q.liberado)byV[q.vendedor].lib++;
-            else if(isExp(q.validade))byV[q.vendedor].venc++;
+            else if(q.perdida||isExp(q.validade))byV[q.vendedor].perdido++;
             else byV[q.vendedor].pend++;
             byV[q.vendedor].val+=(parseFloat(q.valor)||0);
           });
@@ -842,7 +842,7 @@ export default function App(){
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Neg.","Fechou","Pend.","Perdido","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
@@ -863,7 +863,7 @@ export default function App(){
                   <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
-                  <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"11",color:"#FF6666",borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.perdido}</span></td>
                   <td style={{padding:"10px 10px",minWidth:120}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
