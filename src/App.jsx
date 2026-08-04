@@ -54,23 +54,10 @@ const supa = {
   }
 };
 
-const ADMIN_EMAIL="ti@redefox.com.br"; // só referência de e-mail; senha NÃO fica no código
-// Login seguro: valida no Supabase via função fox_login (a senha nunca volta ao navegador)
-async function foxLogin(email, senha){
-  try{
-    const r = await fetch(SUPA_URL+"/rest/v1/rpc/fox_login",{
-      method:"POST",
-      headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
-      body:JSON.stringify({p_email:email,p_senha:senha})
-    });
-    if(!r.ok)return null;
-    const data=await r.json();
-    return (Array.isArray(data)&&data.length>0)?data[0]:null;
-  }catch(e){return null;}
-}
+const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
-const VENDEDORES=["Clebe Higa","Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte"];
+const VENDEDORES=["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"];
 const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
 const FOTOS_VENDEDORES={
   "Ana Clara":"data:image/jpeg;base64,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",
@@ -111,10 +98,10 @@ function hasRole(session,role){
 }
 function roleName(r){
   if(!r)return"";
-  const map={admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"};
+  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
   return r.split(",").map(x=>map[x]||x).join(" + ");
 }
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -296,7 +283,7 @@ export default function App(){
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
-  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
   const[concQuery1,setConcQuery1]=useState("");
   const[concDrop1,setConcDrop1]=useState(false);
   const[concQuery,setConcQuery]=useState("");
@@ -343,7 +330,7 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+        setTab(s.role==="admin"||s.role==="gerente"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
@@ -357,15 +344,16 @@ export default function App(){
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
-    })));}
-    // Auto-marcar expiradas como perdidas — uma única chamada rápida
+      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
+    })));
+    // Auto-marcar expiradas como perdidas (1 chamada rápida)
     const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
     await fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})});
     setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }
     const ub = await supa.from("usuarios");
-    const {data:us} = await ub.select("nome,email,role,foto");
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,role:u.role,foto:u.foto})));
+    const {data:us} = await ub.select();
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
@@ -397,14 +385,14 @@ export default function App(){
 
 
   const doAddConc1=async()=>{
-    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
+    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento||!concForm1.loja){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
     try{
       const auto="#CONC"+Date.now().toString().slice(-6);
-      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")";
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")"+(concForm1.anotacao?"\n\n📝 ANOTAÇÃO:\n"+concForm1.anotacao:"");
       const db=await supa.from("descontos");
       const {error}=await db.insert({
         tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,
         negociador_nome:session.username,negociador_email:session.email,
@@ -415,7 +403,7 @@ export default function App(){
       });
       if(error){toast_("Erro ao salvar.",false);return;}
       const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
         criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
@@ -424,7 +412,7 @@ export default function App(){
         anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
       };
       setQuotes(prev=>[novo,...prev]);
-      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
+      setConcForm1({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
       setConcQuery1("");
       toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
@@ -445,14 +433,15 @@ export default function App(){
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
-    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:obsLimpa,erroInterno:q.erroInterno||false});
+    const valNorm=(q.validade||"").split("T")[0];
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:(q.loja==="—"?"":q.loja||""),valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
     setEditConcAdicionados(concExist);
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
     setEditModal(q);
   };
 
   const doSaveEdit=async()=>{
-    if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
+    if(!editForm.validade||!editForm.medida||!editForm.valor||!editForm.loja){toast_("Preencha os campos obrigatórios (medida, loja, valor, validade).",false);return;}
     try{
       const db = await supa.from("descontos");
       const {error:eUpd} = await db.update({
@@ -521,17 +510,11 @@ export default function App(){
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
 
-  const doLogin=async()=>{
+  const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(!u||!p){setLoginErr("Preencha e-mail e senha.");return;}
-    setLoginErr("Entrando...");
-    const f=await foxLogin(u,p);
-    if(f){
-      const s={username:f.nome||f.email,email:f.email,role:f.role};
-      setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
-      setTab(s.role==="admin"?"dashboard":(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar"));
-      setLoginErr("");return;
-    }
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
@@ -597,17 +580,13 @@ export default function App(){
   const doAddUser=async()=>{
     const em=newUser.email.trim().toLowerCase();
     if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
-    if(em===ADMIN_EMAIL){toast_("E-mail reservado.",false);return;}
+    if(em===ADMIN_USER){toast_("E-mail reservado.",false);return;}
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
     try{
-      const rolesStr=newUser.roles.join(",");
-      const r = await fetch(SUPA_URL+"/rest/v1/rpc/fox_criar_usuario",{
-        method:"POST",
-        headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
-        body:JSON.stringify({p_nome:newUser.nome.trim(),p_email:em,p_senha:newUser.pass,p_role:rolesStr,p_foto:newUser.foto||null})
-      });
-      if(!r.ok){toast_("Erro ao criar usuário.",false);return;}
-      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,role:rolesStr,foto:newUser.foto||null}]);
+      const db = await supa.from("usuarios");
+      const rolesStr=newUser.roles.join(",");const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:rolesStr,foto:newUser.foto||null});
+      if(error){toast_("Erro ao criar usuário.",false);return;}
+      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.roles.join(","),foto:newUser.foto||null}]);
       setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});toast_("Usuário criado!");
     }catch(e){toast_("Erro.",false);}
   };
@@ -657,7 +636,7 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
@@ -675,7 +654,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
+    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
@@ -1121,6 +1100,13 @@ export default function App(){
             </select>
           </div>
         </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))} style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
         <div className="field mb" style={{marginBottom:12}}>
           <label>🏢 Concorrente *</label>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
@@ -1149,6 +1135,10 @@ export default function App(){
               </select>
             </div>
           </div>
+        </div>
+        <div className="field mb" style={{marginBottom:12}}>
+          <label>📝 Anotação (opcional)</label>
+          <textarea placeholder="Anote informações importantes..." value={concForm1.anotacao||""} onChange={e=>setConcForm1(f=>({...f,anotacao:e.target.value}))} style={{width:"100%",boxSizing:"border-box",minHeight:70,background:"#111",border:"1px solid #2E2E2E",borderRadius:8,color:"#F0F0F0",fontSize:13,lineHeight:1.6,padding:"8px 12px",resize:"vertical",fontFamily:"'Inter',sans-serif",outline:"none",marginTop:4}}/>
         </div>
         <div className="field mb" style={{marginBottom:16}}>
           <label>📸 Foto do Concorrente (opcional)</label>
@@ -1285,7 +1275,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":filtroStatus==="perdida"?"Perdidas":"Vencidas"} ({quotesPorStatus.length})</button>}
+{(session.role==="admin"||hasRole(session,"gerente"))&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":filtroStatus==="perdida"?"Perdidas":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1293,20 +1283,21 @@ export default function App(){
           <button className="s-btn" onClick={doSearch}>BUSCAR</button>
         </div>
       </div>
-      {result&&session.role!=="admin"&&(isExp(result.validade)||result.perdida)&&!result.liberado&&(
-        <div className="card" style={{marginBottom:16,textAlign:"center",padding:"40px 24px"}}>
-          <div style={{fontSize:48,marginBottom:16}}>⏰</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2,color:RED,marginBottom:8}}>NEGOCIAÇÃO EXPIRADA</div>
-          <div style={{fontSize:14,color:"#888",lineHeight:1.7,marginBottom:20}}>
-            O prazo desta negociação foi encerrado.<br/>
-            Entre em contato com o <strong style={{color:"#F0F0F0"}}>Administrador</strong> para verificar<br/>se ainda é possível prosseguir.
+      {result&&(
+        // Bloqueia somente PERDIDA para não-admin
+        session.role!=="admin"&&result.perdida&&!result.liberado?(
+          <div className="card" style={{marginBottom:16,textAlign:"center",padding:"40px 24px"}}>
+            <div style={{fontSize:48,marginBottom:16}}>⛔</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2,color:RED,marginBottom:8}}>NEGOCIAÇÃO PERDIDA</div>
+            <div style={{fontSize:14,color:"#888",lineHeight:1.7,marginBottom:20}}>
+              Esta negociação foi encerrada e não pode mais ser utilizada.<br/>
+              Entre em contato com o <strong style={{color:"#F0F0F0"}}>Administrador</strong> para mais informações.
+            </div>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1A1A1A",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 20px",fontSize:13,color:"#666"}}>
+              🦊 Fox Pneus — Setor de Descontos
+            </div>
           </div>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#1A1A1A",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 20px",fontSize:13,color:"#666"}}>
-            🦊 Fox Pneus — Setor de Descontos
-          </div>
-        </div>
-      )}
-      {result&&(session.role==="admin"||(!isExp(result.validade)&&!result.perdida)||result.liberado)&&(<div className="rc">
+        ):(<div className="rc">
         <div className="rh">
           <div>
             {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
@@ -1407,7 +1398,8 @@ export default function App(){
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"#888",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
           </div>}
-      </div>)}
+      </div>)
+      )}
       {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
 
       {/* Lista */}
@@ -1440,9 +1432,8 @@ export default function App(){
             if(filtroStatus==="liberado")return !!q.liberado;
             if(filtroStatus==="perdida")return !!q.perdida;
             if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
-            if(filtroStatus==="pendente")return !q.liberado;
-            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
@@ -1480,7 +1471,7 @@ export default function App(){
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Descontos — cadastro completo"],["comercial","🤝 Comercial — consultar"],["cadastrar1","🔍 Inteligência — só concorrentes"],["cadastrar2","✏️ Cadastro Completo + Consultar"]].map(([val,lbl])=>(
+                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
@@ -1495,9 +1486,9 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
@@ -1506,7 +1497,7 @@ export default function App(){
           const roles=(u.role||"").split(",").filter(Boolean);
           const has=r=>roles.includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1534,7 +1525,7 @@ export default function App(){
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
@@ -1556,7 +1547,7 @@ export default function App(){
           );
         })}</div>
       </>)}
-      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>ti@redefox.com.br</strong>. A senha fica protegida (com hash) no banco e nunca trafega em texto puro.</div>
+      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
     </>)}
 
     </div>
