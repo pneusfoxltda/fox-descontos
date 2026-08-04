@@ -191,9 +191,7 @@ async function buscar(){
 
     const q=data[0];
 
-    // Bloqueia perdida
-    if(q.perdida&&!q.liberado){show('bloqueado');return;}
-
+    // Nunca bloqueia — sempre mostra o resultado
     // Monta resultado
     document.getElementById('r-tipo').textContent=(q.tipo==='os'?'ORDEM DE SERVIÇO':'ORÇAMENTO')+' — '+( q.loja||'');
     document.getElementById('r-num').textContent='#'+q.numero;
@@ -203,6 +201,8 @@ async function buscar(){
     const statusEl=document.getElementById('r-status');
     if(q.liberado){
       statusEl.innerHTML='<div class="badge-liberado">✅ Desconto Liberado</div>';
+    } else if(q.perdida){
+      statusEl.innerHTML='<div class="badge-expirado">⚠️ Negociação Encerrada — consulte o vendedor responsável</div>';
     } else if(isExp(q.validade)){
       statusEl.innerHTML='<div class="badge-expirado">⚠️ Prazo Expirado — consulte o administrador</div>';
     } else {
