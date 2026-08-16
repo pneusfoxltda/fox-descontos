@@ -281,10 +281,13 @@ async function buscarMedida(){
     // Coleta todos os concorrentes de todas as negociações
     const todosConcorrentes=[];
     validas.forEach(q=>{
-      const concLines=(q.obs||"").split("\n").filter(l=>l.startsWith("• "));
+      const concLines=(q.obs||"").split("\n").filter(l=>l.trim().startsWith("• "));
       concLines.forEach(l=>{
-        const m=l.match(/^• (.+?): (R\$[\d,. ]+) \((.+)\)/);
-        if(m) todosConcorrentes.push({empresa:m[1],valor:m[2].trim(),pgto:m[3]});
+        // Regex flexível para capturar diferentes formatos de valor
+        const m=l.trim().match(/^• (.+?): (.+?) \((.+)\)$/) || l.trim().match(/^• (.+?): (.+)$/);
+        if(m){
+          todosConcorrentes.push({empresa:m[1].trim(),valor:m[2].trim(),pgto:m[3]?m[3].trim():"—"});
+        }
       });
     });
 
