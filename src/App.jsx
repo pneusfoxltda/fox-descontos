@@ -343,15 +343,20 @@ export default function App(){
 
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select();
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
+      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
     })));}
+    // Auto-marcar expiradas como perdidas — não bloqueia carregamento
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
+      setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }).catch(()=>{});
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
