@@ -265,6 +265,7 @@ export default function App(){
   const[logs,setLogs]=useState([]);
   const[adminSenhaModal,setAdminSenhaModal]=useState(null);
   const[adminNovaSenha,setAdminNovaSenha]=useState("");
+  const[logsUsuarios,setLogsUsuarios]=useState([]);
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -359,7 +360,7 @@ export default function App(){
     }).catch(()=>{});
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role,ultimoAcesso:u.ultimo_acesso||null})));
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
@@ -515,11 +516,33 @@ export default function App(){
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
 
+  const registrarLogin=async(email,nome)=>{
+    try{
+      const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+      await fetch(SUPA_URL+"/rest/v1/logs_usuarios",{method:"POST",headers:h,body:JSON.stringify({email,nome,ip,acao:"login"})});
+      // Atualiza ultimo_acesso na tabela de usuários
+      await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(email),{method:"PATCH",headers:h,body:JSON.stringify({ultimo_acesso:new Date().toISOString()})});
+    }catch(e){}
+  };
+
   const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    if(u===ADMIN_USER&&p===ADMIN_PASS){
+      const s={username:"admin",email:"admin",role:"admin"};
+      setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");
+      registrarLogin("admin@foxpneus.com.br","Admin");
+      return;
+    }
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
+    if(f){
+      const s={username:f.nome||f.email,email:f.email,role:f.role};
+      setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
+      setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");
+      setLoginErr("");
+      registrarLogin(f.email,f.nome||f.email);
+      return;
+    }
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
@@ -687,6 +710,7 @@ export default function App(){
         {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h});const d=await r.json();if(Array.isArray(d))setLogsUsuarios(d);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -1845,7 +1869,144 @@ export default function App(){
         </div>
       </div>
     )}
-    {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
+    {/* Atividade tab view */}
+    {tab==="atividade"&&session.role==="admin"&&(()=>{
+      // Calcula stats por usuário
+      const statsMap={};
+      users.forEach(u=>{
+        statsMap[u.email]={nome:u.nome||u.email,email:u.email,role:u.role,logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0};
+      });
+      // Conta negociações por email do negociador
+      quotes.forEach(q=>{
+        if(q.negociadorEmail&&statsMap[q.negociadorEmail]){
+          statsMap[q.negociadorEmail].negociacoes++;
+          if(q.liberado&&q.liberadorEmail&&statsMap[q.liberadorEmail]){
+            statsMap[q.liberadorEmail].liberacoes++;
+          }
+        }
+      });
+      // Conta logins
+      logsUsuarios.forEach(l=>{
+        if(statsMap[l.email]){
+          statsMap[l.email].logins++;
+          if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso)){
+            statsMap[l.email].ultimoAcesso=l.created_at;
+          }
+        }
+      });
+      const statsList=Object.values(statsMap).sort((a,b)=>b.logins-a.logins);
+
+      // Stats dos logs de consulta
+      const emailStats={};
+      const lojaStats={};
+      logs.forEach(l=>{
+        if(l.sucesso){
+          emailStats[l.email]=(emailStats[l.email]||0)+1;
+          if(l.loja)lojaStats[l.loja]=(lojaStats[l.loja]||0)+1;
+        }
+      });
+      const emailRanking=Object.entries(emailStats).sort((a,b)=>b[1]-a[1]);
+      const lojaRanking=Object.entries(lojaStats).sort((a,b)=>b[1]-a[1]);
+
+      return(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📊 Atividade da Plataforma</div>
+            <div style={{fontSize:11,color:MUTED,marginTop:2}}>Visão geral de uso por usuário e por consulta pública</div>
+          </div>
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:20}}>
+
+          {/* Usuários ativos */}
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16,marginBottom:20}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",marginBottom:14}}>👥 ATIVIDADE POR USUÁRIO</div>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                  {["","Usuário","Perfil","Negociações","Liberações","Logins","Último Acesso"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",letterSpacing:1,whiteSpace:"nowrap"}}>{h}</th>)}
+                </tr></thead>
+                <tbody>{statsList.map((u,i)=>{
+                  const ua=u.ultimoAcesso||users.find(x=>x.email===u.email)?.ultimoAcesso||null;
+                  const online=ua&&(new Date()-new Date(ua))<15*60*1000;
+                  return(<tr key={u.email} style={{borderBottom:"1px solid #1A1A1A",background:online?"#0D1A0D":"transparent"}}>
+                    <td style={{padding:"10px 12px",textAlign:"center"}}>
+                      <div style={{width:10,height:10,borderRadius:"50%",background:online?"#4CAF50":"#444",display:"inline-block",boxShadow:online?"0 0 8px #4CAF50":"none"}} title={online?"Online agora":"Offline"}/>
+                    </td>
+                    <td style={{padding:"10px 12px"}}>
+                      <div style={{fontWeight:700,color:TEXT,fontSize:13}}>{u.nome}</div>
+                      <div style={{fontSize:10,color:MUTED}}>{u.email}</div>
+                      {online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700,marginTop:2}}>● Online agora</div>}
+                    </td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:roleColor(u.role)+"22",color:roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{roleName(u.role)}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.negociacoes}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.liberacoes}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}</span></td>
+                    <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>
+                      {ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}
+                    </td>
+                  </tr>);
+                })}</tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Rankings da consulta pública */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+            {/* E-mails que mais pesquisaram */}
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📧 PESQUISAS POR E-MAIL</div>
+              {emailRanking.length===0?<div style={{color:MUTED,fontSize:13}}>Nenhum dado ainda.</div>:
+              emailRanking.map(([email,cnt],i)=>(
+                <div key={email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                  <div>
+                    <span style={{color:MUTED,fontSize:11,marginRight:8}}>#{i+1}</span>
+                    <span style={{fontSize:12,color:TEXT,fontWeight:600}}>{email}</span>
+                  </div>
+                  <span style={{background:BLUE+"22",color:BLUE,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+                </div>
+              ))}
+            </div>
+            {/* Lojas mais pesquisadas */}
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📍 PESQUISAS POR LOJA</div>
+              {lojaRanking.length===0?<div style={{color:MUTED,fontSize:13}}>Nenhum dado ainda.</div>:
+              lojaRanking.map(([loja,cnt],i)=>(
+                <div key={loja} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                  <div>
+                    <span style={{color:MUTED,fontSize:11,marginRight:8}}>#{i+1}</span>
+                    <span style={{fontSize:12,color:TEXT,fontWeight:600}}>{loja}</span>
+                  </div>
+                  <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Histórico de logins */}
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>🕐 HISTÓRICO DE LOGINS ({logsUsuarios.length})</div>
+            {logsUsuarios.length===0?<div style={{color:MUTED,fontSize:13}}>Nenhum login registrado ainda.</div>:(
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                  {["Data/Hora","Usuário","E-mail","IP"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase"}}>{h}</th>)}
+                </tr></thead>
+                <tbody>{logsUsuarios.slice(0,50).map((l,i)=>(
+                  <tr key={i} style={{borderBottom:"1px solid #1A1A1A"}}>
+                    <td style={{padding:"8px 10px",color:MUTED,fontSize:11}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+                    <td style={{padding:"8px 10px",fontWeight:600,color:TEXT}}>{l.nome||"—"}</td>
+                    <td style={{padding:"8px 10px",color:MUTED,fontSize:12}}>{l.email}</td>
+                    <td style={{padding:"8px 10px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+      );
+    })()}
 
     {/* Admin alterar senha de usuário */}
     {adminSenhaModal&&(
@@ -1913,5 +2074,6 @@ export default function App(){
       </div>
     )}
 
+    {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
   </div></div></>);
 }
