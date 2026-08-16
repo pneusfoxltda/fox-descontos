@@ -1,1 +1,1967 @@
+import { useState, useEffect, useMemo } from "react";
+
+
+// ── Supabase Client ──────────────────────────────────────────────
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+
+const supa = {
+  async from(table) {
+    const base = SUPA_URL + "/rest/v1/" + table;
+    const headers = {
+      "apikey": SUPA_KEY,
+      "Authorization": "Bearer " + SUPA_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
+    return {
+      async select(cols="*") {
+        const r = await fetch(base + "?select=" + cols, { headers });
+        return { data: await r.json(), error: r.ok ? null : "erro" };
+      },
+      async insert(obj) {
+        const h = {...headers, "Prefer":"return=minimal"};
+        const r = await fetch(base, { method:"POST", headers:h, body: JSON.stringify(obj) });
+        if(!r.ok){ const e=await r.text(); return {data:null,error:e}; }
+        return { data:null, error:null };
+      },
+      async update(obj, match) {
+        // Use RPC instead of PATCH to avoid CORS preflight issues
+        const table = base.split("/").pop();
+        const rpcName = table==="descontos"?"update_desconto":table==="usuarios"?"update_usuario":null;
+        if(rpcName){
+          const body = table==="descontos"
+            ? {p_numero:match.numero,p_tipo:match.tipo,p_fields:obj}
+            : {p_email:match.email,p_fields:obj};
+          const rpcHeaders={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+          const r = await fetch(SUPA_URL+"/rest/v1/rpc/"+rpcName,{method:"POST",headers:rpcHeaders,body:JSON.stringify(body)});
+          if(!r.ok){const e=await r.text();return{data:null,error:e};}
+          return{data:null,error:null};
+        }
+        // fallback para PATCH
+        const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
+        const r = await fetch(base+"?"+q, { method:"PATCH", headers, body: JSON.stringify(obj) });
+        if(!r.ok){ const e=await r.text(); return {data:null,error:e}; }
+        const txt=await r.text();
+        return { data:txt?JSON.parse(txt):null, error:null };
+      },
+      async delete(match) {
+        const q = Object.entries(match).map(([k,v])=>k+"=eq."+encodeURIComponent(v)).join("&");
+        const r = await fetch(base+"?"+q, { method:"DELETE", headers });
+        return { error: r.ok ? null : "erro" };
+      }
+    };
+  }
+};
+
+const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
+const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
+const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
+const VENDEDORES=["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"];
+const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
+const FOTOS_VENDEDORES={};
+const CONCORRENTES_PADRAO=["Atacado Pneus","GBIM Pneus","Bono Pneus","Camargo Pneus","Espantalho","GP Pneus","Iccap Randon","JK Pneus","Japurá","Morena Pneus","Muniz","Pemaza","Pneu Fácil","Pneu Paulista","Queiroz Pneus","Rei dos Pneus","Rondobras","Shopping dos Pneus","Toyota","Vip Pneus"];
+const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
+const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
+
+function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
+function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function parseConcObs(obs){
+  if(!obs)return[];
+  const marker="CONCORRENTES:";
+  const idx=obs.indexOf(marker);
+  if(idx===-1)return[];
+  const block=obs.slice(idx+marker.length).trim();
+  return block.split("\n").filter(l=>l.trim().startsWith("•")||l.trim().startsWith("\u2022")).map(l=>{
+    const sem=l.trim().replace(/^[•\u2022]\s*/,"");
+    const ci=sem.indexOf(":");if(ci===-1)return null;
+    const empresa=sem.slice(0,ci).trim();
+    const resto=sem.slice(ci+1).trim();
+    const mVal=resto.match(/R\$\s*([\d.,]+)/);
+    const mPgto=resto.match(/\(([^)]+)\)/);
+    const valor=mVal?parseFloat(mVal[1].replace(/\./g,"").replace(",",".")):0;
+    const pgto=mPgto?mPgto[1]:"";
+    return empresa?{empresa,valor,pgto}:null;
+  }).filter(Boolean);
+}
+function fmtDate(d){if(!d)return"-";const[y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
+function hasRole(session,role){
+  if(!session)return false;
+  if(session.role==="admin")return true;
+  const roles=(session.role||"").split(",");
+  return roles.includes(role);
+}
+function roleName(r){
+  if(!r)return"";
+  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
+  return r.split(",").map(x=>map[x]||x).join(" + ");
+}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
+
+const css=`
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
+.wrap{height:100vh;width:100vw;background:#0A0A0A;display:flex;overflow:hidden;position:fixed;top:0;left:0;}
+.sidebar{width:180px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
+.sb-brand{padding:14px 14px 12px;border-bottom:1px solid #1E1E1E;}
+.brand-icon{width:40px;height:40px;background:#CC1F1F;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;margin-top:8px;}
+.brand-sub{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;}
+.sb-nav{flex:1;padding:12px 0;}
+.tab{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#666;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
+.tab:hover{color:#F0F0F0;background:#1A1A1A;}
+.tab.active{color:#fff;border-left-color:#CC1F1F;background:#1A1A1A;}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:#333;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
+.sb-footer{padding:10px 14px;border-top:1px solid #1E1E1E;}
+.chip{display:flex;align-items:center;gap:8px;background:#161616;border:1px solid #222;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
+.logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
+.logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
+.content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100vh;}
+.main{padding:14px 18px;width:100%;box-sizing:border-box;}
+.ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
+.ph-s{font-size:13px;color:#888;margin-top:3px;line-height:1.5;}
+.sec-t{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;margin-bottom:4px;}
+.sec-s{font-size:12px;color:#888;margin-bottom:16px;}
+.card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;padding:22px;margin-bottom:18px;}
+.card-np{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.mb{margin-bottom:14px;}
+label{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;}
+input,select{background:#161616;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:14px;padding:10px 13px;outline:none;transition:border-color .15s;width:100%;}
+input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}select option{background:#1C1C1C;}
+.tipo-row{display:flex;gap:10px;margin-bottom:14px;}
+.tipo-btn{flex:1;background:#161616;border:1px solid #3A3A3A;border-radius:8px;color:#888;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:11px;cursor:pointer;transition:all .15s;text-align:center;}
+.tipo-btn.sel{background:#2E1A1A;border-color:#CC1F1F;color:#fff;}
+.btn-red{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
+.btn-red:hover{background:#E02020;}
+.btn-out{background:transparent;border:1px solid #3A3A3A;color:#888;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.btn-out:hover{border-color:#CC1F1F;color:#CC1F1F;}
+.btn-sm{background:transparent;color:#888;border:1px solid #333;border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;padding:5px 11px;cursor:pointer;transition:all .15s;}
+.btn-sm:hover{border-color:#CC1F1F;color:#CC1F1F;}
+.s-wrap{position:relative;}
+.s-in{font-size:17px;padding:14px 130px 14px 18px;letter-spacing:2px;font-weight:700;}
+.s-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#CC1F1F;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;}
+.s-btn:hover{background:#E02020;}
+.list-row{display:flex;align-items:center;padding:12px 18px;border-bottom:1px solid #2E2E2E;transition:background .12s;gap:10px;}
+.list-row:last-child{border-bottom:none;}.list-row:hover{background:#222;}.list-row.cl{cursor:pointer;}
+.list-num{font-family:'Bebas Neue',sans-serif;font-size:15px;color:#CC1F1F;min-width:88px;letter-spacing:1px;}
+.list-d{font-size:13px;color:#F0F0F0;flex:1;}.list-m{font-size:11px;color:#888;}
+.list-val{font-size:13px;font-weight:700;color:#fff;min-width:88px;text-align:right;}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;letter-spacing:1px;}
+.b-valid{background:#1A2E1A;color:#4CAF50;border:1px solid #2E4A2E;}.b-exp{background:#2E1A1A;color:#CC1F1F;border:1px solid #4A2E2E;}
+.b-tv{background:#1A1E2E;color:#6090E0;border:1px solid #2A3A60;}.b-com{background:#2E2A1A;color:#E0A820;border:1px solid #504020;}
+.b-os{background:#1E2A1E;color:#60C060;border:1px solid #2A4A2A;}.b-orc{background:#1E1E2E;color:#8080E0;border:1px solid #2A2A50;}
+.b-lib{background:#1A2E1A;color:#4CAF50;border:1px solid #2E4A2E;}.b-pend{background:#2A2000;color:#E0A820;border:1px solid #504020;}
+.rc{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.rh{background:#CC1F1F;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;}
+.rn{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;}
+.rt{background:rgba(0,0,0,.3);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px;letter-spacing:1px;}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2E2E2E;}
+.rcell{background:#1C1C1C;padding:16px 20px;}.rcell.full{grid-column:1/-1;}
+.rl{font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
+.rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
+.warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
+.stat-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
+.stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:#fff;line-height:1;margin:6px 0 4px;}.stat-sub{font-size:10px;color:#666;margin-top:2px;letter-spacing:.5px;}
+.chart-card{background:#161616;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:10px;}
+.chart-t{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:#fff;}
+.filter-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.empty{text-align:center;padding:40px 20px;color:#888;}
+.divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
+.info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
+@keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes foxIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes foxPop{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes foxPulse{0%,100%{box-shadow:0 0 0 0 rgba(204,31,31,.4)}50%{box-shadow:0 0 0 10px rgba(204,31,31,0)}}
+.scroll-anim{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.25,.46,.45,.94),transform .7s cubic-bezier(.25,.46,.45,.94);}
+.scroll-anim.in-view{opacity:1;transform:translateY(0);}
+@keyframes foxUp{0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes foxPop{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+.toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
+.t-ok{background:#2E7D32;}.t-err{background:#CC1F1F;}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1001;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .edit-modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:24px;width:100%;max-width:440px;}
+  .edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:#fff;margin-bottom:18px;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:22px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;gap:14px;}
+.modal-t{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:#fff;}
+.exp-table{overflow-x:auto;overflow-y:auto;max-height:58vh;border-radius:8px;border:1px solid #2E2E2E;}
+.exp-table table{width:100%;border-collapse:collapse;font-size:12px;}
+.exp-table th{background:#CC1F1F;padding:8px 10px;text-align:left;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;}
+.exp-table td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #333;}
+.exp-table tr:nth-child(even) td{background:#222;}
+.exp-table tr:nth-child(odd) td{background:#1C1C1C;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0D0D0D;padding:20px;}
+.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:38px 34px;width:100%;max-width:380px;}
+.login-logo{display:flex;justify-content:center;margin-bottom:22px;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:#888;text-align:center;margin-bottom:24px;}
+.login-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+.login-f{margin-bottom:12px;}
+.login-f label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.login-f input{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;width:100%;}
+.login-f input:focus{border-color:#CC1F1F;}
+.login-f input::placeholder{color:#444;}
+.btn-login{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:background .15s;width:100%;margin-top:4px;}
+.btn-login:hover{background:#E02020;}
+.login-hint{font-size:11px;color:#555;text-align:center;margin-top:12px;}
+`;
+
+
+function AnimatedNumber({value, duration=1200}){
+  const [display, setDisplay] = useState(0);
+  const end = parseFloat(value)||0;
+  useEffect(()=>{
+    let current=0;
+    if(end===0){setDisplay(0);return;}
+    const totalFrames=Math.max(1,Math.round(duration/16));
+    let frame=0;
+    const timer=setInterval(()=>{
+      frame++;
+      const progress=frame/totalFrames;
+      const eased=1-Math.pow(1-progress,3);
+      current=Math.round(eased*end);
+      setDisplay(current);
+      if(frame>=totalFrames){setDisplay(end);clearInterval(timer);}
+    },16);
+    return()=>clearInterval(timer);
+  },[end]);
+  return <span>{display}</span>;
+}
+
+export default function App(){
+  useEffect(()=>{
+    document.title="Descontos Fox Pneus";
+    let lk=document.querySelector("link[rel~='icon']");
+    if(!lk){lk=document.createElement("link");lk.rel="icon";document.head.appendChild(lk);}
+    lk.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>";
+  },[]);
+
+  const[session,setSession]=useState(null);
+  const[loginForm,setLoginForm]=useState({email:"",pass:""});
+  const[loginErr,setLoginErr]=useState("");
+  const[showAlterarSenha,setShowAlterarSenha]=useState(false);
+  const[alterarForm,setAlterarForm]=useState({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+  const[alterarMsg,setAlterarMsg]=useState({txt:"",ok:true});
+  const[logs,setLogs]=useState([]);
+  const[adminSenhaModal,setAdminSenhaModal]=useState(null); // {email, nome}
+  const[adminNovaSenha,setAdminNovaSenha]=useState("");
+  const[users,setUsers]=useState([]);
+  const[tab,setTab]=useState("main");
+  const[dashKey,setDashKey]=useState(0);
+    const[quotes,setQuotes]=useState([]);
+  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+  const[search,setSearch]=useState("");
+  const[result,setResult]=useState(null);
+  const[notFound,setNotFound]=useState(false);
+  const[toast,setToast]=useState(null);
+  const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
+  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
+  const[filtroStatus,setFiltroStatus]=useState("todos");
+  const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
+    if(filtroStatus==="todos")return true;
+    if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
+    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
+    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="perdida")return !!q.perdida;
+    return true;
+  }),[quotes,filtroStatus]);
+  const[showExport,setShowExport]=useState(false);
+  const[anexo,setAnexo]=useState(null);
+  const[concAdicionados,setConcAdicionados]=useState([]);
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+  const[concQuery1,setConcQuery1]=useState("");
+  const[concDrop1,setConcDrop1]=useState(false);
+  const[concQuery,setConcQuery]=useState("");
+  const[concValor,setConcValor]=useState("");
+  const[concPgto,setConcPgto]=useState("");
+  const[concShowDrop,setConcShowDrop]=useState(false);
+  const[concExtras,setConcExtras]=useState(()=>{try{return JSON.parse(localStorage.getItem("fox_concorrentes")||"[]");}catch{return[];}});
+  const[imgModal,setImgModal]=useState(null); // {src, nome}
+  const[editModal,setEditModal]=useState(null);
+  const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+  const[editConcAdicionados,setEditConcAdicionados]=useState([]);
+  const[editConcQuery,setEditConcQuery]=useState("");
+  const[editConcValor,setEditConcValor]=useState("");
+  const[editConcPgto,setEditConcPgto]=useState("");
+  const[editConcDrop,setEditConcDrop]=useState(false);
+  const[exportRows,setExportRows]=useState([]);
+  const[volPeriodo,setVolPeriodo]=useState("semana");
+  const[concIntelSel,setConcIntelSel]=useState(null);
+  const[copiedNum,setCopiedNum]=useState(null);
+  const[showConcAviso,setShowConcAviso]=useState(false);
+  const[perdidaModal,setPerdidaModal]=useState(null);
+  const[motivoInput,setMotivoInput]=useState("");
+  const[galeriaModal,setGaleriaModal]=useState(null);
+
+
+
+  useEffect(()=>{
+    if(tab!=="dashboard")return;
+    window.scrollTo({top:0,behavior:"instant"});
+    const timer=setTimeout(()=>{
+      const els=document.querySelectorAll('.scroll-anim');
+      els.forEach(el=>el.classList.remove('in-view'));
+      const obs=new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in-view');}});
+      },{threshold:0.05,rootMargin:"0px 0px -40px 0px"});
+      els.forEach(el=>obs.observe(el));
+    },100);
+    return()=>clearTimeout(timer);
+  },[tab,dashKey]);
+
+  useEffect(()=>{
+    try{
+      const saved=localStorage.getItem("fox_session");
+      if(saved){
+        const s=JSON.parse(saved);
+        setSession(s);
+        setTab(s.role==="admin"||s.role==="gerente"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+      }
+    }catch(e){}
+  },[]);
+
+  useEffect(()=>{(async()=>{try{
+    const db = await supa.from("descontos");
+    // Exclui anexo_base64 da query principal — carregado só ao abrir a negociação
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
+    if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
+      tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
+      loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
+      liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
+      liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
+      liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
+      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
+    })));}
+    // Auto-marcar expiradas como perdidas — não bloqueia o carregamento
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
+      setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }).catch(()=>{});
+    const ub = await supa.from("usuarios");
+    const {data:us} = await ub.select();
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+  }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
+
+  const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
+  const saveU=async u=>{setUsers(u);}; // dados salvos direto no Supabase
+  const toast_=(msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3200);};
+
+  const handleAnexo=(e)=>{
+    const file = e.target.files[0];
+    if(!file)return;
+    const maxMB = file.type.startsWith("audio") ? 5 : 3;
+    if(file.size > maxMB*1024*1024){toast_("Arquivo muito grande. Máx "+maxMB+"MB.",false);return;}
+    const reader = new FileReader();
+    reader.onload=(ev)=>setAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
+    reader.readAsDataURL(file);
+  };
+
+
+  const doPerdida=async(q,motivo)=>{
+    try{
+      const db=await supa.from("descontos");
+      const {error}=await db.update({perdida:true,motivo_perda:motivo},{numero:q.numero,tipo:q.tipo});
+      if(error){toast_("Erro ao marcar perdida.",false);return;}
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,perdida:true,motivoPerda:motivo}:x));
+      if(result&&result.numero===q.numero)setResult(prev=>({...prev,perdida:true,motivoPerda:motivo}));
+      setPerdidaModal(null);setMotivoInput("");
+      toast_("Negociação marcada como perdida.");
+    }catch(e){toast_("Erro.",false);}
+  };
+
+
+  const doAddConc1=async()=>{
+    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento||!concForm1.loja){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+    try{
+      const auto="#CONC"+Date.now().toString().slice(-6);
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")"+(concForm1.anotacao?"\n\n📝 ANOTAÇÃO:\n"+concForm1.anotacao:"");
+      const db=await supa.from("descontos");
+      const {error}=await db.insert({
+        tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
+        obs:obsVal,liberado:false,
+        negociador_nome:session.username,negociador_email:session.email,
+        erro_interno:false,
+        anexo_base64:concForm1.anexo?concForm1.anexo.base64:null,
+        anexo_tipo:concForm1.anexo?concForm1.anexo.tipo:null,
+        anexo_nome:concForm1.anexo?concForm1.anexo.nome:null,
+      });
+      if(error){toast_("Erro ao salvar.",false);return;}
+      const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
+        obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
+        criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
+        anexoBase64:concForm1.anexo?concForm1.anexo.base64:null,
+        anexoTipo:concForm1.anexo?concForm1.anexo.tipo:null,
+        anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
+      };
+      setQuotes(prev=>[novo,...prev]);
+      setConcForm1({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+      setConcQuery1("");
+      toast_("Registrado com sucesso!");
+    }catch(e){toast_("Erro.",false);}
+  };
+
+
+  const doToggleRole=async(u,role)=>{
+    const current=(u.role||"").split(",").filter(Boolean);
+    const updated=current.includes(role)?current.filter(r=>r!==role):[...current,role];
+    const newRole=updated.join(",");
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({role:newRole},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,role:newRole}:x));
+    }catch(e){toast_("Erro ao atualizar.",false);}
+  };
+
+  const doEdit=(q)=>{
+    const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
+    const concExist=parseConcObs(q.obs||"");
+    const valNorm=(q.validade||"").split("T")[0];
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:(q.loja==="—"?"":q.loja||""),valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
+    setEditConcAdicionados(concExist);
+    setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
+    setEditModal(q);
+  };
+
+  const doSaveEdit=async()=>{
+    if(!editForm.validade||!editForm.medida||!editForm.valor||!editForm.loja){toast_("Preencha os campos obrigatórios (medida, loja, valor, validade).",false);return;}
+    try{
+      const db = await supa.from("descontos");
+      const {error:eUpd} = await db.update({
+        cba:editForm.cba, medida:editForm.medida, segmento:editForm.segmento,
+        loja:editForm.loja, valor:editForm.valor, pgto:editForm.pgto,
+        validade:editForm.validade,
+        erro_interno:editForm.erroInterno,
+        obs:editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"")
+      },{numero:editModal.numero,tipo:editModal.tipo});
+      if(eUpd){toast_("Erro ao atualizar: "+eUpd,false);return;}
+      const updated={...editForm};
+      const obsFinal=editForm.obs+(editConcAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+editConcAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
+      setQuotes(prev=>prev.map(x=>(x.numero===editModal.numero&&x.tipo===editModal.tipo)?{...x,...updated,obs:obsFinal,erroInterno:editForm.erroInterno}:x));
+      if(result&&result.numero===editModal.numero&&result.tipo===editModal.tipo)setResult(prev=>({...prev,...updated}));
+      setEditModal(null);
+      toast_("Desconto atualizado!");
+    }catch(e){toast_("Erro ao atualizar.",false);}
+  };
+
+  const doExport=(data)=>{
+    // Build CSV with BOM - opens perfectly in Excel
+    const headers=["Cadastro (Responsável)","Loja","Medida","Segmento","Preço negociado","Forma Pagamento","Liberação","Data Liberação","Número","Tipo","CBA","Validade","Obs"];
+    const rows2=data.map(q=>[
+      q.negociadorNome||"",
+      q.loja||"",
+      q.medida||"",
+      q.segmento||"",
+      (parseFloat(q.valor)||0).toFixed(2),
+      q.pgto||"",
+      q.liberado?"Liberado":"Pendente",
+      q.liberadoEm?new Date(q.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"",
+      q.numero||"",
+      q.tipo==="os"?"O.S.":"Orçamento",
+      q.cba||"",
+      q.validade?q.validade.split("-").reverse().join("/"):"",
+      (q.obs||"").replace(/"/g,"'")
+    ]);
+    const csvLines = [headers, ...rows2]
+      .map(row => row.map(v => '"'+String(v||"").replace(/"/g,"''")+'"').join(";"))
+      .join("\r\n");
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvLines], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url;
+    a.download="Fox_Negociacoes_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast_("Planilha gerada! Abra o arquivo .csv no Excel.");
+    return;
+    const rows=data.map(q=>({
+      "Cadastro (Responsável negociação)": q.negociadorNome||"",
+      "Loja":        q.loja||"",
+      "Medida":      q.medida||"",
+      "Segmento":    q.segmento||"",
+      "Preço negociado": (parseFloat(q.valor)||0).toFixed(2).replace(".",","),
+      "Forma Pagamento": q.pgto||"",
+      "Liberação":   q.liberado?"Liberado":"Pendente",
+      "Data da liberação": q.liberado&&q.liberadoEm
+        ? new Date(q.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})
+        : q.obs||""
+    }));
+    setExportRows(rows);
+    setShowExport(true);
+  };
+  const exportCSV=(data)=>doExport(data);
+  const exportXLS=(data)=>doExport(data);
+
+  const doLogin=()=>{
+    const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
+    setLoginErr("Usuário ou senha incorretos.");
+  };
+  const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
+
+  const doAlterarSenha=async()=>{
+    const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
+    if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
+    if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
+    if(novaSenha.length<4){setAlterarMsg({txt:"A nova senha deve ter ao menos 4 caracteres.",ok:false});return;}
+    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
+    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:novaSenha},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
+      setAlterarMsg({txt:"Senha alterada com sucesso! Faça login novamente.",ok:true});
+      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
+    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
+  };
+
+  const doAdminAlterarSenha=async()=>{
+    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("A senha deve ter ao menos 4 caracteres.",false);return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
+      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
+      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
+      setAdminSenhaModal(null);setAdminNovaSenha("");
+    }catch(e){toast_("Erro ao alterar senha.",false);}
+  };
+
+  const doAdd=async(forcar=false)=>{
+    if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
+    if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
+    if(!forcar&&concAdicionados.length===0&&!form.erroInterno){setShowConcAviso(true);return;}
+    try{
+      const db = await supa.from("descontos");
+      const {error} = await db.insert({
+        tipo:form.tipo, numero:form.numero.trim(), cba:form.cba, medida:form.medida,
+        segmento:form.segmento, loja:form.loja, valor:form.valor, pgto:form.pgto,
+        validade:form.validade, obs:form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):""), liberado:false,
+        negociador_nome:session.username, negociador_email:session.email, vendedor:form.vendedor||null,
+        anexo_base64:anexo?anexo.base64:null,
+        anexo_tipo:anexo?anexo.tipo:null,
+        anexo_nome:anexo?anexo.nome:null
+      });
+      if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
+      const obsCompleto=form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
+      form.medida=form.medida.toUpperCase();const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
+      setQuotes(prev=>[novo,...prev]);
+      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+      setAnexo(null);
+      setConcAdicionados([]);setConcQuery("");setConcValor("");setConcPgto("");
+      toast_("Desconto cadastrado!");
+    }catch(e){toast_("Erro ao salvar.",false);}
+  };
+  const doDel=async id=>{
+    try{
+      const db = await supa.from("descontos");
+      await db.delete({numero:id.numero, tipo:id.tipo});
+      setQuotes(prev=>prev.filter(q=>!(q.numero===id.numero&&q.tipo===id.tipo)));
+      toast_("Removido.");
+    }catch(e){toast_("Erro ao remover.",false);}
+  };
+
+  const doSearch=async()=>{
+    const q=quotes.find(q=>q.numero.toLowerCase()===search.trim().toLowerCase());
+    if(q){
+      setResult(q);setNotFound(false);
+      // Carrega o anexo sob demanda (não veio na query principal)
+      if(q.anexoNome&&!q.anexoBase64){
+        try{
+          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+          const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+          const d=await r.json();
+          if(d&&d[0]&&d[0].anexo_base64){
+            const atualizado={...q,anexoBase64:d[0].anexo_base64};
+            setResult(atualizado);
+            setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?atualizado:x));
+          }
+        }catch(e){}
+      }
+    }else{setResult(null);setNotFound(true);}
+  };
+  const clickRow=q=>{setSearch(q.numero);setResult(q);setNotFound(false);window.scrollTo({top:0,behavior:"smooth"});};
+
+  const doLiberar=async(q,e)=>{
+    if(e)e.stopPropagation();
+    const nowLib=!q.liberado;
+    const ldata=nowLib?{liberadorNome:session.username,liberadorEmail:session.email,liberadoEm:new Date().toISOString()}:{liberadorNome:null,liberadorEmail:null,liberadoEm:null};
+    try{
+      const db = await supa.from("descontos");
+      await db.update({
+        liberado:nowLib,
+        // Ao liberar: remove o flag de perdida para ficar como "Liberado"
+        perdida:nowLib?false:q.perdida,
+        motivo_perda:nowLib?null:q.motivoPerda,
+        liberador_nome:ldata.liberadorNome,
+        liberador_email:ldata.liberadorEmail,
+        liberado_em:ldata.liberadoEm
+      },{numero:q.numero,tipo:q.tipo});
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,perdida:nowLib?false:x.perdida,motivoPerda:nowLib?null:x.motivoPerda,...ldata}:x));
+      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,perdida:nowLib?false:prev.perdida,motivoPerda:nowLib?null:prev.motivoPerda,...ldata}));
+      toast_(nowLib?"Desconto liberado!":"Liberação removida.");
+    }catch(e){toast_("Erro.",false);}
+  };
+
+  const doAddUser=async()=>{
+    const em=newUser.email.trim().toLowerCase();
+    if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
+    if(em===ADMIN_USER){toast_("E-mail reservado.",false);return;}
+    if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
+    try{
+      const db = await supa.from("usuarios");
+      const rolesStr=newUser.roles.join(",");const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:rolesStr,foto:newUser.foto||null});
+      if(error){toast_("Erro ao criar usuário.",false);return;}
+      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.roles.join(","),foto:newUser.foto||null}]);
+      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});toast_("Usuário criado!");
+    }catch(e){toast_("Erro.",false);}
+  };
+  const doDelUser=async em=>{
+    try{
+      const db = await supa.from("usuarios");
+      await db.delete({email:em});
+      setUsers(prev=>prev.filter(x=>x.email!==em));
+      toast_("Usuário removido.");
+    }catch(e){toast_("Erro.",false);}
+  };
+
+  const filtered=useMemo(()=>quotes.filter(q=>{
+    if(q.erroInterno)return false;
+    if(q.perdida)return false;
+    if(dash.loja&&q.loja!==dash.loja)return false;
+    if(dash.segmento&&q.segmento!==dash.segmento)return false;
+    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
+    if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
+    if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
+    return true;
+  }),[quotes,dash]);
+
+  // Filtro para ranking — inclui perdidas para contagem real
+  const filteredRanking=useMemo(()=>quotes.filter(q=>{
+    if(q.erroInterno)return false;
+    if(dash.loja&&q.loja!==dash.loja)return false;
+    if(dash.segmento&&q.segmento!==dash.segmento)return false;
+    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
+    if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
+    if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
+    return true;
+  }),[quotes,dash]);
+
+  const mChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.medida]=(c[q.medida]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,value])=>({name,value}));},[filtered]);
+  const sChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.segmento]=(c[q.segmento]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
+  const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
+  const totVal=useMemo(()=>filtered.reduce((s,q)=>s+(parseFloat(q.valor)||0),0),[filtered]);
+  const chartColors=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
+
+  if(!session)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
+    <div className="login-logo"><div style={{width:64,height:64,background:RED,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>🦊</div></div>
+    <div className="login-t">Sistema de Descontos</div>
+    <div className="login-s">Acesso restrito — Fox Pneus</div>
+    {loginErr&&<div className="login-err">{loginErr}</div>}
+    {!showAlterarSenha&&<>
+      <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <button className="btn-login" onClick={doLogin}>Entrar</button>
+      <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+      <div style={{textAlign:"center",marginTop:12}}>
+        <span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:.5}}>Alterar senha</span>
+      </div>
+    </>}
+    {showAlterarSenha&&<>
+      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
+      {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
+      <div className="login-f"><label>Seu E-mail Cadastrado</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
+      <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
+      <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
+      <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar nova senha" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
+      <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
+      <div style={{textAlign:"center",marginTop:12}}>
+        <span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span>
+      </div>
+    </>}
+  </div></div></>);
+
+  return(<><style>{css}</style><div className="wrap">
+    {/* ── SIDEBAR ── */}
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="brand-icon"><span style={{fontSize:22}}>🦊</span></div>
+        <div className="brand-name">Fox Pneus</div>
+        <div className="brand-sub">Sistema de Descontos</div>
+      </div>
+      <nav className="sb-nav">
+        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
+        {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){console.log(e);}}}><span className="tab-dot"/>Logs</div>}
+      </nav>
+      <div className="sb-footer">
+        <div className="chip">
+          <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":session.role==="cadastrar1"?"🔍":session.role==="cadastrar2"?"✏️":"🤝"}</span>
+          <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
+        </div>
+        <button className="logout" onClick={doLogout}>Sair</button>
+      </div>
+    </div>
+    {/* ── CONTEÚDO ── */}
+    <div className="content-wrap">
+    <div className="main">
+
+    {/* DASHBOARD */}
+    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA COMERCIAL</div>
+              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>FOX PNEUS — SISTEMA DE DESCONTOS</div>
+            </div>
+          </div>
+          <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar ({(filtered.length>0?filtered:quotes).length})</button>
+        </div>
+
+        {/* Filtros */}
+        <div className="card" style={{marginBottom:10,padding:"12px 16px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Filtros</div>
+          <div className="filter-row">
+            <div className="field" style={{flex:1}}><label>Data inicial</label><input type="date" value={dash.dataIni} onChange={e=>setDash(d=>({...d,dataIni:e.target.value}))}/></div>
+            <div className="field" style={{flex:1}}><label>Data final</label><input type="date" value={dash.dataFim} onChange={e=>setDash(d=>({...d,dataFim:e.target.value}))}/></div>
+            <div className="field" style={{flex:1}}><label>Loja</label><select value={dash.loja} onChange={e=>setDash(d=>({...d,loja:e.target.value}))}><option value="">Todas</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field" style={{flex:1}}><label>Segmento</label><select value={dash.segmento} onChange={e=>setDash(d=>({...d,segmento:e.target.value}))}><option value="">Todos</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="field" style={{flex:1,minWidth:140}}><label>Medida</label><input type="text" placeholder="Ex: 175/75R13" value={dash.medida} onChange={e=>setDash(d=>({...d,medida:e.target.value.toUpperCase()}))}/></div>
+            <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="stat-grid">
+          <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
+            <div className="stat-lbl">Total negociações</div>
+            <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
+            <div className="stat-sub">todas as negociações</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
+            <div className="stat-lbl">Fechadas (Liberadas)</div>
+            <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
+            <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
+            <div className="stat-lbl">Pendentes</div>
+            <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
+            <div className="stat-sub">aguardando aprovação</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid #888"}}>
+            <div className="stat-lbl">Vencidas</div>
+            <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
+            <div className="stat-sub">não fechadas no prazo</div>
+          </div>
+          <div className="stat-card" style={{borderTop:"3px solid #8B0000",boxShadow:"inset 0 1px 0 #8B000033"}}>
+            <div className="stat-lbl" style={{display:"flex",alignItems:"center",gap:4}}>{<svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>}Perdidas</div>
+            <div className="stat-val" style={{color:"#CC4444"}}><AnimatedNumber value={quotes.filter(q=>q.perdida).length}/></div>
+            <div className="stat-sub">cliente foi para concorrência</div>
+          </div>
+        </div>
+
+        {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
+
+        {/* Grid: Medidas + Segmentos */}
+        <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:10,marginBottom:10}}>
+
+          {/* Ranking Medidas */}
+          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
+            <div className="chart-t">🏆 Medidas Mais Negociadas</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                {["#","Medida","Qtd","Fechou","%",""].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              </tr></thead>
+              <tbody>{mChart.map((m,i)=>{
+                const pct=filtered.length>0?((m.value/filtered.length)*100).toFixed(1):0;
+                const lib=filtered.filter(q=>q.medida===m.name&&q.liberado).length;
+                return(<tr key={m.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
+                  <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i<3?[RED,"#888","#663300"][i]:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
+                  <td style={{padding:"8px 8px",fontWeight:i===0?700:500,color:i===0?RED:TEXT,fontSize:13}}>{m.name}</td>
+                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
+                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
+                  <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
+                  <td style={{padding:"8px 8px"}}>{(()=>{
+  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoNome&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
+  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
+  if(imgs.length>0)return(<button onClick={async()=>{
+    // Abre o modal imediatamente, depois carrega as imagens
+    setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
+    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+    const loaded=await Promise.all(imgs.map(async q=>{
+      if(q.anexoBase64)return q;
+      try{
+        const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+        const d=await r.json();
+        const b64=d&&d[0]?d[0].anexo_base64:null;
+        if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}
+        return{...q,anexoBase64:b64};
+      }catch(e){return q;}
+    }));
+    setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
+  }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
+  return(<span style={{color:MUTED,fontSize:11}}>—</span>);
+})()}</td>
+                </tr>);})}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Ranking Segmentos */}
+          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
+            <div className="chart-t">🔖 Por Segmento</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                {["#","Segmento","Total","Fechou","Pend."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              </tr></thead>
+              <tbody>{sChart.map((s,i)=>{
+                const lib=filtered.filter(q=>q.segmento===s.name&&q.liberado).length;
+                const pend=filtered.filter(q=>q.segmento===s.name&&!q.liberado&&!isExp(q.validade)).length;
+                return(<tr key={s.name} style={{borderBottom:"1px solid #1C1C1C"}}>
+                  <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:CC[i%8]+"44",color:CC[i%8],fontSize:9,fontWeight:700}}>{i+1}</span></td>
+                  <td style={{padding:"8px 8px",color:TEXT,fontSize:13}}>{s.name}</td>
+                  <td style={{padding:"8px 8px",fontWeight:700,color:TEXT}}>{s.value}</td>
+                  <td style={{padding:"8px 8px"}}><span style={{color:GREEN,fontWeight:700,fontSize:12}}>{lib}</span></td>
+                  <td style={{padding:"8px 8px"}}><span style={{color:AMBER,fontWeight:700,fontSize:12}}>{pend}</span></td>
+                </tr>);})}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
+        <div>
+        {/* Ranking Lojas */}
+        <div style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+          <div className="chart-t">📍 Ranking por Loja</div>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+            </tr></thead>
+            <tbody>{lChart.map((l,i)=>{
+              const items=filtered.filter(q=>q.loja===l.name);
+              const lib=items.filter(q=>q.liberado).length;
+              const pend=items.filter(q=>!q.liberado&&!isExp(q.validade)).length;
+              const venc=items.filter(q=>isExp(q.validade)&&!q.liberado).length;
+              const val=items.reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
+              const conv=l.value>0?((lib/l.value)*100).toFixed(0):0;
+              return(<tr key={l.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
+                <td style={{padding:"9px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i===0?RED:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
+                <td style={{padding:"9px 10px",color:i===0?RED:TEXT,fontWeight:i===0?700:500,fontSize:13}}>{l.name}</td>
+                <td style={{padding:"9px 10px",fontWeight:700,color:TEXT}}>{l.value}</td>
+                <td style={{padding:"9px 10px"}}><span style={{color:GREEN,fontWeight:700}}>{lib}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontWeight:700}}>{venc}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED+"22",color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
+              </tr>);})}
+            </tbody>
+          </table>
+        </div>
+
+        </div>
+        <div>
+        {/* Ranking Vendedores */}
+        {(()=>{
+          const byV={};
+          // Segue o filtro de data do dashboard normalmente
+          filteredRanking.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
+            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,perdido:0,val:0};
+            byV[q.vendedor].total++;
+            if(q.liberado)byV[q.vendedor].lib++;
+            else if(q.perdida||isExp(q.validade))byV[q.vendedor].perdido++;
+            else byV[q.vendedor].pend++;
+            byV[q.vendedor].val+=(parseFloat(q.valor)||0);
+          });
+          const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
+          const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
+          if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+            <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                {["#","Vendedor","Neg.","Fechou","Pend.","Perdido","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              </tr></thead>
+              <tbody>{vList.map((v,i)=>{
+                const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
+                const barW=Math.max(4,parseInt(conv));
+                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animation:"foxLeft .4s ease "+(0.4+i*0.07)+"s both"}}>
+                  <td style={{padding:"8px 10px"}}>
+                    {fotoMap[v.nome]
+                      ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .6s ease "+(0.4+i*0.1)+"s both"}}/>
+                      :<div style={{width:40,height:40,borderRadius:"50%",background:i===0?GREEN+"33":i===1?"#88888833":"#66330033",border:"2px solid "+(i===0?GREEN:i===1?"#888":"#8B4513"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:900,color:i===0?GREEN:i===1?"#888":"#CD853F"}}>
+                        {v.nome.charAt(0).toUpperCase()}
+                      </div>
+                    }
+                  </td>
+                  <td style={{padding:"10px 10px"}}> 
+                    <div style={{fontWeight:700,color:i===0?GREEN:TEXT,fontSize:14}}>{v.nome}</div>
+                    <div style={{fontSize:10,color:MUTED,marginTop:2}}>{i===0?"🏆 Líder":i===1?"🥈 2º lugar":i===2?"🥉 3º lugar":"#"+(i+1)}</div>
+                  </td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"11",color:"#FF6666",borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.perdido}</span></td>
+                  <td style={{padding:"10px 10px",minWidth:120}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
+                        <div style={{width:barW+"%",height:"100%",background:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,borderRadius:4,transition:"width .3s"}}/>
+                      </div>
+                      <span style={{fontSize:12,fontWeight:700,color:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,minWidth:35}}>{conv}%</span>
+                    </div>
+                  </td>
+                </tr>);})}
+              </tbody>
+            </table>
+          </div>);
+        })()}
+
+
+
+        {/* ── INTELIGÊNCIA DE CONCORRÊNCIA ── */}
+        {(()=>{
+          // collect all concorrentes from filtered quotes
+          const allConc=[];
+          filtered.forEach(q=>{
+            const items=parseConcObs(q.obs);
+            items.forEach(item=>{
+              allConc.push({...item, medida:q.medida, numero:q.numero, criadoEm:q.criadoEm, loja:q.loja, valorFox:q.valor});
+            });
+          });
+          if(!allConc.length)return null;
+
+          // rank by frequency
+          const empMap={};
+          allConc.forEach(item=>{
+            if(!empMap[item.empresa])empMap[item.empresa]={empresa:item.empresa,count:0,medidas:[]};
+            empMap[item.empresa].count++;
+            empMap[item.empresa].medidas.push({medida:item.medida,valor:item.valor,pgto:item.pgto,criadoEm:item.criadoEm,loja:item.loja,valorFox:item.valorFox});
+          });
+          const ranked=Object.values(empMap).sort((a,b)=>b.count-a.count);
+          const selEmp=concIntelSel||ranked[0]?.empresa;
+          const selData=empMap[selEmp];
+
+          // group medidas for selected competitor — best (lowest) price per medida
+          const medMap={};
+          (selData?.medidas||[]).forEach(m=>{
+            if(!medMap[m.medida])medMap[m.medida]={medida:m.medida,count:0,melhor:null,pgto:"",criadoEm:"",loja:"",valorFox:m.valorFox};
+            medMap[m.medida].count++;
+            if(m.valor>0&&(medMap[m.medida].melhor===null||m.valor<medMap[m.medida].melhor)){
+              medMap[m.medida].melhor=m.valor;
+              medMap[m.medida].pgto=m.pgto;
+              medMap[m.medida].criadoEm=m.criadoEm;
+              medMap[m.medida].loja=m.loja;
+              medMap[m.medida].valorFox=m.valorFox;
+            }
+          });
+          const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
+
+          return(
+            <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
+              <div className="chart-t">🏢 Inteligência de Concorrência</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
+
+                {/* LEFT — ranking */}
+                <div>
+                  <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Empresas que mais negociamos</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {ranked.map((emp,i)=>{
+                      const isSel=emp.empresa===selEmp;
+                      const pct=Math.round((emp.count/ranked[0].count)*100);
+                      return(
+                        <div key={emp.empresa} onClick={()=>setConcIntelSel(emp.empresa)} style={{background:isSel?"#1A1E2E":"#161616",border:"1px solid "+(isSel?BLUE:"#2E2E2E"),borderRadius:8,padding:"10px 12px",cursor:"pointer",transition:"all .15s"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isSel?6:0}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <span style={{fontSize:11,fontWeight:800,color:i===0?RED:MUTED,minWidth:18}}>#{i+1}</span>
+                              <span style={{fontSize:13,fontWeight:700,color:isSel?"#fff":"#C0C0C0"}}>{emp.empresa}</span>
+                            </div>
+                            <span style={{background:isSel?BLUE+"33":RED+"22",color:isSel?BLUE:RED,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:800}}>{emp.count}x</span>
+                          </div>
+                          <div style={{height:4,background:"#2E2E2E",borderRadius:2,overflow:"hidden",marginTop:6}}>
+                            <div style={{width:pct+"%",height:"100%",background:i===0?RED:isSel?BLUE:"#3E3E3E",borderRadius:2,transition:"width .4s"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* RIGHT — medidas do selecionado */}
+                <div>
+                  <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>
+                    Melhores preços de <span style={{color:BLUE}}>{selEmp}</span> por medida
+                  </div>
+                  {medList.length===0?<div style={{color:MUTED,fontSize:13}}>Nenhum dado disponível.</div>:(
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {medList.map(m=>{
+                        const diff=m.valorFox&&m.melhor?m.valorFox-m.melhor:null;
+                        return(
+                          <div key={m.medida} style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px"}}>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
+                              <div>
+                                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:17,color:AMBER,letterSpacing:1}}>{m.medida}</div>
+                                <div style={{fontSize:10,color:MUTED,marginTop:1}}>{m.loja} · {m.criadoEm?new Date(m.criadoEm).toLocaleDateString("pt-BR"):""}</div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontSize:15,fontWeight:800,color:RED}}>{m.melhor?fmtVal(m.melhor):"—"}</div>
+                                {m.pgto&&<div style={{fontSize:10,color:MUTED}}>{m.pgto}</div>}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,flexWrap:"wrap",gap:6}}>
+                              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                                <span style={{fontSize:10,color:MUTED}}>Nosso preço:</span>
+                                <span style={{fontSize:12,fontWeight:700,color:GREEN}}>{m.valorFox?fmtVal(m.valorFox):"—"}</span>
+                                {diff!==null&&<span style={{fontSize:11,fontWeight:700,color:diff<0?GREEN:diff>0?RED:MUTED,background:(diff<0?GREEN:diff>0?RED:MUTED)+"22",borderRadius:4,padding:"1px 7px"}}>{diff<0?"▼ "+fmtVal(Math.abs(diff))+" mais barato":diff>0?"▲ "+fmtVal(diff)+" mais caro":"= Mesmo preço"}</span>}
+                              </div>
+                              <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700}}>Negociado {m.count}x</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        </div></div>
+
+        {/* ── VOLUME DE NEGOCIAÇÕES POR DIA ── */}
+        {(()=>{
+          const hoje = new Date();
+          const dias = volPeriodo==="semana"?7:30;
+          const rows=[];
+          for(let i=dias-1;i>=0;i--){
+            const d=new Date(hoje);d.setDate(hoje.getDate()-i);
+            const key=d.toISOString().slice(0,10);
+            const label=d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+            const diaSem=d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","").toUpperCase();
+            const count=filtered.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)===key).length;
+            rows.push({key,label,diaSem,count});
+          }
+          const max=Math.max(...rows.map(r=>r.count),1);
+          const total=rows.reduce((a,r)=>a+r.count,0);
+          const media=total>0?(total/rows.filter(r=>r.count>0).length||1).toFixed(1):0;
+          const topDia=rows.reduce((a,r)=>r.count>a.count?r:a,rows[0]);
+          const hojeKey=hoje.toISOString().slice(0,10);
+          const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
+          return(
+            <div className="scroll-anim" style={{background:"#141414",border:"1px solid #222",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:4,height:22,background:RED,borderRadius:2}}/>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff"}}>VOLUME DE NEGOCIAÇÕES</span>
+                </div>
+                <div style={{display:"flex",gap:6,background:"#0D0D0D",padding:4,borderRadius:8,border:"1px solid #222"}}>
+                  {["semana","mes"].map(p=>(
+                    <button key={p} onClick={()=>setVolPeriodo(p)} style={{background:volPeriodo===p?RED:"transparent",color:volPeriodo===p?"#fff":MUTED,border:"none",borderRadius:6,padding:"6px 18px",fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:1,textTransform:"uppercase",transition:"all .2s"}}>
+                      {p==="semana"?"7 DIAS":"30 DIAS"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* KPI strip */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:24}}>
+                {[
+                  {label:"Total",val:total,cor:RED,icon:"📊"},
+                  {label:"Hoje",val:hojeCount,cor:AMBER,icon:"📅",pulse:true},
+                  {label:"Recorde",val:topDia?.count||0,cor:GREEN,icon:"🏆"},
+                  {label:"Média/dia",val:media,cor:BLUE,icon:"📈"},
+                ].map((k,i)=>(
+                  <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
+                    <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
+                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1+(.1+i*.12)+"s both"}}>{k.val}</div>
+                    {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
+                  </div>
+                ))}
+              </div>
+              {/* Chart area */}
+              <div style={{background:"#0D0D0D",borderRadius:12,border:"1px solid #1E1E1E",overflowX:"auto"}}>
+                <div style={{minWidth:volPeriodo==="mes"?rows.length*34+20:0,padding:"16px 16px 0"}}>
+                  {/* Bars + grid rows stacked */}
+                  {(()=>{
+                    const BAR_H=180;
+                    const GRID=[100,75,50,25];
+                    return(
+                      <div style={{position:"relative"}}>
+                        {/* Grid rows behind bars */}
+                        <div style={{position:"absolute",top:0,left:0,right:0,height:BAR_H,pointerEvents:"none"}}>
+                          {GRID.map(pct=>(
+                            <div key={pct} style={{position:"absolute",left:0,right:0,top:BAR_H-(BAR_H*(pct/100)),borderTop:"1px dashed #1E1E1E"}}>
+                              <span style={{position:"absolute",right:"100%",paddingRight:4,top:-8,fontSize:9,color:"#333",fontWeight:600,whiteSpace:"nowrap"}}>{Math.round(max*(pct/100))}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Bars row */}
+                        <div style={{display:"flex",alignItems:"flex-end",gap:volPeriodo==="semana"?10:4,height:BAR_H,position:"relative",zIndex:1}}>
+                          {rows.map((r)=>{
+                            const pct=max>0?(r.count/max):0;
+                            const isTop=r.count===max&&r.count>0;
+                            const isHoje=r.key===hojeKey;
+                            const barH=pct>0?Math.max(Math.round(pct*BAR_H),8):3;
+                            const col=isTop?"#22c55e":isHoje?AMBER:r.count===0?"#1C1C1C":"#CC1F1F";
+                            const glow=isTop?"rgba(34,197,94,.35)":isHoje?"rgba(245,158,11,.35)":"rgba(204,31,31,.25)";
+                            return(
+                              <div key={r.key} style={{flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?32:28,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%",position:"relative"}}>
+                                {r.count>0&&<div style={{fontSize:volPeriodo==="semana"?13:10,fontWeight:900,color:col,marginBottom:5,textShadow:"0 0 8px "+col,whiteSpace:"nowrap"}}>{r.count}</div>}
+                                <div style={{width:"100%",height:barH,background:r.count===0?"#181818":`linear-gradient(180deg,${col} 0%,${col}BB 100%)`,borderRadius:"4px 4px 0 0",boxShadow:r.count>0?"0 0 14px "+glow+",inset 0 1px 0 rgba(255,255,255,0.12)":"none",position:"relative",overflow:"hidden",transition:"height .4s ease"}}>
+                                  {r.count>0&&<div style={{position:"absolute",inset:"0 0 60% 0",background:"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0"}}/>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Separator line */}
+                        <div style={{height:1,background:"#1E1E1E",margin:"0 0 8px"}}/>
+                        {/* Date labels row */}
+                        <div style={{display:"flex",gap:volPeriodo==="semana"?10:4,paddingBottom:volPeriodo==="semana"?6:10}}>
+                          {rows.map((r)=>{
+                            const isHoje=r.key===hojeKey;
+                            return(
+                              <div key={r.key} style={{flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?32:28,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                                <div style={{fontSize:volPeriodo==="semana"?10:8,color:isHoje?AMBER:"#4A4A4A",fontWeight:isHoje?800:500,whiteSpace:"nowrap"}}>{r.label}</div>
+                                {volPeriodo==="semana"&&<div style={{fontSize:9,color:isHoje?AMBER:"#333",fontWeight:isHoje?700:400}}>{r.diaSem}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+              {/* Legend */}
+              <div style={{display:"flex",gap:20,marginTop:14,flexWrap:"wrap"}}>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:"#22c55e",boxShadow:"0 0 6px rgba(34,197,94,.4)",display:"inline-block"}}/>Recorde do período</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:AMBER,boxShadow:"0 0 6px rgba(245,158,11,.4)",display:"inline-block"}}/>Hoje</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:RED,boxShadow:"0 0 6px rgba(204,31,31,.3)",display:"inline-block"}}/>Outros dias</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        </>)}
+        </div>)}
+      {tab==="cadastrar"&&hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&(<>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+        <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência para análise</div>
+        </div>
+      </div>
+      <div className="card">
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div className="field">
+            <label>Medida do Pneu *</label>
+            <input placeholder="Ex: 175/65R14" value={concForm1.medida} onChange={e=>setConcForm1(f=>({...f,medida:e.target.value.toUpperCase()}))}/>
+          </div>
+          <div className="field">
+            <label>Segmento *</label>
+            <select value={concForm1.segmento} onChange={e=>setConcForm1(f=>({...f,segmento:e.target.value}))}>
+              <option value="">Selecione...</option>
+              {SEGS.map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))} style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
+        <div className="field mb" style={{marginBottom:12}}>
+          <label>🏢 Concorrente *</label>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:2,minWidth:180,position:"relative"}}>
+              <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+                onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+                onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+                style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+              {concDrop1&&concQuery1.length>0&&(()=>{
+                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+                if(!sug.length)return null;
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                  {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                </div>);
+              })()}
+            </div>
+            <div style={{flex:1,minWidth:110}}>
+              <input type="number" step="0.01" placeholder="Valor deles" value={concForm1.valor}
+                onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{flex:1,minWidth:130}}>
+              <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+                <option value="">Pagamento</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="field mb" style={{marginBottom:12}}>
+          <label>📝 Anotação (opcional)</label>
+          <textarea placeholder="Anote informações importantes..." value={concForm1.anotacao||""} onChange={e=>setConcForm1(f=>({...f,anotacao:e.target.value}))} style={{width:"100%",boxSizing:"border-box",minHeight:70,background:"#111",border:"1px solid #2E2E2E",borderRadius:8,color:"#F0F0F0",fontSize:13,lineHeight:1.6,padding:"8px 12px",resize:"vertical",fontFamily:"'Inter',sans-serif",outline:"none",marginTop:4}}/>
+        </div>
+        <div className="field mb" style={{marginBottom:16}}>
+          <label>📸 Foto do Concorrente (opcional)</label>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",fontSize:13,color:"#888"}}>
+              <span>📎</span>{concForm1.anexo?"✅ "+concForm1.anexo.nome:"Selecionar arquivo"}
+              <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
+                const file=e.target.files[0];if(!file)return;
+                const reader=new FileReader();
+                reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
+                reader.readAsDataURL(file);
+              }}/>
+            </label>
+            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:18}}>×</button>}
+          </div>
+        </div>
+        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
+      </div>
+      </>)}
+
+      {tab==="cadastrar"&&(hasRole(session,"televendas")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
+        <div className="ph">
+          <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
+          <div><div className="ph-t">Descontos — Cadastrar</div><div className="ph-s">Cadastre o produto aqui — informe o orçamento ou ordem de serviço.<br/>O Comercial consultará pelo número no balcão.</div></div>
+        </div>
+
+      </div>
+      <div className="card">
+        <label style={{marginBottom:6,display:"block"}}>Tipo de documento *</label>
+        <div className="tipo-row">
+          <button className={`tipo-btn ${form.tipo==="orcamento"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"orcamento"}))}>Orçamento</button>
+          <button className={`tipo-btn ${form.tipo==="os"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"os"}))}>Ordem de Serviço (O.S.)</button>
+        </div>
+        <div className="fg2">
+          <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
+          <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
+        </div>
+        <div className="fg3">
+          <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
+          <div className="field"><label>Medida do Pneu *</label><input placeholder="Ex: 175/65R17" value={form.medida} onChange={e=>setForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
+          <div className="field"><label>Segmento *</label><select value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+        </div>
+        <div className="fg3">
+          <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={form.valor} onChange={e=>setForm(f=>({...f,valor:e.target.value}))}/></div>
+          <div className="field"><label>Forma de Pagamento *</label><select value={form.pgto} onChange={e=>setForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+          <div className="field"><label>Validade *</label><input type="date" value={form.validade} onChange={e=>setForm(f=>({...f,validade:e.target.value}))}/></div>
+        </div>
+        <div className="field mb"><label>Observações</label><input placeholder="Opcional" value={form.obs} onChange={e=>setForm(f=>({...f,obs:e.target.value}))}/></div>
+        {/* Concorrentes */}
+        <div className="field mb" style={{marginTop:6}}>
+          <label>🏢 Concorrentes (opcional)</label>
+          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div style={{flex:2,minWidth:180,position:"relative"}}>
+              <input
+                placeholder="Digite para buscar concorrente..."
+                value={concQuery}
+                onChange={e=>{setConcQuery(e.target.value);setConcShowDrop(true);}}
+                onFocus={()=>setConcShowDrop(true)}
+                onBlur={()=>setTimeout(()=>setConcShowDrop(false),180)}
+                style={{width:"100%",boxSizing:"border-box"}}
+                autoComplete="off"
+              />
+              {concShowDrop&&concQuery.length>0&&(()=>{
+                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery.toLowerCase()));
+                const novaOpc=concQuery.trim()&&!todas.map(x=>x.toLowerCase()).includes(concQuery.trim().toLowerCase());
+                if(!sug.length&&!novaOpc)return null;
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                  {sug.map(s=>(
+                    <div key={s} onMouseDown={()=>{setConcQuery(s);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>
+                  ))}
+                  {novaOpc&&(<div onMouseDown={()=>{const n=concQuery.trim();const upd=[...concExtras,n];setConcExtras(upd);localStorage.setItem("fox_concorrentes",JSON.stringify(upd));setConcQuery(n);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#6090E0",borderTop:"1px solid #2E2E2E"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>➕ Adicionar "{concQuery.trim()}"</div>)}
+                </div>);
+              })()}
+            </div>
+            <div style={{flex:1,minWidth:110}}>
+              <input type="number" step="0.01" placeholder="Valor deles" value={concValor} onChange={e=>setConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
+            </div>
+            <div style={{flex:1,minWidth:130}}>
+              <select value={concPgto} onChange={e=>setConcPgto(e.target.value)} style={{width:"100%"}}>
+                <option value="">Pagamento</option>
+                {PGTO.map(o=><option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <button type="button" onClick={()=>{if(!concQuery.trim())return;setConcAdicionados(a=>[...a,{empresa:concQuery.trim(),valor:concValor,pgto:concPgto}]);setConcQuery("");setConcValor("");setConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 16px",height:40,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontSize:13}}>+ Adicionar</button>
+          </div>
+          {concAdicionados.length>0&&(
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+              {concAdicionados.map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"7px 12px"}}>
+                  <span style={{fontWeight:700,color:"#F0F0F0",fontSize:13,flex:2}}>{item.empresa}</span>
+                  {item.valor&&<span style={{color:"#CC1F1F",fontWeight:700,fontSize:13}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
+                  {item.pgto&&<span style={{color:"#888",fontSize:12}}>{item.pgto}</span>}
+                  <button onClick={()=>setConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:18,lineHeight:1,marginLeft:"auto"}}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Anexo opcional */}
+        <div className="field mb" style={{marginTop:6}}>
+          <label>Anexo — imagem ou áudio (opcional)</label>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:4}}>
+            <label style={{background:"#161616",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
+              📎 Selecionar arquivo
+              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a" style={{display:"none"}} onChange={handleAnexo}/>
+            </label>
+            {anexo&&(
+              <div style={{display:"flex",alignItems:"center",gap:8,background:"#1A2E1A",border:"1px solid #2E4A2E",borderRadius:7,padding:"6px 14px"}}>
+                <span style={{fontSize:16}}>{anexo.tipo.startsWith("audio")?"🎵":"🖼️"}</span>
+                <span style={{fontSize:12,color:"#4CAF50",fontWeight:600}}>{anexo.nome}</span>
+                <button onClick={()=>setAnexo(null)} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,marginTop:4}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",padding:"8px 14px",background:form.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(form.erroInterno?"#CC1F1F":"#2E2E2E"),borderRadius:8,transition:"all .2s"}}>
+            <input type="checkbox" checked={form.erroInterno} onChange={e=>setForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:"#CC1F1F",cursor:"pointer"}}/>
+            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"#CC1F1F":"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+          </label>
+          {form.erroInterno&&<span style={{fontSize:11,color:"#888",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
+        </div>
+        <button className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
+      </div>
+    </>)}
+
+    {/* CONSULTAR */}
+    {tab==="consultar"&&(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
+        <div className="ph">
+          <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
+          <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
+        </div>
+{(session.role==="admin"||hasRole(session,"gerente"))&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":filtroStatus==="perdida"?"Perdidas":"Vencidas"} ({quotesPorStatus.length})</button>}
+      </div>
+      <div className="card">
+        <div className="s-wrap">
+          <input className="s-in" placeholder="ORÇAMENTO ou Nº O.S. ..." value={search} onChange={e=>{setSearch(e.target.value);setResult(null);setNotFound(false);}} onKeyDown={e=>e.key==="Enter"&&doSearch()}/>
+          <button className="s-btn" onClick={doSearch}>BUSCAR</button>
+        </div>
+      </div>
+      {result&&(<div className="rc">
+        {result.perdida&&!result.liberado&&<div style={{background:"#1A0800",border:"1px solid #5A2000",borderRadius:8,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18}}>⚠️</span>
+          <div>
+            <div style={{fontSize:11,fontWeight:800,color:"#E07020",textTransform:"uppercase",letterSpacing:1}}>Negociação Encerrada</div>
+            <div style={{fontSize:12,color:"#888",marginTop:2}}>Esta negociação está encerrada — você ainda pode liberá-la abaixo se o cliente fechar.</div>
+          </div>
+        </div>}
+        <div className="rh">
+          <div>
+            {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
+              <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)",letterSpacing:".5px"}}>{result.negociadorNome}</span>
+              {result.negociadorEmail&&<span style={{fontSize:10,color:"rgba(255,255,255,.55)"}}>· {result.negociadorEmail}</span>}
+            </div>}
+            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.6)",letterSpacing:"1.5px",marginBottom:3}}>{result.tipo==="os"?"ORDEM DE SERVIÇO":"ORÇAMENTO"} — {result.loja}</div>
+            <div className="rn">#{result.numero}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
+            <span className="rt">{isExp(result.validade)?"⚠ EXPIRADO":"✓ VÁLIDO"}</span>
+            <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
+              {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
+              {session.role==="admin"&&!result.perdida&&(
+                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}><svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>Perdida</button>
+              )}
+              {result.perdida&&(
+                <div style={{background:"#1A0000",border:"1px solid #8B0000",borderRadius:7,padding:"6px 12px",marginTop:4}}>
+                  <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}><svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Negociação Perdida</div>
+                  <div style={{fontSize:12,color:"#F0F0F0",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
+                </div>
+              )}
+              {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
+              {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
+            <button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
+              {result.liberado?"✓ LIBERADO — Remover":"Liberar Desconto"}
+            </button>
+            {result.liberado&&result.liberadorNome&&<div style={{background:"rgba(0,0,0,.3)",borderRadius:5,padding:"4px 10px",display:"flex",alignItems:"center",gap:5}}>
+              ✓<span style={{fontSize:10,color:"rgba(255,255,255,.7)",fontWeight:600}}>{result.liberadorNome}</span>
+            </div>}
+          </div>
+        </div>
+        <div className="rgrid">
+          <div className="rcell"><div className="rl">CBA</div><div className="rv">{result.cba}</div></div>
+          <div className="rcell"><div className="rl">Medida</div><div className="rv" style={{fontWeight:700,color:AMBER}}>{result.medida}</div></div>
+          <div className="rcell"><div className="rl">Valor com Desconto</div><div className="rv-big">{fmtVal(result.valor)}</div></div>
+          <div className="rcell"><div className="rl">Segmento</div><div className="rv">{result.segmento}</div></div>
+          <div className="rcell"><div className="rl">Pagamento</div><div className="rv">{result.pgto}</div></div>
+          <div className="rcell"><div className="rl">Loja</div><div className="rv">{result.loja}</div></div>
+                    {result.vendedor&&<div className="rcell"><div className="rl">Vendedor</div><div className="rv" style={{color:AMBER,fontWeight:600}}>{result.vendedor}</div></div>}
+          <div className="rcell"><div className="rl">Validade</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
+          <div className="rcell"><div className="rl">Status</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{result.liberado?"Venda liberada":isExp(result.validade)?"Fora da validade":"Pendente de liberação"}</div></div>
+          
+          {result.obs&&<div className="rcell full"><div className="rl">Obs</div><div className="rv">{result.obs}</div></div>}
+        </div>
+        {/* ANEXO — somente admin */}
+        {result.anexoBase64&&session.role==="admin"&&(
+          <div style={{background:"#0D1117",borderTop:"2px solid #1A1E3A",padding:"18px 22px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <span style={{fontSize:14}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"}</span>
+              <span style={{fontSize:11,fontWeight:700,color:BLUE,letterSpacing:1,textTransform:"uppercase"}}>Anexo — somente você (admin) vê isso</span>
+            </div>
+            {result.anexoTipo&&result.anexoTipo.startsWith("image")
+              ?<div>
+                <img
+                  src={result.anexoBase64}
+                  alt={result.anexoNome}
+                  onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})}
+                  style={{maxWidth:"100%",maxHeight:260,borderRadius:8,border:"1px solid #2E2E3E",cursor:"zoom-in",display:"block"}}
+                  title="Clique para ver em tela cheia"
+                />
+                <div style={{display:"flex",gap:10,marginTop:10}}>
+                  <button onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>🔍 Tela cheia</button>
+                  <a href={result.anexoBase64} download={result.anexoNome} style={{background:RED,color:"#fff",borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>⬇ Baixar</a>
+                </div>
+              </div>
+              :<div>
+                <audio controls src={result.anexoBase64} style={{width:"100%",outline:"none",marginBottom:10}}><track kind="captions"/></audio>
+                <a href={result.anexoBase64} download={result.anexoNome} style={{background:RED,color:"#fff",borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>⬇ Baixar áudio</a>
+              </div>
+            }
+            <div style={{fontSize:11,color:MUTED,marginTop:8}}>{result.anexoNome}</div>
+          </div>
+        )}
+        {/* Concorrentes na consulta */}
+        {(()=>{
+          const conc=parseConcObs(result.obs);
+          if(!conc.length)return null;
+          return(
+            <div style={{background:"#0D0D0D",border:"1px solid #CC1F1F44",borderRadius:10,padding:"14px 18px",margin:"0 0 0 0"}}>
+              <div style={{fontSize:10,color:RED,fontWeight:800,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>🏢 Concorrentes nesta negociação</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {conc.map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#161616",borderRadius:8,padding:"10px 14px"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:"#E0E0E0"}}>{item.empresa}</span>
+                    <div style={{textAlign:"right"}}>
+                      {item.valor>0&&<div style={{fontSize:16,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(item.valor)}</div>}
+                      {item.pgto&&<div style={{fontSize:11,color:MUTED}}>{item.pgto}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+        {isExp(result.validade)&&!result.liberado&&<div className="warn-bar"><span>⚠</span>Desconto fora do prazo. Contate o setor de Descontos antes de aplicar.</div>}
+          {result.liberado&&<div style={{background:"#1A2E1A",borderTop:"1px solid #2E4A2E",padding:"13px 22px",color:"#4CAF50",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"#888",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
+          </div>}
+      </div>)}
+      {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
+
+      {/* Lista */}
+      <div style={{marginTop:8,marginBottom:12}}>
+        <p className="sec-t">Todos os Descontos</p>
+        <div style={{display:"flex",gap:8,marginBottom:14,marginTop:8,flexWrap:"wrap"}}>
+          {[
+            ["todos","Todos","#555"],
+            ["validos","Válidos",GREEN],
+            ["pendente","Pendentes",AMBER],
+            ["liberado","Liberados",GREEN],
+            ["vencido","Vencidas","#CC1F1F"],
+            ["perdida","Perdidas","#9B59B6"]
+          ].map(([v,l,c])=>{
+            const cnt = v==="todos"?quotes.length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
+              :v==="pendente"?quotes.filter(q=>!q.liberado&&!q.perdida&&!isExp(q.validade)).length
+              :v==="liberado"?quotes.filter(q=>q.liberado).length
+              :v==="perdida"?quotes.filter(q=>q.perdida).length
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
+            return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
+              {l} ({cnt})
+            </button>);
+          })}
+        </div>
+      </div>
+      {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
+        <div className="card-np">{quotes.filter(q=>{
+            if(filtroStatus==="todos")return true;
+            if(filtroStatus==="liberado")return !!q.liberado;
+            if(filtroStatus==="perdida")return !!q.perdida;
+            if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+            return true;
+          }).map((q,i)=>(
+          <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
+            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
+            <div style={{flex:1}}>
+              <div className="list-d">{q.medida} — {q.segmento}</div>
+              <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
+            </div>
+            <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
+            <span className="list-val">{fmtVal(q.valor)}</span>
+            <span className={`badge ${q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
+              <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
+              {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
+            </div>
+            <button onClick={e=>doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"#1A2E1A":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+              {q.liberado?"✓":"Liberar"}
+            </button>
+            {session.role==="admin"&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"#E57373",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
+          </div>
+        ))}</div>
+      )}
+    </>)}
+
+    {/* USERS */}
+    {tab==="users"&&session.role==="admin"&&(<>
+      <div style={{marginBottom:20}}><p className="sec-t">Gerenciar Usuários</p><p className="sec-s">Somente o administrador pode criar ou remover acessos.</p></div>
+      <div className="card">
+        <p style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:14}}>Criar novo acesso</p>
+        <div className="fg2">
+          <div className="field"><label>Nome completo</label><input placeholder="Nome do colaborador" value={newUser.nome} onChange={e=>setNewUser(f=>({...f,nome:e.target.value}))}/></div>
+          <div className="field"><label>E-mail</label><input type="email" placeholder="email@foxpneus.com.br" value={newUser.email} onChange={e=>setNewUser(f=>({...f,email:e.target.value}))}/></div>
+        </div>
+        <div className="fg2">
+          <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
+          <div className="field"><label>Permissões</label>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
+                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
+                  <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
+                    <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
+                    {lbl}
+                  </label>
+                ))}
+              </div>
+            </div>
+        </div>
+        <button className="btn-red" onClick={doAddUser}>Criar Usuário</button>
+      </div>
+      <hr className="divider"/>
+      <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
+      {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
+        {/* Permission matrix header */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+          <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
+            <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
+          ))}
+          <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
+        </div>
+        <div className="card-np" style={{borderRadius:"0 0 10px 10px",border:"1px solid #2E2E2E"}}>{users.map(u=>{
+          const roles=(u.role||"").split(",").filter(Boolean);
+          const has=r=>roles.includes(r);
+          return(
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+            {/* User info */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
+                {u.foto
+                  ?<img src={u.foto} alt={u.nome} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid #333",display:"block"}}/>
+                  :<div style={{width:34,height:34,borderRadius:"50%",background:"#1C1C1C",border:"2px solid #333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#888"}}>{(u.nome||u.email)[0].toUpperCase()}</div>
+                }
+                <div style={{position:"absolute",bottom:-2,right:-2,background:RED,borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700}}>+</div>
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={async e=>{
+                  const file=e.target.files[0];if(!file)return;
+                  const reader=new FileReader();
+                  reader.onload=async ev=>{
+                    const b64=ev.target.result;
+                    const db=await supa.from("usuarios");
+                    await db.update({foto:b64},{email:u.email});
+                    setUsers(prev=>prev.map(x=>x.email===u.email?{...x,foto:b64}:x));
+                    toast_("Foto atualizada!");
+                  };
+                  reader.readAsDataURL(file);
+                }}/>
+              </label>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{u.nome}</div>
+                <div style={{fontSize:10,color:MUTED}}>{u.email}</div>
+              </div>
+            </div>
+            {/* Permission toggles */}
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
+              <div key={role} style={{display:"flex",justifyContent:"center"}}>
+                <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
+                  width:28,height:28,borderRadius:"50%",cursor:"pointer",
+                  background:has(role)?cor+"33":"#1A1A1A",
+                  border:"2px solid "+(has(role)?cor:"#333"),
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  transition:"all .2s",
+                  boxShadow:has(role)?"0 0 8px "+cor+"55":"none"
+                }}>
+                  {has(role)&&<div style={{width:10,height:10,borderRadius:"50%",background:cor}}/>}
+                </div>
+              </div>
+            ))}
+            {/* Remove button */}
+            <div style={{display:"flex",justifyContent:"center"}}>
+              <div style={{display:"flex",gap:6,flexDirection:"column"}}>
+                <button className="btn-sm" onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{padding:"4px 10px",fontSize:11,background:"#1A1E2E",borderColor:BLUE,color:BLUE}}>🔑 Senha</button>
+                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              </div>
+            </div>
+          </div>
+          );
+        })}</div>
+      </>)}
+      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+    </>)}
+
+    </div>
+
+    {/* EXPORT MODAL */}
+    {imgModal&&(
+      <div onClick={()=>setImgModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,cursor:"zoom-out"}}>
+        <div style={{position:"absolute",top:16,right:20,display:"flex",gap:12}}>
+          <a href={imgModal.src} download={imgModal.nome} onClick={e=>e.stopPropagation()} style={{background:RED,color:"#fff",borderRadius:8,padding:"9px 22px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:7}}>⬇ Baixar</a>
+          <button onClick={()=>setImgModal(null)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <img src={imgModal.src} alt={imgModal.nome} onClick={e=>e.stopPropagation()} style={{maxWidth:"94vw",maxHeight:"88vh",borderRadius:10,border:"1px solid #3A3A3A",objectFit:"contain"}}/>
+        <div style={{color:"#888",fontSize:12,marginTop:10}}>{imgModal.nome}</div>
+      </div>
+    )}
+    {editModal&&(
+      <div className="edit-overlay" onClick={()=>setEditModal(null)}>
+        <div className="edit-modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560,width:"100%"}}>
+          <div className="edit-title">✏ Editar — #{editModal.numero}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+            <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
+            <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
+            <div className="field"><label>Segmento</label><select value={editForm.segmento} onChange={e=>setEditForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="field"><label>Loja</label><select value={editForm.loja} onChange={e=>setEditForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={editForm.valor} onChange={e=>setEditForm(f=>({...f,valor:e.target.value}))}/></div>
+            <div className="field"><label>Forma de Pagamento</label><select value={editForm.pgto} onChange={e=>setEditForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+            <div className="field"><label>Validade *</label><input type="date" value={editForm.validade} onChange={e=>setEditForm(f=>({...f,validade:e.target.value}))}/></div>
+            <div className="field"><label>Observações</label><input placeholder="Motivo / obs" value={editForm.obs} onChange={e=>setEditForm(f=>({...f,obs:e.target.value}))}/></div>
+          </div>
+          {/* Concorrentes no edit */}
+          <div style={{borderTop:"1px solid #2E2E2E",paddingTop:14,marginBottom:14}}>
+            <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Concorrentes</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:8}}>
+              <div style={{flex:2,minWidth:150,position:"relative"}}>
+                <input placeholder="Buscar concorrente..." value={editConcQuery} onChange={e=>{setEditConcQuery(e.target.value);setEditConcDrop(true);}} onFocus={()=>setEditConcDrop(true)} onBlur={()=>setTimeout(()=>setEditConcDrop(false),180)} style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+                {editConcDrop&&editConcQuery.length>0&&(()=>{
+                  const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+                  const sug=todas.filter(x=>x.toLowerCase().includes(editConcQuery.toLowerCase()));
+                  if(!sug.length)return null;
+                  return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:160,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                    {sug.map(s=>(<div key={s} onMouseDown={()=>{setEditConcQuery(s);setEditConcDrop(false);}} style={{padding:"7px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                  </div>);
+                })()}
+              </div>
+              <div style={{flex:1,minWidth:90}}><input type="number" step="0.01" placeholder="Valor deles" value={editConcValor} onChange={e=>setEditConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/></div>
+              <div style={{flex:1,minWidth:110}}><select value={editConcPgto} onChange={e=>setEditConcPgto(e.target.value)} style={{width:"100%"}}><option value="">Pagamento</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+              <button type="button" onClick={()=>{if(!editConcQuery.trim())return;setEditConcAdicionados(a=>[...a,{empresa:editConcQuery.trim(),valor:editConcValor,pgto:editConcPgto}]);setEditConcQuery("");setEditConcValor("");setEditConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 14px",height:40,fontWeight:700,cursor:"pointer",fontSize:13}}>+ Add</button>
+            </div>
+            {editConcAdicionados.length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                {editConcAdicionados.map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"6px 10px"}}>
+                    <span style={{fontWeight:700,color:"#F0F0F0",fontSize:12,flex:2}}>{item.empresa}</span>
+                    {item.valor&&<span style={{color:RED,fontWeight:700,fontSize:12}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
+                    {item.pgto&&<span style={{color:MUTED,fontSize:11}}>{item.pgto}</span>}
+                    <button onClick={()=>setEditConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,marginLeft:"auto"}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Erro interno */}
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"8px 12px",background:editForm.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(editForm.erroInterno?RED:"#2E2E2E"),borderRadius:8,marginBottom:12,transition:"all .2s"}}>
+            <input type="checkbox" checked={editForm.erroInterno} onChange={e=>setEditForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:RED,cursor:"pointer"}}/>
+            <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+          </label>
+          <div style={{display:"flex",gap:10}}>
+            <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
+            <button className="btn-red" style={{flex:2}} onClick={doSaveEdit}>Salvar Atualização</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {showExport&&exportRows.length>0&&(
+      <div className="overlay" onClick={()=>setShowExport(false)}>
+        <div className="modal" onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div className="modal-t">Dados Exportados — {exportRows.length} registro(s)</div>
+            <button className="btn-red" style={{width:"auto",padding:"7px 18px"}} onClick={()=>setShowExport(false)}>Fechar</button>
+          </div>
+          <div style={{fontSize:11,color:MUTED,background:"#161616",borderRadius:6,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+            Selecione toda a tabela, copie (Ctrl+C) e cole direto no Excel ou Google Planilhas.
+          </div>
+          <div className="exp-table">
+            <table>
+              <thead><tr>{Object.keys(exportRows[0]).map(h=><th key={h}>{h}</th>)}</tr></thead>
+              <tbody>{exportRows.map((row,i)=>(
+                <tr key={i}>{Object.entries(row).map(([k,v],j)=>(
+                  <td key={j} style={{color:k==="Status"?(v==="Liberado"?GREEN:AMBER):TEXT,fontWeight:k==="Status"||k==="Medida"?700:400}}>{v||"—"}</td>
+                ))}</tr>
+              ))}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
+
+
+    {galeriaModal&&(
+      <div onClick={()=>setGaleriaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 16px",overflowY:"auto"}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1100}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes — {galeriaModal.medida}</div>
+              <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} · {(galeriaModal.semFoto||[]).length} sem foto com concorrentes</div>
+            </div>
+            <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
+            {galeriaModal.imagens.map((q,i)=>{
+              const conc=parseConcObs(q.obs);
+              const isCopied=copiedNum===q.numero;
+              const isConc=q.tipo==="conc";
+              const copyNum=()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});};
+              return(
+              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid "+(isConc?"#9B59B644":"#2E2E2E"),display:"flex",flexDirection:"column"}}>
+                {/* Header */}
+                <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    {isConc
+                      ?<><div style={{fontSize:9,color:"#9B59B6",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>🔍 Inteligência de Concorrência</div>
+                        <div style={{fontSize:11,color:MUTED,marginTop:2}}>por {q.negociadorNome} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div></>
+                      :<><div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div></>
+                    }
+                  </div>
+                  {!isConc&&<button onClick={copyNum} title="Copiar número" style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}>
+                    {isCopied?"✓ Copiado!":"📋 Copiar"}
+                  </button>}
+                </div>
+                {/* Imagem — mostra spinner se ainda carregando */}
+                {q.anexoBase64
+                  ?<img
+                    src={q.anexoBase64}
+                    alt={q.anexoNome}
+                    onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
+                    style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
+                    title="Clique para ampliar"
+                  />
+                  :<div style={{width:"100%",height:180,background:"#111",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10}}>
+                    <div style={{width:28,height:28,border:"3px solid #2E2E2E",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                    <div style={{fontSize:11,color:MUTED}}>Carregando imagem...</div>
+                  </div>
+                }
+                {/* Corpo do card */}
+                <div style={{padding:"10px 12px",flex:1}}>
+                  {isConc
+                    ?<div style={{marginBottom:8}}>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                        <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{q.medida}</span>
+                        <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span>
+                      </div>
+                    </div>
+                    :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                  }
+                  {/* Nosso preço - só para não-conc */}
+                  {!isConc&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
+                    <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
+                    <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
+                  </div>}
+                  {/* Concorrentes abaixo do preço */}
+                  {conc.length>0&&(
+                    <div style={{borderTop:"1px solid #2E2E2E",paddingTop:8,marginTop:4}}>
+                      <div style={{fontSize:9,color:RED,fontWeight:800,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
+                      {conc.map((item,ci)=>(
+                        <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?5:0}}>
+                          <span style={{fontSize:12,color:"#D0D0D0",fontWeight:600}}>{item.empresa}</span>
+                          <div style={{textAlign:"right"}}>
+                            {item.valor>0&&<div style={{fontSize:13,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(item.valor)}</div>}
+                            {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+          {/* Cards sem foto mas com concorrentes */}
+          {(galeriaModal.semFoto||[]).length>0&&(
+            <div style={{marginTop:20}}>
+              <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Negociações sem foto — dados de concorrência</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+                {(galeriaModal.semFoto||[]).map((q,i)=>{
+                  const conc=parseConcObs(q.obs);
+                  const isCopied=copiedNum===q.numero;
+                  return(
+                    <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E3E2E"}}>
+                      <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div>
+                          <div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
+                        </div>
+                        <button onClick={()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});}} style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>
+                          {isCopied?"✓ Copiado!":"📋 Copiar"}
+                        </button>
+                      </div>
+                      <div style={{padding:"10px 12px"}}>
+                        <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                        {conc.length>0&&(
+                          <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+                            <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
+                            {conc.map((item,ci)=>(
+                              <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
+                                <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
+                                <div style={{textAlign:"right"}}>
+                                  <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</div>
+                                  {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <span style={{fontSize:10,color:MUTED,fontWeight:600}}>Nosso preço negociado:</span>
+                          <span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:13,fontWeight:800}}>{fmtVal(q.valor)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+
+    {perdidaModal&&(
+      <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Marcar como Perdida</div>
+          <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> — {perdidaModal.medida}</div>
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
+            <input
+              type="text"
+              placeholder="Ex: Cliente fechou na Pemaza por R$ 280,00"
+              value={motivoInput}
+              onChange={e=>setMotivoInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())}
+              style={{width:"100%",boxSizing:"border-box",background:"#0D0D0D",border:"1px solid #8B0000",borderRadius:8,padding:"10px 14px",color:"#fff",fontSize:13,outline:"none"}}
+              autoFocus
+            />
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setPerdidaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"#8B0000":"#3E1A1A",color:motivoInput.trim()?"#fff":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>Confirmar Perda</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {showConcAviso&&(
+      <div onClick={()=>setShowConcAviso(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
+          <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:8}}>Nenhum concorrente adicionado</div>
+          <p style={{fontSize:13,color:"#888",marginBottom:24,lineHeight:1.6}}>Você não informou nenhum concorrente nessa negociação. Tem certeza que deseja salvar assim? Se foi um <strong style={{color:"#fff"}}>erro interno</strong>, marque a opção correspondente antes de salvar.</p>
+          <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+            <button onClick={()=>setShowConcAviso(false)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Voltar e adicionar</button>
+            <button onClick={()=>{setShowConcAviso(false);doAdd(true);}} style={{background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar mesmo assim</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
+  </div></div></>);
+}
+    {adminSenhaModal&&(
+      <div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Alterar Senha</div>
+          <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} — {adminSenhaModal.email}</div>
+          <div className="field" style={{marginBottom:16}}>
+            <label>Nova Senha</label>
+            <input type="password" placeholder="Digite a nova senha" value={adminNovaSenha} onChange={e=>setAdminNovaSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdminAlterarSenha()} autoFocus style={{width:"100%",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar Nova Senha</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Logs tab view */}
+    {tab==="logs"&&session.role==="admin"&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",padding:0,overflow:"hidden"}}>
+        <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Busca por Medida</div>
+            <div style={{fontSize:11,color:MUTED,marginTop:2}}>Registros de acesso à página de consulta pública</div>
+          </div>
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:20}}>
+          {logs.length===0?(<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log registrado ainda.</div>):(
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+                {["Data/Hora","E-mail","Medida","Loja","IP","Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",letterSpacing:1}}>{h}</th>)}
+              </tr></thead>
+              <tbody>{logs.map((l,i)=>(
+                <tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:l.sucesso?"transparent":"#1A0000"}}>
+                  <td style={{padding:"10px 12px",color:"#888",fontSize:11}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+                  <td style={{padding:"10px 12px",fontWeight:600,color:l.sucesso?TEXT:RED}}>{l.email}</td>
+                  <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||"—"}</td>
+                  <td style={{padding:"10px 12px",color:MUTED}}>{l.loja||"—"}</td>
+                  <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
+                  <td style={{padding:"10px 12px"}}>
+                    {l.sucesso
+                      ?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>✅ Sucesso</span>
+                      :<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>❌ {l.motivo||"Bloqueado"}</span>
+                    }
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    )}
+
+    {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
+  </div></div></>);
+}
 /* Styles are defined in App.jsx */
