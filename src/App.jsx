@@ -1871,9 +1871,20 @@ export default function App(){
         <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Busca por Medida</div>
-            <div style={{fontSize:11,color:MUTED,marginTop:2}}>Registros de acesso à página de consulta pública</div>
+            <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s) — acesso à página de consulta pública</div>
           </div>
-          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          <div style={{display:"flex",gap:10}}>
+            {logs.length>0&&<button onClick={async()=>{
+              if(!window.confirm("Limpar TODOS os logs? Esta ação não pode ser desfeita."))return;
+              try{
+                const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+                await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});
+                setLogs([]);
+                toast_("Logs limpos com sucesso! 🗑️");
+              }catch(e){toast_("Erro ao limpar logs.",false);}
+            }} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar Logs</button>}
+            <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:20}}>
           {logs.length===0?(<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log registrado ainda.</div>):(
