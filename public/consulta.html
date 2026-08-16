@@ -3,147 +3,133 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fox Pneus — Consulta de Desconto</title>
+<title>Fox Pneus — Consulta</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:#0A0A0A;color:#F0F0F0;font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px;}
-  .logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;margin-top:16px;}
-  .logo img{width:48px;height:48px;border-radius:12px;}
-  .logo-text{font-size:22px;font-weight:800;letter-spacing:2px;color:#fff;}
-  .logo-sub{font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;}
-  .card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:14px;padding:24px;width:100%;max-width:480px;}
-  .card-title{font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
-  .search-wrap{display:flex;gap:10px;margin-bottom:8px;}
-  input{background:#111;border:1px solid #2E2E2E;border-radius:8px;color:#F0F0F0;font-size:16px;padding:13px 16px;width:100%;outline:none;font-family:inherit;transition:border .2s;}
-  input:focus{border-color:#CC1F1F;}
-  input::placeholder{color:#555;}
-  button{background:#CC1F1F;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;padding:13px 20px;transition:background .2s;white-space:nowrap;}
-  button:hover{background:#E02020;}
-  button:disabled{background:#333;color:#666;cursor:not-allowed;}
-  .hint{font-size:11px;color:#555;margin-bottom:20px;}
-
-  /* Result */
-  .result{margin-top:20px;display:none;}
-  .result.show{display:block;}
-  .result-header{background:#111;border-radius:10px;padding:16px;margin-bottom:12px;border-left:4px solid #CC1F1F;}
-  .result-type{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-  .result-num{font-size:28px;font-weight:800;color:#fff;letter-spacing:2px;}
-  .result-loja{font-size:12px;color:#666;margin-top:4px;}
-  .badge-liberado{display:inline-flex;align-items:center;gap:6px;background:#0D2010;border:1px solid #2E5A2E;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#4CAF50;margin-top:8px;}
-  .badge-expirado{display:inline-flex;align-items:center;gap:6px;background:#1A0A00;border:1px solid #5A3A00;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#E0A820;margin-top:8px;}
-
-  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .field{background:#111;border-radius:8px;padding:12px 14px;}
-  .field-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
-  .field-value{font-size:15px;font-weight:700;color:#F0F0F0;}
-  .field-value.valor{color:#4CAF50;font-size:18px;}
-  .field.full{grid-column:1/-1;}
-  .obs-box{background:#111;border-radius:8px;padding:14px;margin-top:10px;border-left:3px solid #2E2E2E;}
-  .obs-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
-  .obs-text{font-size:13px;color:#CCC;line-height:1.6;white-space:pre-wrap;}
-
-  /* Not found */
-  .not-found{text-align:center;padding:32px 16px;display:none;}
-  .not-found.show{display:block;}
-  .not-found-icon{font-size:40px;margin-bottom:12px;opacity:.3;}
-  .not-found-title{font-size:16px;font-weight:700;color:#CC1F1F;margin-bottom:6px;}
-  .not-found-sub{font-size:13px;color:#666;}
-
-  /* Perdida */
-  .bloqueado{text-align:center;padding:32px 16px;display:none;}
-  .bloqueado.show{display:block;}
-  .bloqueado-icon{font-size:48px;margin-bottom:12px;}
-  .bloqueado-title{font-size:20px;font-weight:800;color:#CC1F1F;letter-spacing:1px;margin-bottom:8px;}
-  .bloqueado-sub{font-size:13px;color:#888;line-height:1.7;}
-
-  /* Loading */
-  .loading{text-align:center;padding:24px;display:none;}
-  .loading.show{display:block;}
-  .spinner{width:32px;height:32px;border:3px solid #2E2E2E;border-top-color:#CC1F1F;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-
-  .footer{margin-top:32px;font-size:11px;color:#333;text-align:center;}
-
-  @media(max-width:400px){
-    .fields{grid-template-columns:1fr;}
-    .field.full{grid-column:1;}
-    .search-wrap{flex-direction:column;}
-  }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0A0A0A;color:#F0F0F0;font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px;}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:24px;margin-top:16px;}
+.logo-text{font-size:22px;font-weight:800;letter-spacing:2px;color:#fff;}
+.logo-sub{font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;}
+.tabs{display:flex;gap:8px;margin-bottom:20px;width:100%;max-width:540px;}
+.tab-btn{flex:1;padding:11px;background:#1C1C1C;border:1px solid #2E2E2E;border-radius:8px;color:#888;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:all .2s;}
+.tab-btn.active{background:#CC1F1F22;border-color:#CC1F1F;color:#fff;}
+.card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:14px;padding:24px;width:100%;max-width:540px;margin-bottom:16px;}
+.card-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+.row{display:flex;gap:10px;margin-bottom:8px;}
+input,select{background:#111;border:1px solid #2E2E2E;border-radius:8px;color:#F0F0F0;font-size:15px;padding:12px 14px;width:100%;outline:none;font-family:inherit;transition:border .2s;}
+input:focus,select:focus{border-color:#CC1F1F;}
+input::placeholder{color:#555;}
+.btn{background:#CC1F1F;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;padding:12px 20px;transition:background .2s;white-space:nowrap;width:100%;}
+.btn:hover{background:#E02020;}
+.btn:disabled{background:#333;color:#666;cursor:not-allowed;}
+.hint{font-size:11px;color:#555;margin-bottom:14px;}
+.result-header{background:#111;border-radius:10px;padding:16px;margin-bottom:12px;border-left:4px solid #CC1F1F;}
+.result-type{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.result-num{font-size:26px;font-weight:800;color:#fff;letter-spacing:2px;}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.field{background:#111;border-radius:8px;padding:12px 14px;}
+.field-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.field-value{font-size:14px;font-weight:700;color:#F0F0F0;}
+.field.full{grid-column:1/-1;}
+.field-value.valor{color:#4CAF50;font-size:17px;}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;margin-top:8px;}
+.badge-ok{background:#0D2010;border:1px solid #2E5A2E;color:#4CAF50;}
+.badge-warn{background:#1A1000;border:1px solid #5A4000;color:#E0A820;}
+.not-found{text-align:center;padding:28px 16px;}
+.not-found-icon{font-size:36px;margin-bottom:10px;opacity:.3;}
+.not-found-title{font-size:15px;font-weight:700;color:#CC1F1F;margin-bottom:5px;}
+.not-found-sub{font-size:12px;color:#666;}
+.loading{text-align:center;padding:20px;}
+.spinner{width:28px;height:28px;border:3px solid #2E2E2E;border-top-color:#CC1F1F;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.obs-box{background:#111;border-radius:8px;padding:14px;margin-top:10px;border-left:3px solid #2E2E2E;}
+.obs-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:6px;}
+.obs-text{font-size:13px;color:#CCC;line-height:1.6;white-space:pre-wrap;}
+/* Medida search */
+.conc-card{background:#111;border:1px solid #2E2E2E;border-radius:10px;padding:14px;margin-bottom:10px;}
+.conc-loja{font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.conc-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#1C1C1C;border-radius:8px;margin-bottom:6px;border-left:3px solid #CC1F1F;}
+.conc-nome{font-size:14px;font-weight:700;color:#F0F0F0;}
+.conc-valor{font-size:16px;font-weight:800;color:#FF6B6B;}
+.conc-pgto{font-size:11px;color:#888;margin-top:2px;}
+.email-gate{background:#1A1A1A;border:1px solid #3A3A3A;border-radius:10px;padding:20px;margin-bottom:14px;}
+.blocked{background:#1A0000;border:1px solid #5A0000;border-radius:10px;padding:20px;text-align:center;}
+.step-label{font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.footer{margin-top:28px;font-size:11px;color:#333;text-align:center;}
+@media(max-width:400px){.fields{grid-column:1;grid-template-columns:1fr;}.row{flex-direction:column;}}
 </style>
 </head>
 <body>
-
 <div class="logo">
-  <img src="/fox-icon.png" alt="Fox" onerror="this.style.display='none'"/>
-  <div>
-    <div class="logo-text">🦊 FOX PNEUS</div>
-    <div class="logo-sub">Consulta de Desconto Autorizado</div>
+  <div><div class="logo-text">🦊 FOX PNEUS</div><div class="logo-sub">Consulta de Descontos</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tab1-btn" onclick="switchTab(1)">📋 Busca por Cotação</button>
+  <button class="tab-btn" id="tab2-btn" onclick="switchTab(2)">🔍 Busca por Medida</button>
+</div>
+
+<!-- TAB 1: Busca por Cotação -->
+<div id="tab1">
+  <div class="card">
+    <div class="card-title">🔍 Buscar Negociação</div>
+    <div class="row">
+      <input type="text" id="inp" placeholder="Número do Orçamento ou O.S." maxlength="20" autocomplete="off"/>
+      <button class="btn" id="btn1" onclick="buscarCotacao()" style="width:auto;padding:12px 20px;">BUSCAR</button>
+    </div>
+    <div class="hint">Digite o número exato informado pelo vendedor</div>
+    <div class="loading" id="load1" style="display:none"><div class="spinner"></div><div style="color:#666;font-size:12px;">Consultando...</div></div>
+    <div id="result1" style="display:none"></div>
+    <div id="nf1" style="display:none" class="not-found"><div class="not-found-icon">🔍</div><div class="not-found-title">Não encontrado</div><div class="not-found-sub">Verifique o número com o vendedor.</div></div>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-title">🔍 Buscar Negociação</div>
-  <div class="search-wrap">
-    <input type="text" id="inp" placeholder="Número do Orçamento ou O.S." maxlength="20" autocomplete="off"/>
-    <button id="btn" onclick="buscar()">BUSCAR</button>
-  </div>
-  <div class="hint">Digite o número exato informado pelo vendedor</div>
+<!-- TAB 2: Busca por Medida -->
+<div id="tab2" style="display:none;width:100%;max-width:540px;">
 
-  <!-- Loading -->
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <div style="color:#666;font-size:13px;">Consultando...</div>
-  </div>
-
-  <!-- Perdida / Bloqueada -->
-  <div class="bloqueado" id="bloqueado">
-    <div class="bloqueado-icon">⛔</div>
-    <div class="bloqueado-title">NEGOCIAÇÃO ENCERRADA</div>
-    <div class="bloqueado-sub">Esta negociação foi encerrada e não pode ser utilizada.<br/>Entre em contato com o administrador para mais informações.</div>
-  </div>
-
-  <!-- Not found -->
-  <div class="not-found" id="notfound">
-    <div class="not-found-icon">🔍</div>
-    <div class="not-found-title">Não encontrado</div>
-    <div class="not-found-sub">Verifique o número com o vendedor responsável.</div>
-  </div>
-
-  <!-- Result -->
-  <div class="result" id="result">
-    <div class="result-header">
-      <div class="result-type" id="r-tipo"></div>
-      <div class="result-num" id="r-num"></div>
-      <div class="result-loja" id="r-loja"></div>
-      <div id="r-status"></div>
+  <!-- Step 1: E-mail -->
+  <div id="step-email">
+    <div class="card">
+      <div class="card-title">📧 Identificação</div>
+      <div class="step-label">Informe seu e-mail institucional para continuar</div>
+      <input type="email" id="email-inp" placeholder="seu@redefox.com.br" autocomplete="email" style="margin-bottom:10px;"/>
+      <div id="email-err" style="color:#CC1F1F;font-size:12px;margin-bottom:10px;display:none;"></div>
+      <button class="btn" onclick="validarEmail()">Continuar →</button>
     </div>
+  </div>
 
-    <div class="fields">
-      <div class="field">
-        <div class="field-label">CBA</div>
-        <div class="field-value" id="r-cba">—</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Medida do Pneu</div>
-        <div class="field-value" id="r-medida">—</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Segmento</div>
-        <div class="field-value" id="r-segmento">—</div>
-      </div>
-      <div class="field">
-        <div class="field-label">Forma de Pagamento</div>
-        <div class="field-value" id="r-pgto">—</div>
-      </div>
-      <div class="field full">
-        <div class="field-label">💰 Valor Negociado</div>
-        <div class="field-value valor" id="r-valor">—</div>
-      </div>
+  <!-- Step 2: Medida + Loja -->
+  <div id="step-busca" style="display:none;">
+    <div class="card">
+      <div class="card-title">🔍 Buscar por Medida</div>
+      <div class="step-label" style="margin-bottom:8px;">Medida do Pneu *</div>
+      <input type="text" id="medida-inp" placeholder="Ex: 175/65R14" style="margin-bottom:10px;" autocomplete="off"/>
+      <div class="step-label" style="margin-bottom:8px;">Loja *</div>
+      <select id="loja-sel" style="margin-bottom:12px;">
+        <option value="">Selecione a loja...</option>
+        <option>CAUTO/MATRIZ PVH</option>
+        <option>CAUTO ARIQUEMES</option>
+        <option>CAUTO JIPARANA</option>
+        <option>CAUTO CACOAL</option>
+        <option>CAUTO VILHENA</option>
+        <option>PARINTINS - MANAUS</option>
+        <option>XAPURI - RIO BRANCO</option>
+      </select>
+      <div id="busca-err" style="color:#CC1F1F;font-size:12px;margin-bottom:10px;display:none;"></div>
+      <button class="btn" id="btn2" onclick="buscarMedida()">BUSCAR NEGOCIAÇÕES</button>
     </div>
+    <div class="loading" id="load2" style="display:none"><div class="spinner"></div><div style="color:#666;font-size:12px;">Buscando...</div></div>
+    <div id="result2" style="display:none"></div>
+    <div id="nf2" style="display:none" class="not-found"><div class="not-found-icon">📭</div><div class="not-found-title">Nenhuma negociação encontrada</div><div class="not-found-sub">Nenhum registro para essa medida e loja.</div></div>
+  </div>
 
-    <div class="obs-box" id="obs-box" style="display:none;">
-      <div class="obs-label">📝 Observações / Anotações</div>
-      <div class="obs-text" id="r-obs"></div>
+  <!-- Blocked -->
+  <div id="step-blocked" style="display:none;">
+    <div class="card blocked">
+      <div style="font-size:40px;margin-bottom:12px;">🚫</div>
+      <div style="font-size:17px;font-weight:800;color:#CC1F1F;margin-bottom:8px;">ACESSO NÃO AUTORIZADO</div>
+      <div style="font-size:13px;color:#888;line-height:1.7;" id="blocked-msg">Somente e-mails @redefox.com.br têm acesso a esta consulta.</div>
+      <button onclick="resetTab2()" style="margin-top:16px;background:#2E2E2E;color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:inherit;font-weight:700;">← Tentar novamente</button>
     </div>
   </div>
 </div>
@@ -151,89 +137,163 @@
 <div class="footer">Fox Pneus · Sistema de Descontos · Acesso restrito à equipe</div>
 
 <script>
-const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const SUPA_URL="https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
 
-function hide(id){document.getElementById(id).className=document.getElementById(id).className.replace(' show','').replace('show','');}
-function show(id){const el=document.getElementById(id);if(!el.className.includes('show'))el.className+=' show';}
-function hideAll(){hide('loading');hide('result');hide('notfound');hide('bloqueado');}
+let currentEmail="";
+let userIp="";
+
+// Get IP on load
+fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>userIp=d.ip).catch(()=>{});
+
+function switchTab(n){
+  document.getElementById("tab1").style.display=n===1?"block":"none";
+  document.getElementById("tab2").style.display=n===2?"flex":"none";
+  if(n===2) document.getElementById("tab2").style.flexDirection="column";
+  document.getElementById("tab1-btn").className="tab-btn"+(n===1?" active":"");
+  document.getElementById("tab2-btn").className="tab-btn"+(n===2?" active":"");
+}
 
 function fmtVal(v){
   const n=parseFloat(v);
   if(isNaN(n))return v||"—";
-  return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 }
 
 function isExp(val){
   if(!val)return false;
-  const d=new Date(val.split('T')[0]+'T23:59:59');
-  return d<new Date();
+  return new Date(val.split("T")[0]+"T23:59:59")<new Date();
 }
 
-document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter')buscar();});
+// --- TAB 1: Busca por cotação ---
+document.getElementById("inp").addEventListener("keydown",e=>{if(e.key==="Enter")buscarCotacao();});
 
-async function buscar(){
-  const num=document.getElementById('inp').value.trim().replace(/^#/,'');
+async function buscarCotacao(){
+  const num=document.getElementById("inp").value.trim().replace(/^#/,"");
   if(!num)return;
-
-  hideAll();
-  show('loading');
-  document.getElementById('btn').disabled=true;
-
+  document.getElementById("load1").style.display="block";
+  document.getElementById("result1").style.display="none";
+  document.getElementById("nf1").style.display="none";
+  document.getElementById("btn1").disabled=true;
   try{
-    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
-    const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(num)}&select=tipo,numero,cba,medida,segmento,loja,valor,pgto,obs,validade,liberado,perdida,motivo_perda&limit=1`,{headers});
+    const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(num)}&select=tipo,numero,cba,medida,segmento,loja,valor,pgto,obs,validade,liberado,perdida&limit=1`,{headers:H});
     const data=await r.json();
-
-    hideAll();
-
-    if(!data||data.length===0){show('notfound');return;}
-
+    document.getElementById("load1").style.display="none";
+    if(!data||data.length===0){document.getElementById("nf1").style.display="block";return;}
     const q=data[0];
+    let status="";
+    if(q.liberado) status='<div class="badge badge-ok">✅ Desconto Liberado</div>';
+    else if(q.perdida) status='<div class="badge badge-warn">⚠️ Negociação Encerrada — consulte o vendedor</div>';
+    else if(isExp(q.validade)) status='<div class="badge badge-warn">⚠️ Prazo Expirado — consulte o administrador</div>';
+    const obsRaw=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0].trim();
+    const el=document.getElementById("result1");
+    el.innerHTML=`
+      <div class="result-header">
+        <div class="result-type">${q.tipo==="os"?"ORDEM DE SERVIÇO":"ORÇAMENTO"}</div>
+        <div class="result-num">#${q.numero}</div>
+        <div style="font-size:12px;color:#666;margin-top:4px;">${q.loja||""}</div>
+        ${status}
+      </div>
+      <div class="fields">
+        <div class="field"><div class="field-label">CBA</div><div class="field-value">${q.cba||"—"}</div></div>
+        <div class="field"><div class="field-label">Medida</div><div class="field-value">${q.medida||"—"}</div></div>
+        <div class="field"><div class="field-label">Segmento</div><div class="field-value">${q.segmento||"—"}</div></div>
+        <div class="field"><div class="field-label">Pagamento</div><div class="field-value">${q.pgto||"—"}</div></div>
+        <div class="field full"><div class="field-label">💰 Valor Negociado</div><div class="field-value valor">${fmtVal(q.valor)}</div></div>
+      </div>
+      ${obsRaw?`<div class="obs-box"><div class="obs-label">📝 Observações</div><div class="obs-text">${obsRaw}</div></div>`:""}
+    `;
+    el.style.display="block";
+  }catch(e){document.getElementById("nf1").style.display="block";}
+  finally{document.getElementById("load1").style.display="none";document.getElementById("btn1").disabled=false;}
+}
 
-    // Nunca bloqueia — sempre mostra o resultado
-    // Monta resultado
-    document.getElementById('r-tipo').textContent=(q.tipo==='os'?'ORDEM DE SERVIÇO':'ORÇAMENTO')+' — '+( q.loja||'');
-    document.getElementById('r-num').textContent='#'+q.numero;
-    document.getElementById('r-loja').textContent=q.loja||'';
+// --- TAB 2: Busca por medida ---
+async function salvarLog(email,medida,loja,sucesso,motivo){
+  try{
+    await fetch(`${SUPA_URL}/rest/v1/logs_consulta`,{
+      method:"POST",
+      headers:H,
+      body:JSON.stringify({email,medida:medida||null,loja:loja||null,ip:userIp||null,sucesso,motivo:motivo||null})
+    });
+  }catch(e){}
+}
 
-    // Status
-    const statusEl=document.getElementById('r-status');
-    if(q.liberado){
-      statusEl.innerHTML='<div class="badge-liberado">✅ Desconto Liberado</div>';
-    } else if(q.perdida){
-      statusEl.innerHTML='<div class="badge-expirado">⚠️ Negociação Encerrada — consulte o vendedor responsável</div>';
-    } else if(isExp(q.validade)){
-      statusEl.innerHTML='<div class="badge-expirado">⚠️ Prazo Expirado — consulte o administrador</div>';
-    } else {
-      statusEl.innerHTML='';
-    }
+function resetTab2(){
+  currentEmail="";
+  document.getElementById("step-email").style.display="block";
+  document.getElementById("step-busca").style.display="none";
+  document.getElementById("step-blocked").style.display="none";
+  document.getElementById("email-inp").value="";
+  document.getElementById("email-err").style.display="none";
+  document.getElementById("result2").style.display="none";
+  document.getElementById("nf2").style.display="none";
+}
 
-    document.getElementById('r-cba').textContent=q.cba||'—';
-    document.getElementById('r-medida').textContent=q.medida||'—';
-    document.getElementById('r-segmento').textContent=q.segmento||'—';
-    document.getElementById('r-pgto').textContent=q.pgto||'—';
-    document.getElementById('r-valor').textContent=fmtVal(q.valor);
-
-    // Obs — limpa a parte de concorrentes e exibe só o texto principal
-    const obsRaw=(q.obs||'').split('\n\n📊 CONCORRENTES:')[0].trim();
-    const obsEl=document.getElementById('r-obs');
-    const obsBox=document.getElementById('obs-box');
-    if(obsRaw){
-      obsEl.textContent=obsRaw;
-      obsBox.style.display='block';
-    } else {
-      obsBox.style.display='none';
-    }
-
-    show('result');
-
-  }catch(e){
-    hideAll();
-    show('notfound');
-  }finally{
-    document.getElementById('btn').disabled=false;
+async function validarEmail(){
+  const email=document.getElementById("email-inp").value.trim().toLowerCase();
+  const errEl=document.getElementById("email-err");
+  if(!email){errEl.textContent="Informe seu e-mail.";errEl.style.display="block";return;}
+  if(!email.endsWith("@redefox.com.br")){
+    errEl.style.display="none";
+    await salvarLog(email,null,null,false,"E-mail inválido — domínio não autorizado");
+    document.getElementById("blocked-msg").textContent="Você não tem permissão para acessar esta consulta. Entre em contato com o administrador.";
+    document.getElementById("step-email").style.display="none";
+    document.getElementById("step-blocked").style.display="block";
+    return;
   }
+  errEl.style.display="none";
+  currentEmail=email;
+  document.getElementById("step-email").style.display="none";
+  document.getElementById("step-busca").style.display="block";
+}
+document.addEventListener("DOMContentLoaded",()=>{
+  const ei=document.getElementById("email-inp");
+  if(ei)ei.addEventListener("keydown",e=>{if(e.key==="Enter")validarEmail();});
+});
+
+async function buscarMedida(){
+  const medida=document.getElementById("medida-inp").value.trim().toUpperCase();
+  const loja=document.getElementById("loja-sel").value;
+  const errEl=document.getElementById("busca-err");
+  if(!medida||!loja){errEl.textContent="Informe a medida e selecione a loja.";errEl.style.display="block";return;}
+  errEl.style.display="none";
+  document.getElementById("load2").style.display="block";
+  document.getElementById("result2").style.display="none";
+  document.getElementById("nf2").style.display="none";
+  document.getElementById("btn2").disabled=true;
+  try{
+    const r=await fetch(
+      `${SUPA_URL}/rest/v1/descontos?medida=ilike.${encodeURIComponent("%"+medida+"%")}&loja=eq.${encodeURIComponent(loja)}&tipo=neq.conc&select=obs,valor,pgto,loja,medida,liberado,perdida,validade&order=criado_em.desc&limit=50`,
+      {headers:H}
+    );
+    const data=await r.json();
+    // Salva log de sucesso
+    await salvarLog(currentEmail,medida,loja,true,null);
+    document.getElementById("load2").style.display="none";
+    const validas=data?data.filter(q=>{
+      // Mostra todas com concorrentes
+      const obs=q.obs||"";
+      return obs.includes("CONCORRENTES:");
+    }):[];
+    if(!validas||validas.length===0){document.getElementById("nf2").style.display="block";return;}
+    // Agrupa por loja
+    const html=validas.map(q=>{
+      const concLines=(q.obs||"").split("\n").filter(l=>l.startsWith("• "));
+      const concs=concLines.map(l=>{
+        const m=l.match(/^• (.+?): (R\$[\d,. ]+) \((.+)\)/);
+        if(!m)return`<div class="conc-item"><span class="conc-nome">${l.replace("• ","")}</span></div>`;
+        return`<div class="conc-item"><div><div class="conc-nome">${m[1]}</div><div class="conc-pgto">${m[3]}</div></div><div class="conc-valor">${m[2].trim()}</div></div>`;
+      }).join("");
+      const nosso=`<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 12px;background:#0D2010;border-radius:6px;"><span style="font-size:11px;color:#4CAF50;font-weight:700;">NOSSO PREÇO</span><span style="font-size:15px;font-weight:800;color:#4CAF50;">${fmtVal(q.valor)}</span></div>`;
+      return`<div class="conc-card"><div class="conc-loja">📍 ${q.loja} — ${q.medida}</div>${concs}${nosso}</div>`;
+    }).join("");
+    const el=document.getElementById("result2");
+    el.innerHTML=`<div style="font-size:12px;color:#555;margin-bottom:12px;">${validas.length} negociação(ões) encontrada(s) para <strong style="color:#fff;">${medida}</strong> em <strong style="color:#fff;">${loja}</strong></div>`+html;
+    el.style.display="block";
+  }catch(e){document.getElementById("nf2").style.display="block";}
+  finally{document.getElementById("load2").style.display="none";document.getElementById("btn2").disabled=false;}
 }
 </script>
 </body>
