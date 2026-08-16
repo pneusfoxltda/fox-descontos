@@ -710,7 +710,7 @@ export default function App(){
         {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h});const d=await r.json();if(Array.isArray(d))setLogsUsuarios(d);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const [r1,r2]=await Promise.all([fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h}),fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=500",{headers:h})]);const [d1,d2]=await Promise.all([r1.json(),r2.json()]);if(Array.isArray(d1))setLogsUsuarios(d1);if(Array.isArray(d2))setLogs(d2);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -1874,7 +1874,13 @@ export default function App(){
       // Calcula stats por usuário
       const statsMap={};
       users.forEach(u=>{
-        statsMap[u.email]={nome:u.nome||u.email,email:u.email,role:u.role,logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0};
+        statsMap[u.email]={nome:u.nome||u.email,email:u.email,role:u.role,logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0,tipo:"sistema"};
+      });
+      // Adiciona e-mails da consulta pública que não têm cadastro no sistema
+      logs.filter(l=>l.sucesso).forEach(l=>{
+        if(!statsMap[l.email]){
+          statsMap[l.email]={nome:l.email,email:l.email,role:"publico",logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0,tipo:"publico"};
+        }
       });
       // Conta negociações por email do negociador
       quotes.forEach(q=>{
@@ -1885,7 +1891,7 @@ export default function App(){
           }
         }
       });
-      // Conta logins
+      // Conta logins do sistema
       logsUsuarios.forEach(l=>{
         if(statsMap[l.email]){
           statsMap[l.email].logins++;
@@ -1894,7 +1900,23 @@ export default function App(){
           }
         }
       });
-      const statsList=Object.values(statsMap).sort((a,b)=>b.logins-a.logins);
+      // Conta pesquisas da consulta pública
+      logs.filter(l=>l.sucesso).forEach(l=>{
+        if(statsMap[l.email]&&statsMap[l.email].tipo==="publico"){
+          statsMap[l.email].logins++;
+          if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso)){
+            statsMap[l.email].ultimoAcesso=l.created_at;
+          }
+        }
+      });
+      const statsList=Object.values(statsMap).sort((a,b)=>{
+        // Online primeiro, depois por logins
+        const aOnline=a.ultimoAcesso&&(new Date()-new Date(a.ultimoAcesso))<15*60*1000;
+        const bOnline=b.ultimoAcesso&&(new Date()-new Date(b.ultimoAcesso))<15*60*1000;
+        if(aOnline&&!bOnline)return -1;
+        if(!aOnline&&bOnline)return 1;
+        return b.logins-a.logins;
+      });
 
       // Stats dos logs de consulta
       const emailStats={};
@@ -1939,10 +1961,10 @@ export default function App(){
                       <div style={{fontSize:10,color:MUTED}}>{u.email}</div>
                       {online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700,marginTop:2}}>● Online agora</div>}
                     </td>
-                    <td style={{padding:"10px 12px"}}><span style={{background:roleColor(u.role)+"22",color:roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{roleName(u.role)}</span></td>
-                    <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.negociacoes}</span></td>
-                    <td style={{padding:"10px 12px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.liberacoes}</span></td>
-                    <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:u.tipo==="publico"?"#1A1A2E":roleColor(u.role)+"22",color:u.tipo==="publico"?"#7B68EE":roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{u.tipo==="publico"?"🔗 Consulta Pública":roleName(u.role)}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"—":u.negociacoes}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:GREEN+"22",color:u.tipo==="publico"?MUTED:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"—":u.liberacoes}</span></td>
+                    <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
                     <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>
                       {ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}
                     </td>
