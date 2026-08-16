@@ -259,6 +259,12 @@ export default function App(){
   const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
+  const[showAlterarSenha,setShowAlterarSenha]=useState(false);
+  const[alterarForm,setAlterarForm]=useState({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+  const[alterarMsg,setAlterarMsg]=useState({txt:"",ok:true});
+  const[logs,setLogs]=useState([]);
+  const[adminSenhaModal,setAdminSenhaModal]=useState(null);
+  const[adminNovaSenha,setAdminNovaSenha]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -513,6 +519,34 @@ export default function App(){
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
 
+  const doAlterarSenha=async()=>{
+    const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
+    if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
+    if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
+    if(novaSenha.length<4){setAlterarMsg({txt:"A nova senha deve ter ao menos 4 caracteres.",ok:false});return;}
+    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
+    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:novaSenha},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
+      setAlterarMsg({txt:"Senha alterada com sucesso! Faça login novamente.",ok:true});
+      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
+    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
+  };
+
+  const doAdminAlterarSenha=async()=>{
+    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("A senha deve ter ao menos 4 caracteres.",false);return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
+      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
+      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
+      setAdminSenhaModal(null);setAdminNovaSenha("");
+    }catch(e){toast_("Erro ao alterar senha.",false);}
+  };
+
   const doAdd=async(forcar=false)=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
@@ -615,10 +649,23 @@ export default function App(){
     <div className="login-t">Sistema de Descontos</div>
     <div className="login-s">Acesso restrito — Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
-    <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <button className="btn-login" onClick={doLogin}>Entrar</button>
-    <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+    {!showAlterarSenha&&<>
+      <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <button className="btn-login" onClick={doLogin}>Entrar</button>
+      <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer"}}>Alterar senha</span></div>
+    </>}
+    {showAlterarSenha&&<>
+      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
+      {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
+      <div className="login-f"><label>Seu E-mail</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
+      <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
+      <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
+      <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
+      <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
+    </>}
   </div></div></>);
 
   return(<><style>{css}</style><div className="wrap">
@@ -634,6 +681,7 @@ export default function App(){
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -1506,7 +1554,10 @@ export default function App(){
             ))}
             {/* Remove button */}
             <div style={{display:"flex",justifyContent:"center"}}>
-              <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              <div style={{display:"flex",gap:6,flexDirection:"column"}}>
+                <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
+                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              </div>
             </div>
           </div>
           );
