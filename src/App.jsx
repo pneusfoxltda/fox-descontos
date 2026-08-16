@@ -57,9 +57,14 @@ const supa = {
 const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
-const VENDEDORES=["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"];
+const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
 const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
-const FOTOS_VENDEDORES={};
+const FOTOS_VENDEDORES={
+  "Ana Clara":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAB4AHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6dPWkpT1pKCwqG8vbbTrWS7vLiG2t4hukllcKiD1JPArB8a+O9M8E2SyXWbi8mB+zWUZHmTEd/wDZUd2PA9zxXgfiPxJrHjK8F1rNwHRDuhtI8iCD/dXu3+02T9OlNImUrHpfiP462cLNB4a09tRYcfa7nMUH1Vfvv/46PevP9U8feMNbZvtWv3UEZ/5Y2IFsg9vl+Y/i1ZCQ+tTLD7U7GTk2Z8lhHcyeZcIbiQ/xzEyMfxbJoGn2zAqsMBA4ICA4qLVnu7q5i0vTkZ55TghTjPtnsO5PpW1Y/D3XNMtDOL+3knPJiSIKn0BrCeIhB2ZvTwtSouZIyU06CF98MQhf+9FlG/NcGt7S/G3i3QyPsPiG9aNf+WN4Rcxn8H+YfgwrNgaRpHguYTBcR8MhGKlaH2raMlJXRi04uzPS/D3x4TcsPibSzbdjeWOZIx7tGfnX8N1eo6ZqthrVlHfabeQXlrKMpNC4ZT+I7+3Wvl14am0XWdV8K6gdQ0S7NrMxBljI3Q3A9JE6H6jDDsadhqb6n1NRXI+AviNp/je3aHZ9i1WBd09k7ZOP76H+NM9+o6EDv11SaJ3CiiigYp61zfjvxpaeCdGN5Konu5iYrS1DYM0mM8+igcsew9yK6C4nitoZJ55FiiiUu7scBFAySfYCvmTxV4mn8a+IZtYk3rb48qyib/llADkcf3m+8fqB2poiUrFG8vL3WdRn1PU7g3V7cnMkpGBjsqj+FB0A7fXJqSOLNEUdXIovamZDI4aldRDE8jdEUsfwFWI4qh1lfK0q5f8A2MfnUydk2OKu0ir8OWtI9RudR1C4ijbZx5jY+8cn+Vep3D262v2jzF8rbu3DkYryTwtN4jAurfQtPspY2VDJNcuVxyRtGBzxzXoE8GoDQY4TJGt0CNzKDtzjp64zXlTtfU+gop8qSOW8bS2kkcGqWTlnRtjnYy5XqOoGef51CiiaJJFHDAMPxpNXs/FU2hX6aumntbRqXR4C+5cHjg+3Wk0A/aNFtJDydmD+HFdeFdvdPNx0deYZJDVWSKtaSKqssXtXYcBmRyXNhdwX1lO9reWz+ZDPH96Nv6g9CDwRwa+g/h347h8baSXkVINTtcJeW6ngE9HT/YbBx6HIPSvA5Y+tS6Dr934R1y31qzVnaD5ZoQf+PiE/fT68ZHowFDRUZWPqOiq+nahbarYW9/ZSia2uY1likHRlYZBoqTY88+OniFrHQLfQYHIm1eQiXB5FumC//fRKL9Ca8dhSul+K2qHVviJqChsxadHHYp7HHmP/AOPOB/wGsCBelUjCT1LEMfSrsUdQwrV6FPahiHxx1k+MZxb6YkPQzN+mQP8A2at+JBXHfEi6ET2MHdmA/PJ/oKyqv3TairzR2PwzeCPTL1mxkSjOew2g/wCNal7f2zuf+JvMEEgbYkeUxjkE4/WvLvA3iy40nx3NpTo0lndWkch29Y3XjOO4INer3B0OUCaSVV/iI34GfcV5dRNSPoMNUg42l0IvEF/bv4dvpFZTE1u+D2ORiuR8IRH/AIRy1J77j/48axfih4tmlvdJ0SyDJaXk4kmmbjekZB2j2Jxk+1b/AIGdbjwpZsDnBkX8nNdWEVtTzMfPm07FySOqcsftWrKlUpkruPNMuZKoTJWrMvWqE60xHqPwH8QGSxv/AA3M3Nk32m2B/wCeMhO5R7K+fwcUVwfw71Q6L4+0afdtjuZWsZeeqyjA/wDHwlFJmsHoY9/d/wBpa5qt+Tn7Tf3Ev4GVgP0AqaAVj6MjR2UaOCHUsGB9Q5zW1B2qjIvQjpV+AdKow0/Ub4afp81wPvKuF/3j0qW7DSuXLrVrDS1Bu7lIieinkn8K8z8S6oNd1dblM+Ujlk/3eAP5Gue1vULm5vAZp2lZuS5PJqaymBIVuqqWP5YA/Wueo2zroxUdTpvDdsP+E7sLxDy1ptYe26va5dKtp41aWBGbqGKgmvm9fEjaV4otruMCQWkShlJwGBOSM9q9Lk+OlkLG3ltdEvriGQESyGRQsR6deeOvXFc1WjOTTSOyjXhFNN2MT41W4+06ZcRMIzGJEXjk9Dn9P1qX4X+LNLtdBOnahf29rcpM0irK23Ktg9enXNcF4p8Xz+LNYa7uIngixtgjHzBEH9T3rEllAmDxtkAdce9dtCjyxSe55+Iqqc247H0kJobmPzIJY5UPRo2DD8xVWYda8L0LX7vRr+K4tZWTDfMmcK656EdxXt9veRahZQ3cJ/dzIHX8a1asYFaYdaz5xWjN0NZ89CEZd7ctYKL1DhrV0uFI7FGDf0oqDXf+QVe/9cH/APQTRRYcWzW1a0/s3xHrVjjH2bUbhAPYyFh+jCnwGt/4vaUdJ+Il1MBiLVbeO7Q9i6/upB/47Gf+BVzkDdKBPc04T0rJ8ZXgjsIbYH5pXLH/AHR1/nWlC9cZ4w1Eza2sC/dhiC8+pIJqJrSxdPe5g6pahHUlcdBVAXIgt2kPJkbIHsOBW/rcJkgTYMsTj8SAB/OufvYgrCIDhQPyrnWp2PRGXPGZriR3+Y7s89DT1tgwLKcYzwDweKft2s2R1OaDGJMckYOeP612Q2Rxy3GgYaMseRiluIt4IHXBxQoO0A1raXZW15BdSTSvG8ERlULghgB059+9Mk5+CUPtcdxn9P8A69ewfDnUftfh37OWy1rIU/4CeR/WvG4iiPJGhBAY8jpiu8+GGoNHqlxZnOyaHd/wJT/gTVSWgkejzHrWfMatzPVCdutZgU5rRtSmg09BlryeK2A9d7qv8iaK6f4Y6UdZ+IWlrtJisN+oS+g2Dan5u4/75opM0gtD0j45eHH1XwqusW0Ze60SQ3RVRkvbkYmUfRcP/wAArxe3DsFZUdlIBDBTgj1r6sZQwZWAYHIIIyCPQ1ynhl/+EZ1NvCF0f9HCtNo0r/8ALS3H3oMn+OLOB6xlT2ahMJRueGwrJ/zzk/75NYPiPwXr95c/2xZWZvLdh8yR/wCsTHH3T1H0r692j0H5UbR6D8qmV3sOEUndnxGrzyrPO8UhCKT9w9s89Kzp082USCCXAIDDyz0A57V92bV/uj8qo63rGneHNJutX1SZbextIzLNLsLbF9cAEnr2qFTsayqXR8HXW9nZUt5SqsQD5bf4VBtmzn7NMP8Atm3+FfVWq/tI+CzBJDod5HeXpLKnmxskYAGd5yOR7cHNcBb/ALSWpQ3b7DHJHdTHEj2wKISAPlyR8oxnGT3qnVUdLF08K6i5udL1f9W+djxEmcH/AI95gPTy2/woUzsCPJmH/bNv8K+x9B+NfhLU/Dt5rd5fwWlrpoijvZjllWZyRtUAbm6dcd/Y13dhdW+pWUF7bgmC4jWWMvGUJUjIJUgEcdjWinfU55U+V2Z+f+geDPFGrrmy8P6i6uS28wFEwTn7zYFejeGvhvqnhy4h1HUpVSUZC28OWxxzubp36D86+wiAeozRtHoPyqXKbe+g+WNvM+YJVkP/ACzk/wC+TVKWOU9IpSf9w19VlR6CuW8WXUur3UfhHTZGjuL2PzL+ePg2dkThjns8mCif8Cb+GncjkOZ+BHh82ug3XiKZMS6u48jI5FtHkIf+BMXb6FaK9Lt7eG0t4ra3iSKGFFjjjQYVFAwAB6AACikaJWRL3rM8RaBB4i077LLJJbzRuJra6hx5trMv3ZEJ7jJ4PBBIPBNadFAjnvDviOe4uX0PXI4rTXbdN7omRFeRg48+DPVD3XqhODxgnoazNf8ADtj4jtUhuxJHLC/m291A+ye1k7PG/wDCe3cEcEEHFYq+JdR8KkW/i5VezHEeu28eICO32hBkwN/tcxn1XpQB1tcP8cDj4SeKiTgfYG/9CWu1hmiuYY54ZElikUMkiMGVwe4I4I+lVtYvbHTdMuLvU2jWziTMpkXcuM4xjvk4GPWgGfG3i3SPEdp4M0a51G8hvNPuNNt3thHa+V5MRXgFx97bnax5+8Ca1NZ8U+G9X8GNZQRRi5lQRLB5e2RGGNox0GD0I/OvpPxKPBviK1n0fUb61DWEUdw0cLgSW6ScIwUA8N0xg5yOORXAaT8J/hrDrvmnUrS5haMywW6/K/ALMxIGAAAegHfJ7Vy1KTlJNq56+GxkKdJxjKzas7pu/pr57PTS54B4cRdP1KHxDfWM2p+GdLv7Y6uiSfu5ny2H29GC5Az3PHG+vuWwv7XVLKC+sp47i1uY1limjOVkRhkEexFcxp+reAdL0pdIs5dKt9PbA+y+ViNi3qpXk8ZOeehNdJpb2D2MX9mC3FouVjEChUGCQQAOBzmuo8jS+haopHdY0Z3YKqgszE4Cj1J7CuVl8V3niJ2tPB0UVymdkmszqTZQevl9DcP7Kdg7t2oAu+JPEraXJDpemW63+uXik21oWwqqODNKw+5Evc9SflXJNTeG/Dy6Bay+bcNe6hdyefe3rrhrmUjGcfwqAAqqOFUAepLvD/hu08Pxzukk13fXTCS7v7khp7px0LEcADoqgBVHAArWoASilxRQMdtb0P5Um1vQ/lRRQINreh/KgoSCCpIPB460UUAcxL4ChspXufDV9deHZ3JZ47VQ9pK3q1u3yZ902H3qOa58X2kTW+qeHNO8QWzcM+nTiJ3HvBP8v4CQ0UUCIn8U6KWnOp+GdcsnmQRTG40WSUSIucKzxB1IGTjmoovFXgWFNkcIj+UphdIuA2Cu0j/VZ5UY+lFFArjk8S+HjFHHpvhnWL1Y8eWtvoUqKuOmGkVFH51Pb3fiq4hW20fwrY6HbLwj6ncKdgz2gt8/kXWiigZIvgQam6y+KdSutfZTuFrIghskPtAvDf8AbQvXTpEI0VETaigKqqMBQOgA7CiigYu1vQ/lRtb0P5UUUAG1vQ/lRRRQB//Z",
+  "Kessya Marques":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAB4AHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6lyKMim0U7AOyKTcKrX9/aaXZzXt9cw2trAheWaZwiRqOpJPAFeEeN/2gL/VHksfBSGztPunVriLMso9YYm+6P9txn0XvSegHtfiHxZoXhO0+167q1np0J+6biQKX9lXqx9gDXFxftB+CZpXWN9VManiU2Lqr+43YP6V85SRyXd69/eTz3l9J9+6upDLK3/Am5A9hge1TLD61PMVY+jf+F9eDP+e2of8AgI1H/C+fBn/PXUf/AAEavlDxV4oTRP8ARLULJfMoOCMhAen1J9Kq/wDCM+MRYtdvLK80wG1VmIKd/oPpUymo7sqNKUvhVz65/wCF9eDP+e2of+AjVCf2g/BCXCRzTanDG3WdrF2jT6lckflXyLoXiXUbS/XTNehlQu21JpU2kHOBn1Ge9dm0JB6c1XMTyn2BofiPR/EtkL3RdTtNRtj/AMtLaUOAfQ46H2NaG4V8WWrXOl366jpl3c6dfL0ubSQxyfQkcMPZgRXrvgf9oOa2eOw8cpGI/urrFtHtUf8AXeMfd/31+X1C9aaYrHu+RRkVDBPDdQRz28sc0Mqh0kjYMrqeQQRwQfWpKqwh2RRTaKLAFUNc1zTvDek3Wr6rdJa2VqhkllfsPQDqSTgADkkgCr3Svl34r/EFviB4g+zWUxPh/TJSLYKflu5hkNOfVRyqfi3cYTdhooePviBqvxJ1ASXayWmjQvutNMJ7jpLNjhpPQdE7ZOTWEkWaWKKrcUVZ3KRGkXtUWp3kGj6fNfT8pEuQvd27L+NaUcVee/FTW4C1vo8TEvE/mzEdFJHyj+v401qMy/BgfxF4uOpXkUUgizNIHYKuT0+9wMGvabfWIJbN2ZGRYuDhlcfgRxXk/wAJNCh1S71C5vEjmSNVjEDfMCTySRXoU0On6ZazWkUEkMa7VVYojtUnpz/nivPxUk527Hs4CnKNLm6M5j4lWkOp6PJdvb3MEtr+9jaRcBh0IyCe1XPC9+Na0G1ut++QL5ch/wBpeD+fB/Gret+GtNttA1KeOMI81tIzLuODlc9K5L4Q3/nRX+n4IVAk659/lP8ASujDNODS6HFjoONRN7s7J4sVA8WOa1ZIfaqskWO1bnGbXw5+JeofDW7WBxLeeHJGzPZL8z2uessA/Vo+h6jB6/UOm6lZ6xYW+oafcxXVpcxiWGaJsrIpGQQa+OZI67v4LfEFvB2tp4f1CXGh6pNiFmPFldMeMekch4PYOQf4jVRZLR9KUUUVZJ5f8ffGUnh/wtHoljMYtR1wtbh0OGhtwP3zj0OCEB9X9q+fbeFY0VEUIigKFHQAdBXT/FfXm8S/EnV5g26200jS7f0xHzIfxkZh/wAAFc/CmcVnJ6lImhjq7FHxUcKVdiSkUQXd5a6XatdXsyQwJjLMf0+teCaveDUtTv7qT/lrIXHOe5/+tXcfFnxFHOyaHEOIHEksno23gfrXmKlldiS2Qeo7VcV1JbPR/hBqCRT31nvKSyBXBz2AxXpNxZ6vIA6XzGMjOQqgflXiHw+s5rzXx5ErRSIhYMPrXrU7+J4Lf7NCEaM8b+9ediY/vLo9rL8Q407NGZ431YaV4auVluDJPOjRDIxktxwPpk15z4E8QroOt20rtshkbyZ8DOUPc/Q4NanxJ0+8t4bOS7lLyOzfL2AxXG2DR/a4lnZkhLjey84GetdWGglC66nnYuo5VNeh9KSRfjVWWP2q9bTQXtpFPbuJIXUFW9RUUqVoYGVNHis+8tknieGRdyOCrD2rYmTrVCZcUCPo34K+NZfGPg5Ev5vN1XS3+xXjHrKQAUl/4GhB+u6ivIvghr7aD8R4LNnxba5A1m4J485AZIj9cCRf+BCitIu6JZwGmvNNbRz3DFrifM8pPd3Jdj+bGtWFapW4CgAdBxWhBWZaLkK0up6tbaFpsuoXZPlRDoOrHsBToRXmfxY8QtLcwaZExEMaCR1IxuY9P0oA4vxDq8us6ldX0g2tcSF2UHIX0A/KsuYqcbSSSMn60AkxsTjGec9zUfUZJ5z0rRKxmze8F+IB4a1uG+dDJD9yVB1Kn09xXrsvxi8KRxvtg1B3HKqIQA/4k8fjXgyjpipME4yayq4aFR3kdFLFTpK0Tf8AF3ie68Wam13LGIogNsUQORGv9T6mueQAEGn9B6U3t7itoxUVyownJyfM9zuPC/xQ1HQLSDT5raC6s4RtUfccDOfvf4ivTdB8Uab4ntzLZSFZUH7yB+HT/Ee4r58B5rb8I64/h/Xba93Hyd3lzD1Q8H8uv4UOIKR7lMvWqE681pSEMNynIIyCO4qhP1rIsz/7RfRLyz1iMkPpt1DeA/8AXNwx/wDHdw/GiodVjEljcof4onH/AI6aKpEk9uwYKQcg8itCCsjTo57a3W2uRtubYtbzA9nQlG/VTWpA3NSUi7JdJaQSTOMiNWfGcZwM18/63rE+sahNeTZDyMW2nnb6AewHFejfE3xAbeyTS7WXbK5DT47Kei/j1ryoseWzwD6VUUSxuSDuP1pByKOT0NOAxxWiJHLyaXjHFNpaYC1oPZWK6MLtLpnuXcJ5JwNmOp9/0/Gs3NKnrQIeO1Ju4wPWg8YPpTA2WHoKdwPcfA+rf2r4Zti7bpbf9w/r8vQ/litKc815z8L9TaHU5bItmO5jJx/tLyD+Wa9Enbn6VjJWZpHYzNVkEdhcueNsTn/x00VOmmvrl/Y6NGMvqV3DaD6O4Df+O7j+FFJIR1Xxa0FvDfxJ1WMLtttUxqdue2X+WUfhIpP/AAMVzsTcZ4GPU19A/HXwU/ibwvHqllHu1HRXNygAJMkBGJo8Dk/KAwHqg9a4GD4B67qWnw3NnrOh3EE6pNDIGkKSKcFT93kEGm1qCZ81eOpbu9ulvriNUz+6AVeCFzjnvXJSYDYXpivqfxV+yn4r154mt9b0VCm4sZGlGT2AATAAFc237FvjQn/kP+Hf++pv/iKpCZ8/xqNtKU4r6CX9i/xoB/yMHh3/AL6m/wDiKU/sY+NT/wAzB4d/76m/+IqiT58A9aXFfQDfsY+MkUs3iHw4AOSS0wx/45WfY/sp69qKym28YeFHEUjxOPOkBDIxU8bemR1ockNRbV0jw4rQBivoL/hjDxp/0MHh3/vqb/4ikP7F/jQ/8zB4d/76m/8AiKdxHgHUU6HTr2YAxWdxID0KxMQfyFe/D9jDxoP+Zg8O/wDfU3/xFeieGv2ePEWh6ZDZyappTsi4JRpME/8AfNZ1JyivdVzWlCMn7zsfOXgLwzrNrq8WoXFnJa28atkzDaXBGMAda9BlbivWbj4EeIZicajpYz6mT/4msfW/gjrGiaXd6pqGs6RDaWkTTSvmThQOw28k9AO5IFZQc5ayVi6kYRdoO5Q+BugNrvxFjv3TNtocDXLHHHnyAxxD6hfMb8BRXrnwh8IjwF4IWXVfLttQvSb/AFB5GCiEkDbGSegRAq/UMe9FbIxZ31cVpjjwBriaHNhPD+pzE6XKeFs7hiS1ox7Kxy0fuWTsoPa1T1bSbHXdNuNN1K2S5tLlCksT9GH16gg4II5BAI5FMRcorjLHXL3wXcxaP4ouXuNPkcRafrsvR88LDdHosvYSfdk9m4PZ0AFcP8Z/HOofDnwBe+ItLgtZ7q3lhRY7lSUIZwp4BBzg+tdxXn/x08G6v49+HF9oOhpC99PLC6CaQRrhXBPJ9qGB88+O/iz441O0Gna5d6Pc2jBWEek3JZZXfDIjkdducY/PNcbfWPiDSI49Sv4oRaFxuEfAIzjg4+YA4yV6V3Pxm+DE3g5LO/0mwt4LSeOMSLapgRTBVyCxJ6sCwPA6jiuNjv8AXvEdvBo/9mTzOeGMEbMXGey9jzjg4ya82rrNLTzv/X5H1+BUqWFlJOeqvHkva/W9tL335umx6f4K/aI8VX1gmg2dlFqniy7vYLOxgn3GAW4Q7pWIwT0yWJz3PSvp21E620QunjecIBI0alVZsckAkkDPTmvlLwr8CfiLpVjaeN9LiisvE9pdpJaabJOFH2YZVonyABkc/e5DHoa+qdOnuLmwt57u0NncyRq0tuXDmJyOV3Dg4PGR1r0IbHydRtyu9yzRRSMwUEkgAckntVEC1xKyD4ha+jRnf4Z0a43b/wCHUr1Dxj1ihbnPRpAOyctutRu/iLI+n6JPLbeGwxS81aJirXuOGhtW/u9mmHHUJk5ZexsbG20yzgsrKCO3trdFiihiXasaAYCgdgBQB5/+0NIU+D/iIA/fhRT7jzFoqP8AaL/5JFrv/XNP/Q1opDPS6KKKYiK6tLe+tpbW7giuLeZSkkUqBkdT1BB4IPpXJLomv+Df+Rcc6xpC/wDMHvJts0A9Ledv4fSOTjsHUcUUUAamh+NdH126awSWWz1ONd0mnX0ZguUHrsb7w/2lLL71c8QXWq2mniTR7FL26Msa+WzhQqFhubnrgdv8KKKQGTfa54li/toR+FhNFaTRrZN9pVjexlcs20cgg8Y/wrL0wanpN5qOpWngK3spri2kllljmXzJ5UUBIwF/hPbp64zRRSa1LU2k0nuaA13xjmMnwnCVdgG/0wAoNpJJHucfTvXRaZc3N3YQz3lo1nO65eBmDGPk4BI4zjFFFUiTI1jxzpOlXp0yDz9V1fGRp2nJ50w9352xj3cqKz/+Ea1jxeRJ4ukittNPI0KzkLRyen2mXgy/9c1AT130UUhHXRRJDGkUSKkaKFVVGAoHQAdhT6KKYHmn7RYJ+EeugAk+Wn/oa0UUVPUo/9k=",
+  "Clebe Higa":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAB4AHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6pooooAKhvLy20+2kury4htreJd0kszhERfUk8AVznjz4iaT4Cske733V/cAi0sISPNnI6nnhUHGXPA9zgH578S+Itb8c3YuvENyssaNug0+HItbf0IU/6xv9t+fQL0oA9T8R/tBabEWg8LadLrL9PtkzGC0HuGILyf8AAVwf71ee6r8SPHWuM32jxC9hE3/LDS4VgA/4G25z+YrFSHPNTLBQBnXdj/aTmTUZ7y/c9WvLqWYn/vpjVU+F9Hzn+yrLPr5K5/OjxZ4hXw5apsRXuJThA3Qc4yf89q4J/iNrccpInhcdQPKUCgD0ezsTpjiTTp7zT3HRrO6lhI/75YV0uk/Ejx1oTL9n8QvfxL/yw1WFZwf+BrtkH/fRrgvCHjaDxA32S8EdvffwAcLMPbPf2/KupaCgD1bw5+0Fp0pWDxVp0mjP0+2QsZ7Q+7EAPH/wJcD+9Xqlne22oW0V1Z3ENzbyrvjlhcOjr6gjgivk94cc1Y8NeIdb8DXhuvD10sMbtunsJsm1uPXKj7jf7aYPqG6UAfV1Fcp4C+I2k+PbJ2tQ9pqFuB9r0+YjzYCeh44ZD2ccH2OQOroAKKKKACuV+Injy08BaJ9reMXN/cMYbGzDYM8uM8nsijlm7D3IB6S8u4NPtJry6lSG3gjaWWRzhURRksT6AAmvljxF4lufHXiGfxDdK6RSDyrGB+tvbZyoI7M/Dt7kD+EUAU5577VtRuNV1W6N5qV2QZpyMDA6Ig/hjXsv4nJJJsRQ9KIYquxRe1ADI4enFSSqIIJJiu4Roz49cDNWo4elPubL7TZzwYz5kTp+YIoA880Tw7J8TJm1XVn+zQQfuYo4Bgnv1P8AOukf4OeHPJVRBOCOrebgt9aseG9nhrwtYhVtlTy98rXFwI8ueoHr1rZi8T6dNp32gRTCTd5fk+ZkbsZ4bpjHNcNWNa6a2ex69BUbcrWq30PJfHHw3j8NwDU9Kmm8uNgWR2yUPYhvrXc+GL/+2/D1lfF98jxgSkjB3jhs/iKmu7+PX7a70+4itXikQofs1wJijYOAcf5FVfhtZeR4LseOXMkhz15c/wBMVvR51eM90ceKjC6lDZmlJB7VVlhrYkh9qqSxe1bnIZMM17pWoW+q6VdGy1K0JME4GQAeqOP4kb+Je/UYIBH0h8OvHtr490T7UsYtdQtmEN9Z7smCTGeD3Rhyrdx7ggfPE0ftT/D3iS68D+IbfxDaq7pEPKvoE63FsTlhjuy/fX3BH8RoA+rqKhsry31GzgvLSZJ7e4jWWKVDlXRhkMPYgg0UAeV/tBeIzDpNj4VgfD6s5lusHkWsRBZT/vuUX3G6vI4Uycmtr4kaqdd+JGt3G7dFZNHpkPsI13P/AORJHH/ARWXAvSgCzDH04q9DH04qCBOlaECUASRRVaWAFSCM8Glhjq7FFQxp2dzPNhC8Yt4o7cRqoCiRNwUAAcfgBWO9jFDbBY4LjcLgybzF+7LfTP4dK2dRkjtrryfNVWkQFVBGVzx0/Dj1xVJ9Ku1jMgv7gED7xwc/8BxivKm5RlZvY9+i4zhzIlWwjhnSR47cHrmNeW+pqPSrCO006OKJVCAttCjjGTTLe+tp76K1e4RWJAJZgAT2A9z6VuyQhRgAADsO1dOFi/iZwY6ovgRkSxVSmi61sTR1QnjrsPOMiaP2qhMmOR1rWnSs+daAPVP2ffEZl0u/8Kzv8+lOJrQE9bWUkhR/uOHX2G2ivPvhxqp0L4kaFc7ysV48mmze6yruT/yJGn/fRooA5uyu31MzajIcve3E90x9TJKzf1FasA6VgeF8/wBg6dnr9mjz9dozXQwdqAL8ArRgXpVCCoPEfiix8JaTJqF424j5YoQcNM/ZR/U9hQB00CZ7Zrn/ABL8UvC/hIPHc3ou7tf+XW0w759Cfur+J/CvAPEnxJ8ReJHdbjUJYbZultbsY4wPTjlvxrli3Bp2A9k+H/ieLxR44186ixSTVtskCM33QhOEU+yn9DXeXWg6s6PEmtXawA8L8pOPTPWvmaK7e0lhuYJXimjIZHQ4ZSOhBr2LRfj9ajRGXWNKuZdRhTHm2+0RzHsWycoT36j0rgxNCblzQPRwuJhGPJPQr/FSS28PaJbabFMzX1zMk27PzKqHO7/vrFdL4a+O2h6nDHb68r6ZeYAaXaXgc+uRyv4j8a8L13xBdeJdWn1O/kzNKeFH3UUdFX2FZsj5fIrqoUuSFnucler7Sd1sfX1tqVhq0Xnafe213H/eglVx+lQzrXyZaX1zYTrPazy28q8h4nKsPxFe1/DP4lt4gUaPrMwOogfuJjx9oHof9sfqPetWjE7edazpx1rTnrOn70gMfULttNWPUYzh7KeG7U+hjlV/6Giq3ij/AJAOpY6/ZpMfXaaKALVjaNppm06QYeyuJ7Vh6GOVl/oK1YDWh8SNKOhfEjXLfYVivWj1KH3Ei7X/APIkb/8AfQrLgagDVgNeL/GbWGvfFC2StmOxhVMejt8zfzUfhXsluwyM183eJdQOq6/qN6Tnz7h2H0zgfoBTQGX15opQex9a9S0/xF8I9BjLf8Izd61cBgUMoYpj0bzGAJ+i02B5WehpMZ9ava3e22pazf3tlZrY2txO8sVspBEKkkhBgAcdKphnEZUE7GwSPXFADc0tNz61PNZ3Vuu+a3ljTIG5kIGT05pgR9vpVrStQk0vULW+i/1ltKkq+5U5qmTxThwRQI+pEuo722iuYTmOZFkQ+xGR/Oqc5rC+HOp/2h4LsNzbnt91u3/ATx+hFbM7dagZm6haNqSx6dGMvezw2ij1Mkqp/U0V0vw50o678SNCtthaKzd9Smx2WJcJ/wCRJE/75NFAHoX7QXhwy6VYeKoEy+lOYrvA62spAZj/ALjhG9huryOGVQcFlBHvX1je2dvqFnPZ3UKTW9xG0UsTjKujDBU+xBIrjfBtlZ6dPP4S1WztZb7TUD2txJCm69s84STOOXXhH/2gG6OKAPA9Sv1s9IvbgOuYreRx83opr5vMiEgmROn94V+mzaFpLoUbTLFlYYIMCEEflVX/AIQ7w3/0L+kf+AcX/wATTTA/NDeu77y/mKdvT++n/fQr9Lf+EN8Nf9C/pH/gHF/8TVTVdD8GaHp82o6npWhWdnAN0s81rEqIM4ySV45IouB+bm9MffT/AL6FJvXpvX/voV9z638SfhXaWsg0ez8Oate5YLDFDCFG3+Jjj7uOcjPTtXndr8btFW8ktv8AhGfDN00sreWTZoBHk8KSB90epH1NZyrKPR/cdVLCTqLmTS9Wl+bPlwsv95fzFX77XrnUbC0spnj8q1GEw39M4Hvjqea+8tG8RfDLV9Em1k2fh+1srURrczzwQLHDI/8AyzL4wSD6cciuptfC/hS+torq30PRpYZkEkbrZx4ZSMgj5ehFaKVzmlFp2Z+aZcf3l/MU7ep/jX8xX6X/APCG+Gv+hf0j/wAAov8A4mj/AIQ3w1/0L+kf+AcX/wATRck+K/g5fK2iahbb1/dXIcDI6Mv/ANjXazSqTgMuT719SweGdDtQwg0bTot3XZaoufyFcz4zs7PUJ4PCWlWdpFf6kha5uI4U3WVnnEkuccO3KJ/tEnohpDOb/Z88OGPS7/xVOnz6q4htCR/y6xEgMP8Afcu3uAtFerWNlb6bZQWVpCkFtbxrFFEgwqIowFHsAAKKAJqw/Ffhttdt4LiyuBZavYOZrG827vKfGCrD+KNx8rL3HIwQCNyigDC8L+KE15JrW6tzYaxZEJe2DtloWPRlP8cbYJVxwRxwQQN2sPxH4Ug114b23uJNO1e0B+y6hAAXiz1RgeHjOBuRuD1GCARQsPGcunXUWl+LreLSr6RgkF2jE2V6f+mch+4x/wCeb4b0LjmgDq688/aEOPg14oJ4/wBGX/0Yleh1Q12LSptJuY9cjtJdOZf36XShomGRwwPB5xQB8UeLdO1Ow0fTv7Q03RIFmsbVoJNMg8uR42jBHmHu7LkE9S2PatjXJvCuoeEU/s6O1W4OBCIfvo4IwFTqh7H15r6Y8beDPCnizSBpd3c2dkmmxqF8sxgW0bAAKVPAQhRgcdBjpXm+j/s9eFrbXJJb7XbeWzVPMgEVwBLIAMsSCSFVRnkZ9flxXJUpyc02ttrHu4XF0qdCUYySclZp36aaW3ve9nazR4f4Ve0stetG10XM3g2PVbf+1liI8j7VtfYWHUqO/Y4bHavuyJ45IkeJlaNgCpU5BHYj2ri9P8K/DnT/AA4fDcFtoT6VJt328jxuJCTuBbJySSMj6cV1mlWljYadb2mmxxR2cCCKGOL7iKvAUewxj8K6keG7X0LVFFcrf+M5dQupdK8I28WrX8ZKTXTMRZWR/wCmkg+8w/55plvXaOaYi94n8TpoMcNtbW5v9XvSUsrBGw0zDqzH+CNcgs54A9SQCnhTw2+hW89xfXAvdYv3E19ebdokfGAqD+GNB8qr2HJySxJ4c8KQ6FJPfXNzLqWsXYH2rUJwA8gHRFUcRxjJwi8DqckkndoAKKKKACiiigAqG8srbUbaS1vLeG5t5V2yQzIHRx6EHgiiigDmB4O1LQRnwnrT2kA6abqAa5tR7ISRJF9FYqP7tQ6jrWpPaSWPijwVdXNsxXdJpjrewtg5zs+SUcgH7h+tFFAFGfxJ8M2ur6S+ez066v0jjumvraSzkkCfcBMiqeOxHoPSki1n4Swq3la54WQvE8JYahGH2Ou1hndnkUUUANXX/hhKYobQ2WpPGcotjbS3bZxj/lmrZz3z171o2Gu6p9kisvDPgy8ht0yqS6pItnEvOc7fnlPJJ5QfWiigCb/hDtT14Z8Wa091A3XTdOVra1Ps5yZJR7Fgp7rXT2dla6dax2llbQ21vEu2OGFAiIPQAcAUUUATUUUUAFFFFAH/2Q==",
+  "Sabrina Duarte":"data:image/jpeg;base64,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",
+};
 const CONCORRENTES_PADRAO=["Atacado Pneus","GBIM Pneus","Bono Pneus","Camargo Pneus","Espantalho","GP Pneus","Iccap Randon","JK Pneus","Japurá","Morena Pneus","Muniz","Pemaza","Pneu Fácil","Pneu Paulista","Queiroz Pneus","Rei dos Pneus","Rondobras","Shopping dos Pneus","Toyota","Vip Pneus"];
 const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
 const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
@@ -93,10 +98,10 @@ function hasRole(session,role){
 }
 function roleName(r){
   if(!r)return"";
-  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
+  const map={admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"};
   return r.split(",").map(x=>map[x]||x).join(" + ");
 }
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
 
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
@@ -254,12 +259,6 @@ export default function App(){
   const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
-  const[showAlterarSenha,setShowAlterarSenha]=useState(false);
-  const[alterarForm,setAlterarForm]=useState({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
-  const[alterarMsg,setAlterarMsg]=useState({txt:"",ok:true});
-  const[logs,setLogs]=useState([]);
-  const[adminSenhaModal,setAdminSenhaModal]=useState(null); // {email, nome}
-  const[adminNovaSenha,setAdminNovaSenha]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -273,18 +272,18 @@ export default function App(){
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
-    if(filtroStatus==="todos")return true;
+    if(filtroStatus==="todos")return !q.perdida;
     if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
-    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
+    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida;
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="perdida")return !!q.perdida;
-    return true;
+    return !q.perdida;
   }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
   const[concAdicionados,setConcAdicionados]=useState([]);
-  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+  const[concForm1,setConcForm1]=useState({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
   const[concQuery1,setConcQuery1]=useState("");
   const[concDrop1,setConcDrop1]=useState(false);
   const[concQuery,setConcQuery]=useState("");
@@ -331,28 +330,22 @@ export default function App(){
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"||s.role==="gerente"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
 
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
-    // Exclui anexo_base64 da query principal — carregado só ao abrir a negociação
-    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
+    const {data:qu} = await db.select();
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
+      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
     })));}
-    // Auto-marcar expiradas como perdidas — não bloqueia o carregamento
-    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
-    fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
-      setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
-    }).catch(()=>{});
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
@@ -387,14 +380,14 @@ export default function App(){
 
 
   const doAddConc1=async()=>{
-    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento||!concForm1.loja){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+    if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
     try{
       const auto="#CONC"+Date.now().toString().slice(-6);
-      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")"+(concForm1.anotacao?"\n\n📝 ANOTAÇÃO:\n"+concForm1.anotacao:"");
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")";
       const db=await supa.from("descontos");
       const {error}=await db.insert({
         tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,
         negociador_nome:session.username,negociador_email:session.email,
@@ -405,7 +398,7 @@ export default function App(){
       });
       if(error){toast_("Erro ao salvar.",false);return;}
       const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:concForm1.loja,valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
         criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
@@ -414,7 +407,7 @@ export default function App(){
         anexoNome:concForm1.anexo?concForm1.anexo.nome:null,
       };
       setQuotes(prev=>[novo,...prev]);
-      setConcForm1({medida:"",segmento:"",loja:"",empresa:"",valor:"",pgto:"",anotacao:"",anexo:null});
+      setConcForm1({medida:"",segmento:"",empresa:"",valor:"",pgto:"",anexo:null});
       setConcQuery1("");
       toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
@@ -435,15 +428,14 @@ export default function App(){
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
-    const valNorm=(q.validade||"").split("T")[0];
-    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:(q.loja==="—"?"":q.loja||""),valor:q.valor||"",pgto:q.pgto||"",validade:valNorm,obs:obsLimpa,erroInterno:q.erroInterno||false});
+    setEditForm({cba:q.cba||"",medida:q.medida||"",segmento:q.segmento||"",loja:q.loja||"",valor:q.valor||"",pgto:q.pgto||"",validade:q.validade||"",obs:obsLimpa,erroInterno:q.erroInterno||false});
     setEditConcAdicionados(concExist);
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
     setEditModal(q);
   };
 
   const doSaveEdit=async()=>{
-    if(!editForm.validade||!editForm.medida||!editForm.valor||!editForm.loja){toast_("Preencha os campos obrigatórios (medida, loja, valor, validade).",false);return;}
+    if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
     try{
       const db = await supa.from("descontos");
       const {error:eUpd} = await db.update({
@@ -521,34 +513,6 @@ export default function App(){
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
 
-  const doAlterarSenha=async()=>{
-    const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
-    if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
-    if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
-    if(novaSenha.length<4){setAlterarMsg({txt:"A nova senha deve ter ao menos 4 caracteres.",ok:false});return;}
-    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
-    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
-    try{
-      const db=await supa.from("usuarios");
-      await db.update({senha:novaSenha},{email:u.email});
-      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
-      setAlterarMsg({txt:"Senha alterada com sucesso! Faça login novamente.",ok:true});
-      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
-      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
-    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
-  };
-
-  const doAdminAlterarSenha=async()=>{
-    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("A senha deve ter ao menos 4 caracteres.",false);return;}
-    try{
-      const db=await supa.from("usuarios");
-      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
-      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
-      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
-      setAdminSenhaModal(null);setAdminNovaSenha("");
-    }catch(e){toast_("Erro ao alterar senha.",false);}
-  };
-
   const doAdd=async(forcar=false)=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
@@ -583,24 +547,9 @@ export default function App(){
     }catch(e){toast_("Erro ao remover.",false);}
   };
 
-  const doSearch=async()=>{
+  const doSearch=()=>{
     const q=quotes.find(q=>q.numero.toLowerCase()===search.trim().toLowerCase());
-    if(q){
-      setResult(q);setNotFound(false);
-      // Carrega o anexo sob demanda (não veio na query principal)
-      if(q.anexoNome&&!q.anexoBase64){
-        try{
-          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
-          const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
-          const d=await r.json();
-          if(d&&d[0]&&d[0].anexo_base64){
-            const atualizado={...q,anexoBase64:d[0].anexo_base64};
-            setResult(atualizado);
-            setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?atualizado:x));
-          }
-        }catch(e){}
-      }
-    }else{setResult(null);setNotFound(true);}
+    if(q){setResult(q);setNotFound(false);}else{setResult(null);setNotFound(true);}
   };
   const clickRow=q=>{setSearch(q.numero);setResult(q);setNotFound(false);window.scrollTo({top:0,behavior:"smooth"});};
 
@@ -612,15 +561,12 @@ export default function App(){
       const db = await supa.from("descontos");
       await db.update({
         liberado:nowLib,
-        // Ao liberar: remove o flag de perdida para ficar como "Liberado"
-        perdida:nowLib?false:q.perdida,
-        motivo_perda:nowLib?null:q.motivoPerda,
         liberador_nome:ldata.liberadorNome,
         liberador_email:ldata.liberadorEmail,
         liberado_em:ldata.liberadoEm
       },{numero:q.numero,tipo:q.tipo});
-      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,perdida:nowLib?false:x.perdida,motivoPerda:nowLib?null:x.motivoPerda,...ldata}:x));
-      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,perdida:nowLib?false:prev.perdida,motivoPerda:nowLib?null:prev.motivoPerda,...ldata}));
+      setQuotes(prev=>prev.map(x=>(x.numero===q.numero&&x.tipo===q.tipo)?{...x,liberado:nowLib,...ldata}:x));
+      if(result&&result.numero===q.numero&&result.tipo===q.tipo)setResult(prev=>({...prev,liberado:nowLib,...ldata}));
       toast_(nowLib?"Desconto liberado!":"Liberação removida.");
     }catch(e){toast_("Erro.",false);}
   };
@@ -658,17 +604,6 @@ export default function App(){
     return true;
   }),[quotes,dash]);
 
-  // Filtro para ranking — inclui perdidas para contagem real
-  const filteredRanking=useMemo(()=>quotes.filter(q=>{
-    if(q.erroInterno)return false;
-    if(dash.loja&&q.loja!==dash.loja)return false;
-    if(dash.segmento&&q.segmento!==dash.segmento)return false;
-    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
-    if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
-    if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
-    return true;
-  }),[quotes,dash]);
-
   const mChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.medida]=(c[q.medida]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,value])=>({name,value}));},[filtered]);
   const sChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.segmento]=(c[q.segmento]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
@@ -680,27 +615,10 @@ export default function App(){
     <div className="login-t">Sistema de Descontos</div>
     <div className="login-s">Acesso restrito — Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
-    {!showAlterarSenha&&<>
-      <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-      <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-      <button className="btn-login" onClick={doLogin}>Entrar</button>
-      <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
-      <div style={{textAlign:"center",marginTop:12}}>
-        <span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:.5}}>Alterar senha</span>
-      </div>
-    </>}
-    {showAlterarSenha&&<>
-      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
-      {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
-      <div className="login-f"><label>Seu E-mail Cadastrado</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
-      <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
-      <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
-      <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar nova senha" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
-      <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
-      <div style={{textAlign:"center",marginTop:12}}>
-        <span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span>
-      </div>
-    </>}
+    <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+    <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+    <button className="btn-login" onClick={doLogin}>Entrar</button>
+    <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
   </div></div></>);
 
   return(<><style>{css}</style><div className="wrap">
@@ -712,11 +630,10 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){console.log(e);}}}><span className="tab-dot"/>Logs</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -731,7 +648,7 @@ export default function App(){
     <div className="main">
 
     {/* DASHBOARD */}
-    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
+    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
@@ -807,24 +724,9 @@ export default function App(){
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
                   <td style={{padding:"8px 8px"}}>{(()=>{
-  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoNome&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
-  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
-  if(imgs.length>0)return(<button onClick={async()=>{
-    // Abre o modal imediatamente, depois carrega as imagens
-    setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
-    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
-    const loaded=await Promise.all(imgs.map(async q=>{
-      if(q.anexoBase64)return q;
-      try{
-        const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
-        const d=await r.json();
-        const b64=d&&d[0]?d[0].anexo_base64:null;
-        if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}
-        return{...q,anexoBase64:b64};
-      }catch(e){return q;}
-    }));
-    setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
-  }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
+  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoBase64&&parseConcObs(q.obs).length>0);
+  if(imgs.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs,semFoto})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
   return(<span style={{color:MUTED,fontSize:11}}>—</span>);
 })()}</td>
@@ -890,12 +792,11 @@ export default function App(){
         {/* Ranking Vendedores */}
         {(()=>{
           const byV={};
-          // Segue o filtro de data do dashboard normalmente
-          filteredRanking.filter(q=>q.vendedor&&q.tipo!=="conc").forEach(q=>{
-            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,perdido:0,val:0};
+          filtered.filter(q=>q.vendedor).forEach(q=>{
+            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,venc:0,val:0};
             byV[q.vendedor].total++;
             if(q.liberado)byV[q.vendedor].lib++;
-            else if(q.perdida||isExp(q.validade))byV[q.vendedor].perdido++;
+            else if(isExp(q.validade))byV[q.vendedor].venc++;
             else byV[q.vendedor].pend++;
             byV[q.vendedor].val+=(parseFloat(q.valor)||0);
           });
@@ -906,7 +807,7 @@ export default function App(){
             <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-                {["#","Vendedor","Neg.","Fechou","Pend.","Perdido","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
@@ -927,7 +828,7 @@ export default function App(){
                   <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
-                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"11",color:"#FF6666",borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.perdido}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
                   <td style={{padding:"10px 10px",minWidth:120}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
@@ -1193,13 +1094,6 @@ export default function App(){
             </select>
           </div>
         </div>
-        <div className="field" style={{marginBottom:12}}>
-          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
-          <select value={concForm1.loja} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))} style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
-            <option value="">Selecione a loja...</option>
-            {LOJAS.map(l=><option key={l}>{l}</option>)}
-          </select>
-        </div>
         <div className="field mb" style={{marginBottom:12}}>
           <label>🏢 Concorrente *</label>
           <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
@@ -1228,10 +1122,6 @@ export default function App(){
               </select>
             </div>
           </div>
-        </div>
-        <div className="field mb" style={{marginBottom:12}}>
-          <label>📝 Anotação (opcional)</label>
-          <textarea placeholder="Anote informações importantes..." value={concForm1.anotacao||""} onChange={e=>setConcForm1(f=>({...f,anotacao:e.target.value}))} style={{width:"100%",boxSizing:"border-box",minHeight:70,background:"#111",border:"1px solid #2E2E2E",borderRadius:8,color:"#F0F0F0",fontSize:13,lineHeight:1.6,padding:"8px 12px",resize:"vertical",fontFamily:"'Inter',sans-serif",outline:"none",marginTop:4}}/>
         </div>
         <div className="field mb" style={{marginBottom:16}}>
           <label>📸 Foto do Concorrente (opcional)</label>
@@ -1368,7 +1258,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{(session.role==="admin"||hasRole(session,"gerente"))&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":filtroStatus==="perdida"?"Perdidas":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1377,13 +1267,6 @@ export default function App(){
         </div>
       </div>
       {result&&(<div className="rc">
-        {result.perdida&&!result.liberado&&<div style={{background:"#1A0800",border:"1px solid #5A2000",borderRadius:8,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>⚠️</span>
-          <div>
-            <div style={{fontSize:11,fontWeight:800,color:"#E07020",textTransform:"uppercase",letterSpacing:1}}>Negociação Encerrada</div>
-            <div style={{fontSize:12,color:"#888",marginTop:2}}>Esta negociação está encerrada — você ainda pode liberá-la abaixo se o cliente fechar.</div>
-          </div>
-        </div>}
         <div className="rh">
           <div>
             {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
@@ -1496,15 +1379,13 @@ export default function App(){
             ["validos","Válidos",GREEN],
             ["pendente","Pendentes",AMBER],
             ["liberado","Liberados",GREEN],
-            ["vencido","Vencidas","#CC1F1F"],
-            ["perdida","Perdidas","#9B59B6"]
+            ["vencido","Vencidas","#CC1F1F"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
-              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
-              :v==="pendente"?quotes.filter(q=>!q.liberado&&!q.perdida&&!isExp(q.validade)).length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
+              :v==="pendente"?quotes.filter(q=>!q.liberado).length
               :v==="liberado"?quotes.filter(q=>q.liberado).length
-              :v==="perdida"?quotes.filter(q=>q.perdida).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
@@ -1515,10 +1396,9 @@ export default function App(){
         <div className="card-np">{quotes.filter(q=>{
             if(filtroStatus==="todos")return true;
             if(filtroStatus==="liberado")return !!q.liberado;
-            if(filtroStatus==="perdida")return !!q.perdida;
-            if(filtroStatus==="pendente")return !q.liberado&&!q.perdida&&!isExp(q.validade);
-            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="pendente")return !q.liberado;
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
@@ -1556,7 +1436,7 @@ export default function App(){
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
+                {[["televendas","📞 Descontos — cadastro completo"],["comercial","🤝 Comercial — consultar"],["cadastrar1","🔍 Inteligência — só concorrentes"],["cadastrar2","✏️ Cadastro Completo + Consultar"]].map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
@@ -1571,9 +1451,9 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
@@ -1582,7 +1462,7 @@ export default function App(){
           const roles=(u.role||"").split(",").filter(Boolean);
           const has=r=>roles.includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1610,7 +1490,7 @@ export default function App(){
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
@@ -1626,10 +1506,7 @@ export default function App(){
             ))}
             {/* Remove button */}
             <div style={{display:"flex",justifyContent:"center"}}>
-              <div style={{display:"flex",gap:6,flexDirection:"column"}}>
-                <button className="btn-sm" onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{padding:"4px 10px",fontSize:11,background:"#1A1E2E",borderColor:BLUE,color:BLUE}}>🔑 Senha</button>
-                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
-              </div>
+              <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
             </div>
           </div>
           );
@@ -1766,20 +1643,14 @@ export default function App(){
                     {isCopied?"✓ Copiado!":"📋 Copiar"}
                   </button>}
                 </div>
-                {/* Imagem — mostra spinner se ainda carregando */}
-                {q.anexoBase64
-                  ?<img
-                    src={q.anexoBase64}
-                    alt={q.anexoNome}
-                    onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
-                    style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
-                    title="Clique para ampliar"
-                  />
-                  :<div style={{width:"100%",height:180,background:"#111",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10}}>
-                    <div style={{width:28,height:28,border:"3px solid #2E2E2E",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
-                    <div style={{fontSize:11,color:MUTED}}>Carregando imagem...</div>
-                  </div>
-                }
+                {/* Imagem */}
+                <img
+                  src={q.anexoBase64}
+                  alt={q.anexoNome}
+                  onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
+                  style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
+                  title="Clique para ampliar"
+                />
                 {/* Corpo do card */}
                 <div style={{padding:"10px 12px",flex:1}}>
                   {isConc
@@ -1905,8 +1776,8 @@ export default function App(){
       </div>
     )}
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
-  </div></div></>);
-}
+
+    {/* Admin alterar senha de usuário */}
     {adminSenhaModal&&(
       <div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
@@ -1961,6 +1832,5 @@ export default function App(){
       </div>
     )}
 
-    {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
   </div></div></>);
 }
