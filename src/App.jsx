@@ -57,7 +57,7 @@ const supa = {
 const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
-const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
+const VENDEDORES_DEFAULT=["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"];
 const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
 const FOTOS_VENDEDORES={
   "Ana Clara":"data:image/jpeg;base64,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",
@@ -266,6 +266,8 @@ export default function App(){
   const[adminSenhaModal,setAdminSenhaModal]=useState(null);
   const[adminNovaSenha,setAdminNovaSenha]=useState("");
   const[logsUsuarios,setLogsUsuarios]=useState([]);
+  const[vendedores,setVendedores]=useState(VENDEDORES_DEFAULT);
+  const[novoVendedor,setNovoVendedor]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -361,6 +363,13 @@ export default function App(){
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
     if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role,ultimoAcesso:u.ultimo_acesso||null})));
+    // Carrega vendedores do Supabase
+    try{
+      const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+      const rc=await fetch(SUPA_URL+"/rest/v1/configuracoes?chave=eq.vendedores&select=valor",{headers:hc});
+      const dc=await rc.json();
+      if(dc&&dc[0]&&Array.isArray(dc[0].valor))setVendedores(dc[0].valor);
+    }catch(e){}
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
@@ -564,8 +573,15 @@ export default function App(){
     }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
   };
 
-  const doAdminAlterarSenha=async()=>{
-    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("A senha deve ter ao menos 4 caracteres.",false);return;}
+  const saveVendedores=async(lista)=>{
+    try{
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
+      await fetch(SUPA_URL+"/rest/v1/configuracoes",{method:"POST",headers:h,body:JSON.stringify({chave:"vendedores",valor:lista})});
+      setVendedores(lista);
+    }catch(e){toast_("Erro ao salvar vendedores.",false);}
+  };
+
+  const doAdminAlterarSenha=async()=>{    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("A senha deve ter ao menos 4 caracteres.",false);return;}
     try{
       const db=await supa.from("usuarios");
       await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
@@ -1250,7 +1266,7 @@ export default function App(){
         <div className="fg2">
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
@@ -1607,6 +1623,28 @@ export default function App(){
         })}</div>
       </>)}
       <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+
+      {/* Gerenciar Vendedores */}
+      <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginTop:20}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff",marginBottom:4}}>👤 Gerenciar Vendedores</div>
+        <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores do formulário de cadastro</div>
+        <div style={{display:"flex",gap:10,marginBottom:16}}>
+          <input placeholder="Nome do novo vendedor..." value={novoVendedor} onChange={e=>setNovoVendedor(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&novoVendedor.trim()){const novo=novoVendedor.trim();if(!vendedores.includes(novo)){saveVendedores([...vendedores,novo].sort());toast_("Vendedor adicionado! ✅");}setNovoVendedor("");}}
+            style={{flex:1,boxSizing:"border-box"}}/>
+          <button onClick={()=>{const novo=novoVendedor.trim();if(!novo){toast_("Digite o nome.",false);return;}if(vendedores.includes(novo)){toast_("Já existe.",false);return;}saveVendedores([...vendedores,novo].sort());toast_("Vendedor adicionado! ✅");setNovoVendedor("");}}
+            style={{background:GREEN,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,cursor:"pointer",fontSize:13,whiteSpace:"nowrap"}}>+ Adicionar</button>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {vendedores.map(v=>(
+            <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #2E2E2E",borderRadius:20,padding:"6px 14px"}}>
+              <span style={{fontSize:13,fontWeight:600,color:TEXT}}>{v}</span>
+              <button onClick={()=>{if(!window.confirm(`Remover "${v}"?`))return;saveVendedores(vendedores.filter(x=>x!==v));toast_("Vendedor removido.");}}
+                style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:16,lineHeight:1,padding:0,fontWeight:700}}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
     </>)}
 
     </div>
