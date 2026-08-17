@@ -368,7 +368,7 @@ export default function App(){
       const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
       const rc=await fetch(SUPA_URL+"/rest/v1/configuracoes?chave=eq.vendedores&select=valor",{headers:hc});
       const dc=await rc.json();
-      if(dc&&dc[0]&&Array.isArray(dc[0].valor))setVendedores(dc[0].valor);
+      if(dc&&dc[0]&&Array.isArray(dc[0].valor)&&dc[0].valor.length>0)setVendedores(dc[0].valor);
     }catch(e){}
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
