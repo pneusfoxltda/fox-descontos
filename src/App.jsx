@@ -1630,7 +1630,7 @@ export default function App(){
         <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores do formulário de cadastro</div>
         <div style={{display:"flex",gap:10,marginBottom:16}}>
           <input placeholder="Nome do novo vendedor..." value={novoVendedor} onChange={e=>setNovoVendedor(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&novoVendedor.trim()){const novo=novoVendedor.trim();if(!vendedores.includes(novo)){saveVendedores([...vendedores,novo].sort());toast_("Vendedor adicionado! ✅");}setNovoVendedor("");}}
+            onKeyDown={e=>{if(e.key==="Enter"&&novoVendedor.trim()){const novo=novoVendedor.trim();if(!vendedores.includes(novo)){saveVendedores([...vendedores,novo].sort());toast_("Vendedor adicionado!");}setNovoVendedor("");}}}
             style={{flex:1,boxSizing:"border-box"}}/>
           <button onClick={()=>{const novo=novoVendedor.trim();if(!novo){toast_("Digite o nome.",false);return;}if(vendedores.includes(novo)){toast_("Já existe.",false);return;}saveVendedores([...vendedores,novo].sort());toast_("Vendedor adicionado! ✅");setNovoVendedor("");}}
             style={{background:GREEN,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,cursor:"pointer",fontSize:13,whiteSpace:"nowrap"}}>+ Adicionar</button>
