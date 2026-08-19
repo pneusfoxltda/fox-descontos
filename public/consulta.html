@@ -91,6 +91,7 @@ input::placeholder{color:#555;}
   </div>
 
   <div id="step-busca" style="display:none;">
+    <div style="font-size:11px;color:#555;margin-bottom:10px;text-align:center;" id="email-info"></div>
     <div class="card">
       <div class="card-title">🔍 Buscar por Medida</div>
       <div class="step-label" style="margin-bottom:8px;">Medida do Pneu *</div>
@@ -131,7 +132,7 @@ const SUPA_URL="https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
 const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
 
-let currentEmail="";
+let currentEmail=localStorage.getItem("fox_consulta_email")||"";
 let userIp="";
 
 fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>userIp=d.ip).catch(()=>{});
@@ -212,9 +213,16 @@ async function salvarLog(email,medida,loja,sucesso,motivo){
   }catch(e){}
 }
 
-function resetTab2(){
+function sairEmail(){
+  localStorage.removeItem("fox_consulta_email");
   currentEmail="";
-  document.getElementById("step-email").style.display="block";
+  resetTab2();
+}
+
+function resetTab2(){
+  if(!currentEmail){
+    document.getElementById("step-email").style.display="block";
+  }
   document.getElementById("step-busca").style.display="none";
   document.getElementById("step-blocked").style.display="none";
   document.getElementById("email-inp").value="";
@@ -237,11 +245,19 @@ async function validarEmail(){
   }
   errEl.style.display="none";
   currentEmail=email;
+  localStorage.setItem("fox_consulta_email",email);
   document.getElementById("step-email").style.display="none";
   document.getElementById("step-busca").style.display="block";
+  document.getElementById("email-info").innerHTML=`🔑 Identificado como <strong style="color:#888;">${email}</strong> · <span onclick="sairEmail()" style="color:#CC1F1F;cursor:pointer;text-decoration:underline;">Sair</span>`;
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
+  // Se já tem email salvo, pula a identificação
+  if(currentEmail){
+    document.getElementById("step-email").style.display="none";
+    document.getElementById("step-busca").style.display="block";
+    document.getElementById("email-info").innerHTML=`🔑 Identificado como <strong style="color:#888;">${currentEmail}</strong> · <span onclick="sairEmail()" style="color:#CC1F1F;cursor:pointer;text-decoration:underline;">Sair</span>`;
+  }
   const ei=document.getElementById("email-inp");
   if(ei)ei.addEventListener("keydown",e=>{if(e.key==="Enter")validarEmail();});
 });
