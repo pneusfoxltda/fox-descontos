@@ -259,6 +259,15 @@ export default function App(){
   const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
+  const[showAlterarSenha,setShowAlterarSenha]=useState(false);
+  const[alterarForm,setAlterarForm]=useState({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+  const[alterarMsg,setAlterarMsg]=useState({txt:"",ok:true});
+  const[logs,setLogs]=useState([]);
+  const[adminSenhaModal,setAdminSenhaModal]=useState(null);
+  const[adminNovaSenha,setAdminNovaSenha]=useState("");
+  const[logsUsuarios,setLogsUsuarios]=useState([]);
+  const[vendedores,setVendedores]=useState(["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"]);
+  const[novoVendedor,setNovoVendedor]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -337,18 +346,30 @@ export default function App(){
 
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select();
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
+      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
     })));}
+    // Auto-marcar expiradas como perdidas
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
+      setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }).catch(()=>{});
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role,ultimoAcesso:u.ultimo_acesso||null})));
+    // Carrega vendedores do Supabase
+    try{
+      const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+      const rc=await fetch(SUPA_URL+"/rest/v1/configuracoes?chave=eq.vendedores&select=valor",{headers:hc});
+      const dc=await rc.json();
+      if(dc&&dc[0]&&Array.isArray(dc[0].valor)&&dc[0].valor.length>0)setVendedores(dc[0].valor);
+    }catch(e){}
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
 
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
@@ -504,17 +525,62 @@ export default function App(){
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
 
+  const registrarLogin=async(email,nome)=>{
+    try{
+      const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+      await fetch(SUPA_URL+"/rest/v1/logs_usuarios",{method:"POST",headers:h,body:JSON.stringify({email,nome,ip,acao:"login"})});
+      await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(email),{method:"PATCH",headers:h,body:JSON.stringify({ultimo_acesso:new Date().toISOString()})});
+    }catch(e){}
+  };
+
   const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");registrarLogin("admin@foxpneus.com.br","Admin");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
     if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
       const r=f.role||"";
       const dest=r==="admin"||r.includes("gerente")?"dashboard":r.includes("televendas")||r.includes("cadastrar1")||r.includes("cadastrar2")?"cadastrar":"consultar";
-      setTab(dest);setLoginErr("");return;}
+      setTab(dest);setLoginErr("");registrarLogin(f.email,f.nome||f.email);return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
+
+  const doAlterarSenha=async()=>{
+    const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
+    if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
+    if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
+    if(novaSenha.length<4){setAlterarMsg({txt:"Mínimo 4 caracteres.",ok:false});return;}
+    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
+    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:novaSenha},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
+      setAlterarMsg({txt:"Senha alterada! Faça login novamente.",ok:true});
+      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
+    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
+  };
+
+  const doAdminAlterarSenha=async()=>{
+    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("Mínimo 4 caracteres.",false);return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
+      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
+      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
+      setAdminSenhaModal(null);setAdminNovaSenha("");
+    }catch(e){toast_("Erro ao alterar senha.",false);}
+  };
+
+  const saveVendedores=async(lista)=>{
+    try{
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
+      await fetch(SUPA_URL+"/rest/v1/configuracoes",{method:"POST",headers:h,body:JSON.stringify({chave:"vendedores",valor:lista})});
+      setVendedores(lista);toast_("Vendedores atualizados! ✅");
+    }catch(e){toast_("Erro ao salvar.",false);}
+  };
 
   const doAdd=async(forcar=false)=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
@@ -550,9 +616,23 @@ export default function App(){
     }catch(e){toast_("Erro ao remover.",false);}
   };
 
-  const doSearch=()=>{
+  const doSearch=async()=>{
     const q=quotes.find(q=>q.numero.toLowerCase()===search.trim().toLowerCase());
-    if(q){setResult(q);setNotFound(false);}else{setResult(null);setNotFound(true);}
+    if(q){
+      setResult(q);setNotFound(false);
+      if(q.anexoNome&&!q.anexoBase64){
+        try{
+          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+          const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+          const d=await r.json();
+          if(d&&d[0]&&d[0].anexo_base64){
+            const atualizado={...q,anexoBase64:d[0].anexo_base64};
+            setResult(atualizado);
+            setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?atualizado:x));
+          }
+        }catch(e){}
+      }
+    }else{setResult(null);setNotFound(true);}
   };
   const clickRow=q=>{setSearch(q.numero);setResult(q);setNotFound(false);window.scrollTo({top:0,behavior:"smooth"});};
 
@@ -618,10 +698,23 @@ export default function App(){
     <div className="login-t">Sistema de Descontos</div>
     <div className="login-s">Acesso restrito — Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
-    <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <button className="btn-login" onClick={doLogin}>Entrar</button>
-    <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+    {!showAlterarSenha&&<>
+      <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <button className="btn-login" onClick={doLogin}>Entrar</button>
+      <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer"}}>Alterar senha</span></div>
+    </>}
+    {showAlterarSenha&&<>
+      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
+      {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
+      <div className="login-f"><label>Seu E-mail</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
+      <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
+      <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
+      <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
+      <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
+    </>}
   </div></div></>);
 
   return(<><style>{css}</style><div className="wrap">
@@ -638,6 +731,8 @@ export default function App(){
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
         {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const [r1,r2]=await Promise.all([fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h}),fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=500",{headers:h})]);const [d1,d2]=await Promise.all([r1.json(),r2.json()]);if(Array.isArray(d1))setLogsUsuarios(d1);if(Array.isArray(d2))setLogs(d2);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -1674,13 +1769,36 @@ export default function App(){
             ))}
             {/* Remove button */}
             <div style={{display:"flex",justifyContent:"center"}}>
-              <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              <div style={{display:"flex",gap:6,flexDirection:"column"}}>
+                <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
+                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              </div>
             </div>
           </div>
           );
         })}</div>
       </>)}
       <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+      <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginTop:20}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff",marginBottom:4}}>👤 Gerenciar Vendedores</div>
+        <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores sem precisar mexer no código</div>
+        <div style={{display:"flex",gap:10,marginBottom:16}}>
+          <input placeholder="Nome do novo vendedor..." value={novoVendedor} onChange={e=>setNovoVendedor(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&novoVendedor.trim()){const novo=novoVendedor.trim();if(!vendedores.includes(novo)){saveVendedores([...vendedores,novo].sort());}setNovoVendedor("");}}}
+            style={{flex:1,boxSizing:"border-box"}}/>
+          <button onClick={()=>{const novo=novoVendedor.trim();if(!novo){toast_("Digite o nome.",false);return;}if(vendedores.includes(novo)){toast_("Já existe.",false);return;}saveVendedores([...vendedores,novo].sort());setNovoVendedor("");}}
+            style={{background:GREEN,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,cursor:"pointer",fontSize:13,whiteSpace:"nowrap"}}>+ Adicionar</button>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {vendedores.map(v=>(
+            <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #2E2E2E",borderRadius:20,padding:"6px 14px"}}>
+              <span style={{fontSize:13,fontWeight:600,color:TEXT}}>{v}</span>
+              <button onClick={()=>{if(!window.confirm(`Remover "${v}"?`))return;saveVendedores(vendedores.filter(x=>x!==v));}}
+                style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:16,lineHeight:1,padding:0,fontWeight:700}}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
     </>)}
 
     </div>
@@ -1944,5 +2062,101 @@ export default function App(){
       </div>
     )}
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
+
+    {/* Modal alterar senha pelo admin */}
+    {adminSenhaModal&&<div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Alterar Senha</div>
+        <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} — {adminSenhaModal.email}</div>
+        <div className="field" style={{marginBottom:16}}>
+          <label>Nova Senha</label>
+          <input type="password" placeholder="Digite a nova senha" value={adminNovaSenha} onChange={e=>setAdminNovaSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdminAlterarSenha()} autoFocus style={{width:"100%",boxSizing:"border-box"}}/>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar Nova Senha</button>
+        </div>
+      </div>
+    </div>}
+
+    {/* Logs tab view */}
+    {tab==="logs"&&session.role==="admin"&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Busca por Medida</div>
+        <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
+        <div style={{display:"flex",gap:10}}>
+          {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:20}}>
+        {logs.length===0?<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log ainda.</div>:
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+          <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","E-mail","Medida","Loja","IP","Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <tbody>{logs.map((l,i)=><tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:l.sucesso?"transparent":"#1A0000"}}>
+            <td style={{padding:"10px 12px",color:"#888",fontSize:11}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+            <td style={{padding:"10px 12px",fontWeight:600,color:l.sucesso?TEXT:RED}}>{l.email}</td>
+            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||"—"}</td>
+            <td style={{padding:"10px 12px",color:MUTED}}>{l.loja||"—"}</td>
+            <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
+            <td style={{padding:"10px 12px"}}>{l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>✅ Sucesso</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>❌ {l.motivo||"Bloqueado"}</span>}</td>
+          </tr>)}</tbody>
+        </table>}
+      </div>
+    </div>}
+
+    {/* Atividade tab view */}
+    {tab==="atividade"&&session.role==="admin"&&(()=>{
+      const statsMap={};
+      users.forEach(u=>{statsMap[u.email]={nome:u.nome||u.email,email:u.email,role:u.role,logins:0,ultimoAcesso:u.ultimoAcesso||null,negociacoes:0,liberacoes:0,tipo:"sistema"};});
+      logs.filter(l=>l.sucesso).forEach(l=>{if(!statsMap[l.email]){statsMap[l.email]={nome:l.email,email:l.email,role:"publico",logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0,tipo:"publico"};}});
+      quotes.filter(q=>q.vendedor).forEach(q=>{if(q.negociadorEmail&&statsMap[q.negociadorEmail])statsMap[q.negociadorEmail].negociacoes++;});
+      logsUsuarios.forEach(l=>{if(statsMap[l.email]){statsMap[l.email].logins++;if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso))statsMap[l.email].ultimoAcesso=l.created_at;}});
+      logs.filter(l=>l.sucesso).forEach(l=>{if(statsMap[l.email]&&statsMap[l.email].tipo==="publico"){statsMap[l.email].logins++;if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso))statsMap[l.email].ultimoAcesso=l.created_at;}});
+      const statsList=Object.values(statsMap).sort((a,b)=>{const aO=a.ultimoAcesso&&(new Date()-new Date(a.ultimoAcesso))<15*60*1000;const bO=b.ultimoAcesso&&(new Date()-new Date(b.ultimoAcesso))<15*60*1000;if(aO&&!bO)return -1;if(!aO&&bO)return 1;return b.logins-a.logins;});
+      const emailStats={};const lojaStats={};
+      logs.filter(l=>l.sucesso).forEach(l=>{emailStats[l.email]=(emailStats[l.email]||0)+1;if(l.loja)lojaStats[l.loja]=(lojaStats[l.loja]||0)+1;});
+      return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📊 Atividade da Plataforma</div>
+          <div style={{fontSize:11,color:MUTED,marginTop:2}}>Visão geral de uso por usuário e consulta pública</div></div>
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:20}}>
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16,marginBottom:20}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",marginBottom:14}}>👥 ATIVIDADE POR USUÁRIO</div>
+            <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["","Usuário","Perfil","Negociações","Logins","Último Acesso"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <tbody>{statsList.map((u,i)=>{const ua=u.ultimoAcesso;const online=ua&&(new Date()-new Date(ua))<15*60*1000;
+                return(<tr key={u.email} style={{borderBottom:"1px solid #1A1A1A",background:online?"#0D1A0D":"transparent"}}>
+                  <td style={{padding:"10px 12px",textAlign:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:online?"#4CAF50":"#444",display:"inline-block",boxShadow:online?"0 0 8px #4CAF50":"none"}}/></td>
+                  <td style={{padding:"10px 12px"}}><div style={{fontWeight:700,color:TEXT,fontSize:13}}>{u.nome}</div><div style={{fontSize:10,color:MUTED}}>{u.email}</div>{online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700}}>● Online</div>}</td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:u.tipo==="publico"?"#1A1A2E":roleColor(u.role)+"22",color:u.tipo==="publico"?"#7B68EE":roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{u.tipo==="publico"?"🔗 Consulta Pública":roleName(u.role)}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"—":u.negociacoes}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
+                  <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>{ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}</td>
+                </tr>);})}</tbody>
+            </table></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📧 PESQUISAS POR E-MAIL</div>
+              {Object.entries(emailStats).sort((a,b)=>b[1]-a[1]).map(([email,cnt],i)=>(<div key={email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {email}</span>
+                <span style={{background:BLUE+"22",color:BLUE,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+              </div>))}
+            </div>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📍 PESQUISAS POR LOJA</div>
+              {Object.entries(lojaStats).sort((a,b)=>b[1]-a[1]).map(([loja,cnt],i)=>(<div key={loja} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {loja}</span>
+                <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+              </div>))}
+            </div>
+          </div>
+        </div>
+      </div>);
+    })()}
+
   </div></div></>);
 }
