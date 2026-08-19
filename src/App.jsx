@@ -1253,7 +1253,7 @@ export default function App(){
           <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência com comprovante obrigatório</div>
         </div>
       </div>
-      <div className="card" style={{maxWidth:600}}>
+      <div className="card" style={{maxWidth:900}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div className="field">
             <label>Medida do Pneu *</label>
@@ -1343,7 +1343,7 @@ export default function App(){
           <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre o preço do concorrente com comprovante</div>
         </div>
       </div>
-      <div className="card" style={{maxWidth:600}}>
+      <div className="card" style={{maxWidth:900}}>
         {/* Medida + Segmento */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
           <div className="field">
