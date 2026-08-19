@@ -1249,11 +1249,11 @@ export default function App(){
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
         <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência para análise</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>CADASTRAR CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência com comprovante obrigatório</div>
         </div>
       </div>
-      <div className="card">
+      <div className="card" style={{maxWidth:600}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div className="field">
             <label>Medida do Pneu *</label>
@@ -1267,51 +1267,70 @@ export default function App(){
             </select>
           </div>
         </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja||""} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
         <div className="field mb" style={{marginBottom:12}}>
-          <label>🏢 Concorrente *</label>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div style={{flex:2,minWidth:180,position:"relative"}}>
-              <input placeholder="Digite para buscar concorrente..." value={concQuery1}
-                onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
-                onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
-                style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
-              {concDrop1&&concQuery1.length>0&&(()=>{
-                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
-                if(!sug.length)return null;
-                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                  {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
-                </div>);
-              })()}
-            </div>
-            <div style={{flex:1,minWidth:110}}>
-              <input type="number" step="0.01" placeholder="Valor deles" value={concForm1.valor}
-                onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
-            </div>
-            <div style={{flex:1,minWidth:130}}>
-              <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
-                <option value="">Pagamento</option>
-                {PGTO.map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
+          <label>🏢 Nome do Concorrente *</label>
+          <div style={{position:"relative"}}>
+            <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+              onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+              onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+              style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+            {concDrop1&&concQuery1.length>0&&(()=>{
+              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+              if(!sug.length)return null;
+              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+              </div>);
+            })()}
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div className="field">
+            <label>💰 Valor *</label>
+            <input type="number" step="0.01" placeholder="Ex: 350.00" value={concForm1.valor}
+              onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+          </div>
+          <div className="field">
+            <label>💳 Forma de Pagamento *</label>
+            <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+              <option value="">Selecione...</option>
+              {PGTO.map(o=><option key={o}>{o}</option>)}
+            </select>
           </div>
         </div>
         <div className="field mb" style={{marginBottom:16}}>
-          <label>📸 Foto do Concorrente (opcional)</label>
+          <label>📸 Arquivo *{!concForm1.anexo&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
-            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",fontSize:13,color:"#888"}}>
-              <span>📎</span>{concForm1.anexo?"✅ "+concForm1.anexo.nome:"Selecionar arquivo"}
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"12px 18px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",flex:1}}>
+              <span style={{fontSize:18}}>{concForm1.anexo?"✅":"📎"}</span>
+              <div>
+                <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar arquivo"}</div>
+                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Arquivo selecionado":"Obrigatório — print ou foto"}</div>
+              </div>
               <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
                 const file=e.target.files[0];if(!file)return;
+                if(file.size>5*1024*1024){toast_("Máx 5MB.",false);return;}
                 const reader=new FileReader();
                 reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
                 reader.readAsDataURL(file);
               }}/>
             </label>
-            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:18}}>×</button>}
+            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:22}}>×</button>}
           </div>
         </div>
-        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
+        <button className="btn-red" onClick={()=>{
+          if(!concForm1.medida||!concForm1.segmento||!concForm1.loja||!concForm1.empresa){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+          if(!concForm1.anexo){toast_("O arquivo é obrigatório!",false);return;}
+          doAddConc1();
+        }} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
       </div>
       </>)}
 
