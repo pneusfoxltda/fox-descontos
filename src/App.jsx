@@ -823,9 +823,23 @@ export default function App(){
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
                   <td style={{padding:"8px 8px"}}>{(()=>{
-  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
-  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoBase64&&parseConcObs(q.obs).length>0);
-  if(imgs.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs,semFoto})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoNome&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
+  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
+  if(imgs.length>0)return(<button onClick={async()=>{
+    setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
+    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+    const loaded=await Promise.all(imgs.map(async q=>{
+      if(q.anexoBase64)return q;
+      try{
+        const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+        const d=await r.json();
+        const b64=d&&d[0]?d[0].anexo_base64:null;
+        if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}
+        return{...q,anexoBase64:b64};
+      }catch(e){return q;}
+    }));
+    setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
+  }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
   return(<span style={{color:MUTED,fontSize:11}}>—</span>);
 })()}</td>
@@ -1930,13 +1944,13 @@ export default function App(){
                   </button>}
                 </div>
                 {/* Imagem */}
-                <img
-                  src={q.anexoBase64}
-                  alt={q.anexoNome}
-                  onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
-                  style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
-                  title="Clique para ampliar"
-                />
+                {q.anexoBase64
+                  ?<img src={q.anexoBase64} alt={q.anexoNome} onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})} style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}} title="Clique para ampliar"/>
+                  :<div style={{width:"100%",height:180,background:"#111",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <div style={{width:28,height:28,border:"3px solid #2E2E2E",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                    <div style={{fontSize:11,color:MUTED}}>Carregando imagem...</div>
+                  </div>
+                }
                 {/* Corpo do card */}
                 <div style={{padding:"10px 12px",flex:1}}>
                   {isConc
