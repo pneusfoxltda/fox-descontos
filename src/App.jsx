@@ -523,8 +523,9 @@ export default function App(){
     const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
     if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
     try{
-      const db=await supa.from("usuarios");
-      await db.update({senha:novaSenha},{email:u.email});
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=minimal"};
+      const r=await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(u.email),{method:"PATCH",headers:h,body:JSON.stringify({senha:novaSenha})});
+      if(!r.ok){const errTxt=await r.text();setAlterarMsg({txt:"Erro ao salvar no servidor: "+errTxt.substring(0,120),ok:false});return;}
       setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
       setAlterarMsg({txt:"Senha alterada! Faça login novamente.",ok:true});
       setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
@@ -534,8 +535,9 @@ export default function App(){
   const doAdminAlterarSenha=async()=>{
     if(!adminNovaSenha||adminNovaSenha.length<4){toast_("Mínimo 4 caracteres.",false);return;}
     try{
-      const db=await supa.from("usuarios");
-      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=minimal"};
+      const r=await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(adminSenhaModal.email),{method:"PATCH",headers:h,body:JSON.stringify({senha:adminNovaSenha})});
+      if(!r.ok){const errTxt=await r.text();toast_("Erro ao salvar no servidor: "+errTxt.substring(0,120),false);return;}
       setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
       toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
       setAdminSenhaModal(null);setAdminNovaSenha("");
