@@ -1,10 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-
-
 // ── Supabase Client ──────────────────────────────────────────────
 const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
-
 const supa = {
   async from(table) {
     const base = SUPA_URL + "/rest/v1/" + table;
@@ -53,7 +50,6 @@ const supa = {
     };
   }
 };
-
 const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
@@ -68,7 +64,6 @@ const FOTOS_VENDEDORES={
 const CONCORRENTES_PADRAO=["Atacado Pneus","GBIM Pneus","Bono Pneus","Camargo Pneus","Espantalho","GP Pneus","Iccap Randon","JK Pneus","Japurá","Morena Pneus","Muniz","Pemaza","Pneu Fácil","Pneu Paulista","Queiroz Pneus","Rei dos Pneus","Rondobras","Shopping dos Pneus","Toyota","Vip Pneus"];
 const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
 const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
-
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseConcObs(obs){
@@ -98,15 +93,12 @@ function hasRole(session,role){
 }
 function roleName(r){
   if(!r)return"";
-  const map={admin:"Gerente",televendas:"Descontos",comercial:"Comercial",cadastrar1:"Inteligência",cadastrar2:"Cadastro Completo"};
+  const map={admin:"Admin",televendas:"Cadastrar",comercial:"Consultar",cadastrar1:"Inteligência",cadastrar2:"Cad.+Cons.",gerente:"Gerente"};
   return r.split(",").map(x=>map[x]||x).join(" + ");
 }
-function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C"}[r]||MUTED;}
-
+function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar1:"#9B59B6",cadastrar2:"#1ABC9C",gerente:"#E67E22"}[r]||MUTED;}
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
-
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .wrap{height:100vh;width:100vw;background:#0A0A0A;display:flex;overflow:hidden;position:fixed;top:0;left:0;}
@@ -225,8 +217,6 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 .btn-login:hover{background:#E02020;}
 .login-hint{font-size:11px;color:#555;text-align:center;margin-top:12px;}
 `;
-
-
 function AnimatedNumber({value, duration=1200}){
   const [display, setDisplay] = useState(0);
   const end = parseFloat(value)||0;
@@ -247,7 +237,6 @@ function AnimatedNumber({value, duration=1200}){
   },[end]);
   return <span>{display}</span>;
 }
-
 export default function App(){
   useEffect(()=>{
     document.title="Descontos Fox Pneus";
@@ -255,10 +244,18 @@ export default function App(){
     if(!lk){lk=document.createElement("link");lk.rel="icon";document.head.appendChild(lk);}
     lk.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>";
   },[]);
-
   const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
   const[loginErr,setLoginErr]=useState("");
+  const[showAlterarSenha,setShowAlterarSenha]=useState(false);
+  const[alterarForm,setAlterarForm]=useState({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+  const[alterarMsg,setAlterarMsg]=useState({txt:"",ok:true});
+  const[logs,setLogs]=useState([]);
+  const[adminSenhaModal,setAdminSenhaModal]=useState(null);
+  const[adminNovaSenha,setAdminNovaSenha]=useState("");
+  const[logsUsuarios,setLogsUsuarios]=useState([]);
+  const[vendedores,setVendedores]=useState(["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"]);
+  const[novoVendedor,setNovoVendedor]=useState("");
   const[users,setUsers]=useState([]);
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
@@ -307,9 +304,6 @@ export default function App(){
   const[perdidaModal,setPerdidaModal]=useState(null);
   const[motivoInput,setMotivoInput]=useState("");
   const[galeriaModal,setGaleriaModal]=useState(null);
-
-
-
   useEffect(()=>{
     if(tab!=="dashboard")return;
     window.scrollTo({top:0,behavior:"instant"});
@@ -323,38 +317,46 @@ export default function App(){
     },100);
     return()=>clearTimeout(timer);
   },[tab,dashKey]);
-
   useEffect(()=>{
     try{
       const saved=localStorage.getItem("fox_session");
       if(saved){
         const s=JSON.parse(saved);
         setSession(s);
-        setTab(s.role==="admin"?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
+        setTab(s.role==="admin"||s.role==="gerente"||(s.role||"").includes("gerente")?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
       }
     }catch(e){}
   },[]);
-
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select();
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:q.anexo_base64,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome
+      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
     })));}
+    // Auto-marcar expiradas como perdidas
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
+      setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
+    }).catch(()=>{});
     const ub = await supa.from("usuarios");
     const {data:us} = await ub.select();
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role})));
+    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role,ultimoAcesso:u.ultimo_acesso||null})));
+    // Carrega vendedores do Supabase
+    try{
+      const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+      const rc=await fetch(SUPA_URL+"/rest/v1/configuracoes?chave=eq.vendedores&select=valor",{headers:hc});
+      const dc=await rc.json();
+      if(dc&&dc[0]&&Array.isArray(dc[0].valor)&&dc[0].valor.length>0)setVendedores(dc[0].valor);
+    }catch(e){}
   }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
-
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
   const saveU=async u=>{setUsers(u);}; // dados salvos direto no Supabase
   const toast_=(msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3200);};
-
   const handleAnexo=(e)=>{
     const file = e.target.files[0];
     if(!file)return;
@@ -364,8 +366,6 @@ export default function App(){
     reader.onload=(ev)=>setAnexo({base64:ev.target.result,tipo:file.type,nome:file.name});
     reader.readAsDataURL(file);
   };
-
-
   const doPerdida=async(q,motivo)=>{
     try{
       const db=await supa.from("descontos");
@@ -377,8 +377,6 @@ export default function App(){
       toast_("Negociação marcada como perdida.");
     }catch(e){toast_("Erro.",false);}
   };
-
-
   const doAddConc1=async()=>{
     if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
     try{
@@ -412,8 +410,6 @@ export default function App(){
       toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
   };
-
-
   const doToggleRole=async(u,role)=>{
     const current=(u.role||"").split(",").filter(Boolean);
     const updated=current.includes(role)?current.filter(r=>r!==role):[...current,role];
@@ -424,7 +420,6 @@ export default function App(){
       setUsers(prev=>prev.map(x=>x.email===u.email?{...x,role:newRole}:x));
     }catch(e){toast_("Erro ao atualizar.",false);}
   };
-
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
     const concExist=parseConcObs(q.obs||"");
@@ -433,7 +428,6 @@ export default function App(){
     setEditConcQuery("");setEditConcValor("");setEditConcPgto("");
     setEditModal(q);
   };
-
   const doSaveEdit=async()=>{
     if(!editForm.validade||!editForm.medida||!editForm.valor){toast_("Preencha os campos obrigatórios.",false);return;}
     try{
@@ -454,7 +448,6 @@ export default function App(){
       toast_("Desconto atualizado!");
     }catch(e){toast_("Erro ao atualizar.",false);}
   };
-
   const doExport=(data)=>{
     // Build CSV with BOM - opens perfectly in Excel
     const headers=["Cadastro (Responsável)","Loja","Medida","Segmento","Preço negociado","Forma Pagamento","Liberação","Data Liberação","Número","Tipo","CBA","Validade","Obs"];
@@ -503,16 +496,58 @@ export default function App(){
   };
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
-
+  const registrarLogin=async(email,nome)=>{
+    try{
+      const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+      await fetch(SUPA_URL+"/rest/v1/logs_usuarios",{method:"POST",headers:h,body:JSON.stringify({email,nome,ip,acao:"login"})});
+      await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(email),{method:"PATCH",headers:h,body:JSON.stringify({ultimo_acesso:new Date().toISOString()})});
+    }catch(e){}
+  };
   const doLogin=()=>{
     const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");return;}
+    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");registrarLogin("admin@foxpneus.com.br","Admin");return;}
     const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab(hasRole({role:f.role},"televendas")||hasRole({role:f.role},"cadastrar1")||hasRole({role:f.role},"cadastrar2")?"cadastrar":"consultar");setLoginErr("");return;}
+    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
+      const r=f.role||"";
+      const dest=r==="admin"||r.includes("gerente")?"dashboard":r.includes("televendas")||r.includes("cadastrar1")||r.includes("cadastrar2")?"cadastrar":"consultar";
+      setTab(dest);setLoginErr("");registrarLogin(f.email,f.nome||f.email);return;}
     setLoginErr("Usuário ou senha incorretos.");
   };
   const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
-
+  const doAlterarSenha=async()=>{
+    const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
+    if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
+    if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
+    if(novaSenha.length<4){setAlterarMsg({txt:"Mínimo 4 caracteres.",ok:false});return;}
+    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
+    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:novaSenha},{email:u.email});
+      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
+      setAlterarMsg({txt:"Senha alterada! Faça login novamente.",ok:true});
+      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
+    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
+  };
+  const doAdminAlterarSenha=async()=>{
+    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("Mínimo 4 caracteres.",false);return;}
+    try{
+      const db=await supa.from("usuarios");
+      await db.update({senha:adminNovaSenha},{email:adminSenhaModal.email});
+      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
+      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
+      setAdminSenhaModal(null);setAdminNovaSenha("");
+    }catch(e){toast_("Erro ao alterar senha.",false);}
+  };
+  const saveVendedores=async(lista)=>{
+    try{
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
+      await fetch(SUPA_URL+"/rest/v1/configuracoes",{method:"POST",headers:h,body:JSON.stringify({chave:"vendedores",valor:lista})});
+      setVendedores(lista);toast_("Vendedores atualizados! ✅");
+    }catch(e){toast_("Erro ao salvar.",false);}
+  };
   const doAdd=async(forcar=false)=>{
     if(!form.numero||!form.cba||!form.medida||!form.segmento||!form.loja||!form.vendedor||!form.valor||!form.pgto||!form.validade){toast_("Preencha todos os campos.",false);return;}
     if(quotes.find(q=>q.numero===form.numero.trim()&&q.tipo===form.tipo)){toast_("Número já cadastrado.",false);return;}
@@ -546,13 +581,25 @@ export default function App(){
       toast_("Removido.");
     }catch(e){toast_("Erro ao remover.",false);}
   };
-
-  const doSearch=()=>{
+  const doSearch=async()=>{
     const q=quotes.find(q=>q.numero.toLowerCase()===search.trim().toLowerCase());
-    if(q){setResult(q);setNotFound(false);}else{setResult(null);setNotFound(true);}
+    if(q){
+      setResult(q);setNotFound(false);
+      if(q.anexoNome&&!q.anexoBase64){
+        try{
+          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+          const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+          const d=await r.json();
+          if(d&&d[0]&&d[0].anexo_base64){
+            const atualizado={...q,anexoBase64:d[0].anexo_base64};
+            setResult(atualizado);
+            setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?atualizado:x));
+          }
+        }catch(e){}
+      }
+    }else{setResult(null);setNotFound(true);}
   };
   const clickRow=q=>{setSearch(q.numero);setResult(q);setNotFound(false);window.scrollTo({top:0,behavior:"smooth"});};
-
   const doLiberar=async(q,e)=>{
     if(e)e.stopPropagation();
     const nowLib=!q.liberado;
@@ -570,7 +617,6 @@ export default function App(){
       toast_(nowLib?"Desconto liberado!":"Liberação removida.");
     }catch(e){toast_("Erro.",false);}
   };
-
   const doAddUser=async()=>{
     const em=newUser.email.trim().toLowerCase();
     if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
@@ -592,7 +638,6 @@ export default function App(){
       toast_("Usuário removido.");
     }catch(e){toast_("Erro.",false);}
   };
-
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(q.erroInterno)return false;
     if(q.perdida)return false;
@@ -603,24 +648,34 @@ export default function App(){
     if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
     return true;
   }),[quotes,dash]);
-
   const mChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.medida]=(c[q.medida]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,value])=>({name,value}));},[filtered]);
   const sChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.segmento]=(c[q.segmento]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const totVal=useMemo(()=>filtered.reduce((s,q)=>s+(parseFloat(q.valor)||0),0),[filtered]);
   const chartColors=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
-
   if(!session)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
     <div className="login-logo"><div style={{width:64,height:64,background:RED,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>🦊</div></div>
     <div className="login-t">Sistema de Descontos</div>
     <div className="login-s">Acesso restrito — Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
-    <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
-    <button className="btn-login" onClick={doLogin}>Entrar</button>
-    <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+    {!showAlterarSenha&&<>
+      <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <div className="login-f"><label>Senha</label><input type="password" placeholder="Senha" value={loginForm.pass} onChange={e=>setLoginForm(f=>({...f,pass:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
+      <button className="btn-login" onClick={doLogin}>Entrar</button>
+      <div className="login-hint">Somente usuários cadastrados pelo administrador.</div>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer"}}>Alterar senha</span></div>
+    </>}
+    {showAlterarSenha&&<>
+      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
+      {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
+      <div className="login-f"><label>Seu E-mail</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
+      <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
+      <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
+      <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
+      <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
+    </>}
   </div></div></>);
-
   return(<><style>{css}</style><div className="wrap">
     {/* ── SIDEBAR ── */}
     <div className="sidebar">
@@ -630,10 +685,13 @@ export default function App(){
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
       <nav className="sb-nav">
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
+        {hasRole(session,"cadastrar1")&&!hasRole(session,"admin")&&<div className={`tab ${tab==="inteldash"?"active":""}`} onClick={()=>setTab("inteldash")}><span className="tab-dot"/>Inteligência</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
-        {(hasRole(session,"comercial")||hasRole(session,"admin"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const [r1,r2]=await Promise.all([fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h}),fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=500",{headers:h})]);const [d1,d2]=await Promise.all([r1.json(),r2.json()]);if(Array.isArray(d1))setLogsUsuarios(d1);if(Array.isArray(d2))setLogs(d2);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -646,9 +704,8 @@ export default function App(){
     {/* ── CONTEÚDO ── */}
     <div className="content-wrap">
     <div className="main">
-
     {/* DASHBOARD */}
-    {tab==="dashboard"&&session.role==="admin"&&(<div key={dashKey}>
+    {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
@@ -659,7 +716,6 @@ export default function App(){
           </div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar ({(filtered.length>0?filtered:quotes).length})</button>
         </div>
-
         {/* Filtros */}
         <div className="card" style={{marginBottom:10,padding:"12px 16px"}}>
           <div style={{fontSize:11,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Filtros</div>
@@ -672,7 +728,6 @@ export default function App(){
             <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
           </div>
         </div>
-
         {/* KPIs */}
         <div className="stat-grid">
           <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
@@ -701,12 +756,9 @@ export default function App(){
             <div className="stat-sub">cliente foi para concorrência</div>
           </div>
         </div>
-
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
-
         {/* Grid: Medidas + Segmentos */}
         <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:10,marginBottom:10}}>
-
           {/* Ranking Medidas */}
           <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
@@ -724,9 +776,23 @@ export default function App(){
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
                   <td style={{padding:"8px 8px"}}>{(()=>{
-  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoBase64&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
-  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoBase64&&parseConcObs(q.obs).length>0);
-  if(imgs.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:imgs,semFoto})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  const imgs=filtered.filter(q=>q.medida===m.name&&q.anexoNome&&q.anexoTipo&&q.anexoTipo.startsWith("image"));
+  const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
+  if(imgs.length>0)return(<button onClick={async()=>{
+    setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
+    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+    const loaded=await Promise.all(imgs.map(async q=>{
+      if(q.anexoBase64)return q;
+      try{
+        const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
+        const d=await r.json();
+        const b64=d&&d[0]?d[0].anexo_base64:null;
+        if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}
+        return{...q,anexoBase64:b64};
+      }catch(e){return q;}
+    }));
+    setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
+  }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
   return(<span style={{color:MUTED,fontSize:11}}>—</span>);
 })()}</td>
@@ -734,7 +800,6 @@ export default function App(){
               </tbody>
             </table>
           </div>
-
           {/* Ranking Segmentos */}
           <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
@@ -756,8 +821,6 @@ export default function App(){
             </table>
           </div>
         </div>
-
-
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
         <div>
         {/* Ranking Lojas */}
@@ -786,7 +849,6 @@ export default function App(){
             </tbody>
           </table>
         </div>
-
         </div>
         <div>
         {/* Ranking Vendedores */}
@@ -842,9 +904,6 @@ export default function App(){
             </table>
           </div>);
         })()}
-
-
-
         {/* ── INTELIGÊNCIA DE CONCORRÊNCIA ── */}
         {(()=>{
           // collect all concorrentes from filtered quotes
@@ -856,7 +915,6 @@ export default function App(){
             });
           });
           if(!allConc.length)return null;
-
           // rank by frequency
           const empMap={};
           allConc.forEach(item=>{
@@ -867,7 +925,6 @@ export default function App(){
           const ranked=Object.values(empMap).sort((a,b)=>b.count-a.count);
           const selEmp=concIntelSel||ranked[0]?.empresa;
           const selData=empMap[selEmp];
-
           // group medidas for selected competitor — best (lowest) price per medida
           const medMap={};
           (selData?.medidas||[]).forEach(m=>{
@@ -882,12 +939,10 @@ export default function App(){
             }
           });
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
-
           return(
             <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
-
                 {/* LEFT — ranking */}
                 <div>
                   <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Empresas que mais negociamos</div>
@@ -912,7 +967,6 @@ export default function App(){
                     })}
                   </div>
                 </div>
-
                 {/* RIGHT — medidas do selecionado */}
                 <div>
                   <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>
@@ -952,9 +1006,7 @@ export default function App(){
             </div>
           );
         })()}
-
         </div></div>
-
         {/* ── VOLUME DE NEGOCIAÇÕES POR DIA ── */}
         {(()=>{
           const hoje = new Date();
@@ -1069,18 +1121,76 @@ export default function App(){
             </div>
           );
         })()}
-
         </>)}
         </div>)}
+      {/* ── ABA INTELIGÊNCIA (cadastrar1 sem admin) ── */}
+      {tab==="inteldash"&&hasRole(session,"cadastrar1")&&!hasRole(session,"admin")&&(()=>{
+        const allConc=[];
+        quotes.filter(q=>!q.erroInterno).forEach(q=>{
+          const items=parseConcObs(q.obs);
+          items.forEach(item=>{
+            allConc.push({...item,medida:q.medida,numero:q.numero,criadoEm:q.criadoEm,loja:q.loja,valorFox:q.valor,obs:q.obs,anexoBase64:q.anexoBase64,anexoTipo:q.anexoTipo,anexoNome:q.anexoNome,tipo:q.tipo});
+          });
+        });
+        // Agrupa por medida
+        const medMap={};
+        allConc.forEach(item=>{
+          if(!medMap[item.medida])medMap[item.medida]={medida:item.medida,concs:[],imgs:[]};
+          medMap[item.medida].concs.push(item);
+          if(item.anexoNome&&item.anexoTipo&&item.anexoTipo.startsWith("image")&&!medMap[item.medida].imgs.find(x=>x.numero===item.numero)){
+            medMap[item.medida].imgs.push({...quotes.find(q=>q.numero===item.numero)||{},obs:item.obs,medida:item.medida,tipo:item.tipo});
+          }
+        });
+        const medList=Object.values(medMap).sort((a,b)=>b.concs.length-a.concs.length);
+        if(!medList.length)return(<div className="card" style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:12}}>📊</div><div style={{color:MUTED}}>Nenhuma negociação com concorrentes registrada ainda.</div></div>);
+        return(<>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+            <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
+              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Negociações registradas com dados de concorrentes</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+            {medList.map(m=>(
+              <div key={m.medida} style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#fff",letterSpacing:1}}>{m.medida}</div>
+                  <div style={{display:"flex",gap:6}}>
+                    <span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.concs.length} reg.</span>
+                    {m.imgs.length>0&&<button onClick={async()=>{
+                      setGaleriaModal({medida:m.medida,imagens:m.imgs,semFoto:[]});
+                      const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+                      const loaded=await Promise.all(m.imgs.map(async q=>{
+                        if(q.anexoBase64)return q;
+                        try{const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});const d=await r.json();const b64=d&&d[0]?d[0].anexo_base64:null;if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}return{...q,anexoBase64:b64};}catch(e){return q;}
+                      }));
+                      setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
+                    }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🖼️ {m.imgs.length}</button>}
+                  </div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {[...new Map(m.concs.map(c=>[c.empresa,c])).values()].slice(0,4).map((c,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#111",borderRadius:6,padding:"6px 10px"}}>
+                      <span style={{fontSize:12,color:TEXT,fontWeight:600}}>{c.empresa}</span>
+                      <span style={{fontSize:13,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(c.valor)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>);
+      })()}
       {tab==="cadastrar"&&hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&(<>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
         <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência para análise</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>CADASTRAR CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência com comprovante obrigatório</div>
         </div>
       </div>
-      <div className="card">
+      <div className="card" style={{maxWidth:900}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div className="field">
             <label>Medida do Pneu *</label>
@@ -1094,61 +1204,181 @@ export default function App(){
             </select>
           </div>
         </div>
+        <div className="field" style={{marginBottom:12}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja||""} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
         <div className="field mb" style={{marginBottom:12}}>
-          <label>🏢 Concorrente *</label>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div style={{flex:2,minWidth:180,position:"relative"}}>
-              <input placeholder="Digite para buscar concorrente..." value={concQuery1}
-                onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
-                onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
-                style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
-              {concDrop1&&concQuery1.length>0&&(()=>{
-                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
-                if(!sug.length)return null;
-                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                  {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
-                </div>);
-              })()}
-            </div>
-            <div style={{flex:1,minWidth:110}}>
-              <input type="number" step="0.01" placeholder="Valor deles" value={concForm1.valor}
-                onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
-            </div>
-            <div style={{flex:1,minWidth:130}}>
-              <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
-                <option value="">Pagamento</option>
-                {PGTO.map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
+          <label>🏢 Nome do Concorrente *</label>
+          <div style={{position:"relative"}}>
+            <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+              onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+              onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+              style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+            {concDrop1&&concQuery1.length>0&&(()=>{
+              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+              if(!sug.length)return null;
+              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+              </div>);
+            })()}
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div className="field">
+            <label>💰 Valor *</label>
+            <input type="number" step="0.01" placeholder="Ex: 350.00" value={concForm1.valor}
+              onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+          </div>
+          <div className="field">
+            <label>💳 Forma de Pagamento *</label>
+            <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+              <option value="">Selecione...</option>
+              {PGTO.map(o=><option key={o}>{o}</option>)}
+            </select>
           </div>
         </div>
         <div className="field mb" style={{marginBottom:16}}>
-          <label>📸 Foto do Concorrente (opcional)</label>
+          <label>📸 Arquivo *{!concForm1.anexo&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
-            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",fontSize:13,color:"#888"}}>
-              <span>📎</span>{concForm1.anexo?"✅ "+concForm1.anexo.nome:"Selecionar arquivo"}
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"12px 18px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",flex:1}}>
+              <span style={{fontSize:18}}>{concForm1.anexo?"✅":"📎"}</span>
+              <div>
+                <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar arquivo"}</div>
+                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Arquivo selecionado":"Obrigatório — print ou foto"}</div>
+              </div>
               <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
                 const file=e.target.files[0];if(!file)return;
+                if(file.size>5*1024*1024){toast_("Máx 5MB.",false);return;}
                 const reader=new FileReader();
                 reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
                 reader.readAsDataURL(file);
               }}/>
             </label>
-            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:18}}>×</button>}
+            {concForm1.anexo&&<button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:22}}>×</button>}
           </div>
         </div>
-        <button className="btn-red" onClick={doAddConc1} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
+        <button className="btn-red" onClick={()=>{
+          if(!concForm1.medida||!concForm1.segmento||!concForm1.loja||!concForm1.empresa){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+          if(!concForm1.anexo){toast_("O arquivo é obrigatório!",false);return;}
+          doAddConc1();
+        }} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
       </div>
       </>)}
-
-      {tab==="cadastrar"&&(hasRole(session,"televendas")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
+      {/* ── FORM SIMPLES — Cadastrar (televendas) ── */}
+      {tab==="cadastrar"&&hasRole(session,"televendas")&&!hasRole(session,"admin")&&!hasRole(session,"cadastrar2")&&(<>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+        <div style={{width:4,height:28,background:BLUE,borderRadius:2}}/>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>CADASTRAR CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre o preço do concorrente com comprovante</div>
+        </div>
+      </div>
+      <div className="card" style={{maxWidth:900}}>
+        {/* Medida + Segmento */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+          <div className="field">
+            <label>🔵 Medida do Pneu *</label>
+            <input placeholder="Ex: 175/65R14" value={concForm1.medida}
+              onChange={e=>setConcForm1(f=>({...f,medida:e.target.value.toUpperCase()}))}
+              style={{width:"100%",boxSizing:"border-box"}}/>
+          </div>
+          <div className="field">
+            <label>📦 Segmento *</label>
+            <select value={concForm1.segmento} onChange={e=>setConcForm1(f=>({...f,segmento:e.target.value}))} style={{width:"100%"}}>
+              <option value="">Selecione...</option>
+              {SEGS.map(s=><option key={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        {/* Loja */}
+        <div className="field" style={{marginBottom:14}}>
+          <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <select value={concForm1.loja||""} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            <option value="">Selecione a loja...</option>
+            {LOJAS.map(l=><option key={l}>{l}</option>)}
+          </select>
+        </div>
+        {/* Concorrente */}
+        <div className="field" style={{marginBottom:14}}>
+          <label>🏢 Nome do Concorrente *</label>
+          <div style={{position:"relative"}}>
+            <input placeholder="Digite para buscar concorrente..." value={concQuery1}
+              onChange={e=>{setConcQuery1(e.target.value);setConcDrop1(true);setConcForm1(f=>({...f,empresa:e.target.value}));}}
+              onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
+              style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
+            {concDrop1&&concQuery1.length>0&&(()=>{
+              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
+              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+              if(!sug.length)return null;
+              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+              </div>);
+            })()}
+          </div>
+        </div>
+        {/* Valor + Pgto */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+          <div className="field">
+            <label>💰 Valor do Concorrente *</label>
+            <input type="number" step="0.01" placeholder="Ex: 350.00" value={concForm1.valor}
+              onChange={e=>setConcForm1(f=>({...f,valor:e.target.value}))} style={{width:"100%",boxSizing:"border-box"}}/>
+          </div>
+          <div className="field">
+            <label>💳 Forma de Pagamento *</label>
+            <select value={concForm1.pgto} onChange={e=>setConcForm1(f=>({...f,pgto:e.target.value}))} style={{width:"100%"}}>
+              <option value="">Selecione...</option>
+              {PGTO.map(o=><option key={o}>{o}</option>)}
+            </select>
+          </div>
+        </div>
+        {/* Foto OBRIGATÓRIA */}
+        <div className="field" style={{marginBottom:18}}>
+          <label>📸 Foto/Print do Concorrente *{!concForm1.anexo&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"14px 20px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",transition:"all .2s",flex:1}}>
+              <span style={{fontSize:20}}>{concForm1.anexo?"✅":"📎"}</span>
+              <div>
+                <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar imagem"}</div>
+                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Clique para trocar":"Obrigatório — print ou foto do concorrente"}</div>
+              </div>
+              <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+                const file=e.target.files[0];if(!file)return;
+                if(file.size>5*1024*1024){toast_("Imagem muito grande. Máx 5MB.",false);return;}
+                const reader=new FileReader();
+                reader.onload=ev=>{setConcForm1(f=>({...f,anexo:{base64:ev.target.result,tipo:file.type,nome:file.name}}));};
+                reader.readAsDataURL(file);
+              }}/>
+            </label>
+            {concForm1.anexo&&<>
+              <img src={concForm1.anexo.base64} alt="preview" style={{width:64,height:64,objectFit:"cover",borderRadius:8,border:"2px solid #4CAF50"}}/>
+              <button onClick={()=>setConcForm1(f=>({...f,anexo:null}))} style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:22,padding:4}}>×</button>
+            </>}
+          </div>
+        </div>
+        <button className="btn-red" onClick={()=>{
+          if(!concForm1.medida||!concForm1.segmento||!concForm1.loja||!concForm1.empresa){toast_("Preencha medida, segmento, loja e concorrente.",false);return;}
+          if(!concForm1.valor){toast_("Informe o valor do concorrente.",false);return;}
+          if(!concForm1.pgto){toast_("Selecione a forma de pagamento.",false);return;}
+          if(!concForm1.anexo){toast_("A foto/print do concorrente é obrigatória.",false);return;}
+          doAddConc1();
+        }} style={{width:"100%",padding:"14px",fontSize:15,letterSpacing:1}}>
+          ✅ SALVAR REGISTRO DE CONCORRÊNCIA
+        </button>
+      </div>
+      </>)}
+      {tab==="cadastrar"&&(hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
           <div><div className="ph-t">Descontos — Cadastrar</div><div className="ph-s">Cadastre o produto aqui — informe o orçamento ou ordem de serviço.<br/>O Comercial consultará pelo número no balcão.</div></div>
         </div>
-
       </div>
       <div className="card">
         <label style={{marginBottom:6,display:"block"}}>Tipo de documento *</label>
@@ -1159,7 +1389,7 @@ export default function App(){
         <div className="fg2">
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
@@ -1250,7 +1480,6 @@ export default function App(){
         <button className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
       </div>
     </>)}
-
     {/* CONSULTAR */}
     {tab==="consultar"&&(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
@@ -1291,9 +1520,9 @@ export default function App(){
               )}
               {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
               {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
-            <button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
+            {(!result.liberado||(result.liberado&&session.role==="admin"))&&<button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
               {result.liberado?"✓ LIBERADO — Remover":"Liberar Desconto"}
-            </button>
+            </button>}
             {result.liberado&&result.liberadorNome&&<div style={{background:"rgba(0,0,0,.3)",borderRadius:5,padding:"4px 10px",display:"flex",alignItems:"center",gap:5}}>
               ✓<span style={{fontSize:10,color:"rgba(255,255,255,.7)",fontWeight:600}}>{result.liberadorNome}</span>
             </div>}
@@ -1369,7 +1598,6 @@ export default function App(){
           </div>}
       </div>)}
       {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
-
       {/* Lista */}
       <div style={{marginTop:8,marginBottom:12}}>
         <p className="sec-t">Todos os Descontos</p>
@@ -1422,7 +1650,6 @@ export default function App(){
         ))}</div>
       )}
     </>)}
-
     {/* USERS */}
     {tab==="users"&&session.role==="admin"&&(<>
       <div style={{marginBottom:20}}><p className="sec-t">Gerenciar Usuários</p><p className="sec-s">Somente o administrador pode criar ou remover acessos.</p></div>
@@ -1436,7 +1663,7 @@ export default function App(){
           <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Descontos — cadastro completo"],["comercial","🤝 Comercial — consultar"],["cadastrar1","🔍 Inteligência — só concorrentes"],["cadastrar2","✏️ Cadastro Completo + Consultar"]].map(([val,lbl])=>(
+                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
@@ -1451,9 +1678,9 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."]].map(([icon,lbl])=>(
+          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
@@ -1462,7 +1689,7 @@ export default function App(){
           const roles=(u.role||"").split(",").filter(Boolean);
           const has=r=>roles.includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1490,7 +1717,7 @@ export default function App(){
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"]].map(([role,cor])=>(
+            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
@@ -1506,17 +1733,38 @@ export default function App(){
             ))}
             {/* Remove button */}
             <div style={{display:"flex",justifyContent:"center"}}>
-              <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              <div style={{display:"flex",gap:6,flexDirection:"column"}}>
+                <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
+                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+              </div>
             </div>
           </div>
           );
         })}</div>
       </>)}
       <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+      <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginTop:20}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff",marginBottom:4}}>👤 Gerenciar Vendedores</div>
+        <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores sem precisar mexer no código</div>
+        <div style={{display:"flex",gap:10,marginBottom:16}}>
+          <input placeholder="Nome do novo vendedor..." value={novoVendedor} onChange={e=>setNovoVendedor(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&novoVendedor.trim()){const novo=novoVendedor.trim();if(!vendedores.includes(novo)){saveVendedores([...vendedores,novo].sort());}setNovoVendedor("");}}}
+            style={{flex:1,boxSizing:"border-box"}}/>
+          <button onClick={()=>{const novo=novoVendedor.trim();if(!novo){toast_("Digite o nome.",false);return;}if(vendedores.includes(novo)){toast_("Já existe.",false);return;}saveVendedores([...vendedores,novo].sort());setNovoVendedor("");}}
+            style={{background:GREEN,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontWeight:700,cursor:"pointer",fontSize:13,whiteSpace:"nowrap"}}>+ Adicionar</button>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {vendedores.map(v=>(
+            <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #2E2E2E",borderRadius:20,padding:"6px 14px"}}>
+              <span style={{fontSize:13,fontWeight:600,color:TEXT}}>{v}</span>
+              <button onClick={()=>{if(!window.confirm(`Remover "${v}"?`))return;saveVendedores(vendedores.filter(x=>x!==v));}}
+                style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:16,lineHeight:1,padding:0,fontWeight:700}}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
     </>)}
-
     </div>
-
     {/* EXPORT MODAL */}
     {imgModal&&(
       <div onClick={()=>setImgModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,cursor:"zoom-out"}}>
@@ -1609,8 +1857,6 @@ export default function App(){
         </div>
       </div>
     )}
-
-
     {galeriaModal&&(
       <div onClick={()=>setGaleriaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 16px",overflowY:"auto"}}>
         <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1100}}>
@@ -1644,13 +1890,13 @@ export default function App(){
                   </button>}
                 </div>
                 {/* Imagem */}
-                <img
-                  src={q.anexoBase64}
-                  alt={q.anexoNome}
-                  onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})}
-                  style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}}
-                  title="Clique para ampliar"
-                />
+                {q.anexoBase64
+                  ?<img src={q.anexoBase64} alt={q.anexoNome} onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})} style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}} title="Clique para ampliar"/>
+                  :<div style={{width:"100%",height:180,background:"#111",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <div style={{width:28,height:28,border:"3px solid #2E2E2E",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                    <div style={{fontSize:11,color:MUTED}}>Carregando imagem...</div>
+                  </div>
+                }
                 {/* Corpo do card */}
                 <div style={{padding:"10px 12px",flex:1}}>
                   {isConc
@@ -1736,8 +1982,6 @@ export default function App(){
         </div>
       </div>
     )}
-
-
     {perdidaModal&&(
       <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
@@ -1776,5 +2020,97 @@ export default function App(){
       </div>
     )}
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
+    {/* Modal alterar senha pelo admin */}
+    {adminSenhaModal&&<div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Alterar Senha</div>
+        <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} — {adminSenhaModal.email}</div>
+        <div className="field" style={{marginBottom:16}}>
+          <label>Nova Senha</label>
+          <input type="password" placeholder="Digite a nova senha" value={adminNovaSenha} onChange={e=>setAdminNovaSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdminAlterarSenha()} autoFocus style={{width:"100%",boxSizing:"border-box"}}/>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar Nova Senha</button>
+        </div>
+      </div>
+    </div>}
+    {/* Logs tab view */}
+    {tab==="logs"&&session.role==="admin"&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Busca por Medida</div>
+        <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
+        <div style={{display:"flex",gap:10}}>
+          {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:20}}>
+        {logs.length===0?<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log ainda.</div>:
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+          <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","E-mail","Medida","Loja","IP","Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+          <tbody>{logs.map((l,i)=><tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:l.sucesso?"transparent":"#1A0000"}}>
+            <td style={{padding:"10px 12px",color:"#888",fontSize:11}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+            <td style={{padding:"10px 12px",fontWeight:600,color:l.sucesso?TEXT:RED}}>{l.email}</td>
+            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||"—"}</td>
+            <td style={{padding:"10px 12px",color:MUTED}}>{l.loja||"—"}</td>
+            <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
+            <td style={{padding:"10px 12px"}}>{l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>✅ Sucesso</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>❌ {l.motivo||"Bloqueado"}</span>}</td>
+          </tr>)}</tbody>
+        </table>}
+      </div>
+    </div>}
+    {/* Atividade tab view */}
+    {tab==="atividade"&&session.role==="admin"&&(()=>{
+      const statsMap={};
+      users.forEach(u=>{statsMap[u.email]={nome:u.nome||u.email,email:u.email,role:u.role,logins:0,ultimoAcesso:u.ultimoAcesso||null,negociacoes:0,liberacoes:0,tipo:"sistema"};});
+      logs.filter(l=>l.sucesso).forEach(l=>{if(!statsMap[l.email]){statsMap[l.email]={nome:l.email,email:l.email,role:"publico",logins:0,ultimoAcesso:null,negociacoes:0,liberacoes:0,tipo:"publico"};}});
+      quotes.filter(q=>q.vendedor).forEach(q=>{if(q.negociadorEmail&&statsMap[q.negociadorEmail])statsMap[q.negociadorEmail].negociacoes++;});
+      logsUsuarios.forEach(l=>{if(statsMap[l.email]){statsMap[l.email].logins++;if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso))statsMap[l.email].ultimoAcesso=l.created_at;}});
+      logs.filter(l=>l.sucesso).forEach(l=>{if(statsMap[l.email]&&statsMap[l.email].tipo==="publico"){statsMap[l.email].logins++;if(!statsMap[l.email].ultimoAcesso||new Date(l.created_at)>new Date(statsMap[l.email].ultimoAcesso))statsMap[l.email].ultimoAcesso=l.created_at;}});
+      const statsList=Object.values(statsMap).sort((a,b)=>{const aO=a.ultimoAcesso&&(new Date()-new Date(a.ultimoAcesso))<15*60*1000;const bO=b.ultimoAcesso&&(new Date()-new Date(b.ultimoAcesso))<15*60*1000;if(aO&&!bO)return -1;if(!aO&&bO)return 1;return b.logins-a.logins;});
+      const emailStats={};const lojaStats={};
+      logs.filter(l=>l.sucesso).forEach(l=>{emailStats[l.email]=(emailStats[l.email]||0)+1;if(l.loja)lojaStats[l.loja]=(lojaStats[l.loja]||0)+1;});
+      return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📊 Atividade da Plataforma</div>
+          <div style={{fontSize:11,color:MUTED,marginTop:2}}>Visão geral de uso por usuário e consulta pública</div></div>
+          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:20}}>
+          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16,marginBottom:20}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",marginBottom:14}}>👥 ATIVIDADE POR USUÁRIO</div>
+            <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["","Usuário","Perfil","Negociações","Logins","Último Acesso"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <tbody>{statsList.map((u,i)=>{const ua=u.ultimoAcesso;const online=ua&&(new Date()-new Date(ua))<15*60*1000;
+                return(<tr key={u.email} style={{borderBottom:"1px solid #1A1A1A",background:online?"#0D1A0D":"transparent"}}>
+                  <td style={{padding:"10px 12px",textAlign:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:online?"#4CAF50":"#444",display:"inline-block",boxShadow:online?"0 0 8px #4CAF50":"none"}}/></td>
+                  <td style={{padding:"10px 12px"}}><div style={{fontWeight:700,color:TEXT,fontSize:13}}>{u.nome}</div><div style={{fontSize:10,color:MUTED}}>{u.email}</div>{online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700}}>● Online</div>}</td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:u.tipo==="publico"?"#1A1A2E":roleColor(u.role)+"22",color:u.tipo==="publico"?"#7B68EE":roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{u.tipo==="publico"?"🔗 Consulta Pública":roleName(u.role)}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"—":u.negociacoes}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
+                  <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>{ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}</td>
+                </tr>);})}</tbody>
+            </table></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📧 PESQUISAS POR E-MAIL</div>
+              {Object.entries(emailStats).sort((a,b)=>b[1]-a[1]).map(([email,cnt],i)=>(<div key={email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {email}</span>
+                <span style={{background:BLUE+"22",color:BLUE,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+              </div>))}
+            </div>
+            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📍 PESQUISAS POR LOJA</div>
+              {Object.entries(lojaStats).sort((a,b)=>b[1]-a[1]).map(([loja,cnt],i)=>(<div key={loja} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
+                <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {loja}</span>
+                <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
+              </div>))}
+            </div>
+          </div>
+        </div>
+      </div>);
+    })()}
   </div></div></>);
 }
