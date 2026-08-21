@@ -1389,7 +1389,7 @@ export default function App(){
         <div className="fg2">
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{VENDEDORES.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
