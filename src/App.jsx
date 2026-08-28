@@ -496,6 +496,44 @@ export default function App(){
   };
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
+  const doExportConsultaXLS=(data,statusLabel)=>{
+    const fmtValorXLS=v=>{
+      const n=parseFloat(v)||0;
+      return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    };
+    const fmtValidadeXLS=d=>d?d.split("-").reverse().join("/"):"";
+    const escXLS=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const headersXLS=["Loja","Nº do Orçamento","Vendedor Responsável","CBA","Medida","Segmento","Forma de Pagamento","Valor com Desconto","Validade"];
+    const rowsHtmlXLS=data.map(q=>(
+      "<tr>"+
+      "<td>"+escXLS(q.loja)+"</td>"+
+      "<td>"+escXLS(q.numero)+"</td>"+
+      "<td>"+escXLS(q.vendedor||"—")+"</td>"+
+      "<td>"+escXLS(q.cba)+"</td>"+
+      "<td>"+escXLS(q.medida)+"</td>"+
+      "<td>"+escXLS(q.segmento)+"</td>"+
+      "<td>"+escXLS(q.pgto)+"</td>"+
+      "<td>"+escXLS(fmtValorXLS(q.valor))+"</td>"+
+      "<td>"+escXLS(fmtValidadeXLS(q.validade))+"</td>"+
+      "</tr>"
+    )).join("");
+    const tableHtmlXLS="<table border=\"1\"><thead><tr>"+headersXLS.map(h=>"<th>"+h+"</th>").join("")+"</tr></thead><tbody>"+rowsHtmlXLS+"</tbody></table>";
+    const excelHtmlXLS="<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">"+
+      "<head><meta charset=\"utf-8\" />"+
+      "<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>"+
+      "<x:Name>"+statusLabel+"</x:Name>"+
+      "<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>"+
+      "</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->"+
+      "</head><body>"+tableHtmlXLS+"</body></html>";
+    const blob=new Blob(["\ufeff"+excelHtmlXLS],{type:"application/vnd.ms-excel"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download="Fox_Consulta_"+statusLabel.replace(/\s+/g,"_")+"_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".xls";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast_("Planilha gerada! Abra o arquivo .xls no Excel.");
+  };
   const registrarLogin=async(email,nome)=>{
     try{
       const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
@@ -1489,7 +1527,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>exportXLS(quotesPorStatus)}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>doExportConsultaXLS(quotesPorStatus,filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas")}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
