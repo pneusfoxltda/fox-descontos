@@ -304,6 +304,9 @@ export default function App(){
   const[perdidaModal,setPerdidaModal]=useState(null);
   const[motivoInput,setMotivoInput]=useState("");
   const[galeriaModal,setGaleriaModal]=useState(null);
+  const[showExportDateModal,setShowExportDateModal]=useState(false);
+  const[exportDateFiltro,setExportDateFiltro]=useState({de:"",ate:""});
+  const[exportDataPendente,setExportDataPendente]=useState(null);
   useEffect(()=>{
     if(tab!=="dashboard")return;
     window.scrollTo({top:0,behavior:"instant"});
@@ -496,43 +499,54 @@ export default function App(){
   };
   const exportCSV=(data)=>doExport(data);
   const exportXLS=(data)=>doExport(data);
-  const doExportConsultaXLS=(data,statusLabel)=>{
-    const fmtValorXLS=v=>{
-      const n=parseFloat(v)||0;
-      return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-    };
+  const doExportConsultaXLS=(data,statusLabel,dateRange)=>{
+    const{de,ate}=dateRange||{de:"",ate:""};
+    let dadosFiltrados=data;
+    if(de)dadosFiltrados=dadosFiltrados.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)>=de);
+    if(ate)dadosFiltrados=dadosFiltrados.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)<=ate);
+    const fmtValorXLS=v=>{const n=parseFloat(v)||0;return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
     const fmtValidadeXLS=d=>d?d.split("-").reverse().join("/"):"";
-    const escXLS=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const headersXLS=["Loja","Nº do Orçamento","Vendedor Responsável","CBA","Medida","Segmento","Forma de Pagamento","Valor com Desconto","Validade"];
-    const rowsHtmlXLS=data.map(q=>(
-      "<tr>"+
-      "<td>"+escXLS(q.loja)+"</td>"+
-      "<td>"+escXLS(q.numero)+"</td>"+
-      "<td>"+escXLS(q.vendedor||"—")+"</td>"+
-      "<td>"+escXLS(q.cba)+"</td>"+
-      "<td>"+escXLS(q.medida)+"</td>"+
-      "<td>"+escXLS(q.segmento)+"</td>"+
-      "<td>"+escXLS(q.pgto)+"</td>"+
-      "<td>"+escXLS(fmtValorXLS(q.valor))+"</td>"+
-      "<td>"+escXLS(fmtValidadeXLS(q.validade))+"</td>"+
-      "</tr>"
-    )).join("");
-    const tableHtmlXLS="<table border=\"1\"><thead><tr>"+headersXLS.map(h=>"<th>"+h+"</th>").join("")+"</tr></thead><tbody>"+rowsHtmlXLS+"</tbody></table>";
+    const fmtDataReg=d=>{if(!d)return"—";try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");}};
+    const escXLS=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g," ").replace(/\r/g,"");
+    const headersXLS=["Nº do Orçamento","CBA","Valor com Desconto","Forma de Pagamento","Validade","Observações","Concorrência","Valor Concorrência","Pgto Concorrência","Loja","Vendedor Responsável","Data de Registro"];
+    const rowsHtmlXLS=dadosFiltrados.map(q=>{
+      const concs=parseConcObs(q.obs||"");
+      const concNome=concs.length>0?concs.map(c=>c.empresa).join(" | "):"—";
+      const concValorStr=concs.length>0?concs.map(c=>c.valor?fmtValorXLS(c.valor):"—").join(" | "):"—";
+      const concPgtoStr=concs.length>0?concs.map(c=>c.pgto||"—").join(" | "):"—";
+      const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0].split("CONCORRENTES:")[0].trim();
+      return"<tr>"+
+        "<td>"+escXLS(q.numero)+"</td>"+
+        "<td>"+escXLS(q.cba)+"</td>"+
+        "<td>"+escXLS(fmtValorXLS(q.valor))+"</td>"+
+        "<td>"+escXLS(q.pgto)+"</td>"+
+        "<td>"+escXLS(fmtValidadeXLS(q.validade))+"</td>"+
+        "<td>"+escXLS(obsLimpa)+"</td>"+
+        "<td>"+escXLS(concNome)+"</td>"+
+        "<td>"+escXLS(concValorStr)+"</td>"+
+        "<td>"+escXLS(concPgtoStr)+"</td>"+
+        "<td>"+escXLS(q.loja)+"</td>"+
+        "<td>"+escXLS(q.vendedor||"—")+"</td>"+
+        "<td>"+escXLS(fmtDataReg(q.criadoEm))+"</td>"+
+        "</tr>";
+    }).join("");
+    const tableHtmlXLS="<table border=\"1\"><thead><tr>"+headersXLS.map(h=>"<th style=\"background:#CC1F1F;color:#fff;padding:6px 10px;font-weight:bold;\">"+h+"</th>").join("")+"</tr></thead><tbody>"+rowsHtmlXLS+"</tbody></table>";
     const excelHtmlXLS="<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">"+
       "<head><meta charset=\"utf-8\" />"+
       "<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>"+
-      "<x:Name>"+statusLabel+"</x:Name>"+
+      "<x:Name>Fox Negociações</x:Name>"+
       "<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>"+
       "</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->"+
       "</head><body>"+tableHtmlXLS+"</body></html>";
+    const sufixoData=(de||ate)?("_"+(de?de.split("-").reverse().join(""):"")+(de&&ate?"_a_":"")+(ate?ate.split("-").reverse().join(""):"")):"";
     const blob=new Blob(["\ufeff"+excelHtmlXLS],{type:"application/vnd.ms-excel"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
-    a.download="Fox_Consulta_"+statusLabel.replace(/\s+/g,"_")+"_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".xls";
+    a.download="Fox_Negociacoes_"+statusLabel.replace(/\s+/g,"_")+sufixoData+".xls";
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast_("Planilha gerada! Abra o arquivo .xls no Excel.");
+    toast_("✅ Planilha gerada! "+dadosFiltrados.length+" registro(s). Abra o arquivo .xls no Excel.");
   };
   const registrarLogin=async(email,nome)=>{
     try{
@@ -1527,7 +1541,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>doExportConsultaXLS(quotesPorStatus,filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas")}>Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -2055,6 +2069,43 @@ export default function App(){
           <div style={{display:"flex",gap:10,justifyContent:"center"}}>
             <button onClick={()=>setShowConcAviso(false)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Voltar e adicionar</button>
             <button onClick={()=>{setShowConcAviso(false);doAdd(true);}} style={{background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar mesmo assim</button>
+          </div>
+        </div>
+      </div>
+    )}
+    {showExportDateModal&&exportDataPendente&&(
+      <div onClick={()=>setShowExportDateModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #CC1F1F",borderRadius:14,padding:"28px 32px",maxWidth:460,width:"100%",boxShadow:"0 8px 40px #000"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:1,marginBottom:4}}>📊 Gerar Planilha — {exportDataPendente.statusLabel}</div>
+          <div style={{fontSize:13,color:"#888",marginBottom:20,lineHeight:1.5}}>
+            Filtre por <strong style={{color:"#fff"}}>data de registro</strong> da negociação.<br/>
+            <span style={{fontSize:11}}>Deixe em branco para exportar todos os {exportDataPendente.data.length} registros.</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data inicial</label>
+              <input type="date" value={exportDateFiltro.de} onChange={e=>setExportDateFiltro(f=>({...f,de:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"#111",border:"1px solid #3A3A3A",borderRadius:8,color:"#fff",padding:"10px 12px",fontSize:14}}/>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data final</label>
+              <input type="date" value={exportDateFiltro.ate} onChange={e=>setExportDateFiltro(f=>({...f,ate:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"#111",border:"1px solid #3A3A3A",borderRadius:8,color:"#fff",padding:"10px 12px",fontSize:14}}/>
+            </div>
+          </div>
+          {(exportDateFiltro.de||exportDateFiltro.ate)&&(()=>{
+            let preview=exportDataPendente.data;
+            if(exportDateFiltro.de)preview=preview.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)>=exportDateFiltro.de);
+            if(exportDateFiltro.ate)preview=preview.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)<=exportDateFiltro.ate);
+            return(<div style={{background:"#0D1117",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6090E0"}}>
+              🔍 {preview.length} registro(s) encontrados para o período selecionado
+            </div>);
+          })()}
+          <div style={{background:"#0D0D0D",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:11,color:"#666"}}>
+            <strong style={{color:"#999",display:"block",marginBottom:4}}>📋 Colunas na planilha:</strong>
+            Nº Orçamento · CBA · Valor com Desconto · Forma de Pagamento · Validade · Observações · Concorrência · Valor Concorrência · Pgto Concorrência · Loja · Vendedor · Data de Registro
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>{setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>{doExportConsultaXLS(exportDataPendente.data,exportDataPendente.statusLabel,exportDateFiltro);setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:2,background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:.5}}>⬇️ Baixar Planilha Excel</button>
           </div>
         </div>
       </div>
