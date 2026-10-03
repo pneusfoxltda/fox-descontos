@@ -1663,7 +1663,7 @@ export default function App(){
             ["liberado","Liberados",GREEN],
             ["vencido","Vencidas","#CC1F1F"]
           ].map(([v,l,c])=>{
-            const cnt = v==="todos"?quotes.length
+            const cnt = v==="todos"?quotes.filter(q=>!q.perdida).length
               :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
               :v==="pendente"?quotes.filter(q=>!q.liberado).length
               :v==="liberado"?quotes.filter(q=>q.liberado).length
