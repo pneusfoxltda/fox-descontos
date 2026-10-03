@@ -269,13 +269,13 @@ export default function App(){
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
-    if(filtroStatus==="todos")return !q.perdida;
+    if(filtroStatus==="todos")return true;
     if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
-    if(filtroStatus==="pendente")return !q.liberado&&!q.perdida;
-    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
     if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="perdida")return !!q.perdida;
-    return !q.perdida;
+    return true;
   }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
   const[anexo,setAnexo]=useState(null);
@@ -1663,11 +1663,11 @@ export default function App(){
             ["liberado","Liberados",GREEN],
             ["vencido","Vencidas","#CC1F1F"]
           ].map(([v,l,c])=>{
-            const cnt = v==="todos"?quotes.filter(q=>!q.perdida).length
-              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
-              :v==="pendente"?quotes.filter(q=>!q.liberado).length
-              :v==="liberado"?quotes.filter(q=>q.liberado).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
+            const cnt = v==="todos"?quotes.length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.perdida).length
+              :v==="pendente"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
+              :v==="liberado"?quotes.filter(q=>!!q.liberado&&!q.perdida).length
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
@@ -1677,10 +1677,10 @@ export default function App(){
       {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
         <div className="card-np">{quotes.filter(q=>{
             if(filtroStatus==="todos")return true;
-            if(filtroStatus==="liberado")return !!q.liberado;
-            if(filtroStatus==="pendente")return !q.liberado;
-            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado;
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado;
+            if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
+            if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
