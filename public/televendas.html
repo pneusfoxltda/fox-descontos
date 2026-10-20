@@ -248,16 +248,16 @@ function render() {
       <div class="d">meta diária original ${brl(setor.metaDia)}</div></div>`;
 
   document.getElementById("thead").innerHTML = `
-    <tr><th rowspan="2">Operadora</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
-      <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">Meta</th><th rowspan="2">% atingido</th>
+    <tr><th rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
+      <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">% atingido</th>
       <th rowspan="2">Meta diária<br>(meta ÷ ${DADOS.diasUteisMes})</th><th rowspan="2">Falta</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th></tr>
     <tr>${ultimos5.map(d => `<th>${ddmm(d)}</th>`).join("")}</tr>`;
 
   const linha = (o, total) => `
     <tr class="${total ? "total" : ""} ${o.ok ? "row-ok" : "row-bad"}">
-      <td>${o.nome}</td>
+      <td>${o.nome}</td><td>${brl(o.meta)}</td>
       ${o.dias.map(v => `<td class="${v === 0 ? "day-zero" : v >= o.metaDia ? "day-ok" : "day-bad"}">${brl(v)}</td>`).join("")}
-      <td>${brl(o.fat)}</td><td>${brl(o.meta)}</td>
+      <td>${brl(o.fat)}</td>
       <td class="pct ${o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
       <td>${brl(o.metaDia)}</td><td>${brl(o.falta)}</td><td>${brl(o.precisaDia)}</td>
     </tr>`;
