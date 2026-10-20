@@ -86,15 +86,15 @@
   td:first-child { background: var(--card); }
   th.dia { text-align: right; }
   tr.total td:first-child { background: var(--card); background-image: linear-gradient(rgba(127,127,127,.08), rgba(127,127,127,.08)); }
-  tr.row-ok td:first-child { color: var(--ok); }
-  tr.row-bad td:first-child { color: var(--bad); }
-  td.day-ok { color: var(--ok); }
-  td.day-bad { color: var(--bad); }
-  td.day-zero { color: var(--muted); }
+  /* cor da linha inteira conforme o resultado da operadora */
+  tr.row-ok td:first-child, tr.row-ok td.dia-v { color: var(--ok); }
+  tr.row-bad td:first-child, tr.row-bad td.dia-v { color: var(--bad); }
   td.pct { font-weight: 700; }
-  td.pct.ok { background: var(--ok-bg); }
-  td.pct.bad { background: var(--bad-bg); }
-  tr.total td { font-weight: 700; background: rgba(127,127,127,.08); border-bottom: 0; }
+  td.pct.ok { background: var(--ok-bg); color: var(--ok); }
+  td.pct.bad { background: var(--bad-bg); color: var(--bad); }
+  /* total do setor sempre em preto */
+  tr.total td, tr.total td:first-child, tr.total td.dia-v, tr.total td.pct { font-weight: 700; color: var(--ink); background-color: transparent; border-bottom: 0; }
+  tr.total { background: rgba(127,127,127,.08); }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 </style>
@@ -120,7 +120,7 @@
   <div class="legend">
     <span><i class="dot" style="background:var(--ok)"></i>No ritmo (% atingido ≥ % desejado do dia)</span>
     <span><i class="dot" style="background:var(--bad)"></i>Abaixo do ritmo</span>
-    <span>Dias: verde quando a venda do dia ≥ meta diária (meta ÷ dias úteis)</span>
+    <span>Ordenado pelo maior % atingido</span>
   </div>
 </div>
 
@@ -256,19 +256,20 @@ function render() {
 
   document.getElementById("thead").innerHTML = `
     <tr><th class="op" rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
-      <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">% atingido</th>
-      <th rowspan="2">Meta diária<br>(meta ÷ ${DADOS.diasUteisMes})</th><th rowspan="2">Falta</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th></tr>
+      <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th><th rowspan="2">% atingido</th></tr>
     <tr>${ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("")}</tr>`;
 
   const linha = (o, total) => `
-    <tr class="${total ? "total" : ""} ${o.ok ? "row-ok" : "row-bad"}">
+    <tr class="${total ? "total" : o.ok ? "row-ok" : "row-bad"}">
       <td title="${o.nome}">${o.curto || o.nome}</td><td>${brl0(o.meta)}</td>
-      ${o.dias.map(v => `<td class="${v === 0 ? "day-zero" : v >= o.metaDia ? "day-ok" : "day-bad"}">${brl0(v)}</td>`).join("")}
+      ${o.dias.map(v => `<td class="dia-v">${brl0(v)}</td>`).join("")}
       <td>${brl(o.fat)}</td>
-      <td class="pct ${o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
-      <td>${brl(o.metaDia)}</td><td>${brl(o.falta)}</td><td>${brl(o.precisaDia)}</td>
+      <td>${brl(o.precisaDia)}</td>
+      <td class="pct ${total ? "" : o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
     </tr>`;
-  document.getElementById("tbody").innerHTML = ops.map(o => linha(o, false)).join("") + linha(setor, true);
+  // maior % atingido primeiro
+  const ordem = [...ops].sort((a, b) => b.p - a.p);
+  document.getElementById("tbody").innerHTML = ordem.map(o => linha(o, false)).join("") + linha(setor, true);
 }
 
 document.getElementById("metas").addEventListener("click", e => {
