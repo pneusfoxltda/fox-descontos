@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fox Pneus — Cadastrar Desconto</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:38px 34px;width:100%;max-width:380px;}
+.login-logo{display:flex;justify-content:center;margin-bottom:22px;}
+.logo-circle{width:60px;height:60px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:1px;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:#888;text-align:center;margin-bottom:24px;}
+.login-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+.lf{margin-bottom:12px;}
+.lf label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.lf input{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;width:100%;}
+.lf input:focus{border-color:#CC1F1F;}
+.btn-login{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:background .15s;width:100%;margin-top:4px;}
+.btn-login:hover{background:#E02020;}
+
+/* ── MAIN SCREEN ── */
+#main-screen{display:none;}
+.top-bar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
+.top-brand{display:flex;align-items:center;gap:10px;}
+.top-logo{width:36px;height:36px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;}
+.top-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;}
+.top-sub{font-size:11px;color:#666;}
+.top-user{display:flex;align-items:center;gap:10px;}
+.user-name{font-size:13px;color:#aaa;}
+.btn-logout{background:transparent;border:1px solid #333;border-radius:6px;color:#888;font-size:12px;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
+
+.content{max-width:780px;margin:0 auto;padding:28px 16px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;margin-bottom:6px;}
+.section-sub{font-size:12px;color:#666;margin-bottom:24px;}
+
+/* ── TYPE TOGGLE ── */
+.tipo-toggle{display:flex;gap:0;margin-bottom:22px;border-radius:8px;overflow:hidden;border:1px solid #2E2E2E;}
+.tipo-btn{flex:1;padding:12px;background:#111;color:#888;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+.tipo-btn.active{background:#CC1F1F22;color:#CC1F1F;border-top:2px solid #CC1F1F;}
+
+/* ── FORM ── */
+.form-card{background:#161616;border:1px solid #2A2A2A;border-radius:12px;padding:22px;}
+.form-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.field{flex:1;min-width:200px;}
+.field label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;background:#0D0D0D;border:1px solid #2E2E2E;border-radius:8px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:13px;padding:10px 13px;outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#CC1F1F;}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.field textarea{resize:vertical;min-height:80px;}
+.phone-field label{color:#3498DB;}
+.phone-field input{border-color:#1e3a5f;}
+.phone-field input:focus{border-color:#3498DB;}
+
+.form-divider{height:1px;background:#1E1E1E;margin:20px 0;}
+.form-section-label{font-size:11px;font-weight:700;color:#555;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;}
+
+.btn-submit{width:100%;background:#CC1F1F;color:#fff;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;padding:15px;cursor:pointer;transition:background .15s;margin-top:8px;}
+.btn-submit:hover{background:#E02020;}
+.btn-submit:disabled{background:#4A2E2E;color:#888;cursor:default;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;border:1px solid #333;border-radius:9px;padding:14px 22px;font-size:14px;color:#F0F0F0;z-index:9999;display:none;max-width:420px;text-align:center;box-shadow:0 4px 20px #0009;}
+.toast.ok{border-color:#27ae60;background:#0f2d1a;}
+.toast.err{border-color:#CC1F1F;background:#2E1A1A;}
+
+@media(max-width:500px){.form-row{flex-direction:column;}.field{min-width:0;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><div class="logo-circle">🦊</div></div>
+    <h1 class="login-t">FOX PNEUS</h1>
+    <p class="login-s">Cadastro de Desconto Autorizado</p>
+    <div class="login-err" id="login-err"></div>
+    <div class="lf"><label>E-mail</label><input type="email" id="l-email" placeholder="seu@email.com" autocomplete="email"></div>
+    <div class="lf"><label>Senha</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" id="btn-login">Entrar</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN SCREEN ═══ -->
+<div id="main-screen">
+  <div class="top-bar">
+    <div class="top-brand">
+      <div class="top-logo">🦊</div>
+      <div>
+        <div class="top-title">FOX PNEUS</div>
+        <div class="top-sub">Cadastrar Desconto</div>
+      </div>
+    </div>
+    <div class="top-user">
+      <span class="user-name" id="user-name"></span>
+      <button class="btn-logout" id="btn-logout">Sair</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <p class="section-title">Novo Desconto</p>
+    <p class="section-sub">Preencha os dados abaixo. O desconto será registrado e aparecerá no sistema para liberação.</p>
+
+    <!-- TIPO -->
+    <div class="tipo-toggle">
+      <button class="tipo-btn active" id="btn-orc" onclick="setTipo('orcamento')">Orçamento</button>
+      <button class="tipo-btn" id="btn-os" onclick="setTipo('os')">Ordem de Serviço (O.S.)</button>
+    </div>
+
+    <div class="form-card">
+      <!-- Nº + LOJA -->
+      <div class="form-row">
+        <div class="field">
+          <label id="num-label">Nº do Orçamento *</label>
+          <input type="text" id="f-numero" placeholder="Ex: 000123" maxlength="20">
+        </div>
+        <div class="field">
+          <label>Loja *</label>
+          <select id="f-loja">
+            <option value="">Selecione...</option>
+            <option>CAUTO/MATRIZ PVH</option>
+            <option>CAUTO ARIQUEMES</option>
+            <option>CAUTO JIPARANA</option>
+            <option>CAUTO CACOAL</option>
+            <option>CAUTO VILHENA</option>
+            <option>PARINTINS - MANAUS</option>
+            <option>XAPURI - RIO BRANCO</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- VENDEDOR -->
+      <div class="form-row">
+        <div class="field">
+          <label>Vendedor Responsável *</label>
+          <select id="f-vendedor">
+            <option value="">Selecione o vendedor...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-label">Produto</p>
+
+      <!-- CBA + MEDIDA + SEGMENTO -->
+      <div class="form-row">
+        <div class="field" style="flex:.8;">
+          <label>CBA *</label>
+          <input type="text" id="f-cba" placeholder="Ex: 0000" maxlength="20">
+        </div>
+        <div class="field" style="flex:1.2;">
+          <label>Medida do Pneu *</label>
+          <input type="text" id="f-medida" placeholder="Ex: 175/65R17" maxlength="30">
+        </div>
+        <div class="field">
+          <label>Segmento *</label>
+          <select id="f-segmento">
+            <option value="">Selecione...</option>
+            <option>Liso</option>
+            <option>A/T</option>
+            <option>A/T+</option>
+            <option>T/A</option>
+            <option>CARGA</option>
+            <option>LISO MISTO</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-label">Cliente</p>
+
+      <!-- TELEFONE DO CLIENTE -->
+      <div class="form-row">
+        <div class="field phone-field">
+          <label>📱 Telefone do Cliente</label>
+          <input type="tel" id="f-telefone" placeholder="(00) 00000-0000" maxlength="20">
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-label">Negociação</p>
+
+      <!-- VALOR + PGTO + VALIDADE -->
+      <div class="form-row">
+        <div class="field">
+          <label>Valor com Desconto *</label>
+          <input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="field">
+          <label>Forma de Pagamento *</label>
+          <select id="f-pgto">
+            <option value="">Selecione...</option>
+            <option>À vista</option>
+            <option>2x no cartão</option>
+            <option>3x no cartão</option>
+            <option>4x no cartão</option>
+            <option>5x no cartão</option>
+            <option>6x no cartão</option>
+            <option>7x no cartão</option>
+            <option>8x no cartão</option>
+            <option>9x no cartão</option>
+            <option>10x no cartão</option>
+            <option>11x no cartão</option>
+            <option>12x no cartão</option>
+            <option>13x no cartão</option>
+            <option>14x no cartão</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Validade *</label>
+          <input type="date" id="f-validade">
+        </div>
+      </div>
+
+      <!-- OBS / MOTIVO -->
+      <div class="form-row">
+        <div class="field">
+          <label>Motivo / Observações</label>
+          <textarea id="f-obs" placeholder="Descreva o motivo do desconto autorizado..."></textarea>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="btn-salvar" onclick="salvar()">💾 Salvar Desconto Autorizado</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const ADMIN_USER = "ti@redefox.com.br";
+const ADMIN_PASS = "FoxAdmin@2025";
+
+const H = {"apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY};
+const HJ = {...H, "Content-Type": "application/json", "Prefer": "return=minimal"};
+
+let session = null;
+let tipo = "orcamento";
+
+// ── TOAST ──
+function toast(msg, ok = true) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "toast " + (ok ? "ok" : "err");
+  el.style.display = "block";
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = "none"; }, 3500);
+}
+
+// ── TIPO ──
+function setTipo(t) {
+  tipo = t;
+  document.getElementById("btn-orc").classList.toggle("active", t === "orcamento");
+  document.getElementById("btn-os").classList.toggle("active", t === "os");
+  document.getElementById("num-label").textContent = t === "orcamento" ? "Nº do Orçamento *" : "Nº da O.S. *";
+  document.getElementById("f-numero").placeholder = t === "orcamento" ? "Ex: 000123" : "Ex: 001234";
+}
+
+// ── SESSION ──
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem("fox_cad_session")); } catch { return null; }
+}
+function saveSession(s) {
+  sessionStorage.setItem("fox_cad_session", JSON.stringify(s));
+}
+function clearSession() {
+  sessionStorage.removeItem("fox_cad_session");
+}
+
+// ── VENDEDORES ──
+async function loadVendedores() {
+  try {
+    const r = await fetch(SUPA_URL + "/rest/v1/configuracoes?chave=eq.vendedores&select=valor", { headers: H });
+    const d = await r.json();
+    if (d && d[0] && d[0].valor) {
+      const list = d[0].valor.split(",").map(v => v.trim()).filter(Boolean);
+      const sel = document.getElementById("f-vendedor");
+      sel.innerHTML = '<option value="">Selecione o vendedor...</option>';
+      list.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = v;
+        sel.appendChild(o);
+      });
+    }
+  } catch(e) {}
+}
+
+// ── SHOW MAIN ──
+function showMain(s) {
+  session = s;
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("main-screen").style.display = "block";
+  document.getElementById("user-name").textContent = s.username;
+  // set default validade = hoje + 7 dias
+  const d = new Date(); d.setDate(d.getDate() + 7);
+  document.getElementById("f-validade").value = d.toISOString().slice(0, 10);
+  loadVendedores();
+}
+
+// ── LOGIN ──
+async function doLogin() {
+  const email = document.getElementById("l-email").value.trim().toLowerCase();
+  const pass = document.getElementById("l-pass").value;
+  const errEl = document.getElementById("login-err");
+  errEl.style.display = "none";
+  const btn = document.getElementById("btn-login");
+  btn.textContent = "Entrando..."; btn.disabled = true;
+
+  // Admin fixo
+  if (email === ADMIN_USER.toLowerCase() && pass === ADMIN_PASS) {
+    const s = { username: "Admin", email: ADMIN_USER, role: "admin" };
+    saveSession(s); showMain(s);
+    btn.textContent = "Entrar"; btn.disabled = false;
+    return;
+  }
+
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(email)}&select=nome,email,senha,role`, { headers: H });
+    const d = await r.json();
+    if (d && d[0] && d[0].senha === pass) {
+      const u = d[0];
+      const s = { username: u.nome || u.email, email: u.email, role: u.role };
+      saveSession(s); showMain(s);
+    } else {
+      errEl.textContent = "Usuário ou senha incorretos.";
+      errEl.style.display = "block";
+    }
+  } catch(e) {
+    errEl.textContent = "Erro ao conectar. Tente novamente.";
+    errEl.style.display = "block";
+  }
+  btn.textContent = "Entrar"; btn.disabled = false;
+}
+
+// ── LOGOUT ──
+document.getElementById("btn-logout").onclick = () => {
+  clearSession();
+  session = null;
+  document.getElementById("main-screen").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("l-email").value = "";
+  document.getElementById("l-pass").value = "";
+};
+
+// ── LOGIN EVENTS ──
+document.getElementById("btn-login").onclick = doLogin;
+document.getElementById("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+document.getElementById("l-email").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("l-pass").focus(); });
+
+// ── SALVAR ──
+async function salvar() {
+  const numero = document.getElementById("f-numero").value.trim();
+  const loja = document.getElementById("f-loja").value;
+  const vendedor = document.getElementById("f-vendedor").value;
+  const cba = document.getElementById("f-cba").value.trim();
+  const medida = document.getElementById("f-medida").value.trim().toUpperCase();
+  const segmento = document.getElementById("f-segmento").value;
+  const telefone = document.getElementById("f-telefone").value.trim();
+  const valor = parseFloat(document.getElementById("f-valor").value) || 0;
+  const pgto = document.getElementById("f-pgto").value;
+  const validade = document.getElementById("f-validade").value;
+  const obs = document.getElementById("f-obs").value.trim();
+
+  // Validação
+  if (!numero) { toast("⚠️ Informe o número do " + (tipo === "orcamento" ? "orçamento" : "O.S."), false); return; }
+  if (!loja) { toast("⚠️ Selecione a loja.", false); return; }
+  if (!vendedor) { toast("⚠️ Selecione o vendedor.", false); return; }
+  if (!cba) { toast("⚠️ Informe o CBA.", false); return; }
+  if (!medida) { toast("⚠️ Informe a medida do pneu.", false); return; }
+  if (!segmento) { toast("⚠️ Selecione o segmento.", false); return; }
+  if (valor <= 0) { toast("⚠️ Informe o valor com desconto.", false); return; }
+  if (!pgto) { toast("⚠️ Selecione a forma de pagamento.", false); return; }
+  if (!validade) { toast("⚠️ Informe a validade.", false); return; }
+
+  const btn = document.getElementById("btn-salvar");
+  btn.disabled = true; btn.textContent = "Salvando...";
+
+  const payload = {
+    tipo: tipo,
+    numero: numero,
+    cba: cba,
+    medida: medida,
+    segmento: segmento,
+    loja: loja,
+    vendedor: vendedor || null,
+    valor: valor,
+    pgto: pgto,
+    validade: validade,
+    obs: obs || null,
+    telefone_cliente: telefone || null,
+    liberado: false,
+    negociador_nome: session.username,
+    negociador_email: session.email,
+    erro_interno: false,
+    curtidas: 0
+  };
+
+  try {
+    const r = await fetch(SUPA_URL + "/rest/v1/descontos", {
+      method: "POST",
+      headers: HJ,
+      body: JSON.stringify(payload)
+    });
+    if (r.ok || r.status === 201) {
+      toast("✅ Desconto cadastrado com sucesso! Aguardando liberação.");
+      // limpar form
+      document.getElementById("f-numero").value = "";
+      document.getElementById("f-cba").value = "";
+      document.getElementById("f-medida").value = "";
+      document.getElementById("f-segmento").value = "";
+      document.getElementById("f-telefone").value = "";
+      document.getElementById("f-valor").value = "";
+      document.getElementById("f-pgto").value = "";
+      document.getElementById("f-obs").value = "";
+      document.getElementById("f-loja").value = "";
+      document.getElementById("f-vendedor").value = "";
+      const vd = new Date(); vd.setDate(vd.getDate() + 7);
+      document.getElementById("f-validade").value = vd.toISOString().slice(0, 10);
+    } else {
+      const err = await r.text();
+      console.error(err);
+      toast("❌ Erro ao salvar. Verifique os dados e tente novamente.", false);
+    }
+  } catch(e) {
+    toast("❌ Erro de conexão. Tente novamente.", false);
+  }
+  btn.disabled = false;
+  btn.textContent = "💾 Salvar Desconto Autorizado";
+}
+
+// ── INIT ──
+(function init() {
+  const s = loadSession();
+  if (s) { showMain(s); }
+  else {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("main-screen").style.display = "none";
+  }
+})();
+</script>
+</body>
+</html>

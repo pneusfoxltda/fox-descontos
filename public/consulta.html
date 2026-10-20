@@ -1,329 +1,222 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Fox Pneus — Consulta</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fox Pneus — Consulta de Descontos</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0A0A0A;color:#F0F0F0;font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px;}
-.logo{display:flex;align-items:center;gap:12px;margin-bottom:24px;margin-top:16px;}
-.logo-text{font-size:22px;font-weight:800;letter-spacing:2px;color:#fff;}
-.logo-sub{font-size:11px;color:#555;letter-spacing:1px;text-transform:uppercase;}
-.tabs{display:flex;gap:8px;margin-bottom:20px;width:100%;max-width:540px;}
-.tab-btn{flex:1;padding:11px;background:#1C1C1C;border:1px solid #2E2E2E;border-radius:8px;color:#888;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;transition:all .2s;}
-.tab-btn.active{background:#CC1F1F22;border-color:#CC1F1F;color:#fff;}
-.card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:14px;padding:24px;width:100%;max-width:540px;margin-bottom:16px;}
-.card-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
-.row{display:flex;gap:10px;margin-bottom:8px;}
-input,select{background:#111;border:1px solid #2E2E2E;border-radius:8px;color:#F0F0F0;font-size:15px;padding:12px 14px;width:100%;outline:none;font-family:inherit;transition:border .2s;}
-input:focus,select:focus{border-color:#CC1F1F;}
-input::placeholder{color:#555;}
-.btn{background:#CC1F1F;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;padding:12px 20px;transition:background .2s;white-space:nowrap;width:100%;}
-.btn:hover{background:#E02020;}
-.btn:disabled{background:#333;color:#666;cursor:not-allowed;}
-.hint{font-size:11px;color:#555;margin-bottom:14px;}
-.result-header{background:#111;border-radius:10px;padding:16px;margin-bottom:12px;border-left:4px solid #CC1F1F;}
-.result-type{font-size:10px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-.result-num{font-size:26px;font-weight:800;color:#fff;letter-spacing:2px;}
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.field{background:#111;border-radius:8px;padding:12px 14px;}
-.field-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
-.field-value{font-size:14px;font-weight:700;color:#F0F0F0;}
-.field.full{grid-column:1/-1;}
-.field-value.valor{color:#4CAF50;font-size:17px;}
-.badge{display:inline-flex;align-items:center;gap:6px;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;margin-top:8px;}
-.badge-ok{background:#0D2010;border:1px solid #2E5A2E;color:#4CAF50;}
-.badge-warn{background:#1A1000;border:1px solid #5A4000;color:#E0A820;}
-.not-found{text-align:center;padding:28px 16px;}
-.not-found-icon{font-size:36px;margin-bottom:10px;opacity:.3;}
-.not-found-title{font-size:15px;font-weight:700;color:#CC1F1F;margin-bottom:5px;}
-.not-found-sub{font-size:12px;color:#666;}
-.loading{text-align:center;padding:20px;}
-.spinner{width:28px;height:28px;border:3px solid #2E2E2E;border-top-color:#CC1F1F;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.obs-box{background:#111;border-radius:8px;padding:14px;margin-top:10px;border-left:3px solid #2E2E2E;}
-.obs-label{font-size:10px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:6px;}
-.obs-text{font-size:13px;color:#CCC;line-height:1.6;white-space:pre-wrap;}
-.email-gate{background:#1A1A1A;border:1px solid #3A3A3A;border-radius:10px;padding:20px;margin-bottom:14px;}
-.blocked{background:#1A0000;border:1px solid #5A0000;border-radius:10px;padding:20px;text-align:center;}
-.step-label{font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
-.footer{margin-top:28px;font-size:11px;color:#333;text-align:center;}
-@media(max-width:400px){.fields{grid-column:1;grid-template-columns:1fr;}.row{flex-direction:column;}}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+
+.header{background:#111;border-bottom:1px solid #1E1E1E;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+.logo-circle{width:40px;height:40px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:#fff;}
+.brand-sub{font-size:11px;color:#555;margin-top:1px;}
+.header a{margin-left:auto;font-size:12px;color:#555;text-decoration:none;border:1px solid #2A2A2A;border-radius:6px;padding:7px 14px;transition:all .15s;white-space:nowrap;}
+.header a:hover{border-color:#CC1F1F;color:#CC1F1F;}
+
+.container{max-width:700px;margin:0 auto;padding:30px 16px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;margin-bottom:4px;}
+.page-sub{font-size:13px;color:#666;margin-bottom:24px;}
+
+.search-card{background:#161616;border:1px solid #2A2A2A;border-radius:12px;padding:20px;margin-bottom:22px;}
+.search-tabs{display:flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #2A2A2A;}
+.stab{flex:1;padding:11px;background:#0D0D0D;color:#666;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.stab.active{background:#CC1F1F22;color:#CC1F1F;}
+.search-row{display:flex;gap:10px;}
+.search-row input{flex:1;background:#0D0D0D;border:1px solid #2A2A2A;border-radius:8px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:15px;padding:13px 16px;outline:none;transition:border-color .15s;}
+.search-row input:focus{border-color:#CC1F1F;}
+.search-row input::placeholder{color:#444;}
+.btn-search{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:13px 22px;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.btn-search:hover{background:#E02020;}
+.btn-search:disabled{background:#4A1A1A;color:#666;cursor:default;}
+.search-hint{font-size:12px;color:#444;margin-top:9px;}
+
+.state-empty{text-align:center;padding:56px 20px;color:#444;}
+.state-empty .icon{font-size:44px;opacity:.3;margin-bottom:12px;}
+.state-empty p{font-size:14px;}
+.state-nf{text-align:center;padding:48px 20px;}
+.state-nf .icon{font-size:38px;margin-bottom:10px;}
+.state-nf h3{font-size:16px;color:#888;margin-bottom:6px;}
+.state-nf p{font-size:13px;color:#555;}
+.loading{text-align:center;padding:40px;color:#666;font-size:14px;}
+
+.result-header{display:flex;align-items:center;margin-bottom:14px;}
+.result-count{font-size:13px;color:#666;}
+.result-count span{color:#fff;font-weight:700;}
+
+.quote-card{background:#161616;border:1px solid #2A2A2A;border-radius:12px;margin-bottom:14px;overflow:hidden;transition:border-color .15s;}
+.quote-top{padding:15px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.quote-num{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:#CC1F1F;}
+.quote-tipo{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.badge{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;}
+.badge-lib{background:#0F2D1A;color:#27AE60;border:1px solid #1A5C32;}
+.badge-pend{background:#2A2000;color:#F39C12;border:1px solid #5C4000;}
+.badge-venc{background:#2E1A1A;color:#CC1F1F;border:1px solid #4A2E2E;}
+
+.quote-body{padding:0 18px 18px;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;}
+.ii label{display:block;font-size:10px;font-weight:700;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.ii .val{font-size:14px;color:#F0F0F0;font-weight:500;}
+.ii .val.big{font-size:22px;font-weight:700;color:#27AE60;}
+.ii .val.blue{color:#3498DB;}
+.ii .val.dim{color:#555;}
+
+.divider{height:1px;background:#1E1E1E;margin:14px 0;}
+.motivo-box{background:#0D0D0D;border:1px solid #1E1E1E;border-radius:8px;padding:12px 14px;}
+.motivo-box label{display:block;font-size:10px;font-weight:700;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.motivo-box p{font-size:13px;color:#aaa;line-height:1.6;white-space:pre-wrap;}
+
+.loja-bar{background:#111;border-top:1px solid #1E1E1E;padding:10px 18px;font-size:12px;color:#555;}
+.loja-bar span{color:#888;}
+
+@media(max-width:500px){.search-row{flex-direction:column;}.info-grid{grid-template-columns:1fr 1fr;}}
 </style>
 </head>
 <body>
-<div class="logo">
-  <div><div class="logo-text">🦊 FOX PNEUS</div><div class="logo-sub">Consulta de Descontos</div></div>
+
+<div class="header">
+  <div class="logo-circle">🦊</div>
+  <div>
+    <div class="brand-name">FOX PNEUS</div>
+    <div class="brand-sub">Consulta de Descontos — Loja</div>
+  </div>
+  <a href="/">← Sistema completo</a>
 </div>
 
-<div class="tabs">
-  <button class="tab-btn active" id="tab1-btn" onclick="switchTab(1)">📋 Busca por Cotação</button>
-  <button class="tab-btn" id="tab2-btn" onclick="switchTab(2)">🔍 Busca por Medida</button>
-</div>
+<div class="container">
+  <p class="page-title">Consultar Desconto</p>
+  <p class="page-sub">Busque pelo número do orçamento/O.S. ou pelo telefone do cliente para ver os detalhes da negociação.</p>
 
-<!-- TAB 1 -->
-<div id="tab1">
-  <div class="card">
-    <div class="card-title">🔍 Buscar Negociação</div>
-    <div class="row">
-      <input type="text" id="inp" placeholder="Número do Orçamento ou O.S." maxlength="20" autocomplete="off"/>
-      <button class="btn" id="btn1" onclick="buscarCotacao()" style="width:auto;padding:12px 20px;">BUSCAR</button>
+  <div class="search-card">
+    <div class="search-tabs">
+      <button class="stab active" id="tab-num" onclick="setTab('num')">🔢 Nº do Orçamento / O.S.</button>
+      <button class="stab" id="tab-tel" onclick="setTab('tel')">📱 Telefone do Cliente</button>
     </div>
-    <div class="hint">Digite o número exato informado pelo vendedor</div>
-    <div class="loading" id="load1" style="display:none"><div class="spinner"></div><div style="color:#666;font-size:12px;">Consultando...</div></div>
-    <div id="result1" style="display:none"></div>
-    <div id="nf1" style="display:none" class="not-found"><div class="not-found-icon">🔍</div><div class="not-found-title">Não encontrado</div><div class="not-found-sub">Verifique o número com o vendedor.</div></div>
-  </div>
-</div>
-
-<!-- TAB 2 -->
-<div id="tab2" style="display:none;width:100%;max-width:540px;flex-direction:column;">
-
-  <div id="step-email">
-    <div class="card">
-      <div class="card-title">📧 Identificação</div>
-      <div class="step-label">Informe seu e-mail institucional para continuar</div>
-      <input type="email" id="email-inp" placeholder="seu@redefox.com.br" autocomplete="email" style="margin-bottom:10px;"/>
-      <div id="email-err" style="color:#CC1F1F;font-size:12px;margin-bottom:10px;display:none;"></div>
-      <button class="btn" onclick="validarEmail()">Continuar →</button>
+    <div class="search-row">
+      <input type="text" id="sinput" placeholder="Digite o número do orçamento..."
+        autocomplete="off" onkeydown="if(event.key==='Enter')buscar()">
+      <button class="btn-search" id="sbtn" onclick="buscar()">Buscar</button>
     </div>
+    <p class="search-hint" id="shint">Ex: 000123 — busca pelo número exato ou parcial</p>
   </div>
 
-  <div id="step-busca" style="display:none;">
-    <div style="font-size:11px;color:#555;margin-bottom:10px;text-align:center;" id="email-info"></div>
-    <div class="card">
-      <div class="card-title">🔍 Buscar por Medida</div>
-      <div class="step-label" style="margin-bottom:8px;">Medida do Pneu *</div>
-      <input type="text" id="medida-inp" placeholder="Ex: 175/65R14" style="margin-bottom:10px;" autocomplete="off"/>
-      <div class="step-label" style="margin-bottom:8px;">Loja *</div>
-      <select id="loja-sel" style="margin-bottom:12px;">
-        <option value="">Selecione a loja...</option>
-        <option>CAUTO/MATRIZ PVH</option>
-        <option>CAUTO ARIQUEMES</option>
-        <option>CAUTO JIPARANA</option>
-        <option>CAUTO CACOAL</option>
-        <option>CAUTO VILHENA</option>
-        <option>PARINTINS - MANAUS</option>
-        <option>XAPURI - RIO BRANCO</option>
-      </select>
-      <div id="busca-err" style="color:#CC1F1F;font-size:12px;margin-bottom:10px;display:none;"></div>
-      <button class="btn" id="btn2" onclick="buscarMedida()">BUSCAR NEGOCIAÇÕES</button>
-    </div>
-    <div class="loading" id="load2" style="display:none"><div class="spinner"></div><div style="color:#666;font-size:12px;">Buscando...</div></div>
-    <div id="result2" style="display:none"></div>
-    <div id="nf2" style="display:none" class="not-found"><div class="not-found-icon">📭</div><div class="not-found-title">Nenhuma negociação encontrada</div><div class="not-found-sub">Nenhum registro para essa medida e loja.</div></div>
-  </div>
-
-  <div id="step-blocked" style="display:none;">
-    <div class="card blocked">
-      <div style="font-size:40px;margin-bottom:12px;">🚫</div>
-      <div style="font-size:17px;font-weight:800;color:#CC1F1F;margin-bottom:8px;">ACESSO NÃO AUTORIZADO</div>
-      <div style="font-size:13px;color:#888;line-height:1.7;" id="blocked-msg">Você não tem permissão para acessar esta consulta. Entre em contato com o administrador.</div>
-      <button onclick="resetTab2()" style="margin-top:16px;background:#2E2E2E;color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:inherit;font-weight:700;">← Tentar novamente</button>
+  <div id="resultado">
+    <div class="state-empty">
+      <div class="icon">🔍</div>
+      <p>Digite um número ou telefone acima para consultar</p>
     </div>
   </div>
 </div>
-
-<div class="footer">Fox Pneus · Sistema de Descontos · Acesso restrito à equipe</div>
 
 <script>
-const SUPA_URL="https://dxwkiaxpygibzmwzvcuz.supabase.co";
-const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
-const H={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+const URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const H = {"apikey":KEY,"Authorization":"Bearer "+KEY};
 
-let currentEmail=localStorage.getItem("fox_consulta_email")||"";
-let userIp="";
+let tab = "num";
 
-fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>userIp=d.ip).catch(()=>{});
-
-function switchTab(n){
-  document.getElementById("tab1").style.display=n===1?"block":"none";
-  const t2=document.getElementById("tab2");
-  t2.style.display=n===2?"flex":"none";
-  if(n===2)t2.style.flexDirection="column";
-  document.getElementById("tab1-btn").className="tab-btn"+(n===1?" active":"");
-  document.getElementById("tab2-btn").className="tab-btn"+(n===2?" active":"");
-}
-
-function fmtVal(v){
-  const n=parseFloat(v);
-  if(isNaN(n))return v||"—";
-  return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-}
-
-function fmtData(d){
-  if(!d)return"";
-  return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-}
-
-function isExp(val){
-  if(!val)return false;
-  return new Date(val.split("T")[0]+"T23:59:59")<new Date();
-}
-
-document.getElementById("inp").addEventListener("keydown",e=>{if(e.key==="Enter")buscarCotacao();});
-
-async function buscarCotacao(){
-  const num=document.getElementById("inp").value.trim().replace(/^#/,"");
-  if(!num)return;
-  document.getElementById("load1").style.display="block";
-  document.getElementById("result1").style.display="none";
-  document.getElementById("nf1").style.display="none";
-  document.getElementById("btn1").disabled=true;
-  try{
-    const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(num)}&select=tipo,numero,cba,medida,segmento,loja,valor,pgto,obs,validade,liberado,perdida&limit=1`,{headers:H});
-    const data=await r.json();
-    document.getElementById("load1").style.display="none";
-    if(!data||data.length===0){document.getElementById("nf1").style.display="block";return;}
-    const q=data[0];
-    let status="";
-    if(q.liberado) status='<div class="badge badge-ok">✅ Desconto Liberado</div>';
-    else if(q.perdida) status='<div class="badge badge-warn">⚠️ Negociação Encerrada — consulte o vendedor</div>';
-    else if(isExp(q.validade)) status='<div class="badge badge-warn">⚠️ Prazo Expirado — consulte o administrador</div>';
-    const obsRaw=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0].trim();
-    const el=document.getElementById("result1");
-    el.innerHTML=`
-      <div class="result-header">
-        <div class="result-type">${q.tipo==="os"?"ORDEM DE SERVIÇO":"ORÇAMENTO"}</div>
-        <div class="result-num">#${q.numero}</div>
-        <div style="font-size:12px;color:#666;margin-top:4px;">${q.loja||""}</div>
-        ${status}
-      </div>
-      <div class="fields">
-        <div class="field"><div class="field-label">CBA</div><div class="field-value">${q.cba||"—"}</div></div>
-        <div class="field"><div class="field-label">Medida</div><div class="field-value">${q.medida||"—"}</div></div>
-        <div class="field"><div class="field-label">Segmento</div><div class="field-value">${q.segmento||"—"}</div></div>
-        <div class="field"><div class="field-label">Pagamento</div><div class="field-value">${q.pgto||"—"}</div></div>
-        <div class="field full"><div class="field-label">💰 Valor Negociado</div><div class="field-value valor">${fmtVal(q.valor)}</div></div>
-      </div>
-      ${obsRaw?`<div class="obs-box"><div class="obs-label">📝 Observações</div><div class="obs-text">${obsRaw}</div></div>`:""}
-    `;
-    el.style.display="block";
-  }catch(e){document.getElementById("nf1").style.display="block";}
-  finally{document.getElementById("load1").style.display="none";document.getElementById("btn1").disabled=false;}
-}
-
-async function salvarLog(email,medida,loja,sucesso,motivo){
-  try{
-    await fetch(`${SUPA_URL}/rest/v1/logs_consulta`,{
-      method:"POST",headers:H,
-      body:JSON.stringify({email,medida:medida||null,loja:loja||null,ip:userIp||null,sucesso,motivo:motivo||null})
-    });
-  }catch(e){}
-}
-
-function sairEmail(){
-  localStorage.removeItem("fox_consulta_email");
-  currentEmail="";
-  resetTab2();
-}
-
-function resetTab2(){
-  if(!currentEmail){
-    document.getElementById("step-email").style.display="block";
+function setTab(t) {
+  tab = t;
+  document.getElementById("tab-num").classList.toggle("active", t==="num");
+  document.getElementById("tab-tel").classList.toggle("active", t==="tel");
+  const inp = document.getElementById("sinput");
+  const hint = document.getElementById("shint");
+  if (t === "num") {
+    inp.placeholder = "Digite o número do orçamento...";
+    inp.type = "text";
+    hint.textContent = "Ex: 000123 — busca pelo número exato ou parcial";
+  } else {
+    inp.placeholder = "(00) 00000-0000 ou só os dígitos";
+    inp.type = "tel";
+    hint.textContent = "Busca pelo telefone do cliente cadastrado na negociação";
   }
-  document.getElementById("step-busca").style.display="none";
-  document.getElementById("step-blocked").style.display="none";
-  document.getElementById("email-inp").value="";
-  document.getElementById("email-err").style.display="none";
-  document.getElementById("result2").style.display="none";
-  document.getElementById("nf2").style.display="none";
+  inp.value = "";
+  document.getElementById("resultado").innerHTML = '<div class="state-empty"><div class="icon">🔍</div><p>Digite acima para consultar</p></div>';
+  inp.focus();
 }
 
-async function validarEmail(){
-  const email=document.getElementById("email-inp").value.trim().toLowerCase();
-  const errEl=document.getElementById("email-err");
-  if(!email){errEl.textContent="Informe seu e-mail.";errEl.style.display="block";return;}
-  if(!email.endsWith("@redefox.com.br")){
-    errEl.style.display="none";
-    await salvarLog(email,null,null,false,"E-mail inválido — domínio não autorizado");
-    document.getElementById("blocked-msg").textContent="Você não tem permissão para acessar esta consulta. Entre em contato com o administrador.";
-    document.getElementById("step-email").style.display="none";
-    document.getElementById("step-blocked").style.display="block";
-    return;
+const isExp = v => v ? new Date(v+"T23:59:59") < new Date() : false;
+const fmtR = v => parseFloat(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const fmtD = d => { if(!d)return"—"; try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");} };
+const fmtV = d => d?d.split("-").reverse().join("/"):"—";
+const stripConc = obs => obs?(obs.split("\n\n📊 CONCORRENTES:")[0].split("CONCORRENTES:")[0].trim()):"";
+const digitsOnly = s => s.replace(/\D/g,"");
+
+function getBadge(q) {
+  if (q.liberado) return {lbl:"✓ Liberado", cls:"badge-lib"};
+  if (isExp(q.validade)) return {lbl:"Vencido", cls:"badge-venc"};
+  return {lbl:"Pendente liberação", cls:"badge-pend"};
+}
+
+function renderCards(list) {
+  if (!list || !list.length) return `<div class="state-nf"><div class="icon">😕</div><h3>Nenhum desconto encontrado</h3><p>Verifique o número ou telefone e tente novamente.</p></div>`;
+
+  let h = `<div class="result-header"><div class="result-count"><span>${list.length}</span> negociação(ões) encontrada(s)</div></div>`;
+
+  for (const q of list) {
+    const b = getBadge(q);
+    const obs = stripConc(q.obs||"");
+    h += `<div class="quote-card">
+  <div class="quote-top">
+    <div>
+      <div class="quote-num">#${q.numero||"—"}</div>
+      <div class="quote-tipo">${q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
+    </div>
+    <span class="badge ${b.cls}">${b.lbl}</span>
+  </div>
+  <div class="quote-body">
+    <div class="info-grid">
+      <div class="ii"><label>CBA</label><div class="val">${q.cba||"—"}</div></div>
+      <div class="ii"><label>Produto — Medida</label><div class="val">${q.medida||"—"}</div></div>
+      ${q.telefone_cliente?`<div class="ii"><label>📱 Telefone do Cliente</label><div class="val blue">${q.telefone_cliente}</div></div>`:""}
+      <div class="ii"><label>Valor Negociado</label><div class="val big">${fmtR(q.valor)}</div></div>
+      <div class="ii"><label>Pagamento / Parcelas</label><div class="val">${q.pgto||"—"}</div></div>
+      <div class="ii"><label>Validade</label><div class="val ${isExp(q.validade)?"dim":""}">${fmtV(q.validade)}</div></div>
+      <div class="ii"><label>Vendedor</label><div class="val">${q.vendedor||"—"}</div></div>
+      <div class="ii"><label>Data do Cadastro</label><div class="val">${fmtD(q.criado_em)}</div></div>
+    </div>
+    ${obs?`<div class="divider"></div><div class="motivo-box"><label>Motivo / Observações</label><p>${obs}</p></div>`:""}
+  </div>
+  <div class="loja-bar">🏪 <span>${q.loja||"—"}</span></div>
+</div>`;
   }
-  errEl.style.display="none";
-  currentEmail=email;
-  localStorage.setItem("fox_consulta_email",email);
-  document.getElementById("step-email").style.display="none";
-  document.getElementById("step-busca").style.display="block";
-  document.getElementById("email-info").innerHTML=`🔑 Identificado como <strong style="color:#888;">${email}</strong> · <span onclick="sairEmail()" style="color:#CC1F1F;cursor:pointer;text-decoration:underline;">Sair</span>`;
+  return h;
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-  // Se já tem email salvo, pula a identificação
-  if(currentEmail){
-    document.getElementById("step-email").style.display="none";
-    document.getElementById("step-busca").style.display="block";
-    document.getElementById("email-info").innerHTML=`🔑 Identificado como <strong style="color:#888;">${currentEmail}</strong> · <span onclick="sairEmail()" style="color:#CC1F1F;cursor:pointer;text-decoration:underline;">Sair</span>`;
+async function buscar() {
+  const raw = document.getElementById("sinput").value.trim();
+  if (!raw) return;
+  const btn = document.getElementById("sbtn");
+  btn.disabled = true; btn.textContent = "Buscando...";
+  document.getElementById("resultado").innerHTML = '<div class="loading">🔄 Aguarde...</div>';
+
+  const SEL = "numero,tipo,cba,medida,loja,valor,pgto,validade,obs,liberado,vendedor,criado_em,telefone_cliente";
+  let apiUrl;
+
+  if (tab === "tel") {
+    const digits = digitsOnly(raw);
+    // Busca flexível: tenta encontrar o número de telefone em qualquer formato
+    apiUrl = `${URL}/rest/v1/descontos?or=(telefone_cliente.ilike.*${encodeURIComponent(digits)}*,telefone_cliente.ilike.*${encodeURIComponent(raw)}*)&select=${SEL}&order=criado_em.desc`;
+  } else {
+    const term = raw.replace(/^#/,"").trim();
+    apiUrl = `${URL}/rest/v1/descontos?numero=ilike.*${encodeURIComponent(term)}*&select=${SEL}&order=criado_em.desc`;
   }
-  const ei=document.getElementById("email-inp");
-  if(ei)ei.addEventListener("keydown",e=>{if(e.key==="Enter")validarEmail();});
-});
 
-async function buscarMedida(){
-  const medida=document.getElementById("medida-inp").value.trim().toUpperCase();
-  const loja=document.getElementById("loja-sel").value;
-  const errEl=document.getElementById("busca-err");
-  if(!medida||!loja){errEl.textContent="Informe a medida e selecione a loja.";errEl.style.display="block";return;}
-  errEl.style.display="none";
-  document.getElementById("load2").style.display="block";
-  document.getElementById("result2").style.display="none";
-  document.getElementById("nf2").style.display="none";
-  document.getElementById("btn2").disabled=true;
-  try{
-    const r=await fetch(
-      `${SUPA_URL}/rest/v1/descontos?medida=ilike.${encodeURIComponent("%"+medida+"%")}&loja=eq.${encodeURIComponent(loja)}&tipo=neq.conc&select=obs,valor,pgto,loja,medida,liberado,perdida,validade,criado_em&order=criado_em.desc&limit=50`,
-      {headers:H}
-    );
-    const data=await r.json();
-    await salvarLog(currentEmail,medida,loja,true,null);
-    document.getElementById("load2").style.display="none";
-    const validas=data?data.filter(q=>(q.obs||"").includes("CONCORRENTES:")):[];
-    if(!validas||validas.length===0){document.getElementById("nf2").style.display="block";return;}
+  try {
+    const r = await fetch(apiUrl, {headers: H});
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    document.getElementById("resultado").innerHTML = renderCards(data);
+  } catch(e) {
+    document.getElementById("resultado").innerHTML = `<div class="state-nf"><div class="icon">⚠️</div><h3>Erro ao buscar</h3><p>Verifique sua conexão e tente novamente.</p></div>`;
+  }
 
-    const todosConcorrentes=[];
-    validas.forEach(q=>{
-      const concLines=(q.obs||"").split("\n").filter(l=>l.trim().startsWith("• "));
-      const data_neg=q.criado_em?fmtData(q.criado_em):"";
-      concLines.forEach(l=>{
-        const m=l.trim().match(/^• (.+?): (.+?) \((.+)\)$/) || l.trim().match(/^• (.+?): (.+)$/);
-        if(m){
-          todosConcorrentes.push({empresa:m[1].trim(),valor:m[2].trim(),pgto:m[3]?m[3].trim():"—",data:data_neg});
-        }
-      });
-    });
-
-    if(todosConcorrentes.length===0){document.getElementById("nf2").style.display="block";return;}
-
-    const cardsHtml=todosConcorrentes.map(c=>`
-      <div style="background:#1C1C1C;border:1px solid #2E2E2E;border-radius:12px;padding:16px;min-width:0;">
-        <div style="font-size:10px;color:#CC1F1F;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-          <span>📋</span> CONCORRENTES
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <div style="font-size:15px;font-weight:700;color:#F0F0F0;">${c.empresa}</div>
-          <div style="font-size:17px;font-weight:800;color:#CC1F1F;white-space:nowrap;">${c.valor}</div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-          <div style="font-size:11px;color:#888;">${c.pgto}</div>
-          ${c.data?`<div style="font-size:10px;color:#555;">📅 ${c.data}</div>`:""}
-        </div>
-      </div>
-    `).join("");
-
-    const el=document.getElementById("result2");
-    el.innerHTML=`
-      <div style="font-size:12px;color:#555;margin-bottom:14px;">${todosConcorrentes.length} concorrente(s) encontrado(s) para <strong style="color:#fff;">${medida}</strong> em <strong style="color:#fff;">${loja}</strong></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
-        ${cardsHtml}
-      </div>
-    `;
-    el.style.display="block";
-  }catch(e){document.getElementById("nf2").style.display="block";}
-  finally{document.getElementById("load2").style.display="none";document.getElementById("btn2").disabled=false;}
+  btn.disabled = false; btn.textContent = "Buscar";
 }
+
+document.getElementById("sinput").focus();
 </script>
 </body>
 </html>
