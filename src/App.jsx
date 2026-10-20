@@ -332,14 +332,15 @@ export default function App(){
   },[]);
   useEffect(()=>{(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo");
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
-      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0
+      anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0,
+      telefoneCliente:q.telefone_cliente||null
     })));}
     // Auto-marcar expiradas como perdidas
     const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
@@ -1590,6 +1591,7 @@ export default function App(){
           <div className="rcell"><div className="rl">Pagamento</div><div className="rv">{result.pgto}</div></div>
           <div className="rcell"><div className="rl">Loja</div><div className="rv">{result.loja}</div></div>
                     {result.vendedor&&<div className="rcell"><div className="rl">Vendedor</div><div className="rv" style={{color:AMBER,fontWeight:600}}>{result.vendedor}</div></div>}
+          {result.telefoneCliente&&<div className="rcell"><div className="rl">📱 Telefone do Cliente</div><div className="rv" style={{color:"#3498DB"}}>{result.telefoneCliente}</div></div>}
           <div className="rcell"><div className="rl">Validade</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
           <div className="rcell"><div className="rl">Status</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{result.liberado?"Venda liberada":isExp(result.validade)?"Fora da validade":"Pendente de liberação"}</div></div>
           
