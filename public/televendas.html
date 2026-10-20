@@ -195,11 +195,14 @@ function diasUteisAte(ate) {
   return dias;
 }
 
-const uteis = diasUteisAte(DADOS.dadosAte);
-const trabalhados = uteis.length;
+// dias úteis já trabalhados = dias úteis do mês ANTES de hoje (vira à meia-noite)
+const agora = new Date();
+const ontem = iso(new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1)));
+const trabalhados = Math.min(diasUteisAte(ontem).length, DADOS.diasUteisMes);
 const restantes = Math.max(DADOS.diasUteisMes - trabalhados, 0);
 const desejado = trabalhados / DADOS.diasUteisMes;
-const ultimos5 = uteis.slice(-5);
+// últimos 5 dias úteis com vendas carregadas no Movere
+const ultimos5 = diasUteisAte(DADOS.dadosAte).slice(-5);
 
 let meta = 0;
 try { const s = localStorage.getItem("tv-meta"); if (s !== null && +s >= 0 && +s <= 2) meta = +s; } catch (e) {}
