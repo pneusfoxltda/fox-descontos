@@ -74,12 +74,18 @@
   .bar b { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); opacity: .6; }
 
   .table-box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; min-width: 1040px; font-variant-numeric: tabular-nums; }
-  th, td { padding: 9px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
   th { background: var(--head); color: var(--head-ink); font-size: 12px; font-weight: 600; }
-  th.grp { background: var(--accent); }
-  th:first-child, td:first-child { text-align: left; }
+  th.grp { background: var(--accent); text-align: center; }
+  th.op, td:first-child { text-align: left; }
   td:first-child { font-weight: 600; }
+  /* coluna Operadora fixa ao rolar a tabela para o lado */
+  th.op, td:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--line); }
+  th.op { z-index: 2; }
+  td:first-child { background: var(--card); }
+  th.dia { text-align: right; }
+  tr.total td:first-child { background: var(--card); background-image: linear-gradient(rgba(127,127,127,.08), rgba(127,127,127,.08)); }
   tr.row-ok td:first-child { color: var(--ok); }
   tr.row-bad td:first-child { color: var(--bad); }
   td.day-ok { color: var(--ok); }
@@ -131,7 +137,7 @@ const DADOS = {
   feriados: ["2026-10-12"],        // dias úteis = segunda a sábado, menos feriados
   operadoras: [
     {
-      nome: "KESSYA DIAS MARQUES",
+      nome: "KESSYA DIAS MARQUES", curto: "KESSYA",
       metas: [480000, 528000, 576000],
       vendas: {
         "2026-10-01": 17377.75, "2026-10-02": 20375.87, "2026-10-03": 27518.01,
@@ -142,7 +148,7 @@ const DADOS = {
       }
     },
     {
-      nome: "ANA CLARA MARTINS HENRIQUE",
+      nome: "ANA CLARA MARTINS HENRIQUE", curto: "ANA CLARA",
       metas: [280000, 308000, 336000],
       vendas: {
         "2026-10-01": 14398.49, "2026-10-02": 19969.74, "2026-10-03": 18482.93,
@@ -150,7 +156,7 @@ const DADOS = {
       }
     },
     {
-      nome: "SABRINA ROCHA PARDO",
+      nome: "SABRINA ROCHA PARDO", curto: "SABRINA ROCHA",
       metas: [480000, 528000, 576000],
       vendas: {
         "2026-10-01": 4899.37, "2026-10-02": 5362.94, "2026-10-03": 1852.00,
@@ -161,7 +167,7 @@ const DADOS = {
       }
     },
     {
-      nome: "GRAZIELE MACHADO GARCIA",
+      nome: "GRAZIELE MACHADO GARCIA", curto: "GRAZIELE GARCIA",
       metas: [480000, 528000, 576000],
       vendas: {
         "2026-10-01": 22015.46, "2026-10-02": 9111.85, "2026-10-03": 10508.26,
@@ -176,6 +182,7 @@ const DADOS = {
 /* ===================== fim dos dados ===================== */
 
 const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl0 = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const pct = v => (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
 const iso = d => d.toISOString().slice(0, 10);
 const ddmm = s => s.slice(8, 10) + "/" + s.slice(5, 7);
@@ -204,7 +211,7 @@ function calc(o) {
   const falta = Math.max(m - fat, 0);
   const p = m ? fat / m : 0;
   return {
-    nome: o.nome, meta: m, fat, falta, p,
+    nome: o.nome, curto: o.curto, meta: m, fat, falta, p,
     metaDia: m / DADOS.diasUteisMes,
     precisaDia: restantes ? falta / restantes : falta,
     dias: ultimos5.map(d => o.vendas[d] || 0),
@@ -248,15 +255,15 @@ function render() {
       <div class="d">meta diária original ${brl(setor.metaDia)}</div></div>`;
 
   document.getElementById("thead").innerHTML = `
-    <tr><th rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
+    <tr><th class="op" rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
       <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">% atingido</th>
       <th rowspan="2">Meta diária<br>(meta ÷ ${DADOS.diasUteisMes})</th><th rowspan="2">Falta</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th></tr>
-    <tr>${ultimos5.map(d => `<th>${ddmm(d)}</th>`).join("")}</tr>`;
+    <tr>${ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("")}</tr>`;
 
   const linha = (o, total) => `
     <tr class="${total ? "total" : ""} ${o.ok ? "row-ok" : "row-bad"}">
-      <td>${o.nome}</td><td>${brl(o.meta)}</td>
-      ${o.dias.map(v => `<td class="${v === 0 ? "day-zero" : v >= o.metaDia ? "day-ok" : "day-bad"}">${brl(v)}</td>`).join("")}
+      <td title="${o.nome}">${o.curto || o.nome}</td><td>${brl0(o.meta)}</td>
+      ${o.dias.map(v => `<td class="${v === 0 ? "day-zero" : v >= o.metaDia ? "day-ok" : "day-bad"}">${brl0(v)}</td>`).join("")}
       <td>${brl(o.fat)}</td>
       <td class="pct ${o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
       <td>${brl(o.metaDia)}</td><td>${brl(o.falta)}</td><td>${brl(o.precisaDia)}</td>
