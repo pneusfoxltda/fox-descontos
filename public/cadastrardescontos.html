@@ -283,7 +283,8 @@ async function loadVendedores() {
     const r = await fetch(SUPA_URL + "/rest/v1/configuracoes?chave=eq.vendedores&select=valor", { headers: H });
     const d = await r.json();
     if (d && d[0] && d[0].valor) {
-      const list = d[0].valor.split(",").map(v => v.trim()).filter(Boolean);
+      const raw = d[0].valor;
+      const list = Array.isArray(raw) ? raw : (typeof raw === "string" ? raw.split(",").map(v => v.trim()).filter(Boolean) : []);
       const sel = document.getElementById("f-vendedor");
       sel.innerHTML = '<option value="">Selecione o vendedor...</option>';
       list.forEach(v => {
