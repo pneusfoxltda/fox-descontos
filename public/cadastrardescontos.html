@@ -428,9 +428,19 @@ async function salvar() {
       const vd = new Date(); vd.setDate(vd.getDate() + 7);
       document.getElementById("f-validade").value = vd.toISOString().slice(0, 10);
     } else {
-      const err = await r.text();
-      console.error(err);
-      toast("❌ Erro ao salvar. Verifique os dados e tente novamente.", false);
+      let errMsg = "Erro ao salvar.";
+      try {
+        const errBody = await r.json();
+        if (errBody && errBody.message) errMsg = errBody.message;
+        else if (errBody && errBody.details) errMsg = errBody.details;
+        console.error(errBody);
+      } catch { }
+      // Dica específica para coluna ausente
+      if (errMsg.includes("telefone_cliente") || errMsg.includes("column")) {
+        toast("❌ Coluna 'telefone_cliente' não existe na tabela. Execute: ALTER TABLE descontos ADD COLUMN telefone_cliente TEXT; no Supabase.", false);
+      } else {
+        toast("❌ " + errMsg, false);
+      }
     }
   } catch(e) {
     toast("❌ Erro de conexão. Tente novamente.", false);
