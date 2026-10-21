@@ -125,64 +125,102 @@
 
 <script>
 /* ============================================================
-   DADOS — atualizar diariamente com o faturamento do Movere
-   (dashboard "Gil - Vendas que já estão validadas - Televendas")
+   CONFIGURAÇÃO
    ============================================================ */
-const DADOS = {
-  atualizadoEm: "2026-10-21",
-  dadosAte: "2026-10-20",          // último dia com vendas carregadas no Movere
-  mes: "2026-10",
-  diasUteisMes: 26,
-  feriados: ["2026-10-12"],        // dias úteis = segunda a sábado, menos feriados
-  operadoras: [
-    {
-      nome: "KESSYA DIAS MARQUES", curto: "KESSYA",
-      metas: [480000, 528000, 576000],
-      vendas: {
-        "2026-10-01": 17377.75, "2026-10-02": 20375.87, "2026-10-03": 27518.01,
-        "2026-10-05": 16768.69, "2026-10-06": 21960.84, "2026-10-07": 12543.55,
-        "2026-10-08": 31086.38, "2026-10-09": 24609.55, "2026-10-10": 23816.65,
-        "2026-10-13": 26476.36, "2026-10-14": 33395.57, "2026-10-15": 19093.90,
-        "2026-10-16": 35619.37, "2026-10-17": 13554.25, "2026-10-19": 24727.30,
-        "2026-10-20": 7427.59
-      }
+// Endereço do App da Web do Apps Script (opcional). Vazio = não usa.
+const FONTE_URL = "";
+// Arquivo de dados publicado junto com o site (atualizado pelo Apps Script ou manualmente)
+const FONTE_ARQUIVO = "/televendas-dados.json";
+
+// Dias úteis = segunda a sábado, menos estes feriados (confirmar a cada mês)
+const FERIADOS = [
+  "2026-10-12",
+  "2026-11-02", "2026-11-20",
+  "2026-12-25"
+];
+
+const OPERADORAS = [
+  { nome: "KESSYA DIAS MARQUES", curto: "KESSYA", metas: [480000, 528000, 576000] },
+  { nome: "ANA CLARA MARTINS HENRIQUE", curto: "ANA CLARA", metas: [280000, 308000, 336000] },
+  { nome: "SABRINA ROCHA PARDO", curto: "SABRINA ROCHA", metas: [480000, 528000, 576000] },
+  { nome: "GRAZIELE MACHADO GARCIA", curto: "GRAZIELE GARCIA", metas: [480000, 528000, 576000] }
+];
+
+/* Reserva: usada só se o arquivo de dados e o App da Web não responderem.
+   Mesmo formato do televendas-dados.json. */
+const DADOS_RESERVA = {
+  "atualizadoEm": "2026-10-21",
+  "mes": "2026-10",
+  "dadosAte": "2026-10-20",
+  "vendas": {
+    "KESSYA DIAS MARQUES": {
+      "2026-10-01": 17377.75,
+      "2026-10-02": 20375.87,
+      "2026-10-03": 27518.01,
+      "2026-10-05": 16768.69,
+      "2026-10-06": 21960.84,
+      "2026-10-07": 12543.55,
+      "2026-10-08": 31086.38,
+      "2026-10-09": 24609.55,
+      "2026-10-10": 23816.65,
+      "2026-10-13": 26476.36,
+      "2026-10-14": 33395.57,
+      "2026-10-15": 19093.9,
+      "2026-10-16": 35619.37,
+      "2026-10-17": 13554.25,
+      "2026-10-19": 24727.3,
+      "2026-10-20": 7427.59
     },
-    {
-      nome: "ANA CLARA MARTINS HENRIQUE", curto: "ANA CLARA",
-      metas: [280000, 308000, 336000],
-      vendas: {
-        "2026-10-01": 14398.49, "2026-10-02": 19969.74, "2026-10-03": 18482.93,
-        "2026-10-13": 150.00, "2026-10-17": 4421.74, "2026-10-19": 4032.15,
-        "2026-10-20": 8630.28
-      }
+    "ANA CLARA MARTINS HENRIQUE": {
+      "2026-10-01": 14398.49,
+      "2026-10-02": 19969.74,
+      "2026-10-03": 18482.93,
+      "2026-10-13": 150,
+      "2026-10-17": 4421.74,
+      "2026-10-19": 4032.15,
+      "2026-10-20": 8630.28
     },
-    {
-      nome: "SABRINA ROCHA PARDO", curto: "SABRINA ROCHA",
-      metas: [480000, 528000, 576000],
-      vendas: {
-        "2026-10-01": 4899.37, "2026-10-02": 5362.94, "2026-10-03": 1852.00,
-        "2026-10-05": 11034.73, "2026-10-06": 13367.08, "2026-10-07": 25284.54,
-        "2026-10-08": 25553.44, "2026-10-09": 18248.96, "2026-10-10": 17711.44,
-        "2026-10-13": 26228.87, "2026-10-14": 26280.62, "2026-10-15": 23082.57,
-        "2026-10-16": 29734.69, "2026-10-17": 13691.10, "2026-10-19": 14028.45,
-        "2026-10-20": 17038.00
-      }
+    "SABRINA ROCHA PARDO": {
+      "2026-10-01": 4899.37,
+      "2026-10-02": 5362.94,
+      "2026-10-03": 1852,
+      "2026-10-05": 11034.73,
+      "2026-10-06": 13367.08,
+      "2026-10-07": 25284.54,
+      "2026-10-08": 25553.44,
+      "2026-10-09": 18248.96,
+      "2026-10-10": 17711.44,
+      "2026-10-13": 26228.87,
+      "2026-10-14": 26280.62,
+      "2026-10-15": 23082.57,
+      "2026-10-16": 29734.69,
+      "2026-10-17": 13691.1,
+      "2026-10-19": 14028.45,
+      "2026-10-20": 17038
     },
-    {
-      nome: "GRAZIELE MACHADO GARCIA", curto: "GRAZIELE GARCIA",
-      metas: [480000, 528000, 576000],
-      vendas: {
-        "2026-10-01": 22015.46, "2026-10-02": 9111.85, "2026-10-03": 10508.26,
-        "2026-10-05": 28589.21, "2026-10-06": 28970.87, "2026-10-07": 17475.89,
-        "2026-10-08": 25967.09, "2026-10-09": 22312.30, "2026-10-10": 18201.04,
-        "2026-10-13": 22498.12, "2026-10-14": 39595.97, "2026-10-15": 35504.08,
-        "2026-10-16": 19097.67, "2026-10-17": 14136.08, "2026-10-19": 23129.78,
-        "2026-10-20": 11513.02
-      }
+    "GRAZIELE MACHADO GARCIA": {
+      "2026-10-01": 22015.46,
+      "2026-10-02": 9111.85,
+      "2026-10-03": 10508.26,
+      "2026-10-05": 28589.21,
+      "2026-10-06": 28970.87,
+      "2026-10-07": 17475.89,
+      "2026-10-08": 25967.09,
+      "2026-10-09": 22312.3,
+      "2026-10-10": 18201.04,
+      "2026-10-13": 22498.12,
+      "2026-10-14": 39595.97,
+      "2026-10-15": 35504.08,
+      "2026-10-16": 19097.67,
+      "2026-10-17": 14136.08,
+      "2026-10-19": 23129.78,
+      "2026-10-20": 11513.02
     }
-  ]
+  }
 };
-/* ===================== fim dos dados ===================== */
+/* ===================== fim da configuração ===================== */
+
+let DADOS = DADOS_RESERVA;
 
 const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const brl0 = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -190,44 +228,53 @@ const pct = v => (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })
 const iso = d => d.toISOString().slice(0, 10);
 const ddmm = s => s.slice(8, 10) + "/" + s.slice(5, 7);
 
+// dias úteis do mês dos dados, do dia 1º até "ate" (inclusive)
 function diasUteisAte(ate) {
   const [y, m] = DADOS.mes.split("-").map(Number);
   const dias = [];
   for (let d = new Date(Date.UTC(y, m - 1, 1)); iso(d) <= ate && d.getUTCMonth() === m - 1; d.setUTCDate(d.getUTCDate() + 1)) {
-    if (d.getUTCDay() !== 0 && !DADOS.feriados.includes(iso(d))) dias.push(iso(d));
+    if (d.getUTCDay() !== 0 && !FERIADOS.includes(iso(d))) dias.push(iso(d));
   }
   return dias;
 }
 
-// dias úteis já trabalhados = dias úteis do mês ANTES de hoje (vira à meia-noite)
-const agora = new Date();
-const ontem = iso(new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1)));
-const trabalhados = Math.min(diasUteisAte(ontem).length, DADOS.diasUteisMes);
-const restantes = Math.max(DADOS.diasUteisMes - trabalhados, 0);
-// % desejado arredondado para inteiro (ex.: 57,7% -> 58%)
-const desejado = Math.round(trabalhados / DADOS.diasUteisMes * 100) / 100;
-// últimos 5 dias úteis com vendas carregadas no Movere
-const ultimos5 = diasUteisAte(DADOS.dadosAte).slice(-5);
+function calendario() {
+  const diasUteisMes = diasUteisAte(DADOS.mes + "-31").length;
+  // dias úteis já trabalhados = dias úteis do mês ANTES de hoje (vira à meia-noite)
+  const agora = new Date();
+  const ontem = iso(new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1)));
+  const trabalhados = Math.min(diasUteisAte(ontem).length, diasUteisMes);
+  return {
+    diasUteisMes,
+    trabalhados,
+    restantes: Math.max(diasUteisMes - trabalhados, 0),
+    // % desejado arredondado para inteiro (ex.: 57,7% -> 58%)
+    desejado: Math.round(trabalhados / diasUteisMes * 100) / 100,
+    // últimos 5 dias úteis com vendas carregadas no Movere
+    ultimos5: DADOS.dadosAte ? diasUteisAte(DADOS.dadosAte).slice(-5) : []
+  };
+}
 
 let meta = 0;
 try { const s = localStorage.getItem("tv-meta"); if (s !== null && +s >= 0 && +s <= 2) meta = +s; } catch (e) {}
 
-function calc(o) {
-  const m = o.metas[meta];
-  const fat = Object.values(o.vendas).reduce((a, b) => a + b, 0);
-  const falta = Math.max(m - fat, 0);
-  const p = m ? fat / m : 0;
-  return {
-    nome: o.nome, curto: o.curto, meta: m, fat, falta, p,
-    metaDia: m / DADOS.diasUteisMes,
-    precisaDia: restantes ? falta / restantes : falta,
-    dias: ultimos5.map(d => o.vendas[d] || 0),
-    ok: p >= desejado
-  };
-}
-
 function render() {
-  const ops = DADOS.operadoras.map(calc);
+  const cal = calendario();
+  const { diasUteisMes, trabalhados, restantes, desejado, ultimos5 } = cal;
+
+  const ops = OPERADORAS.map(o => {
+    const vendas = DADOS.vendas[o.nome] || {};
+    const m = o.metas[meta];
+    const fat = Object.values(vendas).reduce((a, b) => a + b, 0);
+    const falta = Math.max(m - fat, 0);
+    const p = m ? fat / m : 0;
+    return {
+      nome: o.nome, curto: o.curto, meta: m, fat, falta, p,
+      precisaDia: restantes ? falta / restantes : falta,
+      dias: ultimos5.map(d => vendas[d] || 0),
+      ok: p >= desejado
+    };
+  });
   const setor = {
     nome: "TOTAL SETOR",
     meta: ops.reduce((a, o) => a + o.meta, 0),
@@ -236,14 +283,15 @@ function render() {
   };
   setor.falta = Math.max(setor.meta - setor.fat, 0);
   setor.p = setor.fat / setor.meta;
-  setor.metaDia = setor.meta / DADOS.diasUteisMes;
+  setor.metaDia = setor.meta / diasUteisMes;
   setor.precisaDia = restantes ? setor.falta / restantes : setor.falta;
   setor.ok = setor.p >= desejado;
 
+  const quando = DADOS.atualizadoEm.split("-").reverse().join("/") + (DADOS.atualizadoAs ? " às " + DADOS.atualizadoAs : "");
   document.getElementById("sub").textContent =
-    `Vendas até ${ddmm(DADOS.dadosAte)} · atualizado em ${DADOS.atualizadoEm.split("-").reverse().join("/")} · fonte: Movere`;
+    `Vendas até ${DADOS.dadosAte ? ddmm(DADOS.dadosAte) : "—"} · atualizado em ${quando} · fonte: Movere`;
 
-  const totais = [0, 1, 2].map(i => DADOS.operadoras.reduce((a, o) => a + o.metas[i], 0));
+  const totais = [0, 1, 2].map(i => OPERADORAS.reduce((a, o) => a + o.metas[i], 0));
   document.getElementById("metas").innerHTML = ["Meta 1", "Meta 2 (+10%)", "Meta 3 (+20%)"].map((t, i) =>
     `<button data-m="${i}" class="${i === meta ? "on" : ""}">${t}<small>${brl(totais[i]).replace(",00", "")}</small></button>`
   ).join("");
@@ -255,21 +303,21 @@ function render() {
     <div class="kpi"><div class="l">% da meta</div><div class="v ${setor.ok ? "ok" : "bad"}">${pct(setor.p)}</div>
       <div class="bar"><i style="width:${Math.min(setor.p, 1) * 100}%;background:${cor}"></i><b style="left:${desejado * 100}%"></b></div></div>
     <div class="kpi"><div class="l">% desejado do dia</div><div class="v">${pct(desejado)}</div>
-      <div class="d">${trabalhados} de ${DADOS.diasUteisMes} dias úteis</div></div>
+      <div class="d">${trabalhados} de ${diasUteisMes} dias úteis</div></div>
     <div class="kpi"><div class="l">Falta para a meta</div><div class="v">${brl(setor.falta)}</div>
       <div class="d">${restantes} dias úteis restantes</div></div>
     <div class="kpi"><div class="l">Setor precisa por dia</div><div class="v">${brl(setor.precisaDia)}</div>
       <div class="d">meta diária original ${brl(setor.metaDia)}</div></div>`;
 
   document.getElementById("thead").innerHTML = `
-    <tr><th class="op" rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="5">Últimos 5 dias úteis</th>
+    <tr><th class="op" rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="${ultimos5.length || 1}">Últimos 5 dias úteis</th>
       <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th><th rowspan="2">% atingido</th></tr>
-    <tr>${ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("")}</tr>`;
+    <tr>${ultimos5.length ? ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("") : "<th>—</th>"}</tr>`;
 
   const linha = (o, total) => `
     <tr class="${total ? "total" : o.ok ? "row-ok" : "row-bad"}">
       <td title="${o.nome}">${o.curto || o.nome}</td><td>${brl0(o.meta)}</td>
-      ${o.dias.map(v => `<td class="dia-v">${brl0(v)}</td>`).join("")}
+      ${o.dias.length ? o.dias.map(v => `<td class="dia-v">${brl0(v)}</td>`).join("") : '<td class="dia-v">—</td>'}
       <td>${brl(o.fat)}</td>
       <td>${brl(o.precisaDia)}</td>
       <td class="pct ${total ? "" : o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
@@ -287,7 +335,33 @@ document.getElementById("metas").addEventListener("click", e => {
   render();
 });
 
+// usa a fonte com os dados mais recentes (mês, dia das vendas e hora da atualização)
+const chave = d => [d.mes, d.dadosAte || "", d.atualizadoEm || "", d.atualizadoAs || ""].join("|");
+const valido = d => d && typeof d.mes === "string" && d.vendas && typeof d.vendas === "object" && d.atualizadoEm;
+
+async function buscar(url) {
+  try {
+    const sep = url.includes("?") ? "&" : "?";
+    const r = await fetch(url + sep + "t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return valido(d) ? d : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function carregar() {
+  const fontes = await Promise.all([FONTE_ARQUIVO, FONTE_URL].filter(Boolean).map(buscar));
+  const melhor = fontes.filter(Boolean).reduce((a, b) => (chave(b) > chave(a) ? b : a), DADOS);
+  if (melhor !== DADOS) {
+    DADOS = melhor;
+    render();
+  }
+}
+
 render();
+carregar();
 </script>
 </body>
 </html>
