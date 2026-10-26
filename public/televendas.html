@@ -84,16 +84,16 @@
   th.op, td:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--line); }
   th.op { z-index: 2; }
   td:first-child { background: var(--card); }
-  tr.total td:first-child { background: var(--card); background-image: linear-gradient(rgba(127,127,127,.08), rgba(127,127,127,.08)); }
   /* cor da linha inteira conforme o resultado da operadora */
   tr.row-ok td { color: var(--ok); }
   tr.row-bad td { color: var(--bad); }
   td.pct { font-weight: 700; }
   td.pct.ok { background: var(--ok-bg); color: var(--ok); }
   td.pct.bad { background: var(--bad-bg); color: var(--bad); }
-  /* total do setor sempre em preto */
-  tr.total td, tr.total td:first-child, tr.total td.dia-v, tr.total td.pct { font-weight: 700; color: var(--ink); background-color: transparent; border-bottom: 0; }
-  tr.total { background: rgba(127,127,127,.08); }
+  /* total do setor: linha inteira com fundo verde/vermelho conforme % da meta x % desejado do dia */
+  tr.total td, tr.total td:first-child, tr.total td.pct { font-weight: 700; border-bottom: 0; border-top: 2px solid currentColor; }
+  tr.total.total-ok td, tr.total.total-ok td:first-child { background: var(--ok-bg); color: var(--ok); }
+  tr.total.total-bad td, tr.total.total-bad td:first-child { background: var(--bad-bg); color: var(--bad); }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
 </style>
@@ -315,7 +315,7 @@ function render() {
     <tr>${ultimos5.length ? ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("") : "<th>—</th>"}</tr>`;
 
   const linha = (o, total) => `
-    <tr class="${total ? "total" : o.ok ? "row-ok" : "row-bad"}">
+    <tr class="${total ? (o.ok ? "total total-ok" : "total total-bad") : o.ok ? "row-ok" : "row-bad"}">
       <td title="${o.nome}">${o.curto || o.nome}</td><td>${brl0(o.meta)}</td>
       ${o.dias.length ? o.dias.map(v => `<td class="dia-v">${brl0(v)}</td>`).join("") : '<td class="dia-v">—</td>'}
       <td>${brl(o.fat)}</td>
