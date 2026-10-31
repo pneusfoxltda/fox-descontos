@@ -110,6 +110,8 @@ td.meta-col{color:#6b7280;}
 .cal-dia.cal-dia-disabled{color:#d1d5db;cursor:not-allowed;pointer-events:none;}
 .cal-dia.cal-dia-vazio{cursor:default;}
 .cal-dia-futuros{font-size:10px;color:#9aabb8;text-align:center;margin-top:8px;}
+.cal-dia.cal-dia-range-start{background:#CC1F1F !important;color:#fff !important;font-weight:700;}
+.cal-dia.cal-dia-in-range{background:#fee2e2;color:#CC1F1F !important;}
 
 /* ── Legenda ── */
 .legenda{display:flex;gap:20px;padding:10px 12px;background:#f8fafc;font-size:11px;color:#7a8ba0;border-top:1px solid #e2e8f0;}
@@ -150,6 +152,17 @@ td.meta-col{color:#6b7280;}
 .modal-cal-dia.dom{color:#d1d5db;font-size:11px;}
 .modal-cal-dia.vazio{background:none;}
 .modal-du-info{font-size:11px;color:#7a8ba0;margin-top:4px;margin-bottom:16px;}
+
+/* ── Modal Clientes (drill-down) ── */
+#modal-clientes .modal{width:580px;max-width:calc(100vw - 32px);}
+.cli-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cli-modal-header h3{margin:0;font-size:14px;color:#0f1f3d;}
+.cli-modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:#9aabb8;line-height:1;padding:0 4px;}
+.cli-modal-close:hover{color:#CC1F1F;}
+.cli-scroll{overflow-y:auto;max-height:420px;}
+
+/* ── Período info banner ── */
+.periodo-banner{background:#fff8e7;border:1px solid #fde68a;border-radius:8px 8px 0 0;padding:10px 16px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;}
 
 /* ── Scroll hint (mobile) ── */
 .scroll-hint{display:none;text-align:center;font-size:11px;color:#9aabb8;padding:6px 0 2px;letter-spacing:.3px;}
@@ -282,10 +295,23 @@ td.meta-col{color:#6b7280;}
   </div>
 </div>
 
+<!-- Modal de clientes (drill-down) -->
+<div class="modal-bg" id="modal-clientes">
+  <div class="modal" style="width:580px;max-width:calc(100vw - 32px);">
+    <div class="cli-modal-header">
+      <h3 id="modal-cli-titulo"></h3>
+      <button class="cli-modal-close" onclick="fecharClientes()">✕</button>
+    </div>
+    <div class="cli-scroll" id="modal-cli-content"></div>
+  </div>
+</div>
+
 <script>
 /* ── Data de referência (filtro) ── */
 const DATA_MIN = new Date(2026, 9, 1); // 01/10/2026
-let dataRef = null; // null = hoje; Date = data selecionada
+let dataRef = null;    // null = mês completo; Date = dia/início do range
+let dataRefFim = null; // null = dia único; Date = fim do período
+let rangeStart = null; // clique pendente durante seleção de range
 let calViewAno, calViewMes;
 
 function dataRefAtiva() {
@@ -325,7 +351,8 @@ function renderCalendario() {
   const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const DIAS_SEM = ['Do','Se','Te','Qu','Qu','Se','Sá'];
   const hoje = new Date();
-  const selD = dataRef;
+  // selD: used for single-day highlight only (not in range mode)
+  const selD = (dataRef && !dataRefFim && !rangeStart) ? dataRef : null;
 
   document.getElementById('cal-titulo').textContent = `${MESES[calViewMes]} ${calViewAno}`;
 
@@ -345,21 +372,49 @@ function renderCalendario() {
     const isMin = dataDia < DATA_MIN;
     const isFuturo = dataDia > hoje;
     const isHoje = d===hoje.getDate() && calViewMes===hoje.getMonth() && calViewAno===hoje.getFullYear();
-    const isSel = selD && d===selD.getDate() && calViewMes===selD.getMonth() && calViewAno===selD.getFullYear();
+    const isSel  = selD && d===selD.getDate() && calViewMes===selD.getMonth() && calViewAno===selD.getFullYear();
+    // Range highlighting
+    const isRangeStart = rangeStart && d===rangeStart.getDate() && calViewMes===rangeStart.getMonth() && calViewAno===rangeStart.getFullYear();
+    const isRangeEnd   = dataRefFim  && d===dataRefFim.getDate()  && calViewMes===dataRefFim.getMonth()  && calViewAno===dataRefFim.getFullYear();
+    const isInRange    = dataRef && dataRefFim && dataDia > dataRef && dataDia < dataRefFim;
     let cls = 'cal-dia';
     if(isMin || isFuturo) cls += ' cal-dia-disabled';
-    if(isHoje) cls += ' cal-dia-hoje';
-    if(isSel) cls += ' cal-dia-sel';
+    if(isHoje && !isSel && !isRangeStart && !isRangeEnd) cls += ' cal-dia-hoje';
+    if(isInRange) cls += ' cal-dia-in-range';
+    if(isSel || isRangeEnd) cls += ' cal-dia-sel';
+    if(isRangeStart) cls += ' cal-dia-range-start';
     html += `<div class="${cls}" onclick="selecionarData(${d},${calViewMes},${calViewAno})">${d}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
-  document.getElementById('cal-futuros').textContent =
-    (calViewAno < hoje.getFullYear() || calViewMes < hoje.getMonth()) ? '' : 'Datas futuras não disponíveis';
+  if(rangeStart) {
+    document.getElementById('cal-futuros').textContent = '↑ Clique no dia final do período';
+    document.getElementById('cal-futuros').style.color = '#CC1F1F';
+  } else {
+    document.getElementById('cal-futuros').style.color = '#9aabb8';
+    document.getElementById('cal-futuros').textContent =
+      (calViewAno < hoje.getFullYear() || calViewMes < hoje.getMonth()) ? '' : 'Datas futuras não disponíveis';
+  }
 }
 
 function selecionarData(dia, mes, ano) {
-  dataRef = new Date(ano, mes, dia);
+  const clicado = new Date(ano, mes, dia);
+
+  if(!rangeStart) {
+    // Primeiro clique: marcar início do período
+    rangeStart = clicado;
+    renderCalendario(); // atualiza visual (destaca rangeStart)
+    return; // popup fica aberto aguardando 2º clique
+  }
+
+  // Segundo clique: fechar o período
+  const ini = rangeStart <= clicado ? rangeStart : clicado;
+  const fim = rangeStart <= clicado ? clicado   : rangeStart;
+  rangeStart = null;
+
+  dataRef    = ini;
+  dataRefFim = (ini.getTime() === fim.getTime()) ? null : fim; // mesmo dia = visão de dia único
+
   atualizarBotaoFiltro();
   document.getElementById('cal-popup').classList.remove('aberto');
   carregar(true);
@@ -367,6 +422,8 @@ function selecionarData(dia, mes, ano) {
 
 function verMesCompleto() {
   dataRef = null;
+  dataRefFim = null;
+  rangeStart = null;
   atualizarBotaoFiltro();
   document.getElementById('cal-popup').classList.remove('aberto');
   carregar(true);
@@ -374,15 +431,23 @@ function verMesCompleto() {
 
 function limparFiltro() {
   dataRef = null;
+  dataRefFim = null;
+  rangeStart = null;
   atualizarBotaoFiltro();
   carregar(true);
 }
 
 function atualizarBotaoFiltro() {
-  const btn = document.getElementById('filtro-data-btn');
-  const txt = document.getElementById('filtro-data-txt');
+  const btn   = document.getElementById('filtro-data-btn');
+  const txt   = document.getElementById('filtro-data-txt');
   const clear = document.getElementById('filtro-data-clear');
-  if(dataRef) {
+  if(dataRef && dataRefFim) {
+    const d1 = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    const d2 = dataRefFim.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    txt.textContent = `${d1} — ${d2}`;
+    btn.classList.add('ativo');
+    clear.style.display = 'inline-flex';
+  } else if(dataRef) {
     txt.textContent = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
     btn.classList.add('ativo');
     clear.style.display = 'inline-flex';
@@ -486,63 +551,196 @@ async function buscarMes() {
   return r.json();
 }
 
-/* ── Render dia específico (visão simplificada) ── */
+/* ── Helper ── */
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ── Render dia específico (visão simplificada + drill-down) ── */
 function renderDia(rows) {
   const d = dataRef;
-  const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const iso = toISO(d);
   const dataBRFull = d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
 
-  // Filtrar só as linhas do dia selecionado
   const rowsDia = rows.filter(r => r.data_ref === iso);
 
-  // Agrupar por operador
+  // Agrupar por operador — capturar tudo o que o sync enviar
   const porOp = {};
-  OPERADORES.forEach(op => { porOp[op.codigo] = {nome: op.nome, valor: 0}; });
+  OPERADORES.forEach(op => {
+    porOp[op.codigo] = {nome: op.nome, valor: 0, qtdClientes: 0, qtdItens: 0, clientes: []};
+  });
   rowsDia.forEach(r => {
-    if(porOp[r.operador_codigo]) porOp[r.operador_codigo].valor += r.valor_venda || 0;
+    if(!porOp[r.operador_codigo]) return;
+    const op = porOp[r.operador_codigo];
+    op.valor += r.valor_venda || 0;
+    if(r.num_clientes)  op.qtdClientes += r.num_clientes;
+    if(r.qtd_clientes)  op.qtdClientes += r.qtd_clientes;
+    if(r.qtd_itens)     op.qtdItens    += r.qtd_itens;
+    if(r.nome_cliente) {
+      op.clientes.push({
+        nome:   r.nome_cliente,
+        codigo: r.codigo_cliente || r.cod_cliente || '—',
+        valor:  r.valor_venda || 0,
+        itens:  r.qtd_itens ?? null,
+        data:   r.data_ref
+      });
+    }
   });
 
-  const totalDia = Object.values(porOp).reduce((a,op) => a + op.valor, 0);
+  window._drillData = porOp;
 
-  // Esconder KPIs e metas
+  const totalDia = Object.values(porOp).reduce((a, op) => a + op.valor, 0);
+
+  // Detectar colunas disponíveis
+  const hasNomeCli = rowsDia.some(r => r.nome_cliente);
+  const hasQtdCli  = rowsDia.some(r => r.num_clientes || r.qtd_clientes);
+  const hasQtdIt   = rowsDia.some(r => r.qtd_itens);
+  const hasDetail  = hasNomeCli || hasQtdCli;
+
   document.getElementById('kpis').innerHTML = '';
   document.getElementById('metas-row').style.display = 'none';
   document.getElementById('page-meta').textContent = `Vendas de ${dataBRFull} · fonte: Movere`;
   document.getElementById('sync-info').innerHTML = `Filtro: dia específico`;
 
+  // Cabeçalhos extras
+  const thCli = (hasQtdCli || hasNomeCli) ? `<th style="padding:14px 12px;text-align:center;font-size:13px;color:#fff;white-space:nowrap;">Clientes</th>` : '';
+  const thIt  = hasQtdIt ? `<th style="padding:14px 12px;text-align:center;font-size:13px;color:#fff;white-space:nowrap;">Itens</th>` : '';
+
   const linhas = OPERADORES.map(op => {
-    const v = porOp[op.codigo].valor;
+    const data = porOp[op.codigo];
+    const v    = data.valor;
+    const qtdCli = hasNomeCli ? data.clientes.length : (data.qtdClientes || '—');
+    const qtdIt  = data.qtdItens || '—';
+    const rowClick = hasDetail ? `style="border-bottom:1px solid #f0f4f8;cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"` : 'style="border-bottom:1px solid #f0f4f8;"';
+    const tdCli = (hasQtdCli || hasNomeCli) ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#374151;">${qtdCli}</td>` : '';
+    const tdIt  = hasQtdIt ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#374151;">${qtdIt}</td>` : '';
     return `
-    <tr style="border-bottom:1px solid #f0f4f8;">
-      <td style="padding:14px 16px;font-size:16px;font-weight:800;color:#1a2332;text-align:left">${op.nome.toUpperCase()}</td>
-      <td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a2332;text-align:right">${v > 0 ? brl(v) : '<span style="color:#d1d5db">—</span>'}</td>
+    <tr ${rowClick}>
+      <td style="padding:14px 16px;font-size:15px;font-weight:800;color:#1a2332;text-align:left;">${op.nome.toUpperCase()}</td>
+      ${tdCli}${tdIt}
+      <td style="padding:14px 16px;font-size:15px;font-weight:700;color:#1a2332;text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db">—</span>'}</td>
     </tr>`;
   }).join('');
+
+  // Totais das colunas extras
+  const totalCli = hasNomeCli
+    ? OPERADORES.reduce((a, op) => a + porOp[op.codigo].clientes.length, 0)
+    : OPERADORES.reduce((a, op) => a + (porOp[op.codigo].qtdClientes || 0), 0);
+  const totalIt  = OPERADORES.reduce((a, op) => a + (porOp[op.codigo].qtdItens || 0), 0);
+  const tdTotCli = (hasQtdCli || hasNomeCli) ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#fff;">${totalCli || '—'}</td>` : '';
+  const tdTotIt  = hasQtdIt ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#fff;">${totalIt || '—'}</td>` : '';
 
   document.getElementById('tabela-wrap').innerHTML = `
   <div class="table-wrap" style="margin-top:16px;">
     <table style="font-size:14px;">
       <thead>
-        <tr style="background:#0f1f3d;color:#fff;">
-          <th style="padding:14px 16px;text-align:left;font-size:14px;">Vendedor</th>
-          <th style="padding:14px 16px;text-align:right;font-size:14px;">Faturamento do dia</th>
+        <tr style="background:#0f1f3d;">
+          <th style="padding:14px 16px;text-align:left;font-size:14px;color:#fff;">Vendedor</th>
+          ${thCli}${thIt}
+          <th style="padding:14px 16px;text-align:right;font-size:14px;color:#fff;">Faturamento do dia</th>
         </tr>
       </thead>
       <tbody>
         ${linhas}
-        <tr style="background:#0f1f3d;color:#fff;font-weight:800;">
-          <td style="padding:14px 16px;font-size:15px;text-align:left">TOTAL DO DIA</td>
-          <td style="padding:14px 16px;font-size:15px;text-align:right">${brl(totalDia)}</td>
+        <tr style="background:#0f1f3d;font-weight:800;">
+          <td style="padding:14px 16px;font-size:15px;text-align:left;color:#fff;">TOTAL DO DIA</td>
+          ${tdTotCli}${tdTotIt}
+          <td style="padding:14px 16px;font-size:15px;text-align:right;color:#fff;">${brl(totalDia)}</td>
         </tr>
       </tbody>
     </table>
     ${rowsDia.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas nesta data.</div>' : ''}
+    ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;padding:8px 12px;text-align:center;">💡 Clique na linha do vendedor para ver os clientes</p>' : ''}
+  </div>`;
+}
+
+/* ── Render período (range) ── */
+function renderPeriodo(rows) {
+  const iso1  = toISO(dataRef);
+  const iso2  = toISO(dataRefFim);
+  const d1Str = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  const d2Str = dataRefFim.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const rowsPer = rows.filter(r => r.data_ref >= iso1 && r.data_ref <= iso2);
+
+  const porOp = {};
+  OPERADORES.forEach(op => {
+    porOp[op.codigo] = {nome: op.nome, valor: 0, qtdClientes: 0, qtdItens: 0, clientes: []};
+  });
+  rowsPer.forEach(r => {
+    if(!porOp[r.operador_codigo]) return;
+    const op = porOp[r.operador_codigo];
+    op.valor += r.valor_venda || 0;
+    if(r.num_clientes)  op.qtdClientes += r.num_clientes;
+    if(r.qtd_clientes)  op.qtdClientes += r.qtd_clientes;
+    if(r.qtd_itens)     op.qtdItens    += r.qtd_itens;
+    if(r.nome_cliente) {
+      op.clientes.push({
+        nome:   r.nome_cliente,
+        codigo: r.codigo_cliente || r.cod_cliente || '—',
+        valor:  r.valor_venda || 0,
+        itens:  r.qtd_itens ?? null,
+        data:   r.data_ref
+      });
+    }
+  });
+
+  window._drillData = porOp;
+
+  const total     = Object.values(porOp).reduce((a, op) => a + op.valor, 0);
+  const hasDetail = rowsPer.some(r => r.nome_cliente || r.num_clientes || r.qtd_clientes);
+
+  document.getElementById('kpis').innerHTML = '';
+  document.getElementById('metas-row').style.display = 'none';
+  document.getElementById('page-meta').textContent = `Período: ${d1Str} a ${d2Str} · fonte: Movere`;
+  document.getElementById('sync-info').innerHTML = `Filtro: período selecionado`;
+
+  const linhas = OPERADORES.map(op => {
+    const data = porOp[op.codigo];
+    const v    = data.valor;
+    const rowClick = hasDetail
+      ? `style="border-bottom:1px solid #f0f4f8;cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"`
+      : 'style="border-bottom:1px solid #f0f4f8;"';
+    return `
+    <tr ${rowClick}>
+      <td style="padding:16px 16px;font-size:15px;font-weight:800;color:#1a2332;text-align:left;">${op.nome.toUpperCase()}</td>
+      <td style="padding:16px 16px;font-size:16px;font-weight:700;color:#1a2332;text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabela-wrap').innerHTML = `
+  <div class="table-wrap" style="margin-top:16px;">
+    <div class="periodo-banner">
+      📅 <strong>Período:</strong> ${d1Str} a ${d2Str} &nbsp;·&nbsp; ${rowsPer.length} registro${rowsPer.length!==1?'s':''}
+    </div>
+    <table style="font-size:14px;">
+      <thead>
+        <tr style="background:#0f1f3d;">
+          <th style="padding:14px 16px;text-align:left;font-size:14px;color:#fff;">Vendedor</th>
+          <th style="padding:14px 16px;text-align:right;font-size:14px;color:#fff;">Faturamento no período</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${linhas}
+        <tr style="background:#0f1f3d;font-weight:800;">
+          <td style="padding:16px 16px;font-size:15px;text-align:left;color:#fff;font-weight:800;">TOTAL DO PERÍODO</td>
+          <td style="padding:16px 16px;font-size:17px;text-align:right;color:#fff;font-weight:800;">${brl(total)}</td>
+        </tr>
+      </tbody>
+    </table>
+    ${rowsPer.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas neste período.</div>' : ''}
+    ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;padding:8px 12px;text-align:center;">💡 Clique na linha do vendedor para ver os clientes</p>' : ''}
   </div>`;
 }
 
 /* ── Render ── */
 function render(rows) {
-  // Se há data específica selecionada → visão simplificada do dia
+  // Range de datas → visão de período
+  if(dataRef && dataRefFim) {
+    renderPeriodo(rows);
+    return;
+  }
+  // Data única → visão simplificada do dia
   if(dataRef) {
     renderDia(rows);
     return;
@@ -823,6 +1021,86 @@ function salvarMetas() {
   carregar();
 }
 
+/* ── Modal Clientes (drill-down) ── */
+function abrirClientes(codigo, nomeOp) {
+  const data = window._drillData && window._drillData[codigo];
+  if(!data) return;
+
+  document.getElementById('modal-cli-titulo').textContent = nomeOp;
+
+  const clientes = [...(data.clientes || [])].sort((a,b) => b.valor - a.valor);
+  const hasItens  = clientes.some(c => c.itens != null);
+
+  if(clientes.length > 0) {
+    // Dados individuais por cliente disponíveis
+    const linhas = clientes.map(c => {
+      const tdItens = hasItens ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:center;color:#374151;font-size:13px;">${c.itens ?? '—'}</td>` : '';
+      const dataCol = c.data ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data.slice(8,10)}/${c.data.slice(5,7)}</td>` : '';
+      return `<tr>
+        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome || '—'}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo}</td>
+        ${dataCol}
+        ${tdItens}
+        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
+      </tr>`;
+    }).join('');
+
+    const totalV  = clientes.reduce((a,c) => a + c.valor, 0);
+    const totalIt = clientes.reduce((a,c) => a + (c.itens||0), 0);
+    const hasData = clientes[0] && clientes[0].data;
+    const thData  = hasData  ? '<th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Data</th>' : '';
+    const thItens = hasItens ? '<th style="padding:10px 12px;text-align:center;font-size:12px;color:#fff;font-weight:700;">Itens</th>' : '';
+    const tdTotData  = hasData  ? '<td style="padding:10px 12px;color:#9aabb8;font-size:12px;"></td>' : '';
+    const tdTotItens = hasItens ? `<td style="padding:10px 12px;text-align:center;font-weight:700;font-size:13px;color:#1a2332;">${totalIt}</td>` : '';
+
+    document.getElementById('modal-cli-content').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#0f1f3d;">
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Cliente</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Código</th>
+            ${thData}${thItens}
+            <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;font-weight:700;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+        <tfoot>
+          <tr style="background:#f0f4f8;">
+            <td colspan="2" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${clientes.length} cliente${clientes.length!==1?'s':''}</td>
+            ${tdTotData}${tdTotItens}
+            <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalV)}</td>
+          </tr>
+        </tfoot>
+      </table>`;
+
+  } else if(data.qtdClientes > 0) {
+    // Contagem agregada — sem nomes individuais
+    document.getElementById('modal-cli-content').innerHTML = `
+      <div style="text-align:center;padding:28px 16px;">
+        <div style="font-size:36px;margin-bottom:10px;">👥</div>
+        <p style="font-size:15px;font-weight:700;color:#0f1f3d;">${data.qtdClientes} cliente${data.qtdClientes!==1?'s':''}</p>
+        ${data.qtdItens ? `<p style="margin-top:4px;color:#6b7280;font-size:13px;">${data.qtdItens} itens vendidos</p>` : ''}
+        <p style="margin-top:10px;font-size:18px;font-weight:800;color:#1a2332;">${brl(data.valor)}</p>
+        <p style="margin-top:16px;font-size:11px;color:#9aabb8;line-height:1.5;">Para ver os nomes, atualize o script de sincronização<br>para capturar dados individuais por cliente.</p>
+      </div>`;
+
+  } else {
+    // Sem dados de cliente
+    document.getElementById('modal-cli-content').innerHTML = `
+      <div style="text-align:center;padding:28px 16px;color:#9aabb8;">
+        <div style="font-size:36px;margin-bottom:10px;">📋</div>
+        <p style="font-size:13px;">Detalhes de clientes não disponíveis.</p>
+        <p style="margin-top:8px;font-size:11px;line-height:1.5;">O script <code>sync_televendas.py</code> precisa ser atualizado<br>para capturar dados individuais por cliente.</p>
+      </div>`;
+  }
+
+  document.getElementById('modal-clientes').classList.add('open');
+}
+
+function fecharClientes() {
+  document.getElementById('modal-clientes').classList.remove('open');
+}
+
 /* ── Admin ── */
 if(new URLSearchParams(window.location.search).get('admin') === '1') {
   document.getElementById('btn-admin').style.display = '';
@@ -873,6 +1151,9 @@ agendarAtualizacao();
 
 document.getElementById('modal-metas').addEventListener('click', function(e){
   if(e.target===this) fecharModal();
+});
+document.getElementById('modal-clientes').addEventListener('click', function(e){
+  if(e.target===this) fecharClientes();
 });
 </script>
 </body>
