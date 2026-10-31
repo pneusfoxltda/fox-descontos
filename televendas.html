@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Televendas — Fox Pneus</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+
+/* ── Header ── */
+.header{background:#111;border-bottom:1px solid #1E1E1E;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+.logo-circle{width:40px;height:40px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:#fff;}
+.brand-sub{font-size:11px;color:#555;margin-top:1px;}
+.header a{margin-left:auto;font-size:12px;color:#555;text-decoration:none;border:1px solid #2A2A2A;border-radius:6px;padding:7px 14px;transition:all .15s;white-space:nowrap;}
+.header a:hover{border-color:#CC1F1F;color:#CC1F1F;}
+
+/* ── Layout ── */
+.container{max-width:680px;margin:0 auto;padding:28px 16px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:#fff;margin-bottom:2px;}
+.page-sub{font-size:12px;color:#555;margin-bottom:24px;display:flex;align-items:center;gap:8px;}
+.dot{width:6px;height:6px;border-radius:50%;}
+.dot.verde{background:#22C55E;}
+.dot.cinza{background:#555;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── Legenda ── */
+.legenda{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.legenda-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#666;}
+.badge{width:10px;height:10px;border-radius:3px;}
+.badge.verde{background:#22C55E;}
+.badge.amarelo{background:#F59E0B;}
+.badge.vermelho{background:#EF4444;}
+
+/* ── Data / Meta card ── */
+.data-row{display:flex;justify-content:space-between;align-items:center;background:#161616;border:1px solid #222;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;}
+.data-label{color:#666;}
+.data-val{color:#fff;font-weight:600;}
+.meta-edit{font-size:11px;color:#444;cursor:pointer;border:1px solid #333;border-radius:5px;padding:4px 9px;transition:.15s;}
+.meta-edit:hover{border-color:#666;color:#aaa;}
+
+/* ── Cards dos operadores ── */
+.cards{display:flex;flex-direction:column;gap:12px;}
+.card{background:#161616;border:1px solid #222;border-radius:12px;padding:16px 18px;transition:border-color .15s;}
+.card:hover{border-color:#333;}
+
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.card-pos{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#333;margin-right:10px;width:22px;}
+.card-nome{font-weight:700;font-size:15px;color:#F0F0F0;flex:1;}
+.card-valor{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.5px;}
+.card-valor.verde{color:#22C55E;}
+.card-valor.amarelo{color:#F59E0B;}
+.card-valor.vermelho{color:#EF4444;}
+.card-valor.neutro{color:#888;}
+
+.bar-wrap{height:6px;background:#222;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.bar-fill.verde{background:#22C55E;}
+.bar-fill.amarelo{background:#F59E0B;}
+.bar-fill.vermelho{background:#EF4444;}
+
+.card-footer{display:flex;justify-content:space-between;font-size:11px;color:#555;}
+.pct-badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;}
+.pct-badge.verde{background:#22C55E22;color:#22C55E;}
+.pct-badge.amarelo{background:#F59E0B22;color:#F59E0B;}
+.pct-badge.vermelho{background:#EF444422;color:#EF4444;}
+
+/* ── Total ── */
+.total-card{background:#1A1A1A;border:1px solid #CC1F1F44;border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;}
+.total-label{font-size:13px;color:#888;}
+.total-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#CC1F1F;letter-spacing:.5px;}
+
+/* ── Status ── */
+.status-bar{text-align:center;font-size:11px;color:#444;margin-top:22px;padding-bottom:30px;}
+.btn-refresh{background:none;border:1px solid #2A2A2A;color:#555;font-size:11px;border-radius:5px;padding:5px 12px;cursor:pointer;margin-left:8px;transition:.15s;}
+.btn-refresh:hover{border-color:#555;color:#aaa;}
+
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:60px 20px;color:#444;}
+.loading .spinner{width:36px;height:36px;border:3px solid #222;border-top-color:#CC1F1F;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.erro{background:#1A0A0A;border:1px solid #CC1F1F44;border-radius:10px;padding:16px;color:#EF4444;font-size:13px;text-align:center;}
+
+/* ── Modal de meta ── */
+.modal-bg{display:none;position:fixed;inset:0;background:#000c;z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#1A1A1A;border:1px solid #333;border-radius:14px;padding:24px;width:320px;}
+.modal h3{font-size:15px;margin-bottom:14px;}
+.modal input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#F0F0F0;font-size:16px;padding:12px 14px;outline:none;margin-bottom:14px;}
+.modal input:focus{border-color:#CC1F1F;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;padding:11px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.btn-ok{background:#CC1F1F;color:#fff;}
+.btn-cancel{background:#222;color:#888;}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-circle">🦊</div>
+  <div>
+    <div class="brand-name">Fox Pneus</div>
+    <div class="brand-sub">Grupo Redefox</div>
+  </div>
+  <a href="/consulta.html">Consulta Descontos</a>
+</header>
+
+<div class="container">
+  <div class="page-title">Televendas</div>
+  <div class="page-sub" id="sub-status">
+    <span class="dot cinza" id="dot-status"></span>
+    <span id="txt-status">Carregando…</span>
+  </div>
+
+  <div class="legenda">
+    <div class="legenda-item"><span class="badge verde"></span> No ritmo (≥ meta do dia)</div>
+    <div class="legenda-item"><span class="badge amarelo"></span> Perto (≥ 70% da meta)</div>
+    <div class="legenda-item"><span class="badge vermelho"></span> Abaixo do ritmo</div>
+  </div>
+
+  <div class="data-row">
+    <span class="data-label">Meta diária por operador</span>
+    <span>
+      <span class="data-val" id="meta-display">R$ —</span>
+      <button class="meta-edit" onclick="abrirModalMeta()">✏️ Editar</button>
+    </span>
+  </div>
+
+  <div id="cards-container">
+    <div class="loading"><div class="spinner"></div>Buscando vendas de hoje…</div>
+  </div>
+
+  <div id="total-container"></div>
+
+  <div class="status-bar">
+    <span id="ultima-atualizacao">—</span>
+    <button class="btn-refresh" onclick="carregar(true)">↻ Atualizar agora</button>
+  </div>
+</div>
+
+<!-- Modal de meta -->
+<div class="modal-bg" id="modal-meta">
+  <div class="modal">
+    <h3>Meta diária por operador (R$)</h3>
+    <input type="number" id="input-meta" placeholder="Ex: 10000" min="0" step="500">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-ok" onclick="salvarMeta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Configurações ── */
+const URL_BASE = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
+
+/* ── Meta diária (salva no localStorage) ── */
+let META_DIARIA = 10000;
+function carregarMeta() {
+  try { META_DIARIA = parseFloat(localStorage.getItem('fox_meta_televendas')) || 10000; } catch(e){}
+  document.getElementById('meta-display').textContent = formatBRL(META_DIARIA);
+}
+function abrirModalMeta() {
+  document.getElementById('input-meta').value = META_DIARIA;
+  document.getElementById('modal-meta').classList.add('open');
+}
+function fecharModal() {
+  document.getElementById('modal-meta').classList.remove('open');
+}
+function salvarMeta() {
+  const v = parseFloat(document.getElementById('input-meta').value);
+  if (v > 0) {
+    META_DIARIA = v;
+    try { localStorage.setItem('fox_meta_televendas', v); } catch(e){}
+    document.getElementById('meta-display').textContent = formatBRL(META_DIARIA);
+    fecharModal();
+    carregar(true);
+  }
+}
+
+/* ── Data de hoje (BRT) ── */
+function hojeISO() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // YYYY-MM-DD
+}
+
+/* ── Formatação ── */
+function formatBRL(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* ── Cor baseada no % atingido ── */
+function corPorPct(pct) {
+  if (pct >= 100) return 'verde';
+  if (pct >= 70)  return 'amarelo';
+  return 'vermelho';
+}
+
+/* ── % esperado para a hora atual (considera 8h às 20h = 12h de trabalho) ── */
+function pctEsperado() {
+  const agora = new Date();
+  const h = agora.getHours() + agora.getMinutes() / 60;
+  const ini = 8, fim = 20;
+  if (h <= ini) return 0;
+  if (h >= fim) return 100;
+  return Math.round(((h - ini) / (fim - ini)) * 100);
+}
+
+/* ── Busca Supabase ── */
+async function buscarVendas() {
+  const data = hojeISO();
+  const url = `${URL_BASE}/rest/v1/vendas_televendas?data_ref=eq.${data}&order=valor_venda.desc`;
+  const r = await fetch(url, {
+    headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` }
+  });
+  if (!r.ok) throw new Error(`Supabase ${r.status}`);
+  return r.json();
+}
+
+/* ── Render ── */
+function renderCards(vendas) {
+  const container = document.getElementById('cards-container');
+  const totalContainer = document.getElementById('total-container');
+
+  if (!vendas || vendas.length === 0) {
+    container.innerHTML = `
+      <div class="erro">
+        Sem dados para hoje ainda.<br>
+        <small style="color:#666;margin-top:6px;display:block">
+          Execute o script <strong>sync_televendas.py</strong> para sincronizar as vendas do Movere.
+        </small>
+      </div>`;
+    totalContainer.innerHTML = '';
+    return;
+  }
+
+  const pctEsp = pctEsperado();
+  let total = 0;
+
+  const html = vendas.map((v, i) => {
+    const pctAting = META_DIARIA > 0 ? Math.round((v.valor_venda / META_DIARIA) * 100) : 0;
+    const cor = corPorPct(pctAting);
+    const barW = Math.min(pctAting, 100);
+    total += v.valor_venda || 0;
+
+    const sinc = v.atualizado_em
+      ? new Date(v.atualizado_em).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' })
+      : '—';
+
+    return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-pos">${i + 1}</span>
+        <span class="card-nome">${v.operador_nome}</span>
+        <span class="card-valor ${v.valor_venda > 0 ? cor : 'neutro'}">${formatBRL(v.valor_venda)}</span>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-fill ${cor}" style="width:${barW}%"></div>
+      </div>
+      <div class="card-footer">
+        <span>${v.qtd_clientes || 0} cliente${v.qtd_clientes !== 1 ? 's' : ''} · ${v.qtd_itens || 0} itens</span>
+        <span>
+          <span class="pct-badge ${cor}">${pctAting}%</span>
+          <span style="margin-left:6px">meta esperada: ${pctEsp}%</span>
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="cards">${html}</div>`;
+
+  totalContainer.innerHTML = `
+    <div class="total-card">
+      <span class="total-label">Total do time hoje</span>
+      <span class="total-val">${formatBRL(total)}</span>
+    </div>`;
+}
+
+/* ── Status ── */
+function setStatus(ok, msg) {
+  const dot = document.getElementById('dot-status');
+  const txt = document.getElementById('txt-status');
+  dot.className = 'dot ' + (ok ? 'verde' : 'cinza');
+  txt.textContent = msg;
+}
+
+/* ── Carregar ── */
+async function carregar(forcar = false) {
+  try {
+    setStatus(false, 'Atualizando…');
+    const vendas = await buscarVendas();
+    renderCards(vendas);
+
+    const agora = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
+    document.getElementById('ultima-atualizacao').textContent = `Atualizado às ${agora}`;
+    setStatus(true, `Dados de hoje · ${new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' })}`);
+  } catch (e) {
+    setStatus(false, 'Erro ao carregar');
+    document.getElementById('cards-container').innerHTML =
+      `<div class="erro">Erro ao buscar dados: ${e.message}</div>`;
+  }
+}
+
+/* ── Inicializar ── */
+carregarMeta();
+carregar();
+setInterval(carregar, REFRESH_INTERVAL_MS);
+
+// Fechar modal clicando fora
+document.getElementById('modal-meta').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
+</script>
+</body>
+</html>
