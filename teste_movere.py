@@ -224,6 +224,46 @@ async def main():
         }""")
         print(f"     Checkboxes resumo={r.get('resumo')} filtrar={r.get('filtrar')}")
 
+        # DEBUG: lista todos os checkboxes e seus estados atuais
+        all_checks = await page.evaluate("""() => {
+            const r = [];
+            for (const cb of document.querySelectorAll('input[type="checkbox"]')) {
+                const container = cb.closest('tr') || cb.parentElement;
+                const near = container ? (container.innerText||'').trim().replace(/\\s+/g,' ').slice(0,80) : '';
+                r.push({ id: cb.id||'', name: cb.name||'', value: cb.value||'', checked: cb.checked, near });
+            }
+            return r;
+        }""")
+        print(f"     Checkboxes na página ({len(all_checks)}):")
+        for x in all_checks:
+            state = '✓' if x['checked'] else '○'
+            print(f"       {state} id='{x['id']}' name='{x['name']}' val='{x['value']}' → '{x['near'][:60]}'")
+
+        # FIX BUG 3: arosSelecionados — desmarcar todos os checkboxes de aro
+        # O problema: check() pode acidentalmente marcar checkbox de tamanho de aro,
+        # fazendo o Movere filtrar SOMENTE aquele aro e retornar R$0 em valores monetários.
+        aro_fix = await page.evaluate("""() => {
+            const desmarcados = [];
+            for (const cb of document.querySelectorAll('input[type="checkbox"]')) {
+                if (!cb.checked) continue;
+                const container = cb.closest('tr') || cb.closest('td') || cb.parentElement;
+                const txt = [
+                    container ? (container.innerText||'') : '',
+                    cb.id||'', cb.name||'', cb.value||''
+                ].join(' ');
+                if (/aro/i.test(txt)) {
+                    cb.checked = false;
+                    cb.dispatchEvent(new Event('change', {bubbles: true}));
+                    desmarcados.push((cb.id||cb.name||cb.value||'?') + '=' + cb.value);
+                }
+            }
+            return desmarcados;
+        }""")
+        if aro_fix:
+            print(f"     ⚠️  BUG3 FIX — aros desmarcados: {aro_fix}")
+        else:
+            print(f"     ✅  Nenhum aro marcado (correto)")
+
         # Formato HTML
         try:
             for sel_el in await page.query_selector_all('select'):
