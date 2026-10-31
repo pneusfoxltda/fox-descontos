@@ -193,42 +193,59 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.wait_for_timeout(1500)
 
     # 1. Visão Empresarial = 1
+    # Tenta pelo label de texto E por atributos comuns do campo
     await page.evaluate("""() => {
-        for (const td of document.querySelectorAll('td, div')) {
-            if (td.childElementCount === 0 && td.innerText &&
-                td.innerText.trim() === 'Visão Empresarial') {
-                const row = td.closest('tr');
+        function setVE(inp) {
+            if (inp && (!inp.value || inp.value.trim() === '')) {
+                inp.value = '1';
+                inp.dispatchEvent(new Event('input',  {bubbles:true}));
+                inp.dispatchEvent(new Event('change', {bubbles:true}));
+                inp.dispatchEvent(new Event('blur',   {bubbles:true}));
+            }
+        }
+        // Busca por label de texto (pode variar com acentuação)
+        for (const td of document.querySelectorAll('td,div,label,span')) {
+            const t = td.innerText ? td.innerText.trim() : '';
+            if (t === 'Visão Empresarial' || t === 'Visao Empresarial' ||
+                t.includes('Empresarial')) {
+                const row = td.closest('tr') || td.closest('div');
                 if (row) {
                     const inp = row.querySelector('input[type="text"]');
-                    if (inp && (!inp.value || inp.value.trim() === '')) {
-                        inp.value = '1';
-                        inp.dispatchEvent(new Event('change', {bubbles:true}));
-                        inp.dispatchEvent(new Event('blur',   {bubbles:true}));
-                    }
+                    if (inp) { setVE(inp); return; }
                 }
-                break;
+            }
+        }
+        // Fallback: campo com id ou name contendo 'empresa' ou 'visao'
+        for (const inp of document.querySelectorAll('input[type="text"]')) {
+            const id = (inp.id || inp.name || '').toLowerCase();
+            if (id.includes('empresa') || id.includes('visao') || id.includes('vision')) {
+                setVE(inp); return;
             }
         }
     }""")
     await page.wait_for_timeout(900)
 
-    # 2. Data Inicial
+    # 2. Data Inicial  (fix: triple_click não existe → usar click count=3)
     for sel in ['#dtaini','input[name="dtaini"]','input[id*="dtaini"]','input[id*="DataIni"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.triple_click(); await el.fill(data_fmt); await el.press('Tab')
+                await el.click(click_count=3)
+                await el.fill(data_fmt)
+                await el.press('Tab')
                 break
         except Exception:
             pass
     await page.wait_for_timeout(400)
 
-    # 3. Data Final
+    # 3. Data Final  (fix: triple_click não existe → usar click count=3)
     for sel in ['#dtafim','input[name="dtafim"]','input[id*="dtafim"]','input[id*="DataFim"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.triple_click(); await el.fill(data_fmt); await el.press('Tab')
+                await el.click(click_count=3)
+                await el.fill(data_fmt)
+                await el.press('Tab')
                 break
         except Exception:
             pass
