@@ -582,8 +582,7 @@ function render(rows) {
   document.getElementById('page-meta').textContent =
     `Vendas até ${ultimaDia} · ${ultSync ? 'atualizado em ' + ultSync : 'aguardando sincronização'} · fonte: Movere`;
 
-  document.getElementById('sync-info').innerHTML =
-    `Atualiza a cada 5 min<br><small style="color:#556">Fonte: Movere ERP</small>`;
+  atualizarSyncInfo(calcularIntervalo());
 
   // KPIs
   const kpiBar = Math.min(pctMeta, 100);
@@ -748,10 +747,43 @@ if(new URLSearchParams(window.location.search).get('admin') === '1') {
   document.getElementById('btn-admin').style.display = '';
 }
 
+/* ── Auto-atualização dinâmica ── */
+let timerAuto = null;
+
+function calcularIntervalo() {
+  const agora = new Date();
+  const dia = agora.getDay();   // 0=Dom, 1=Seg … 6=Sab
+  const hora = agora.getHours();
+  // Domingo OU Sábado a partir das 12h → 1 hora
+  if(dia === 0 || (dia === 6 && hora >= 12)) return 60 * 60 * 1000;
+  // Segunda–Sábado (até 12h) → 5 minutos
+  return 5 * 60 * 1000;
+}
+
+function agendarAtualizacao() {
+  if(timerAuto) clearTimeout(timerAuto);
+  const intervalo = calcularIntervalo();
+  timerAuto = setTimeout(async () => {
+    await carregar(false);
+    agendarAtualizacao(); // reagenda após cada atualização
+  }, intervalo);
+  atualizarSyncInfo(intervalo);
+}
+
+function atualizarSyncInfo(intervalo) {
+  const el = document.getElementById('sync-info');
+  if(!el) return;
+  const minutos = Math.round(intervalo / 60000);
+  const proxima = new Date(Date.now() + intervalo);
+  const hhmm = proxima.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const label = minutos >= 60 ? `${Math.round(minutos/60)}h` : `${minutos} min`;
+  el.innerHTML = `Atualiza a cada ${label} · próxima às ${hhmm}<br><small style="color:#556">Fonte: Movere ERP</small>`;
+}
+
 /* ── Init ── */
 loadPrefs();
 carregar();
-setInterval(carregar, 5*60*1000);
+agendarAtualizacao();
 
 document.getElementById('modal-metas').addEventListener('click', function(e){
   if(e.target===this) fecharModal();
