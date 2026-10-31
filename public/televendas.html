@@ -61,6 +61,10 @@ tbody tr{border-bottom:1px solid #f0f4f8;transition:.1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#f8fafc;}
 tbody tr.total-row{background:#f1f5f9;font-weight:700;}
+tbody tr.row-verde{background:#bbf7d0;}
+tbody tr.row-verde:hover{background:#a7f3d0 !important;}
+tbody tr.row-vermelho{background:#fecaca;}
+tbody tr.row-vermelho:hover{background:#fca5a5 !important;}
 td{padding:11px 12px;text-align:right;color:#1a2332;}
 td:first-child{text-align:left;font-weight:700;}
 td.verde{color:#16a34a;font-weight:700;}
@@ -373,19 +377,20 @@ function render(rows) {
   }).join('');
 
   const linhas = opsOrdenadas.map(op => {
-    const cor = op.pctOp >= pctDesejado ? 'verde' : 'vermelho';
-    const badge = op.pctOp >= pctDesejado ? 'verde' : (op.pctOp >= pctDesejado*0.7 ? 'amarelo' : 'vermelho');
+    const onTarget = op.pctOp >= pctDesejado;
+    const rowClass = onTarget ? 'row-verde' : 'row-vermelho';
+    const badge = onTarget ? 'verde' : (op.pctOp >= pctDesejado*0.7 ? 'amarelo' : 'vermelho');
     const diasCols = datas5.map(d=>
-      `<td class="dia-col">${op.porDia[d] ? brl(op.porDia[d]) : '—'}</td>`
+      `<td class="dia-col" style="font-size:13px">${op.porDia[d] ? brl(op.porDia[d]) : '—'}</td>`
     ).join('');
     return `
-    <tr>
-      <td class="${cor}">${op.nome.toUpperCase()}</td>
-      <td class="meta-col">${brl(op.metaOp)}</td>
+    <tr class="${rowClass}">
+      <td style="font-size:16px;font-weight:800;color:#1a2332">${op.nome.toUpperCase()}</td>
+      <td class="meta-col" style="font-size:15px;font-weight:700">${brl(op.metaOp)}</td>
       ${diasCols}
-      <td>${brl(op.totalMes)}</td>
-      <td>${brl(op.precisaOp)}</td>
-      <td><span class="pct-badge ${badge}">${pct(op.pctOp)}</span></td>
+      <td style="font-size:15px;font-weight:700;color:#1a2332">${brl(op.totalMes)}</td>
+      <td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaOp)}</td>
+      <td style="text-align:center"><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td>
     </tr>`;
   }).join('');
 
