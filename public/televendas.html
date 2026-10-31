@@ -167,6 +167,31 @@ td.meta-col{color:#6b7280;}
 /* ── Scroll hint (mobile) ── */
 .scroll-hint{display:none;text-align:center;font-size:11px;color:#9aabb8;padding:6px 0 2px;letter-spacing:.3px;}
 
+/* ── Modal login ── */
+#modal-login .modal{width:360px;max-width:calc(100vw - 32px);}
+.login-input{width:100%;padding:10px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:.15s;box-sizing:border-box;}
+.login-input:focus{border-color:#0f1f3d;}
+.btn-login{width:100%;background:#0f1f3d;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-login:hover{background:#1e3a6e;}
+.login-erro{display:none;color:#CC1F1F;font-size:13px;margin:0;text-align:center;padding:6px 0;}
+
+/* ── Modal usuários (admin) ── */
+#modal-usuarios .modal{width:480px;max-width:calc(100vw - 32px);}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border-radius:8px;margin-bottom:6px;}
+.user-row .user-name{font-size:14px;font-weight:600;color:#0f1f3d;}
+.user-row .user-pass{font-size:12px;color:#9aabb8;}
+.btn-del-user{background:none;border:none;cursor:pointer;color:#9aabb8;font-size:16px;padding:4px 6px;border-radius:4px;}
+.btn-del-user:hover{color:#CC1F1F;background:#fee2e2;}
+.add-user-form{display:flex;gap:8px;margin-top:12px;}
+.add-user-form input{flex:1;padding:9px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;}
+.add-user-form input:focus{border-color:#0f1f3d;}
+.btn-add-user{background:#0f1f3d;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* ── Export button ── */
+.btn-export{background:#fff;border:1.5px solid #d1dce6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-export:hover{border-color:#0f1f3d;color:#0f1f3d;}
+.export-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:6px;}
+
 @media(max-width:768px){
   /* Header compacto */
   .header{padding:10px 14px;}
@@ -265,6 +290,7 @@ td.meta-col{color:#6b7280;}
       <div class="meta-valor" id="meta-btn-val-2">—</div>
     </div>
     <button class="btn-editar-meta" onclick="abrirModal()" id="btn-admin" style="display:none">✏️ Editar metas</button>
+    <button class="btn-editar-meta" onclick="abrirUsuarios()" id="btn-usuarios" style="display:none">👥 Usuários</button>
   </div>
 
   <!-- KPIs -->
@@ -297,12 +323,51 @@ td.meta-col{color:#6b7280;}
 
 <!-- Modal de clientes (drill-down) -->
 <div class="modal-bg" id="modal-clientes">
-  <div class="modal" style="width:580px;max-width:calc(100vw - 32px);">
+  <div class="modal" style="width:620px;max-width:calc(100vw - 32px);">
     <div class="cli-modal-header">
       <h3 id="modal-cli-titulo"></h3>
-      <button class="cli-modal-close" onclick="fecharClientes()">✕</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-export" id="btn-export-modal" onclick="_exportarModal()" title="Exportar para CSV">⬇ CSV</button>
+        <button class="cli-modal-close" onclick="fecharClientes()">✕</button>
+      </div>
     </div>
     <div class="cli-scroll" id="modal-cli-content"></div>
+  </div>
+</div>
+
+<!-- Modal de login (acesso restrito) -->
+<div class="modal-bg" id="modal-login">
+  <div class="modal" style="width:360px;max-width:calc(100vw - 32px);">
+    <div class="cli-modal-header" style="margin-bottom:8px;">
+      <h3 style="margin:0;font-size:15px;color:#0f1f3d;">🔒 Acesso restrito</h3>
+      <button class="cli-modal-close" onclick="fecharLogin()">✕</button>
+    </div>
+    <p style="font-size:12px;color:#9aabb8;margin:0 0 18px;">Área de clientes protegida. Informe suas credenciais.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input id="login-user" type="text" class="login-input" placeholder="Usuário" autocomplete="username">
+      <input id="login-pass" type="password" class="login-input" placeholder="Senha" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')tentarLogin()">
+      <p id="login-erro" class="login-erro"></p>
+      <button onclick="tentarLogin()" class="btn-login">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de usuários (admin) -->
+<div class="modal-bg" id="modal-usuarios">
+  <div class="modal" style="width:480px;max-width:calc(100vw - 32px);">
+    <div class="cli-modal-header" style="margin-bottom:16px;">
+      <h3 style="margin:0;font-size:15px;color:#0f1f3d;">👥 Gerenciar usuários</h3>
+      <button class="cli-modal-close" onclick="fecharUsuarios()">✕</button>
+    </div>
+    <p style="font-size:12px;color:#9aabb8;margin:0 0 12px;">Usuários com acesso à área de clientes e exportação.</p>
+    <div id="lista-usuarios"></div>
+    <div class="add-user-form">
+      <input id="novo-user" type="text" placeholder="Usuário" autocomplete="off">
+      <input id="novo-pass" type="password" placeholder="Senha" autocomplete="off">
+      <button class="btn-add-user" onclick="adicionarUsuario()">+ Adicionar</button>
+    </div>
+    <p id="user-msg" style="font-size:12px;margin-top:8px;color:#16a34a;display:none;"></p>
   </div>
 </div>
 
@@ -642,15 +707,19 @@ function renderDia(rows) {
       </thead>
       <tbody>
         ${linhas}
-        <tr style="background:#0f1f3d;font-weight:800;">
-          <td style="padding:14px 16px;font-size:15px;text-align:left;color:#fff;">TOTAL DO DIA</td>
+        <tr style="background:#0f1f3d;font-weight:800;${hasDetail?'cursor:pointer;':''}"
+            ${hasDetail ? `onclick="abrirSetor()" title="Ver todos os clientes do setor"` : ''}>
+          <td style="padding:14px 16px;font-size:15px;text-align:left;color:#fff;">TOTAL DO DIA${hasDetail ? ' &nbsp;<span style="font-size:12px;opacity:.7;">🏢 Setor</span>' : ''}</td>
           ${tdTotCli}${tdTotIt}
           <td style="padding:14px 16px;font-size:15px;text-align:right;color:#fff;">${brl(totalDia)}</td>
         </tr>
       </tbody>
     </table>
     ${rowsDia.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas nesta data.</div>' : ''}
-    ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;padding:8px 12px;text-align:center;">💡 Clique na linha do vendedor para ver os clientes</p>' : ''}
+    <div class="export-bar">
+      ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
+      <button class="btn-export" onclick="exportarCSV(null)">⬇ Exportar CSV</button>
+    </div>
   </div>`;
 }
 
@@ -722,14 +791,18 @@ function renderPeriodo(rows) {
       </thead>
       <tbody>
         ${linhas}
-        <tr style="background:#0f1f3d;font-weight:800;">
-          <td style="padding:16px 16px;font-size:15px;text-align:left;color:#fff;font-weight:800;">TOTAL DO PERÍODO</td>
+        <tr style="background:#0f1f3d;font-weight:800;${hasDetail?'cursor:pointer;':''}"
+            ${hasDetail ? `onclick="abrirSetor()" title="Ver todos os clientes do setor"` : ''}>
+          <td style="padding:16px 16px;font-size:15px;text-align:left;color:#fff;font-weight:800;">TOTAL DO PERÍODO${hasDetail ? ' &nbsp;<span style="font-size:12px;opacity:.7;">🏢 Setor</span>' : ''}</td>
           <td style="padding:16px 16px;font-size:17px;text-align:right;color:#fff;font-weight:800;">${brl(total)}</td>
         </tr>
       </tbody>
     </table>
     ${rowsPer.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas neste período.</div>' : ''}
-    ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;padding:8px 12px;text-align:center;">💡 Clique na linha do vendedor para ver os clientes</p>' : ''}
+    <div class="export-bar">
+      ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
+      <button class="btn-export" onclick="exportarCSV(null)">⬇ Exportar CSV</button>
+    </div>
   </div>`;
 }
 
@@ -1021,10 +1094,212 @@ function salvarMetas() {
   carregar();
 }
 
+/* ── Autenticação ── */
+function getUsuarios() {
+  try { return JSON.parse(localStorage.getItem('fox_tv_usuarios') || '[]'); }
+  catch(e) { return []; }
+}
+function saveUsuarios(u) { localStorage.setItem('fox_tv_usuarios', JSON.stringify(u)); }
+function isAutenticado() { return sessionStorage.getItem('fox_tv_auth') === '1'; }
+
+function exigirAcesso(callback) {
+  if(isAutenticado()) { callback(); return; }
+  window._loginCallback = callback;
+  document.getElementById('modal-login').classList.add('open');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-erro').style.display = 'none';
+  setTimeout(() => document.getElementById('login-user').focus(), 100);
+}
+function fecharLogin() {
+  document.getElementById('modal-login').classList.remove('open');
+  window._loginCallback = null;
+}
+function tentarLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const erroEl = document.getElementById('login-erro');
+  const usuarios = getUsuarios();
+  if(!usuarios.length) {
+    erroEl.textContent = 'Nenhum usuário cadastrado. Configure no painel admin (?admin=1).';
+    erroEl.style.display = 'block'; return;
+  }
+  const found = usuarios.find(u => u.user === user && u.pass === pass);
+  if(found) {
+    sessionStorage.setItem('fox_tv_auth', '1');
+    sessionStorage.setItem('fox_tv_auth_user', user);
+    fecharLogin();
+    if(window._loginCallback) { window._loginCallback(); window._loginCallback = null; }
+  } else {
+    erroEl.textContent = 'Usuário ou senha incorretos.';
+    erroEl.style.display = 'block';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+
+/* ── Gerenciamento de usuários (admin) ── */
+function abrirUsuarios() {
+  renderListaUsuarios();
+  document.getElementById('user-msg').style.display = 'none';
+  document.getElementById('novo-user').value = '';
+  document.getElementById('novo-pass').value = '';
+  document.getElementById('modal-usuarios').classList.add('open');
+}
+function fecharUsuarios() { document.getElementById('modal-usuarios').classList.remove('open'); }
+function renderListaUsuarios() {
+  const usuarios = getUsuarios();
+  const el = document.getElementById('lista-usuarios');
+  if(!usuarios.length) {
+    el.innerHTML = '<p style="font-size:13px;color:#9aabb8;padding:8px 0;">Nenhum usuário cadastrado.</p>';
+    return;
+  }
+  el.innerHTML = usuarios.map((u, i) => `
+    <div class="user-row">
+      <div><span class="user-name">${u.user}</span> <span class="user-pass">••••••</span></div>
+      <button class="btn-del-user" onclick="removerUsuario(${i})" title="Remover">✕</button>
+    </div>`).join('');
+}
+function adicionarUsuario() {
+  const user = document.getElementById('novo-user').value.trim();
+  const pass = document.getElementById('novo-pass').value;
+  const msg  = document.getElementById('user-msg');
+  if(!user || !pass) { msg.textContent = 'Preencha usuário e senha.'; msg.style.color='#CC1F1F'; msg.style.display='block'; return; }
+  const usuarios = getUsuarios();
+  if(usuarios.find(u => u.user === user)) { msg.textContent = 'Usuário já existe.'; msg.style.color='#CC1F1F'; msg.style.display='block'; return; }
+  usuarios.push({user, pass});
+  saveUsuarios(usuarios);
+  document.getElementById('novo-user').value = '';
+  document.getElementById('novo-pass').value = '';
+  msg.textContent = `Usuário "${user}" adicionado.`;
+  msg.style.color = '#16a34a';
+  msg.style.display = 'block';
+  renderListaUsuarios();
+}
+function removerUsuario(idx) {
+  const usuarios = getUsuarios();
+  const nome = usuarios[idx]?.user;
+  usuarios.splice(idx, 1);
+  saveUsuarios(usuarios);
+  const msg = document.getElementById('user-msg');
+  msg.textContent = `Usuário "${nome}" removido.`;
+  msg.style.color = '#CC1F1F';
+  msg.style.display = 'block';
+  renderListaUsuarios();
+}
+
+/* ── Modal Setor (total consolidado) ── */
+function abrirSetor() { exigirAcesso(_mostrarSetor); }
+function _mostrarSetor() {
+  if(!window._drillData) return;
+  const todos = Object.values(window._drillData);
+  const totalValor = todos.reduce((a, op) => a + op.valor, 0);
+  const totalCli   = todos.reduce((a, op) => a + (op.qtdClientes||0), 0);
+  const totalItens = todos.reduce((a, op) => a + (op.qtdItens||0), 0);
+  const allClientes = todos.flatMap(op => (op.clientes||[]).map(c => ({...c, vendedor: op.nome})));
+  const titulo = 'Setor — Todos os vendedores';
+  document.getElementById('modal-cli-titulo').textContent = titulo;
+  window._exportModalTitulo = titulo;
+  window._exportModalData = { allClientes, totalValor, totalCli, totalItens, todosOp: todos };
+
+  if(allClientes.length > 0) {
+    const sorted = [...allClientes].sort((a,b) => b.valor - a.valor);
+    const hasItens = sorted.some(c => c.itens != null);
+    const linhas = sorted.map(c => `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome||'—'}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#6b7280;font-size:12px;">${c.vendedor}</td>
+      ${hasItens?`<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:center;font-size:13px;">${c.itens??'—'}</td>`:''}
+      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
+    </tr>`).join('');
+    const totIt = sorted.reduce((a,c) => a+(c.itens||0), 0);
+    document.getElementById('modal-cli-content').innerHTML = `
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:#0f1f3d;">
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Cliente</th>
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Código</th>
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Vendedor</th>
+          ${hasItens?'<th style="padding:10px 12px;text-align:center;font-size:12px;color:#fff;">Itens</th>':''}
+          <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;">Valor</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+        <tfoot><tr style="background:#f0f4f8;">
+          <td colspan="${hasItens?4:3}" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${sorted.length} venda${sorted.length!==1?'s':''}</td>
+          ${hasItens?`<td style="padding:10px 12px;text-align:center;font-weight:700;font-size:13px;color:#1a2332;">${totIt}</td>`:''}
+          <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalValor)}</td>
+        </tr></tfoot>
+      </table>`;
+  } else if(totalCli > 0) {
+    document.getElementById('modal-cli-content').innerHTML = `
+      <div style="text-align:center;padding:28px 16px;">
+        <div style="font-size:36px;margin-bottom:10px;">🏢</div>
+        <p style="font-size:15px;font-weight:700;color:#0f1f3d;">${totalCli} clientes no setor</p>
+        ${totalItens?`<p style="margin-top:4px;color:#6b7280;font-size:13px;">${totalItens} itens vendidos</p>`:''}
+        <p style="margin-top:10px;font-size:18px;font-weight:800;color:#1a2332;">${brl(totalValor)}</p>
+      </div>`;
+  } else {
+    document.getElementById('modal-cli-content').innerHTML = `
+      <div style="text-align:center;padding:24px 16px;color:#9aabb8;">
+        <p style="font-size:13px;">Detalhes de clientes não disponíveis.</p>
+      </div>`;
+  }
+  document.getElementById('modal-clientes').classList.add('open');
+}
+
+/* ── Exportação CSV ── */
+function exportarCSV(codigoVendedor) { exigirAcesso(() => _exportar(codigoVendedor)); }
+function _exportarModal() {
+  // exporta o que está sendo mostrado no modal atualmente
+  if(window._exportModalData) {
+    exigirAcesso(() => {
+      const d = window._exportModalData;
+      if(d.allClientes && d.allClientes.length) {
+        _gerarCSV(d.allClientes.map(c => [c.vendedor, c.codigo||'', c.nome||'', c.data||'', c.itens??'', (c.valor||0).toFixed(2).replace('.',',')]), 'setor');
+      } else { exportarCSV(null); }
+    });
+  } else if(window._exportModalCodigo) {
+    exportarCSV(window._exportModalCodigo);
+  }
+}
+function _exportar(codigoVendedor) {
+  const dados = window._drillData;
+  if(!dados) { alert('Sem dados para exportar.'); return; }
+  const codigos = codigoVendedor ? [codigoVendedor] : Object.keys(dados);
+  const linhas = [];
+  for(const cod of codigos) {
+    const op = dados[cod];
+    if(!op || op.valor === 0) continue;
+    if(op.clientes && op.clientes.length > 0) {
+      op.clientes.forEach(c => linhas.push([op.nome, c.codigo||'', c.nome||'', c.data||'', c.itens??'', (c.valor||0).toFixed(2).replace('.',',')]));
+    } else {
+      linhas.push([op.nome, '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', '', op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',',')]);
+    }
+  }
+  if(!linhas.length) { alert('Sem dados para exportar.'); return; }
+  _gerarCSV(linhas, codigoVendedor ? dados[codigoVendedor]?.nome : 'geral');
+}
+function _gerarCSV(linhas, nomeArq) {
+  const headers = ['Vendedor','Cód. Cliente','Nome Cliente','Data','Qtd. Itens','Valor (R$)'];
+  const csv = '﻿' + [headers, ...linhas].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const hoje = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `televendas_${(nomeArq||'export').toLowerCase().replace(/\s+/g,'_')}_${hoje}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
 /* ── Modal Clientes (drill-down) ── */
 function abrirClientes(codigo, nomeOp) {
+  exigirAcesso(() => _mostrarClientes(codigo, nomeOp));
+}
+function _mostrarClientes(codigo, nomeOp) {
   const data = window._drillData && window._drillData[codigo];
   if(!data) return;
+  window._exportModalCodigo = codigo;
+  window._exportModalData = null;
 
   document.getElementById('modal-cli-titulo').textContent = nomeOp;
 
@@ -1081,7 +1356,6 @@ function abrirClientes(codigo, nomeOp) {
         <p style="font-size:15px;font-weight:700;color:#0f1f3d;">${data.qtdClientes} cliente${data.qtdClientes!==1?'s':''}</p>
         ${data.qtdItens ? `<p style="margin-top:4px;color:#6b7280;font-size:13px;">${data.qtdItens} itens vendidos</p>` : ''}
         <p style="margin-top:10px;font-size:18px;font-weight:800;color:#1a2332;">${brl(data.valor)}</p>
-        <p style="margin-top:16px;font-size:11px;color:#9aabb8;line-height:1.5;">Para ver os nomes, atualize o script de sincronização<br>para capturar dados individuais por cliente.</p>
       </div>`;
 
   } else {
@@ -1090,7 +1364,6 @@ function abrirClientes(codigo, nomeOp) {
       <div style="text-align:center;padding:28px 16px;color:#9aabb8;">
         <div style="font-size:36px;margin-bottom:10px;">📋</div>
         <p style="font-size:13px;">Detalhes de clientes não disponíveis.</p>
-        <p style="margin-top:8px;font-size:11px;line-height:1.5;">O script <code>sync_televendas.py</code> precisa ser atualizado<br>para capturar dados individuais por cliente.</p>
       </div>`;
   }
 
@@ -1104,6 +1377,7 @@ function fecharClientes() {
 /* ── Admin ── */
 if(new URLSearchParams(window.location.search).get('admin') === '1') {
   document.getElementById('btn-admin').style.display = '';
+  document.getElementById('btn-usuarios').style.display = '';
 }
 
 /* ── Auto-atualização dinâmica ── */
@@ -1154,6 +1428,12 @@ document.getElementById('modal-metas').addEventListener('click', function(e){
 });
 document.getElementById('modal-clientes').addEventListener('click', function(e){
   if(e.target===this) fecharClientes();
+});
+document.getElementById('modal-login').addEventListener('click', function(e){
+  if(e.target===this) fecharLogin();
+});
+document.getElementById('modal-usuarios').addEventListener('click', function(e){
+  if(e.target===this) fecharUsuarios();
 });
 </script>
 </body>
