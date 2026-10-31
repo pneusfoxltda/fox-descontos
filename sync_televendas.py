@@ -147,7 +147,7 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
     }
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.post(
-            f"{SUPABASE_URL}/rest/v1/vendas_televendas",
+            f"{SUPABASE_URL}/rest/v1/vendas_televendas?on_conflict=data_ref,operador_codigo",
             headers=headers,
             json=payload,
         )
