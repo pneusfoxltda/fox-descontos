@@ -119,7 +119,7 @@ async def buscar_existentes(mes_ini: str, mes_fim: str) -> dict:
     return {}
 
 async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero: bool = False):
-    VALOR_KEY = 'Valor Venda Líquida (Venda - Devolução)'
+    VALOR_KEY = 'Valor Total das Notas Emitidas'
     valor = 0.0 if force_zero else parse_br_number(dados.get(VALOR_KEY, '0'))
 
     qtd_clientes = 0
@@ -192,41 +192,26 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
     await page.wait_for_timeout(1500)
 
-    # 1. Visão Empresarial = 1
-    # Tenta pelo label de texto E por atributos comuns do campo
+    # IDs exatos descobertos pelo diagnóstico no GitHub Actions:
+    # VE  → id contém "idvisaoempresarial"  (já vem com value='1' por padrão)
+    # INI → id contém "cdtaini"
+    # FIM → id contém "cdtafim"
+    # OP  → id contém "idcliforoperador"
+
+    # 1. Visão Empresarial = 1 (garante mesmo se vier vazio)
     await page.evaluate("""() => {
-        function setVE(inp) {
-            if (inp && (!inp.value || inp.value.trim() === '')) {
-                inp.value = '1';
-                inp.dispatchEvent(new Event('input',  {bubbles:true}));
-                inp.dispatchEvent(new Event('change', {bubbles:true}));
-                inp.dispatchEvent(new Event('blur',   {bubbles:true}));
-            }
-        }
-        // Busca por label de texto (pode variar com acentuação)
-        for (const td of document.querySelectorAll('td,div,label,span')) {
-            const t = td.innerText ? td.innerText.trim() : '';
-            if (t === 'Visão Empresarial' || t === 'Visao Empresarial' ||
-                t.includes('Empresarial')) {
-                const row = td.closest('tr') || td.closest('div');
-                if (row) {
-                    const inp = row.querySelector('input[type="text"]');
-                    if (inp) { setVE(inp); return; }
-                }
-            }
-        }
-        // Fallback: campo com id ou name contendo 'empresa' ou 'visao'
-        for (const inp of document.querySelectorAll('input[type="text"]')) {
-            const id = (inp.id || inp.name || '').toLowerCase();
-            if (id.includes('empresa') || id.includes('visao') || id.includes('vision')) {
-                setVE(inp); return;
-            }
+        const inp = document.querySelector('[id*="idvisaoempresarial"]');
+        if (inp && (!inp.value || inp.value.trim() === '')) {
+            inp.value = '1';
+            ['input','change','blur'].forEach(e =>
+                inp.dispatchEvent(new Event(e, {bubbles:true})));
         }
     }""")
-    await page.wait_for_timeout(900)
+    await page.wait_for_timeout(600)
 
-    # 2. Data Inicial  (fix: triple_click não existe → usar click count=3)
-    for sel in ['#dtaini','input[name="dtaini"]','input[id*="dtaini"]','input[id*="DataIni"]']:
+    # 2. Data Inicial
+    for sel in ['[id*="cdtaini"]','[name*="cdtaini"]',
+                'input[id*="dtaini"]','input[id*="DataIni"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
@@ -238,8 +223,9 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             pass
     await page.wait_for_timeout(400)
 
-    # 3. Data Final  (fix: triple_click não existe → usar click count=3)
-    for sel in ['#dtafim','input[name="dtafim"]','input[id*="dtafim"]','input[id*="DataFim"]']:
+    # 3. Data Final
+    for sel in ['[id*="cdtafim"]','[name*="cdtafim"]',
+                'input[id*="dtafim"]','input[id*="DataFim"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
@@ -252,8 +238,8 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.wait_for_timeout(400)
 
     # 4. Operador
-    for sel in ['input[id*="operador"]','input[id*="Operador"]',
-                'input[id*="cliforOperador"]','input[name*="operador"]']:
+    for sel in ['[id*="idcliforoperador"]','input[id*="operador"]',
+                'input[id*="Operador"]','input[name*="operador"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
