@@ -92,6 +92,8 @@ td.meta-col{color:#6b7280;}
 
 /* ── Calendário popup ── */
 .cal-popup{display:none;position:absolute;z-index:200;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 8px 32px #0002;padding:16px;min-width:280px;}
+.cal-mes-btn{background:#f0f4f8;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;color:#0f1f3d;cursor:pointer;margin-bottom:12px;text-align:center;transition:.15s;border:none;width:100%;display:block;}
+.cal-mes-btn:hover{background:#0f1f3d;color:#fff;}
 .cal-popup.aberto{display:block;}
 .cal-popup-wrap{position:relative;}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -221,6 +223,7 @@ td.meta-col{color:#6b7280;}
           <span id="filtro-data-txt">Hoje</span> ▾
         </button>
         <div class="cal-popup" id="cal-popup" style="right:0;left:auto;">
+          <button class="cal-mes-btn" onclick="verMesCompleto()">📊 Resultado do mês</button>
           <div class="cal-header">
             <button class="cal-nav" id="cal-prev" onclick="calNav(-1)">‹</button>
             <span class="cal-titulo" id="cal-titulo"></span>
@@ -356,12 +359,14 @@ function renderCalendario() {
 }
 
 function selecionarData(dia, mes, ano) {
-  const hoje = new Date();
   dataRef = new Date(ano, mes, dia);
-  // Se selecionou hoje, tratar como "hoje" (sem filtro)
-  if(dia===hoje.getDate() && mes===hoje.getMonth() && ano===hoje.getFullYear()) {
-    dataRef = null;
-  }
+  atualizarBotaoFiltro();
+  document.getElementById('cal-popup').classList.remove('aberto');
+  carregar(true);
+}
+
+function verMesCompleto() {
+  dataRef = null;
   atualizarBotaoFiltro();
   document.getElementById('cal-popup').classList.remove('aberto');
   carregar(true);
@@ -382,7 +387,7 @@ function atualizarBotaoFiltro() {
     btn.classList.add('ativo');
     clear.style.display = 'inline-flex';
   } else {
-    txt.textContent = 'Hoje';
+    txt.textContent = 'Mês';
     btn.classList.remove('ativo');
     clear.style.display = 'none';
   }
@@ -845,8 +850,8 @@ function agendarAtualizacao() {
   if(timerAuto) clearTimeout(timerAuto);
   const intervalo = calcularIntervalo();
   timerAuto = setTimeout(async () => {
-    await carregar(false);
-    agendarAtualizacao(); // reagenda após cada atualização
+    try { await carregar(false); } catch(e) { console.warn('Auto-refresh erro:', e); }
+    agendarAtualizacao(); // reagenda sempre, mesmo em caso de erro
   }, intervalo);
   atualizarSyncInfo(intervalo);
 }
