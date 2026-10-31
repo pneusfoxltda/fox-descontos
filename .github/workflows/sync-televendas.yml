@@ -2,9 +2,19 @@ name: Sync Televendas
 
 on:
   schedule:
-    # Roda toda hora das 7h às 23h (horário de Brasília = 10h às 02h UTC), dias úteis
-    - cron: '0 10-23 * * 1-5'
-    - cron: '0 0,1,2 * * 2-6'
+    # ── Seg–Sáb 7h–18h30 BRT (10h–21h25 UTC): a cada 5 min ──
+    - cron: '*/5 10-20 * * 1-6'           # 7h00–17h55 BRT
+    - cron: '0,5,10,15,20,25 21 * * 1-6'  # 18h00–18h25 BRT
+
+    # ── Seg–Sáb 18h30–00h00 BRT (21h30 UTC – 03h00 UTC): a cada 30 min ──
+    - cron: '30 21 * * 1-6'               # 18h30 BRT
+    - cron: '0,30 22,23 * * 1-6'          # 19h00–20h30 BRT
+    - cron: '0,30 0,1,2 * * 0,2-6'        # 21h00–23h30 BRT (00h–02h30 UTC Ter–Dom)
+
+    # ── Domingo BRT: a cada hora ──
+    - cron: '0 3-23 * * 0'                # Dom 00h–20h BRT (03h–23h UTC Dom)
+    - cron: '0 0,1,2 * * 1'               # Dom 21h–23h BRT (00h–02h UTC Seg)
+
   workflow_dispatch: # permite rodar manualmente no GitHub
 
 jobs:
