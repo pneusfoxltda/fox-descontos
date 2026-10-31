@@ -54,18 +54,19 @@ body{background:#f4f6f9;color:#1a2332;font-family:'Inter',sans-serif;min-height:
 .table-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px #0001;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:#0f1f3d;color:#fff;}
-th{padding:11px 12px;font-weight:600;font-size:11px;text-align:right;letter-spacing:.3px;}
-th:first-child{text-align:left;}
+th{padding:13px 12px;font-weight:700;font-size:13px;text-align:center;letter-spacing:.3px;}
 .th-dias{background:#e85d04;color:#fff;text-align:center;}
 tbody tr{border-bottom:1px solid #f0f4f8;transition:.1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#f8fafc;}
-tbody tr.total-row{background:#f1f5f9;font-weight:700;}
+tbody tr.total-row{font-weight:700;}
 tbody tr.row-verde{background:#bbf7d0;}
 tbody tr.row-verde:hover{background:#a7f3d0 !important;}
 tbody tr.row-vermelho{background:#fecaca;}
 tbody tr.row-vermelho:hover{background:#fca5a5 !important;}
-td{padding:11px 12px;text-align:right;color:#1a2332;}
+tbody tr.total-row.row-verde{background:#bbf7d0 !important;}
+tbody tr.total-row.row-vermelho{background:#fecaca !important;}
+td{padding:11px 12px;text-align:center;color:#1a2332;}
 td:first-child{text-align:left;font-weight:700;}
 td.verde{color:#16a34a;font-weight:700;}
 td.vermelho{color:#CC1F1F;font-weight:700;}
@@ -399,7 +400,7 @@ function render(rows) {
     <table>
       <thead>
         <tr>
-          <th style="text-align:left">Operadora</th>
+          <th>Operadora</th>
           <th>Meta</th>
           <th colspan="${datas5.length}" class="th-dias">Últimos ${datas5.length} dias úteis</th>
           <th>Faturamento<br>do mês</th>
@@ -412,7 +413,7 @@ function render(rows) {
       </thead>
       <tbody>
         ${linhas}
-        <tr class="total-row">
+        <tr class="total-row ${pctMeta>=pctDesejado?'row-verde':'row-vermelho'}">
           <td>TOTAL SETOR</td>
           <td class="meta-col">${brl(metaSetorTotal)}</td>
           ${colDiasTotals}
