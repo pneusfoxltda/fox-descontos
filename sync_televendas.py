@@ -322,8 +322,20 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
                 except Exception:
                     pass
 
-    page.on('response', on_resp)
+    # Preenche formulário PRIMEIRO (inclui page.goto que pode disparar
+    # ImpressaoRelatorio com parâmetros da sessão anterior — queremos ignorar).
     await preencher_formulario(page, operador, data_fmt)
+
+    # Aguarda a rede estabilizar para garantir que qualquer ImpressaoRelatorio
+    # disparado pelo carregamento inicial já completou antes do listener subir.
+    try:
+        await page.wait_for_load_state('networkidle', timeout=8000)
+    except Exception:
+        pass
+
+    # Listener ativado DEPOIS do carregamento inicial, para capturar
+    # apenas a resposta real gerada pelo clique em Executar.
+    page.on('response', on_resp)
 
     for sel in ['input[value="Executar"]','#btnExecutar',
                 'button:has-text("Executar")','input[type="submit"]']:
