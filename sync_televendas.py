@@ -283,6 +283,25 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     }""")
     await page.wait_for_timeout(400)
 
+    # FIX BUG 3: arosSelecionados — desmarcar todos checkboxes de aro
+    # Causa: check() pode acidentalmente marcar checkbox de aro, fazendo Movere
+    # filtrar por tamanho de aro e retornar R$0 em valores monetários.
+    await page.evaluate("""() => {
+        for (const cb of document.querySelectorAll('input[type="checkbox"]')) {
+            if (!cb.checked) continue;
+            const container = cb.closest('tr') || cb.closest('td') || cb.parentElement;
+            const txt = [
+                container ? (container.innerText||'') : '',
+                cb.id||'', cb.name||'', cb.value||''
+            ].join(' ');
+            if (/aro/i.test(txt)) {
+                cb.checked = false;
+                cb.dispatchEvent(new Event('change', {bubbles: true}));
+            }
+        }
+    }""")
+    await page.wait_for_timeout(300)
+
     # 6. Formato HTML
     try:
         for sel_el in await page.query_selector_all('select'):
