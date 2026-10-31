@@ -278,18 +278,8 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
         }
         check('Listar somente resumo',       'checkbox', true);
         check('Filtrar somente base de venda','checkbox', true);
-
-        for (const r of document.querySelectorAll('input[type="radio"]')) {
-            const tr = r.closest('tr');
-            if (tr && tr.innerText.includes('Agrupamento')) {
-                const p = r.parentElement;
-                if (p && p.innerText.trim() === 'Vendedor') {
-                    r.checked = true;
-                    r.dispatchEvent(new Event('change',{bubbles:true}));
-                    break;
-                }
-            }
-        }
+        // NÃO alterar o agrupamento — deixar no padrão (0 = sem agrupamento)
+        // para manter o mesmo comportamento do relatório manual.
     }""")
     await page.wait_for_timeout(400)
 
@@ -350,8 +340,17 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         if html_cap: break
         await page.wait_for_timeout(500)
 
+    # Aguarda a rede estabilizar após o primeiro HTML capturado,
+    # para garantir que pegamos a resposta FINAL (não uma intermediária).
+    if html_cap:
+        try:
+            await page.wait_for_load_state('networkidle', timeout=6000)
+        except Exception:
+            pass
+        await page.wait_for_timeout(500)
+
     page.remove_listener('response', on_resp)
-    return html_cap[0] if html_cap else None
+    return html_cap[-1] if html_cap else None  # ÚLTIMO (mais recente), não o primeiro
 
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
