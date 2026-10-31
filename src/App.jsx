@@ -2131,7 +2131,7 @@ export default function App(){
     {/* Logs tab view */}
     {tab==="logs"&&session.role==="admin"&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Busca por Medida</div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Acessos e Consultas</div>
         <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
         <div style={{display:"flex",gap:10}}>
           {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
@@ -2141,15 +2141,22 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",padding:20}}>
         {logs.length===0?<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log ainda.</div>:
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-          <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","E-mail","Medida","Loja","IP","Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
-          <tbody>{logs.map((l,i)=><tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:l.sucesso?"transparent":"#1A0000"}}>
-            <td style={{padding:"10px 12px",color:"#888",fontSize:11}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
-            <td style={{padding:"10px 12px",fontWeight:600,color:l.sucesso?TEXT:RED}}>{l.email}</td>
-            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||"—"}</td>
-            <td style={{padding:"10px 12px",color:MUTED}}>{l.loja||"—"}</td>
+          <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","Ação","Termo Buscado","Loja","IP","Dispositivo / Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <tbody>{logs.map((l,i)=>{
+            const isAcesso=l.email&&l.email.includes("Acesso");
+            const dispositivo=l.motivo&&l.motivo.includes("Mobile")?"📱 Mobile":l.motivo&&l.motivo.includes("Desktop")?"🖥️ Desktop":"—";
+            const motivoSemDisp=l.motivo?l.motivo.replace(/ \| (📱 Mobile|🖥️ Desktop)/,"").trim():null;
+            return(<tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:isAcesso?"#0D0D1A":l.sucesso?"transparent":"#1A0000"}}>
+            <td style={{padding:"10px 12px",color:"#888",fontSize:11,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+            <td style={{padding:"10px 12px",fontWeight:600,color:isAcesso?"#7B68EE":l.sucesso?TEXT:RED,whiteSpace:"nowrap"}}>{l.email||"—"}</td>
+            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||<span style={{color:MUTED}}>—</span>}</td>
+            <td style={{padding:"10px 12px",color:MUTED,fontSize:12}}>{l.loja||"—"}</td>
             <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
-            <td style={{padding:"10px 12px"}}>{l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>✅ Sucesso</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontSize:11,fontWeight:700}}>❌ {l.motivo||"Bloqueado"}</span>}</td>
-          </tr>)}</tbody>
+            <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
+              <span style={{marginRight:6,fontSize:12}}>{dispositivo}</span>
+              {l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>✅</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>❌ {motivoSemDisp||"Sem resultado"}</span>}
+            </td>
+          </tr>);})}</tbody>
         </table>}
       </div>
     </div>}
