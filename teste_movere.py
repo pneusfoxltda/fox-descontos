@@ -218,15 +218,8 @@ async def main():
             }
             const r1 = check('Listar somente resumo','checkbox',true);
             const r2 = check('Filtrar somente base de venda','checkbox',true);
-            for (const r of document.querySelectorAll('input[type="radio"]')) {
-                const tr = r.closest('tr');
-                if (tr && tr.innerText.includes('Agrupamento')) {
-                    const p = r.parentElement;
-                    if (p && p.innerText.trim()==='Vendedor') {
-                        r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true})); break;
-                    }
-                }
-            }
+            // NÃO alterar o agrupamento — deixar no padrão (0 = sem agrupamento)
+            // para manter o mesmo comportamento do relatório manual.
             return {resumo:r1, filtrar:r2};
         }""")
         print(f"     Checkboxes resumo={r.get('resumo')} filtrar={r.get('filtrar')}")
@@ -281,6 +274,14 @@ async def main():
             if html_cap: break
             await page.wait_for_timeout(500)
 
+        # Aguarda rede estabilizar após primeiro HTML capturado (resposta FINAL)
+        if html_cap:
+            try:
+                await page.wait_for_load_state('networkidle', timeout=6000)
+            except Exception:
+                pass
+            await page.wait_for_timeout(500)
+
         page.remove_listener('response', on_resp)
         await page.screenshot(path="screenshot_04_resultado.png")
         print("     screenshot_04_resultado.png")
@@ -289,8 +290,8 @@ async def main():
     # ── Resultado ─────────────────────────────────────────────────────────────
     print("\n" + "═"*52)
     if html_cap:
-        print(f"  ✅  HTML capturado! ({len(html_cap[0])} bytes)")
-        with open("html_capturado.html","w") as f: f.write(html_cap[0])
+        print(f"  ✅  HTML capturado! ({len(html_cap[-1])} bytes, {len(html_cap)} resposta(s))")
+        with open("html_capturado.html","w") as f: f.write(html_cap[-1])
         print("     html_capturado.html salvo")
         try:
             from bs4 import BeautifulSoup
