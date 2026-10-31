@@ -1,22 +1,15 @@
 """
-teste_movere.py
-===============
-Roda um ÚNICO teste: login + preenchimento do formulário 553 para UMA data
-e UM operador, tirando screenshots em cada passo.
+teste_movere.py  v2
+===================
+Diagnóstico completo: login + formulário 553 para UMA data / UM operador.
+Tira screenshots em cada etapa. Corrigido: usa click(click_count=3) no lugar
+de triple_click() que não existe nessa versão do Playwright.
 
-Uso no GitHub Actions:
-  python3 teste_movere.py
-
-Gera (na pasta atual):
-  screenshot_01_login.png
-  screenshot_02_form_antes.png
-  screenshot_03_form_preenchido.png
-  screenshot_04_resultado.png
-  html_capturado.html        (se o relatório foi gerado)
+Uso: python3 teste_movere.py
+Gera: screenshot_01..04.png  e  html_capturado.html (se o relatório saiu)
 """
 
 import asyncio, os, sys
-from datetime import datetime
 from playwright.async_api import async_playwright
 
 MOVERE_USER = os.environ.get("MOVERE_USER", "")
@@ -25,18 +18,15 @@ MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ── CONFIGURAÇÃO DO TESTE ──────────────────────────────────────────────────────
-# Muda aqui para testar outro dia ou operador
-DATA_TESTE   = "27/10/2026"   # formato dd/mm/aaaa
-OPERADOR     = {"codigo": "294862", "nome": "Graziele Garcia"}
+DATA_TESTE = "27/10/2026"          # formato dd/mm/aaaa
+OPERADOR   = {"codigo": "294862", "nome": "Graziele Garcia"}
 # ──────────────────────────────────────────────────────────────────────────────
 
 async def main():
     if not MOVERE_USER or not MOVERE_PASS:
-        print("❌  Defina MOVERE_USER e MOVERE_PASS nas variáveis de ambiente!")
-        sys.exit(1)
+        print("❌  Defina MOVERE_USER e MOVERE_PASS!"); sys.exit(1)
 
-    print(f"\n🔬  Teste Movere — {DATA_TESTE} / {OPERADOR['nome']}\n")
-
+    print(f"\n🔬  Teste Movere v2 — {DATA_TESTE} / {OPERADOR['nome']}\n")
     html_cap = []
 
     async with async_playwright() as pw:
@@ -44,147 +34,147 @@ async def main():
         ctx = await browser.new_context(locale='pt-BR', timezone_id='America/Sao_Paulo')
         page = await ctx.new_page()
 
-        # ── 1. Login ───────────────────────────────────────────────────────────
-        print("  1. Abrindo página de login…")
+        # ── 1. Login ──────────────────────────────────────────────────────────
+        print("  1. Login…")
         await page.goto(f"{MOVERE_BASE}/foxpneus/default.aspx",
                         wait_until='domcontentloaded', timeout=30000)
         await page.wait_for_timeout(2000)
         await page.screenshot(path="screenshot_01_login.png")
-        print("     → screenshot_01_login.png salvo")
 
-        # Campos de login
         for sel in ['#txtLogin','input[name="txtLogin"]','input[type="text"]:visible']:
             try:
                 if await page.locator(sel).count() > 0:
-                    await page.fill(sel, MOVERE_USER)
-                    print(f"     Usuário preenchido via {sel}")
-                    break
-            except Exception:
-                pass
+                    await page.fill(sel, MOVERE_USER); print(f"     user via {sel}"); break
+            except Exception: pass
 
         for sel in ['#txtSenha','input[name="txtSenha"]','input[type="password"]:visible']:
             try:
                 if await page.locator(sel).count() > 0:
-                    await page.fill(sel, MOVERE_PASS)
-                    print("     Senha preenchida")
-                    break
-            except Exception:
-                pass
+                    await page.fill(sel, MOVERE_PASS); print("     senha OK"); break
+            except Exception: pass
 
         for sel in ['#btnEntrar','input[value="Entrar"]',
                     'button:has-text("Entrar")','input[type="submit"]:visible']:
             try:
                 if await page.locator(sel).count() > 0:
-                    await page.click(sel)
-                    print(f"     Botão Entrar clicado via {sel}")
-                    break
-            except Exception:
-                pass
+                    await page.click(sel); print(f"     entrar via {sel}"); break
+            except Exception: pass
 
         await page.wait_for_load_state('networkidle', timeout=20000)
-        print(f"     URL após login: {page.url}")
+        print(f"     URL pós-login: {page.url}")
 
-        if 'default.aspx' in page.url.lower() or 'login' in page.url.lower():
-            print("  ❌  Parece que o login FALHOU — URL ainda é a de login!")
-        else:
-            print("  ✅  Login OK!")
-
-        # ── 2. Formulário ─────────────────────────────────────────────────────
-        print(f"\n  2. Abrindo rotina 553…")
+        # ── 2. Abre formulário ────────────────────────────────────────────────
+        print(f"\n  2. Rotina 553…")
         await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
         await page.wait_for_timeout(1500)
         await page.screenshot(path="screenshot_02_form_antes.png")
-        print("     → screenshot_02_form_antes.png salvo")
+        print("     screenshot_02_form_antes.png")
 
-        # Visão Empresarial
-        ve_antes = await page.evaluate("""() => {
-            for (const td of document.querySelectorAll('td,div')) {
-                if (td.childElementCount===0 && td.innerText &&
-                    td.innerText.trim()==='Visão Empresarial') {
-                    const row = td.closest('tr');
-                    if (row) {
-                        const inp = row.querySelector('input[type="text"]');
-                        return inp ? inp.value : 'campo não encontrado';
-                    }
+        # DEBUG: lista todos os inputs de texto para ver o que existe na página
+        all_inputs = await page.evaluate("""() => {
+            const r = [];
+            for (const inp of document.querySelectorAll('input[type="text"],input:not([type])')) {
+                const row = inp.closest('tr') || inp.parentElement;
+                const near = row ? row.innerText.replace(/\\s+/g,' ').trim().slice(0,80) : '';
+                r.push({ id: inp.id||'', name: inp.name||'', value: inp.value||'', near });
+            }
+            return r;
+        }""")
+        print(f"     Inputs de texto na página ({len(all_inputs)}):")
+        for x in all_inputs:
+            print(f"       id='{x['id']}' name='{x['name']}' val='{x['value']}' → '{x['near'][:60]}'")
+
+        # VE = 1
+        ve = await page.evaluate("""() => {
+            function set1(inp) {
+                inp.value = '1';
+                ['input','change','blur'].forEach(e =>
+                    inp.dispatchEvent(new Event(e, {bubbles:true})));
+                return 'setado: ' + (inp.id||inp.name||'?');
+            }
+            for (const el of document.querySelectorAll('td,th,div,label,span')) {
+                const t = (el.innerText||'').trim();
+                if (t.includes('Empresarial')) {
+                    const row = el.closest('tr') || el.parentElement;
+                    const inp = row && row.querySelector('input[type="text"],input:not([type])');
+                    if (inp) return set1(inp);
                 }
             }
-            return 'label não encontrado';
-        }""")
-        print(f"     Visão Empresarial ANTES: '{ve_antes}'")
-
-        await page.evaluate("""() => {
-            for (const td of document.querySelectorAll('td,div')) {
-                if (td.childElementCount===0 && td.innerText &&
-                    td.innerText.trim()==='Visão Empresarial') {
-                    const row = td.closest('tr');
-                    if (row) {
-                        const inp = row.querySelector('input[type="text"]');
-                        if (inp && (!inp.value || inp.value.trim()==='')) {
-                            inp.value='1';
-                            inp.dispatchEvent(new Event('change',{bubbles:true}));
-                            inp.dispatchEvent(new Event('blur',{bubbles:true}));
-                        }
-                    }
-                    break;
-                }
+            for (const inp of document.querySelectorAll('input[type="text"],input:not([type])')) {
+                const id = (inp.id + inp.name).toLowerCase();
+                if (id.includes('empresa') || id.includes('visao')) return set1(inp);
             }
+            return 'nao encontrado';
         }""")
+        print(f"     Visão Empresarial: {ve}")
         await page.wait_for_timeout(900)
 
-        ve_depois = await page.evaluate("""() => {
-            for (const td of document.querySelectorAll('td,div')) {
-                if (td.childElementCount===0 && td.innerText &&
-                    td.innerText.trim()==='Visão Empresarial') {
-                    const row = td.closest('tr');
-                    if (row) {
-                        const inp = row.querySelector('input[type="text"]');
-                        return inp ? inp.value : 'campo não encontrado';
-                    }
-                }
-            }
-            return 'label não encontrado';
-        }""")
-        print(f"     Visão Empresarial DEPOIS: '{ve_depois}'")
-
-        # Data Inicial
-        data_setada = False
-        for sel in ['#dtaini','input[name="dtaini"]','input[id*="dtaini"]','input[id*="DataIni"]']:
+        # Data Inicial  ← FIX: click(click_count=3) no lugar de triple_click()
+        data_ok = False
+        for sel in ['#dtaini','input[name="dtaini"]','input[id*="dtaini"]',
+                    'input[id*="DataIni"]','input[id*="dataini"]']:
             try:
                 el = page.locator(sel).first
                 if await el.count() > 0:
-                    await el.triple_click()
+                    await el.click(click_count=3)
                     await el.fill(DATA_TESTE)
                     await el.press('Tab')
                     val = await el.input_value()
-                    print(f"     Data Inicial via {sel} → valor: '{val}'")
-                    data_setada = True
-                    break
+                    print(f"     Data Ini via {sel} → '{val}'")
+                    data_ok = True; break
             except Exception as e:
-                print(f"     Data Inicial {sel} falhou: {e}")
+                print(f"     Data Ini {sel} erro: {e}")
 
-        if not data_setada:
-            print("     ⚠️  Data Inicial: nenhum seletor funcionou!")
-
+        if not data_ok:
+            # Fallback via JavaScript
+            r = await page.evaluate(f"""() => {{
+                const sels = ['#dtaini','[name="dtaini"]','[id*="dtaini"]','[id*="DataIni"]'];
+                for (const s of sels) {{
+                    const el = document.querySelector(s);
+                    if (el) {{
+                        el.value = '{DATA_TESTE}';
+                        el.dispatchEvent(new Event('change',{{bubbles:true}}));
+                        return 'JS ok: ' + s;
+                    }}
+                }}
+                return 'nao encontrado';
+            }}""")
+            print(f"     Data Ini (JS fallback): {r}")
         await page.wait_for_timeout(400)
 
         # Data Final
-        for sel in ['#dtafim','input[name="dtafim"]','input[id*="dtafim"]','input[id*="DataFim"]']:
+        data_fim_ok = False
+        for sel in ['#dtafim','input[name="dtafim"]','input[id*="dtafim"]',
+                    'input[id*="DataFim"]','input[id*="datafim"]']:
             try:
                 el = page.locator(sel).first
                 if await el.count() > 0:
-                    await el.triple_click()
+                    await el.click(click_count=3)
                     await el.fill(DATA_TESTE)
                     await el.press('Tab')
                     val = await el.input_value()
-                    print(f"     Data Final   via {sel} → valor: '{val}'")
-                    break
+                    print(f"     Data Fim via {sel} → '{val}'")
+                    data_fim_ok = True; break
             except Exception as e:
-                print(f"     Data Final {sel} falhou: {e}")
+                print(f"     Data Fim {sel} erro: {e}")
 
+        if not data_fim_ok:
+            r = await page.evaluate(f"""() => {{
+                const sels = ['#dtafim','[name="dtafim"]','[id*="dtafim"]','[id*="DataFim"]'];
+                for (const s of sels) {{
+                    const el = document.querySelector(s);
+                    if (el) {{
+                        el.value = '{DATA_TESTE}';
+                        el.dispatchEvent(new Event('change',{{bubbles:true}}));
+                        return 'JS ok: ' + s;
+                    }}
+                }}
+                return 'nao encontrado';
+            }}""")
+            print(f"     Data Fim (JS fallback): {r}")
         await page.wait_for_timeout(400)
 
         # Operador
-        op_setado = False
         for sel in ['input[id*="operador"]','input[id*="Operador"]',
                     'input[id*="cliforOperador"]','input[name*="operador"]']:
             try:
@@ -192,38 +182,32 @@ async def main():
                 if await el.count() > 0:
                     await el.clear()
                     await el.type(OPERADOR['codigo'], delay=80)
-                    await page.wait_for_timeout(1200)
-                    # Tenta clicar no autocomplete
-                    for drop in ['li.autocomplete-result','.dropdown-item','[class*="suggest"]']:
+                    await page.wait_for_timeout(1500)
+                    for drop in ['li.autocomplete-result','.dropdown-item',
+                                 '[class*="suggest"]','[class*="autocomplete"] li']:
                         try:
                             item = page.locator(drop).first
                             if await item.count() > 0:
                                 txt = await item.inner_text()
-                                print(f"     Autocomplete operador: '{txt.strip()[:50]}'")
-                                await item.click()
-                                break
-                        except Exception:
-                            pass
+                                print(f"     Autocomplete op: '{txt.strip()[:50]}'")
+                                await item.click(); break
+                        except Exception: pass
                     await el.press('Tab')
+                    await page.wait_for_timeout(600)
                     val = await el.input_value()
-                    print(f"     Operador via {sel} → valor: '{val}'")
-                    op_setado = True
+                    print(f"     Operador via {sel} → '{val}'")
                     break
             except Exception as e:
-                print(f"     Operador {sel} falhou: {e}")
-
-        if not op_setado:
-            print("     ⚠️  Operador: nenhum seletor funcionou!")
+                print(f"     Operador {sel} erro: {e}")
 
         # Checkboxes e rádio
-        await page.evaluate("""() => {
+        r = await page.evaluate("""() => {
             function check(texto, tipo, valor) {
-                for (const el of document.querySelectorAll('td,label,span,div')) {
-                    if (el.childElementCount===0 && el.innerText &&
-                        el.innerText.trim().replace(/[?]/g,'').includes(texto)) {
+                for (const el of document.querySelectorAll('td,label,span,div,th')) {
+                    if ((el.innerText||'').trim().replace(/[?]/g,'').includes(texto)) {
                         let inp = el.querySelector('input[type="'+tipo+'"]')
-                               || (() => { const row=el.closest('tr')||el.parentElement;
-                                           return row&&row.querySelector('input[type="'+tipo+'"]'); })()
+                               || (() => { const p=el.closest('tr')||el.parentElement;
+                                           return p&&p.querySelector('input[type="'+tipo+'"]'); })()
                                || (() => { const n=el.nextElementSibling;
                                            return n&&n.querySelector('input[type="'+tipo+'"]'); })();
                         if (inp) { inp.checked=valor;
@@ -232,26 +216,20 @@ async def main():
                 }
                 return false;
             }
-            const r1 = check('Listar somente resumo',       'checkbox', true);
-            const r2 = check('Filtrar somente base de venda','checkbox', true);
-            window.__checkboxResults = {resumo:r1, filtrar:r2};
-
+            const r1 = check('Listar somente resumo','checkbox',true);
+            const r2 = check('Filtrar somente base de venda','checkbox',true);
             for (const r of document.querySelectorAll('input[type="radio"]')) {
                 const tr = r.closest('tr');
                 if (tr && tr.innerText.includes('Agrupamento')) {
                     const p = r.parentElement;
                     if (p && p.innerText.trim()==='Vendedor') {
-                        r.checked=true;
-                        r.dispatchEvent(new Event('change',{bubbles:true}));
-                        break;
+                        r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true})); break;
                     }
                 }
             }
+            return {resumo:r1, filtrar:r2};
         }""")
-
-        results = await page.evaluate("() => window.__checkboxResults || {}")
-        print(f"     Checkbox 'Listar resumo': {results.get('resumo')}")
-        print(f"     Checkbox 'Filtrar base':  {results.get('filtrar')}")
+        print(f"     Checkboxes resumo={r.get('resumo')} filtrar={r.get('filtrar')}")
 
         # Formato HTML
         try:
@@ -260,17 +238,16 @@ async def main():
                     txt = await opt.inner_text()
                     if 'HTML' in txt or 'Visualiza' in txt:
                         await sel_el.select_option(value=await opt.get_attribute('value'))
-                        print(f"     Formato selecionado: '{txt.strip()}'")
-                        break
+                        print(f"     Formato: '{txt.strip()}'"); break
         except Exception as e:
-            print(f"     Formato: erro — {e}")
+            print(f"     Formato erro: {e}")
 
         await page.wait_for_timeout(300)
         await page.screenshot(path="screenshot_03_form_preenchido.png")
-        print("     → screenshot_03_form_preenchido.png salvo")
+        print("     screenshot_03_form_preenchido.png")
 
         # ── 3. Executar ───────────────────────────────────────────────────────
-        print(f"\n  3. Clicando Executar…")
+        print(f"\n  3. Executar…")
 
         async def on_resp(response):
             if 'ImpressaoRelatorio' in response.url and response.status == 200:
@@ -278,79 +255,56 @@ async def main():
                 if 'html' in ct.lower():
                     try:
                         body = await response.text()
-                        print(f"     📥  Resposta capturada: {len(body)} bytes")
-                        print(f"          Contém 'a5119': {'a5119' in body}")
-                        print(f"          Contém 'Valor Venda': {'Valor Venda' in body}")
+                        print(f"     📥  {len(body)} bytes | a5119={'a5119' in body} | 'Valor Venda'={'Valor Venda' in body}")
                         html_cap.append(body)
                     except Exception as e:
-                        print(f"     Erro ao ler resposta: {e}")
+                        print(f"     Erro leitura: {e}")
 
         page.on('response', on_resp)
-
-        clicou = False
         for sel in ['input[value="Executar"]','#btnExecutar',
                     'button:has-text("Executar")','input[type="submit"]']:
             try:
                 el = page.locator(sel).first
                 if await el.count() > 0:
-                    await el.click()
-                    print(f"     Clicado via {sel}")
-                    clicou = True
-                    break
-            except Exception as e:
-                print(f"     Executar {sel} falhou: {e}")
+                    await el.click(); print(f"     clicado via {sel}"); break
+            except Exception: pass
 
-        if not clicou:
-            print("     ⚠️  Botão Executar não encontrado!")
-
-        # Aguarda resposta
-        for i in range(40):
+        for _ in range(40):
             if html_cap: break
             await page.wait_for_timeout(500)
 
         page.remove_listener('response', on_resp)
         await page.screenshot(path="screenshot_04_resultado.png")
-        print("     → screenshot_04_resultado.png salvo")
-
+        print("     screenshot_04_resultado.png")
         await browser.close()
 
     # ── Resultado ─────────────────────────────────────────────────────────────
-    print("\n" + "═"*50)
+    print("\n" + "═"*52)
     if html_cap:
-        html = html_cap[0]
-        print(f"  ✅  HTML capturado! ({len(html)} bytes)")
-        with open("html_capturado.html", "w") as f:
-            f.write(html)
-        print("     → html_capturado.html salvo")
-
-        # Tenta parsear
+        print(f"  ✅  HTML capturado! ({len(html_cap[0])} bytes)")
+        with open("html_capturado.html","w") as f: f.write(html_cap[0])
+        print("     html_capturado.html salvo")
         try:
             from bs4 import BeautifulSoup
-            soup = BeautifulSoup(html, 'html.parser')
-            LABEL_CLS = ['a5119','a5128','a5137','a5146','a5155','a5164','a5173','a5182',
-                         'a5191','a5200','a5209','a5218','a5227','a5236','a5245','a5261']
-            VALUE_CLS = ['a5123','a5132','a5141','a5150','a5159','a5168','a5177','a5186',
-                         'a5195','a5204','a5213','a5222','a5231','a5240','a5249','a5265']
-            data = {}
-            label = None
+            soup = BeautifulSoup(html_cap[0], 'html.parser')
+            LCLS = ['a5119','a5128','a5137','a5146','a5155','a5164','a5173','a5182',
+                    'a5191','a5200','a5209','a5218','a5227','a5236','a5245','a5261']
+            VCLS = ['a5123','a5132','a5141','a5150','a5159','a5168','a5177','a5186',
+                    'a5195','a5204','a5213','a5222','a5231','a5240','a5249','a5265']
+            data, label = {}, None
             for div in soup.find_all('div'):
-                cls_list = div.get('class', [])
-                cls = cls_list[0] if cls_list else ''
-                text = div.get_text(strip=True)
-                if not text: continue
-                if cls in LABEL_CLS: label = text
-                elif cls in VALUE_CLS and label:
-                    data[label] = text
-                    label = None
-            print("\n  Campos extraídos do relatório:")
-            for k, v in data.items():
-                print(f"    {k}: {v}")
+                cls = (div.get('class') or [''])[0]
+                t = div.get_text(strip=True)
+                if not t: continue
+                if cls in LCLS: label = t
+                elif cls in VCLS and label: data[label]=t; label=None
+            print("\n  Campos:")
+            for k,v in data.items(): print(f"    {k}: {v}")
         except Exception as e:
-            print(f"  Erro ao parsear: {e}")
+            print(f"  Erro parse: {e}")
     else:
-        print("  ❌  HTML NÃO capturado — o relatório não foi gerado!")
-        print("     Veja os screenshots para entender o que aconteceu.")
-    print("═"*50 + "\n")
+        print("  ❌  HTML NÃO capturado — veja os screenshots!")
+    print("═"*52 + "\n")
 
-if __name__ == '__main__':
+if __name__=='__main__':
     asyncio.run(main())
