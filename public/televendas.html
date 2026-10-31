@@ -54,8 +54,10 @@ body{background:#f4f6f9;color:#1a2332;font-family:'Inter',sans-serif;min-height:
 .table-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px #0001;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:#0f1f3d;color:#fff;}
-th{padding:15px 12px;font-weight:700;font-size:15px;text-align:center;letter-spacing:.3px;vertical-align:middle;}
+th{padding:15px 12px;font-weight:700;font-size:15px;text-align:center !important;letter-spacing:.3px;vertical-align:middle;}
+thead th:first-child{text-align:center !important;}
 .th-dias{background:#e85d04;color:#fff;text-align:center;}
+thead tr:last-child th{background:#e85d04;color:#fff;font-size:13px;padding:8px 12px;}
 tbody tr{border-bottom:1px solid #f0f4f8;transition:.1s;}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:#f8fafc;}
@@ -400,21 +402,21 @@ function render(rows) {
     <table>
       <thead>
         <tr>
-          <th>Operadora</th>
-          <th>Meta</th>
+          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Operadora</th>
+          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Meta</th>
           <th colspan="${datas5.length}" class="th-dias">Últimos ${datas5.length} dias úteis</th>
-          <th>Faturamento<br>do mês</th>
-          <th>Precisa por dia<br>(${duRestantes} dias)</th>
-          <th>% atingido</th>
+          <th rowspan="2" style="border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15)">Faturamento<br>do mês</th>
+          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Precisa por dia<br>(${duRestantes} dias)</th>
+          <th rowspan="2">% atingido</th>
         </tr>
-        <tr style="background:#1a3050;">
-          <th></th><th></th>${colDias}<th></th><th></th><th></th>
+        <tr>
+          ${colDias}
         </tr>
       </thead>
       <tbody>
         ${linhas}
         <tr class="total-row ${pctMeta>=pctDesejado?'row-verde':'row-vermelho'}">
-          <td>TOTAL SETOR</td>
+          <td style="font-size:16px;font-weight:800;color:#1a2332">TOTAL SETOR</td>
           <td class="meta-col">${brl(metaSetorTotal)}</td>
           ${colDiasTotals}
           <td>${brl(totalMes)}</td>
