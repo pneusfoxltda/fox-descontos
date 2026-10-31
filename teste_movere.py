@@ -309,6 +309,24 @@ async def main():
                 elif cls in VCLS and label: data[label]=t; label=None
             print("\n  Campos:")
             for k,v in data.items(): print(f"    {k}: {v}")
+
+            # DEBUG EXTRA: mostra HTML bruto ao redor do primeiro valor monetário
+            first_val = soup.find('div', class_='a5123')
+            if first_val:
+                # pega o trecho de 300 caracteres ao redor
+                raw = str(first_val)
+                print(f"\n  DEBUG HTML (div.a5123 raw): {raw[:300]}")
+                # também mostra o pai para ver a estrutura
+                parent = first_val.parent
+                print(f"  DEBUG HTML (parent tag): {str(parent)[:500]}")
+            else:
+                print("\n  DEBUG: div.a5123 NÃO encontrada no HTML!")
+                # Mostra todas as classes únicas dos divs para diagnóstico
+                classes = set()
+                for d in soup.find_all('div'):
+                    c = (d.get('class') or [''])[0]
+                    if c: classes.add(c)
+                print(f"  Classes de div encontradas: {sorted(classes)[:30]}")
         except Exception as e:
             print(f"  Erro parse: {e}")
     else:
