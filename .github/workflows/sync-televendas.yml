@@ -1,0 +1,32 @@
+name: Sync Televendas
+
+on:
+  schedule:
+    # Roda toda hora das 7h às 22h (horário de Brasília = 10h às 01h UTC)
+    - cron: '0 10-23 * * 1-6'
+    - cron: '0 0,1 * * 2-7'
+  workflow_dispatch: # permite rodar manualmente no GitHub
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: |
+          pip install playwright httpx beautifulsoup4
+          playwright install chromium --with-deps
+
+      - name: Rodar sync
+        env:
+          MOVERE_USER: ${{ secrets.MOVERE_USER }}
+          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
+        run: python sync_televendas.py
