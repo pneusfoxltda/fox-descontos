@@ -458,8 +458,71 @@ async function buscarMes() {
   return r.json();
 }
 
+/* ── Render dia específico (visão simplificada) ── */
+function renderDia(rows) {
+  const d = dataRef;
+  const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const dataBRFull = d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // Filtrar só as linhas do dia selecionado
+  const rowsDia = rows.filter(r => r.data_ref === iso);
+
+  // Agrupar por operador
+  const porOp = {};
+  OPERADORES.forEach(op => { porOp[op.codigo] = {nome: op.nome, valor: 0}; });
+  rowsDia.forEach(r => {
+    if(porOp[r.operador_codigo]) porOp[r.operador_codigo].valor += r.valor_venda || 0;
+  });
+
+  const totalDia = Object.values(porOp).reduce((a,op) => a + op.valor, 0);
+
+  // Esconder KPIs e metas
+  document.getElementById('kpis').innerHTML = '';
+  document.getElementById('metas-row').style.display = 'none';
+  document.getElementById('page-meta').textContent = `Vendas de ${dataBRFull} · fonte: Movere`;
+  document.getElementById('sync-info').innerHTML = `Filtro: dia específico`;
+
+  const linhas = OPERADORES.map(op => {
+    const v = porOp[op.codigo].valor;
+    return `
+    <tr style="border-bottom:1px solid #f0f4f8;">
+      <td style="padding:14px 16px;font-size:16px;font-weight:800;color:#1a2332;text-align:left">${op.nome.toUpperCase()}</td>
+      <td style="padding:14px 16px;font-size:16px;font-weight:700;color:#1a2332;text-align:right">${v > 0 ? brl(v) : '<span style="color:#d1d5db">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tabela-wrap').innerHTML = `
+  <div class="table-wrap" style="margin-top:16px;">
+    <table style="font-size:14px;">
+      <thead>
+        <tr style="background:#0f1f3d;color:#fff;">
+          <th style="padding:14px 16px;text-align:left;font-size:14px;">Vendedor</th>
+          <th style="padding:14px 16px;text-align:right;font-size:14px;">Faturamento do dia</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${linhas}
+        <tr style="background:#0f1f3d;color:#fff;font-weight:800;">
+          <td style="padding:14px 16px;font-size:15px;text-align:left">TOTAL DO DIA</td>
+          <td style="padding:14px 16px;font-size:15px;text-align:right">${brl(totalDia)}</td>
+        </tr>
+      </tbody>
+    </table>
+    ${rowsDia.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas nesta data.</div>' : ''}
+  </div>`;
+}
+
 /* ── Render ── */
 function render(rows) {
+  // Se há data específica selecionada → visão simplificada do dia
+  if(dataRef) {
+    renderDia(rows);
+    return;
+  }
+
+  // Restaurar elementos que podem ter sido ocultados
+  document.getElementById('metas-row').style.display = '';
+
   const agora = dataRefAtiva();
   const hoje = new Date();
   const ano = agora.getFullYear();
