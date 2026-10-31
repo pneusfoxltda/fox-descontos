@@ -81,6 +81,34 @@ td.meta-col{color:#6b7280;}
 .pct-badge.amarelo{background:#fef9c3;color:#b45309;}
 .pct-badge.vermelho{background:#fee2e2;color:#CC1F1F;}
 
+/* ── Filtro de data ── */
+.filtro-data-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filtro-data-label{font-size:12px;font-weight:600;color:#7a8ba0;text-transform:uppercase;letter-spacing:.4px;}
+.filtro-data-btn{background:#fff;border:2px solid #dde3ec;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0f1f3d;display:flex;align-items:center;gap:8px;transition:.15s;}
+.filtro-data-btn:hover{border-color:#0f1f3d;}
+.filtro-data-btn.ativo{border-color:#CC1F1F;color:#CC1F1F;}
+.filtro-data-clear{background:none;border:none;cursor:pointer;font-size:11px;color:#9aabb8;padding:4px 6px;border-radius:4px;}
+.filtro-data-clear:hover{color:#CC1F1F;}
+
+/* ── Calendário popup ── */
+.cal-popup{display:none;position:absolute;z-index:200;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 8px 32px #0002;padding:16px;min-width:280px;}
+.cal-popup.aberto{display:block;}
+.cal-popup-wrap{position:relative;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-nav{background:none;border:1px solid #dde3ec;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;color:#0f1f3d;display:flex;align-items:center;justify-content:center;transition:.1s;}
+.cal-nav:hover{background:#0f1f3d;color:#fff;}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed;}
+.cal-titulo{font-size:14px;font-weight:700;color:#0f1f3d;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dow{font-size:10px;font-weight:700;color:#9aabb8;text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-dia{font-size:13px;font-weight:500;color:#1a2332;text-align:center;padding:7px 4px;border-radius:6px;cursor:pointer;transition:.1s;}
+.cal-dia:hover:not(.cal-dia-vazio):not(.cal-dia-disabled){background:#e8f0fe;color:#0f1f3d;}
+.cal-dia.cal-dia-hoje{font-weight:800;color:#CC1F1F;}
+.cal-dia.cal-dia-sel{background:#0f1f3d;color:#fff !important;font-weight:700;}
+.cal-dia.cal-dia-disabled{color:#d1d5db;cursor:not-allowed;pointer-events:none;}
+.cal-dia.cal-dia-vazio{cursor:default;}
+.cal-dia-futuros{font-size:10px;color:#9aabb8;text-align:center;margin-top:8px;}
+
 /* ── Legenda ── */
 .legenda{display:flex;gap:20px;padding:10px 12px;background:#f8fafc;font-size:11px;color:#7a8ba0;border-top:1px solid #e2e8f0;}
 .leg-item{display:flex;align-items:center;gap:5px;}
@@ -168,9 +196,30 @@ td.meta-col{color:#6b7280;}
 
 <div class="container">
 
-  <div class="page-header">
-    <div class="page-title">Televendas <span>Fox Pneus</span></div>
-    <div class="page-meta" id="page-meta">Carregando…</div>
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div class="page-title">Televendas <span>Fox Pneus</span></div>
+      <div class="page-meta" id="page-meta">Carregando…</div>
+    </div>
+    <!-- Filtro de data (direita) -->
+    <div class="filtro-data-wrap" style="margin-bottom:0;">
+      <span class="filtro-data-label">📅</span>
+      <div class="cal-popup-wrap">
+        <button class="filtro-data-btn" id="filtro-data-btn" onclick="toggleCalendario()">
+          <span id="filtro-data-txt">Hoje</span> ▾
+        </button>
+        <div class="cal-popup" id="cal-popup" style="right:0;left:auto;">
+          <div class="cal-header">
+            <button class="cal-nav" id="cal-prev" onclick="calNav(-1)">‹</button>
+            <span class="cal-titulo" id="cal-titulo"></span>
+            <button class="cal-nav" id="cal-next" onclick="calNav(1)">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="cal-dia-futuros" id="cal-futuros"></div>
+        </div>
+      </div>
+      <button class="filtro-data-clear" id="filtro-data-clear" onclick="limparFiltro()" style="display:none">✕</button>
+    </div>
   </div>
 
   <!-- Metas -->
@@ -214,6 +263,114 @@ td.meta-col{color:#6b7280;}
 </div>
 
 <script>
+/* ── Data de referência (filtro) ── */
+const DATA_MIN = new Date(2026, 9, 1); // 01/10/2026
+let dataRef = null; // null = hoje; Date = data selecionada
+let calViewAno, calViewMes;
+
+function dataRefAtiva() {
+  return dataRef || new Date();
+}
+
+function toggleCalendario() {
+  const popup = document.getElementById('cal-popup');
+  const d = dataRefAtiva();
+  calViewAno = d.getFullYear();
+  calViewMes = d.getMonth();
+  renderCalendario();
+  popup.classList.toggle('aberto');
+  // fechar ao clicar fora
+  if(popup.classList.contains('aberto')) {
+    setTimeout(() => document.addEventListener('click', fecharCalFora, {once:true}), 10);
+  }
+}
+
+function fecharCalFora(e) {
+  const wrap = document.querySelector('.cal-popup-wrap');
+  if(wrap && !wrap.contains(e.target)) {
+    document.getElementById('cal-popup').classList.remove('aberto');
+  } else {
+    document.addEventListener('click', fecharCalFora, {once:true});
+  }
+}
+
+function calNav(dir) {
+  calViewMes += dir;
+  if(calViewMes > 11) { calViewMes = 0; calViewAno++; }
+  if(calViewMes < 0)  { calViewMes = 11; calViewAno--; }
+  renderCalendario();
+}
+
+function renderCalendario() {
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DIAS_SEM = ['Do','Se','Te','Qu','Qu','Se','Sá'];
+  const hoje = new Date();
+  const selD = dataRef;
+
+  document.getElementById('cal-titulo').textContent = `${MESES[calViewMes]} ${calViewAno}`;
+
+  // Botões prev/next
+  const minAno = DATA_MIN.getFullYear(), minMes = DATA_MIN.getMonth();
+  document.getElementById('cal-prev').disabled = (calViewAno < minAno || (calViewAno === minAno && calViewMes <= minMes));
+  document.getElementById('cal-next').disabled = (calViewAno > hoje.getFullYear() || (calViewAno === hoje.getFullYear() && calViewMes >= hoje.getMonth()));
+
+  let html = DIAS_SEM.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  const primeiro = new Date(calViewAno, calViewMes, 1).getDay(); // 0=Dom
+  for(let i=0; i<primeiro; i++) html += `<div class="cal-dia cal-dia-vazio"></div>`;
+
+  const totalDias = new Date(calViewAno, calViewMes+1, 0).getDate();
+  for(let d=1; d<=totalDias; d++) {
+    const dataDia = new Date(calViewAno, calViewMes, d);
+    const isMin = dataDia < DATA_MIN;
+    const isFuturo = dataDia > hoje;
+    const isHoje = d===hoje.getDate() && calViewMes===hoje.getMonth() && calViewAno===hoje.getFullYear();
+    const isSel = selD && d===selD.getDate() && calViewMes===selD.getMonth() && calViewAno===selD.getFullYear();
+    let cls = 'cal-dia';
+    if(isMin || isFuturo) cls += ' cal-dia-disabled';
+    if(isHoje) cls += ' cal-dia-hoje';
+    if(isSel) cls += ' cal-dia-sel';
+    html += `<div class="${cls}" onclick="selecionarData(${d},${calViewMes},${calViewAno})">${d}</div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+  document.getElementById('cal-futuros').textContent =
+    (calViewAno < hoje.getFullYear() || calViewMes < hoje.getMonth()) ? '' : 'Datas futuras não disponíveis';
+}
+
+function selecionarData(dia, mes, ano) {
+  const hoje = new Date();
+  dataRef = new Date(ano, mes, dia);
+  // Se selecionou hoje, tratar como "hoje" (sem filtro)
+  if(dia===hoje.getDate() && mes===hoje.getMonth() && ano===hoje.getFullYear()) {
+    dataRef = null;
+  }
+  atualizarBotaoFiltro();
+  document.getElementById('cal-popup').classList.remove('aberto');
+  carregar(true);
+}
+
+function limparFiltro() {
+  dataRef = null;
+  atualizarBotaoFiltro();
+  carregar(true);
+}
+
+function atualizarBotaoFiltro() {
+  const btn = document.getElementById('filtro-data-btn');
+  const txt = document.getElementById('filtro-data-txt');
+  const clear = document.getElementById('filtro-data-clear');
+  if(dataRef) {
+    txt.textContent = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    btn.classList.add('ativo');
+    clear.style.display = 'inline-flex';
+  } else {
+    txt.textContent = 'Hoje';
+    btn.classList.remove('ativo');
+    clear.style.display = 'none';
+  }
+}
+
 /* ── Supabase ── */
 const SB_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
@@ -289,7 +446,7 @@ function diasUteisPassados(ano, mes, hoje) {
 
 /* ── Busca Supabase ── */
 async function buscarMes() {
-  const agora = new Date();
+  const agora = dataRefAtiva();
   const ano = agora.getFullYear();
   const mes = String(agora.getMonth()+1).padStart(2,'0');
   const ini = `${ano}-${mes}-01`;
@@ -303,10 +460,13 @@ async function buscarMes() {
 
 /* ── Render ── */
 function render(rows) {
-  const agora = new Date();
+  const agora = dataRefAtiva();
+  const hoje = new Date();
   const ano = agora.getFullYear();
   const mes = agora.getMonth()+1;
-  const diaHoje = agora.getDate();
+  // Se mês selecionado é passado, usa último dia do mês; senão usa dia da data ref
+  const mesCompleto = (ano < hoje.getFullYear()) || (ano === hoje.getFullYear() && mes < hoje.getMonth()+1);
+  const diaHoje = mesCompleto ? new Date(ano, mes, 0).getDate() : agora.getDate();
 
   const duTotal = diasUteis(ano, mes).length;
   const duPassados = diasUteisPassados(ano, mes, diaHoje);
