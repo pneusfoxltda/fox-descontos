@@ -123,7 +123,7 @@ td.meta-col{color:#6b7280;}
 /* ── Modal ── */
 .modal-bg{display:none;position:fixed;inset:0;background:#0008;z-index:100;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
-.modal{background:#fff;border-radius:14px;padding:24px;width:360px;box-shadow:0 20px 60px #0003;}
+.modal{background:#fff;border-radius:14px;padding:24px;width:480px;box-shadow:0 20px 60px #0003;}
 .modal h3{font-size:15px;font-weight:700;margin-bottom:16px;color:#0f1f3d;}
 .modal-grid{display:grid;gap:10px;margin-bottom:16px;}
 .modal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -136,6 +136,18 @@ td.meta-col{color:#6b7280;}
 .btn-cancel{background:#f1f5f9;color:#374151;}
 .btn-editar-meta{background:none;border:1px solid #d1d5db;border-radius:6px;color:#6b7280;font-size:11px;padding:5px 10px;cursor:pointer;margin-left:8px;}
 .btn-editar-meta:hover{border-color:#0f1f3d;color:#0f1f3d;}
+
+/* ── Modal feriados ── */
+.modal-section-title{font-size:11px;font-weight:700;color:#7a8ba0;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;}
+.modal-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.modal-cal-dow{font-size:9px;font-weight:700;color:#9aabb8;text-align:center;padding:4px 0;text-transform:uppercase;}
+.modal-cal-dia{font-size:12px;text-align:center;padding:6px 3px;border-radius:5px;line-height:1;}
+.modal-cal-dia.util{cursor:pointer;background:#f0f4f8;color:#1a2332;font-weight:600;}
+.modal-cal-dia.util:hover{background:#dde6f5;}
+.modal-cal-dia.feriado{background:#fee2e2;color:#CC1F1F;font-weight:700;cursor:pointer;}
+.modal-cal-dia.dom{color:#d1d5db;font-size:11px;}
+.modal-cal-dia.vazio{background:none;}
+.modal-du-info{font-size:11px;color:#7a8ba0;margin-top:4px;margin-bottom:16px;}
 
 /* ── Scroll hint (mobile) ── */
 .scroll-hint{display:none;text-align:center;font-size:11px;color:#9aabb8;padding:6px 0 2px;letter-spacing:.3px;}
@@ -250,11 +262,16 @@ td.meta-col{color:#6b7280;}
 
 </div>
 
-<!-- Modal de metas por operador -->
+<!-- Modal de metas e feriados -->
 <div class="modal-bg" id="modal-metas">
   <div class="modal">
-    <h3>Metas mensais por operador (R$)</h3>
+    <h3>Configurações — <span id="modal-mes-label"></span></h3>
+    <div class="modal-section-title">Metas mensais (R$)</div>
     <div class="modal-grid" id="modal-inputs"></div>
+    <div class="modal-section-title">Feriados / dias não úteis <span id="modal-du-label" style="font-size:11px;font-weight:400;color:#9aabb8;"></span></div>
+    <div style="font-size:11px;color:#9aabb8;margin-bottom:8px;">Clique em um dia útil (seg–sáb) para marcar como feriado</div>
+    <div id="modal-cal-feriados" class="modal-cal"></div>
+    <div class="modal-du-info" id="modal-du-info"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
       <button class="btn-ok" onclick="salvarMetas()">Salvar</button>
@@ -392,6 +409,7 @@ const METAS_DEFAULT = {
 
 let metas = {...METAS_DEFAULT};
 let metaIdx = 0; // 0=100%, 1=110%, 2=120%
+let feriados = {}; // { "YYYY-MM": [dia, dia, ...] }
 const META_MULT = [1, 1.1, 1.2];
 
 function loadPrefs() {
@@ -400,6 +418,8 @@ function loadPrefs() {
     if (m) metas = {...METAS_DEFAULT, ...JSON.parse(m)};
     const mi = localStorage.getItem('fox_tv_meta_idx');
     if (mi !== null) metaIdx = parseInt(mi);
+    const f = localStorage.getItem('fox_tv_feriados');
+    if (f) feriados = JSON.parse(f);
   } catch(e){}
 }
 
@@ -407,6 +427,7 @@ function savePrefs() {
   try {
     localStorage.setItem('fox_tv_metas', JSON.stringify(metas));
     localStorage.setItem('fox_tv_meta_idx', metaIdx);
+    localStorage.setItem('fox_tv_feriados', JSON.stringify(feriados));
   } catch(e){}
 }
 
@@ -428,14 +449,16 @@ function dataBR(iso) {
   return `${d}/${m}`;
 }
 
-/* ── Dias úteis (seg–sáb) ── */
+/* ── Dias úteis (seg–sáb, excluindo feriados) ── */
 function diasUteis(ano, mes) {
-  // 1-indexed mes
+  // 1-indexed mes; exclui feriados marcados no admin
   const total = new Date(ano, mes, 0).getDate();
+  const key = `${ano}-${String(mes).padStart(2,'0')}`;
+  const ferDia = new Set(feriados[key] || []);
   let dias = [];
   for(let d=1; d<=total; d++) {
     const dow = new Date(ano, mes-1, d).getDay();
-    if(dow >= 1 && dow <= 6) dias.push(d);
+    if(dow >= 1 && dow <= 6 && !ferDia.has(d)) dias.push(d);
   }
   return dias;
 }
@@ -718,8 +741,60 @@ function setMeta(idx) {
   carregar();
 }
 
+/* ── Feriados helpers ── */
+function getFeriados(ano, mes) {
+  const key = `${ano}-${String(mes).padStart(2,'0')}`;
+  return new Set(feriados[key] || []);
+}
+
+function toggleFeriado(ano, mes, dia) {
+  const key = `${ano}-${String(mes).padStart(2,'0')}`;
+  if(!feriados[key]) feriados[key] = [];
+  const idx = feriados[key].indexOf(dia);
+  if(idx >= 0) feriados[key].splice(idx, 1);
+  else feriados[key].push(dia);
+  savePrefs();
+  renderCalFeriados(ano, mes);
+}
+
+function renderCalFeriados(ano, mes) {
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  document.getElementById('modal-mes-label').textContent = `${MESES[mes-1]} ${ano}`;
+
+  const ferDia = getFeriados(ano, mes);
+  const totalDias = new Date(ano, mes, 0).getDate();
+  const primeiroDow = new Date(ano, mes-1, 1).getDay();
+  const DOW = ['Do','Se','Te','Qu','Qu','Se','Sá'];
+
+  let html = DOW.map(d => `<div class="modal-cal-dow">${d}</div>`).join('');
+  for(let i=0; i<primeiroDow; i++) html += `<div class="modal-cal-dia vazio"></div>`;
+  for(let d=1; d<=totalDias; d++) {
+    const dow = new Date(ano, mes-1, d).getDay();
+    const isUtil = dow >= 1 && dow <= 6;
+    const isFeriado = ferDia.has(d);
+    let cls = 'modal-cal-dia';
+    let onclick = '';
+    if(isUtil) {
+      cls += isFeriado ? ' feriado' : ' util';
+      onclick = `onclick="toggleFeriado(${ano},${mes},${d})"`;
+    } else {
+      cls += ' dom';
+    }
+    html += `<div class="${cls}" ${onclick}>${d}</div>`;
+  }
+  document.getElementById('modal-cal-feriados').innerHTML = html;
+
+  const duTotal = diasUteis(ano, mes).length;
+  document.getElementById('modal-du-label').textContent = `— ${duTotal} dia${duTotal!==1?'s':''} útil${duTotal!==1?'s':''}`;
+  document.getElementById('modal-du-info').textContent =
+    `${duTotal} dias úteis em ${MESES[mes-1]} (seg–sáb${ferDia.size > 0 ? `, excluindo ${ferDia.size} feriado${ferDia.size>1?'s':''}` : ''})`;
+}
+
 /* ── Modal ── */
 function abrirModal() {
+  const agora = dataRefAtiva();
+  const ano = agora.getFullYear();
+  const mes = agora.getMonth() + 1;
   const container = document.getElementById('modal-inputs');
   container.innerHTML = OPERADORES.map(op=>`
     <div class="modal-row">
@@ -727,6 +802,7 @@ function abrirModal() {
       <input type="number" id="inp-${op.codigo}" value="${metas[op.codigo]||0}" step="10000">
     </div>
   `).join('');
+  renderCalFeriados(ano, mes);
   document.getElementById('modal-metas').classList.add('open');
 }
 function fecharModal() {
