@@ -1,17 +1,15 @@
 """
-sync_televendas.py - v3
+sync_televendas.py - v4
 ========================
-Sincroniza TODOS os dias úteis do mês atual para os 4 operadores.
+Sincroniza todos os dias úteis do mês. Protege dados reais — nunca
+sobrescreve um valor positivo com R$0 de captura falha.
 
 Lógica:
-  1. Calcula dias úteis (seg-sáb) do mês até hoje
-  2. Consulta Supabase para ver quais (data, operador) já existem
-  3. Executa no Movere apenas os que faltam + sempre atualiza hoje
-  4. Salva R$0 quando não há vendas no dia (evita re-consulta)
-
-Credenciais via variáveis de ambiente:
-  MOVERE_USER  — login do Movere
-  MOVERE_PASS  — senha do Movere
+  1. Busca Supabase: quais (data, operador) existem e com qual valor
+  2. Fila = sem dados + dias com R$0 (possível falha anterior) + hoje
+  3. Movere: se capturou HTML → salva o valor real
+             se não capturou → PULA o dia (não sobrescreve nada)
+             se é hoje e não capturou → salva R$0 (sem vendas ainda)
 """
 
 import asyncio
@@ -23,10 +21,8 @@ from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 import httpx
 
-# ─── Timezone Brasília ─────────────────────────────────────────────────────────
 TZ_SP = timezone(timedelta(hours=-3))
 
-# ─── Configurações ─────────────────────────────────────────────────────────────
 MOVERE_USER = os.environ.get("MOVERE_USER", "")
 MOVERE_PASS = os.environ.get("MOVERE_PASS", "")
 
@@ -48,7 +44,6 @@ OPERADORES = [
 MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
-# Classes CSS do relatório Movere
 LABEL_CLS = [
     'a5119','a5128','a5137','a5146','a5155','a5164','a5173','a5182',
     'a5191','a5200','a5209','a5218','a5227','a5236','a5245','a5261'
@@ -61,14 +56,13 @@ VALUE_CLS = [
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
-    """Dias úteis (seg-sáb) do mês até ate_hoje, como strings 'YYYY-MM-DD'."""
     total = monthrange(ano, mes)[1]
     dias = []
     for d in range(1, total + 1):
         dt = date(ano, mes, d)
         if dt > ate_hoje:
             break
-        if dt.weekday() <= 5:   # 0=seg … 5=sáb; 6=dom fica de fora
+        if dt.weekday() <= 5:
             dias.append(dt.strftime('%Y-%m-%d'))
     return dias
 
@@ -97,11 +91,14 @@ def parse_br_number(s: str) -> float:
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 
-async def buscar_existentes(mes_ini: str, mes_fim: str) -> set:
-    """Retorna set de (data_ref, operador_codigo) que já existem no Supabase."""
+async def buscar_existentes(mes_ini: str, mes_fim: str) -> dict:
+    """
+    Retorna dict {(data_ref, operador_codigo): valor_venda} para o mês.
+    Inclui tanto registros com valor positivo quanto R$0.
+    """
     url = (
         f"{SUPABASE_URL}/rest/v1/vendas_televendas"
-        f"?select=data_ref,operador_codigo"
+        f"?select=data_ref,operador_codigo,valor_venda"
         f"&data_ref=gte.{mes_ini}&data_ref=lte.{mes_fim}"
     )
     headers = {
@@ -112,10 +109,14 @@ async def buscar_existentes(mes_ini: str, mes_fim: str) -> set:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.get(url, headers=headers)
             if r.status_code == 200:
-                return {(row['data_ref'], row['operador_codigo']) for row in r.json()}
+                result = {}
+                for row in r.json():
+                    chave = (row['data_ref'], str(row['operador_codigo']))
+                    result[chave] = float(row.get('valor_venda') or 0)
+                return result
     except Exception as e:
         print(f"  ⚠️  Erro ao consultar Supabase: {e}")
-    return set()
+    return {}
 
 async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero: bool = False):
     VALOR_KEY = 'Valor Venda Líquida (Venda - Devolução)'
@@ -188,11 +189,10 @@ async def login(page):
 # ─── Preencher formulário ─────────────────────────────────────────────────────
 
 async def preencher_formulario(page, operador: dict, data_fmt: str):
-    """Preenche TODOS os campos obrigatórios do relatório 553."""
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
     await page.wait_for_timeout(1500)
 
-    # 1. Visão Empresarial = 1 (REDE FOX PNEUS)
+    # 1. Visão Empresarial = 1
     await page.evaluate("""() => {
         for (const td of document.querySelectorAll('td, div')) {
             if (td.childElementCount === 0 && td.innerText &&
@@ -256,7 +256,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
         except Exception:
             pass
 
-    # 5. Checkboxes e rádio (Listar resumo, Vendedor, Filtrar base)
+    # 5. Checkboxes e rádio
     await page.evaluate("""() => {
         function check(texto, tipo, valor) {
             for (const el of document.querySelectorAll('td,label,span,div')) {
@@ -276,7 +276,6 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
         check('Listar somente resumo',       'checkbox', true);
         check('Filtrar somente base de venda','checkbox', true);
 
-        // Radio Agrupamento = Vendedor
         for (const r of document.querySelectorAll('input[type="radio"]')) {
             const tr = r.closest('tr');
             if (tr && tr.innerText.includes('Agrupamento')) {
@@ -291,7 +290,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     }""")
     await page.wait_for_timeout(400)
 
-    # 6. Formato = Visualização HTML
+    # 6. Formato HTML
     try:
         for sel_el in await page.query_selector_all('select'):
             for opt in await sel_el.query_selector_all('option'):
@@ -355,22 +354,33 @@ async def main():
 
     print(f"\n🔄  Sync Televendas — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)\n")
 
-    # Dias úteis do mês até hoje
     todos_dias = dias_uteis_mes(ano, mes, hoje)
-    print(f"  Dias úteis até hoje: {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
+    print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
 
-    # Registros já existentes no Supabase
+    # Busca existentes COM valores (não apenas se existe)
     existentes = await buscar_existentes(mes_ini, mes_fim)
-    print(f"  Registros no Supabase: {len(existentes)}\n")
+    print(f"  Registros Supabase  : {len(existentes)}")
 
-    # Fila: dias faltantes + sempre atualiza hoje
+    # Fila:
+    #   - dias sem registro algum → precisa capturar
+    #   - dias com R$0  → pode ser falha anterior, retenta
+    #   - hoje          → sempre atualiza
     fila = []
     for dia in todos_dias:
         for op in OPERADORES:
-            if (dia, op['codigo']) not in existentes or dia == data_hoje:
-                fila.append((dia, op))
+            chave = (dia, op['codigo'])
+            valor_existente = existentes.get(chave)
+            eh_hoje = (dia == data_hoje)
 
-    print(f"  Queries a executar: {len(fila)}\n")
+            if valor_existente is None:       # nunca capturado
+                fila.append((dia, op))
+            elif valor_existente == 0.0:      # pode ser falha → retenta
+                fila.append((dia, op))
+            elif eh_hoje:                     # hoje → refresh sempre
+                fila.append((dia, op))
+            # else: tem valor > 0 e não é hoje → mantém como está
+
+    print(f"  Queries a executar  : {len(fila)}\n")
 
     if not fila:
         print("  ✅  Tudo já atualizado.\n")
@@ -393,28 +403,46 @@ async def main():
 
         total_hoje = 0
         qtd_ok = 0
+        qtd_skip = 0
 
         for i, (dia, op) in enumerate(fila):
-            data_br = datetime.strptime(dia, '%Y-%m-%d').strftime('%d/%m/%Y')
+            data_br  = datetime.strptime(dia, '%Y-%m-%d').strftime('%d/%m/%Y')
+            eh_hoje  = (dia == data_hoje)
+            chave    = (dia, op['codigo'])
+            valor_anterior = existentes.get(chave, None)
+
             print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}…")
             try:
                 html = await buscar_relatorio(page, op, dia)
+
                 if html:
-                    dados  = parse_report_html(html)
-                    st, v  = await salvar_supabase(op, dia, dados)
-                    emoji  = "✅" if st in (200, 201) else "⚠️"
+                    # HTML capturado → salva o valor real
+                    dados = parse_report_html(html)
+                    st, v = await salvar_supabase(op, dia, dados)
+                    emoji = "✅" if st in (200, 201) else "⚠️"
                     print(f"    {emoji}  R$ {v:>12,.2f}  (Supabase {st})")
-                    if dia == data_hoje:
+                    if eh_hoje:
                         total_hoje += v
                     qtd_ok += 1
+
+                elif eh_hoje:
+                    # Hoje sem vendas ainda → salva R$0
+                    st, _ = await salvar_supabase(op, dia, {}, force_zero=True)
+                    print(f"    —   R$ 0,00  (sem vendas hoje — Supabase {st})")
+
                 else:
-                    # Sem vendas neste dia → salva R$ 0 para não re-consultar
-                    st, _  = await salvar_supabase(op, dia, {}, force_zero=True)
-                    print(f"    —   R$ 0,00  (sem dados — Supabase {st})")
+                    # Dia passado sem HTML → NÃO sobrescreve dado existente
+                    if valor_anterior and valor_anterior > 0:
+                        print(f"    🔒  Sem HTML — mantendo R$ {valor_anterior:,.2f} existente")
+                    else:
+                        print(f"    ⚠️  Sem HTML — pulando (sem dado real para proteger)")
+                    qtd_skip += 1
+
             except Exception as e:
                 print(f"    ❌  Erro: {e}")
+                qtd_skip += 1
 
-            # Re-login a cada 25 queries para manter sessão ativa
+            # Re-login a cada 25 queries
             if (i + 1) % 25 == 0 and (i + 1) < len(fila):
                 print("\n  🔁  Re-login para manter sessão…\n")
                 try:
@@ -425,9 +453,10 @@ async def main():
         await browser.close()
 
     print(f"\n{'─'*45}")
-    print(f"  Registros salvos : {qtd_ok}/{len(fila)}")
+    print(f"  Capturados : {qtd_ok}/{len(fila)}")
+    print(f"  Pulados    : {qtd_skip}/{len(fila)}")
     if total_hoje > 0:
-        print(f"  Total hoje       : R$ {total_hoje:,.2f}")
+        print(f"  Total hoje : R$ {total_hoje:,.2f}")
     print(f"{'─'*45}\n")
 
 if __name__ == '__main__':
