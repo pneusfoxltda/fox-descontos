@@ -752,11 +752,16 @@ let timerAuto = null;
 
 function calcularIntervalo() {
   const agora = new Date();
-  const dia = agora.getDay();   // 0=Dom, 1=Seg … 6=Sab
+  const dia = agora.getDay(); // 0=Dom, 1=Seg … 6=Sáb
   const hora = agora.getHours();
-  // Domingo OU Sábado a partir das 12h → 1 hora
-  if(dia === 0 || (dia === 6 && hora >= 12)) return 60 * 60 * 1000;
-  // Segunda–Sábado (até 12h) → 5 minutos
+  const min = agora.getMinutes();
+  const minTotal = hora * 60 + min;
+
+  // Domingo → 1 hora
+  if(dia === 0) return 60 * 60 * 1000;
+  // Seg–Sáb 18h30–00h00 ou madrugada antes das 7h → 30 min
+  if(minTotal >= 18 * 60 + 30 || hora < 7) return 30 * 60 * 1000;
+  // Seg–Sáb 7h–18h30 → 5 min
   return 5 * 60 * 1000;
 }
 
