@@ -37,7 +37,7 @@ OPERADORES = [
     {"codigo": "298172", "nome": "Ana Clara"},
 ]
 
-MOVERE_BASE  = "https://foxpneus.moveresoftware.com"
+MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ─── Classes CSS do relatório HTML do Movere ──────────────────────────────────
@@ -145,6 +145,188 @@ async def login(page):
     await page.wait_for_load_state('networkidle', timeout=20000)
     print("  Login OK!")
 
+
+async def preencher_formulario(page, operador: dict, data_fmt: str):
+    """
+    Preenche todos os campos do relatório 553 via JavaScript + Playwright.
+    Garante: Visão Empresarial=REDE FOX PNEUS, datas, operador,
+             Listar somente resumo, Agrupamento=Vendedor,
+             Filtrar somente base de venda, Formato=HTML.
+    """
+
+    await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
+    await page.wait_for_timeout(2000)
+
+    # ── 1. Visão Empresarial = "1" (REDE FOX PNEUS) ──────────────────────────
+    # Busca o campo pelo texto do label na mesma linha
+    await page.evaluate("""() => {
+        const tds = [...document.querySelectorAll('td, div')];
+        for (const td of tds) {
+            if (td.childElementCount === 0 && td.innerText &&
+                td.innerText.trim() === 'Visão Empresarial') {
+                const row = td.closest('tr');
+                if (row) {
+                    const input = row.querySelector('input[type="text"]');
+                    if (input && (!input.value || input.value.trim() === '')) {
+                        input.value = '1';
+                        input.dispatchEvent(new Event('change', {bubbles:true}));
+                        input.dispatchEvent(new Event('blur',   {bubbles:true}));
+                    }
+                }
+                break;
+            }
+        }
+    }""")
+    await page.wait_for_timeout(1200)
+
+    # ── 2. Data Inicial ───────────────────────────────────────────────────────
+    data_preenchida = False
+    for sel in ['#dtaini', 'input[name="dtaini"]', 'input[id*="dtaini"]',
+                'input[id*="DataIni"]', 'input[id*="dataini"]']:
+        try:
+            el = page.locator(sel).first
+            if await el.count() > 0:
+                await el.triple_click()
+                await el.fill(data_fmt)
+                await el.press('Tab')
+                data_preenchida = True
+                break
+        except Exception:
+            pass
+
+    if not data_preenchida:
+        # Fallback via JS: primeiro input de data (rosa/obrigatório)
+        await page.evaluate(f"""() => {{
+            const inputs = [...document.querySelectorAll('input[type="text"]')];
+            for (const inp of inputs) {{
+                const style = window.getComputedStyle(inp);
+                if (style.backgroundColor && style.backgroundColor.includes('255')) {{
+                    inp.value = '{data_fmt}';
+                    inp.dispatchEvent(new Event('change', {{bubbles:true}}));
+                    inp.dispatchEvent(new Event('blur',   {{bubbles:true}}));
+                    break;
+                }}
+            }}
+        }}""")
+    await page.wait_for_timeout(500)
+
+    # ── 3. Data Final ─────────────────────────────────────────────────────────
+    for sel in ['#dtafim', 'input[name="dtafim"]', 'input[id*="dtafim"]',
+                'input[id*="DataFim"]', 'input[id*="datafim"]']:
+        try:
+            el = page.locator(sel).first
+            if await el.count() > 0:
+                await el.triple_click()
+                await el.fill(data_fmt)
+                await el.press('Tab')
+                break
+        except Exception:
+            pass
+    await page.wait_for_timeout(500)
+
+    # ── 4. Operador ───────────────────────────────────────────────────────────
+    for sel in ['input[id*="operador"]', 'input[id*="Operador"]',
+                'input[id*="cliforOperador"]', 'input[name*="operador"]']:
+        try:
+            el = page.locator(sel).first
+            if await el.count() > 0:
+                await el.clear()
+                await el.type(operador['codigo'], delay=80)
+                await page.wait_for_timeout(1200)
+                # Fecha autocomplete se aparecer
+                for drop_sel in ['li.autocomplete-result', '.dropdown-item',
+                                  '[class*="suggest"]', 'li[class*="auto"]']:
+                    try:
+                        item = page.locator(drop_sel).first
+                        if await item.count() > 0:
+                            await item.click()
+                            break
+                    except Exception:
+                        pass
+                await el.press('Tab')
+                await page.wait_for_timeout(800)
+                break
+        except Exception:
+            pass
+
+    # ── 5. Checkboxes e radio via JavaScript ──────────────────────────────────
+    await page.evaluate("""() => {
+        // --- Função auxiliar ---
+        function checkInputNearText(texto, tipo='checkbox', valor=true) {
+            const todos = [...document.querySelectorAll('td, label, span, div')];
+            for (const el of todos) {
+                if (el.childElementCount === 0 && el.innerText &&
+                    el.innerText.trim().replace(/[?]/g,'').includes(texto)) {
+
+                    // Verifica a própria célula
+                    let inp = el.querySelector('input[type="' + tipo + '"]');
+                    if (!inp) {
+                        // Verifica a linha / pai
+                        const row = el.closest('tr') || el.parentElement;
+                        if (row) inp = row.querySelector('input[type="' + tipo + '"]');
+                    }
+                    if (!inp) {
+                        // Verifica o próximo td irmão
+                        const next = el.nextElementSibling;
+                        if (next) inp = next.querySelector('input[type="' + tipo + '"]');
+                    }
+                    if (inp) {
+                        inp.checked = valor;
+                        inp.dispatchEvent(new Event('change', {bubbles:true}));
+                        inp.dispatchEvent(new Event('click',  {bubbles:true}));
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Listar somente resumo?
+        checkInputNearText('Listar somente resumo', 'checkbox', true);
+
+        // Filtrar somente base de venda?
+        checkInputNearText('Filtrar somente base de venda', 'checkbox', true);
+
+        // Agrupamento = Vendedor (radio)
+        const radios = [...document.querySelectorAll('input[type="radio"]')];
+        for (const r of radios) {
+            // Texto do label ou do elemento irmão
+            const parent = r.parentElement;
+            const rowEl  = r.closest('td') || r.parentElement;
+            const txt = (parent ? parent.innerText : '') + ' ' + (rowEl ? rowEl.innerText : '');
+            if (txt.trim() === 'Vendedor' || txt.includes('Vendedor')) {
+                // Confirma que é o radio de Agrupamento verificando a linha
+                const tr = r.closest('tr');
+                if (tr && tr.innerText.includes('Agrupamento')) {
+                    r.checked = true;
+                    r.dispatchEvent(new Event('change', {bubbles:true}));
+                    break;
+                }
+                // Se não encontrou via linha, usa o primeiro "Vendedor" encontrado
+                r.checked = true;
+                r.dispatchEvent(new Event('change', {bubbles:true}));
+                break;
+            }
+        }
+    }""")
+    await page.wait_for_timeout(500)
+
+    # ── 6. Formato = Visualização HTML ────────────────────────────────────────
+    try:
+        selects = await page.query_selector_all('select')
+        for sel_el in selects:
+            opts = await sel_el.query_selector_all('option')
+            for opt in opts:
+                txt = await opt.inner_text()
+                if 'HTML' in txt or 'Visualiza' in txt:
+                    val = await opt.get_attribute('value')
+                    await sel_el.select_option(value=val)
+                    break
+    except Exception:
+        pass
+    await page.wait_for_timeout(300)
+
+
 async def buscar_operador(page, operador: dict, data_hoje: str) -> str | None:
     html_capturado = []
     data_fmt = datetime.strptime(data_hoje, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -162,77 +344,10 @@ async def buscar_operador(page, operador: dict, data_hoje: str) -> str | None:
 
     page.on('response', on_response)
 
-    await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
-    await page.wait_for_timeout(2000)
+    # Preenche o formulário com todos os campos obrigatórios
+    await preencher_formulario(page, operador, data_fmt)
 
-    for sel in ['#dtaini', 'input[name="dtaini"]', 'input[id*="dtaini"]', 'input[id*="DataIni"]']:
-        try:
-            el = page.locator(sel).first
-            if await el.count() > 0:
-                await el.triple_click()
-                await el.fill(data_fmt)
-                break
-        except Exception:
-            pass
-
-    for sel in ['#dtafim', 'input[name="dtafim"]', 'input[id*="dtafim"]', 'input[id*="DataFim"]']:
-        try:
-            el = page.locator(sel).first
-            if await el.count() > 0:
-                await el.triple_click()
-                await el.fill(data_fmt)
-                break
-        except Exception:
-            pass
-
-    await page.wait_for_timeout(500)
-
-    for sel in ['input[id*="operador"]', 'input[id*="Operador"]', 'input[id*="cliforOperador"]']:
-        try:
-            el = page.locator(sel).first
-            if await el.count() > 0:
-                await el.clear()
-                await el.type(operador['codigo'], delay=80)
-                await page.wait_for_timeout(1200)
-                for dropdown_sel in ['li.autocomplete-result', '.dropdown-item', '[class*="suggest"]']:
-                    try:
-                        item = page.locator(dropdown_sel).first
-                        if await item.count() > 0:
-                            await item.click()
-                            break
-                    except Exception:
-                        pass
-                await el.press('Tab')
-                await page.wait_for_timeout(800)
-                break
-        except Exception:
-            pass
-
-    try:
-        selects = await page.query_selector_all('select')
-        for sel_el in selects:
-            opts = await sel_el.query_selector_all('option')
-            for opt in opts:
-                txt = await opt.inner_text()
-                if 'HTML' in txt or 'Visualiza' in txt:
-                    val = await opt.get_attribute('value')
-                    await sel_el.select_option(value=val)
-                    break
-    except Exception:
-        pass
-
-    try:
-        for sel in ['input[id*="somenteresumo"]', 'input[id*="Resumo"]']:
-            el = page.locator(sel).first
-            if await el.count() > 0:
-                if not await el.is_checked():
-                    await el.check()
-                break
-    except Exception:
-        pass
-
-    await page.wait_for_timeout(500)
-
+    # Clica em Executar
     executar_clicado = False
     for sel in [
         'input[value="Executar"]', '#btnExecutar',
@@ -249,8 +364,19 @@ async def buscar_operador(page, operador: dict, data_hoje: str) -> str | None:
             pass
 
     if not executar_clicado:
+        # Fallback: botão vermelho "Executar"
+        try:
+            btn = await page.query_selector('input[type="submit"]')
+            if btn:
+                await btn.click()
+                executar_clicado = True
+        except Exception:
+            pass
+
+    if not executar_clicado:
         print(f"  ⚠️  Botão 'Executar' não encontrado para {operador['nome']}")
 
+    # Aguarda o relatório (até 20 s)
     for _ in range(40):
         if html_capturado:
             break
@@ -266,8 +392,13 @@ async def main():
         print("❌  Variáveis MOVERE_USER e MOVERE_PASS não definidas!")
         sys.exit(1)
 
-    data_hoje = datetime.now().strftime('%Y-%m-%d')
-    print(f"\n🔄  Sincronizando televendas — {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+    # Usa horário de Brasília para data de referência
+    from datetime import timezone, timedelta
+    tz_sp = timezone(timedelta(hours=-3))
+    agora_sp = datetime.now(tz_sp)
+    data_hoje = agora_sp.strftime('%Y-%m-%d')
+
+    print(f"\n🔄  Sincronizando televendas — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)\n")
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
@@ -292,12 +423,13 @@ async def main():
                 html = await buscar_operador(page, op, data_hoje)
                 if html:
                     dados = parse_report_html(html)
+                    print(f"     Campos capturados: {list(dados.keys())[:4]}")
                     status, valor = await salvar_supabase(op, data_hoje, dados)
                     emoji = "✅" if status in (200, 201) else "⚠️"
                     print(f"     {emoji} R$ {valor:,.2f}  (Supabase {status})")
                     resultados.append({'nome': op['nome'], 'valor': valor})
                 else:
-                    print(f"     ⚠️  HTML não capturado")
+                    print(f"     ⚠️  HTML não capturado — verifique os campos do formulário")
             except Exception as e:
                 print(f"     ❌  Erro: {e}")
 
