@@ -18,7 +18,7 @@ MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ── CONFIGURAÇÃO DO TESTE ──────────────────────────────────────────────────────
-DATA_TESTE = "27/10/2026"          # formato dd/mm/aaaa
+DATA_TESTE = "31/10/2026"          # formato dd/mm/aaaa
 OPERADOR   = {"codigo": "294862", "nome": "Graziele Garcia"}
 # ──────────────────────────────────────────────────────────────────────────────
 
