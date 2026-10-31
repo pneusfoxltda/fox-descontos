@@ -259,6 +259,29 @@ function renderCards(list, showConc60 = false) {
 
 const SEL = "numero,tipo,cba,medida,loja,valor,pgto,validade,obs,liberado,vendedor,criado_em,telefone_cliente";
 
+/* ── Sistema de Logs ── */
+let _cachedIp = null;
+async function getIp() {
+  if (_cachedIp) return _cachedIp;
+  _cachedIp = await fetch("https://api.ipify.org?format=json")
+    .then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+  return _cachedIp;
+}
+
+async function registrarLog(acao, busca, loja, sucesso, motivo) {
+  try {
+    const ip = await getIp();
+    const ua = navigator.userAgent || "—";
+    const dispositivo = /Mobile|Android|iPhone|iPad/i.test(ua) ? "📱 Mobile" : "🖥️ Desktop";
+    const extra = motivo ? motivo + " | " + dispositivo : dispositivo;
+    await fetch(URL_BASE+"/rest/v1/logs_consulta", {
+      method: "POST",
+      headers: {"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+      body: JSON.stringify({email: acao, medida: busca||null, loja: loja||null, ip, sucesso: !!sucesso, motivo: extra})
+    });
+  } catch(e) {}
+}
+
 async function buscar() {
   let apiUrl = "";
   let showConc60 = false;
@@ -286,8 +309,10 @@ async function buscar() {
       if (!r.ok) throw new Error(r.status);
       const data = await r.json();
       document.getElementById("resultado").innerHTML = renderCards(data, true);
+      registrarLog("🔍 Busca por Medida", medida, loja||"Todas", data.length>0, data.length===0?"Sem resultados":null);
     } catch(e) {
       document.getElementById("resultado").innerHTML = `<div class="state-nf"><div class="icon">⚠️</div><h3>Erro ao buscar</h3><p>Verifique sua conexão e tente novamente.</p></div>`;
+      registrarLog("🔍 Busca por Medida", medida, loja||"Todas", false, "Erro de conexão");
     }
     btn.disabled = false; btn.textContent = "Buscar";
     return;
@@ -308,19 +333,24 @@ async function buscar() {
     apiUrl = `${URL_BASE}/rest/v1/descontos?numero=ilike.*${encodeURIComponent(term)}*&select=${SEL}&order=criado_em.desc`;
   }
 
+  const tipoAcao = tab==="tel" ? "🔍 Busca por Telefone" : "🔍 Busca por Nº O.S.";
+
   try {
     const r = await fetch(apiUrl, {headers: H});
     if (!r.ok) throw new Error(r.status);
     const data = await r.json();
     document.getElementById("resultado").innerHTML = renderCards(data, false);
+    registrarLog(tipoAcao, raw, null, data.length>0, data.length===0?"Sem resultados":null);
   } catch(e) {
     document.getElementById("resultado").innerHTML = `<div class="state-nf"><div class="icon">⚠️</div><h3>Erro ao buscar</h3><p>Verifique sua conexão e tente novamente.</p></div>`;
+    registrarLog(tipoAcao, raw, null, false, "Erro de conexão");
   }
 
   btn.disabled = false; btn.textContent = "Buscar";
 }
 
 document.getElementById("sinput").focus();
+registrarLog("📄 Acesso à Página", null, null, true, null);
 </script>
 </body>
 </html>
