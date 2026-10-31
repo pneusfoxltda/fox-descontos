@@ -1,367 +1,320 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<title>Televendas Fox Pneus</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>Televendas — Fox Pneus</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #f4f5f7;
-    --card: #ffffff;
-    --ink: #1c1f24;
-    --muted: #6b7280;
-    --line: #e5e7eb;
-    --head: #1f3b5c;
-    --head-ink: #ffffff;
-    --accent: #f26b1d;
-    --ok: #15803d;
-    --ok-bg: #e7f6ec;
-    --bad: #c62828;
-    --bad-bg: #fdeaea;
-    --m1: #2f6db5;
-    --m2: #5a9e3a;
-    --m3: #e3762b;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #121417;
-      --card: #1b1e23;
-      --ink: #e8eaed;
-      --muted: #9aa1ab;
-      --line: #2c3036;
-      --head: #22374f;
-      --ok: #4ade80;
-      --ok-bg: #143322;
-      --bad: #f87171;
-      --bad-bg: #3a1a1a;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
-  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-  h1 { margin: 0; font-size: 22px; }
-  h1 span { color: var(--accent); }
-  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .metas { display: flex; gap: 6px; flex-wrap: wrap; }
-  .metas button {
-    border: 2px solid var(--line); background: var(--card); color: var(--ink);
-    padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
-  }
-  .metas button small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
-  .metas button.on { color: #fff; border-color: transparent; }
-  .metas button.on small { color: rgba(255,255,255,.85); }
-  .metas button[data-m="0"].on { background: var(--m1); }
-  .metas button[data-m="1"].on { background: var(--m2); }
-  .metas button[data-m="2"].on { background: var(--m3); }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
 
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-  .kpi .l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-  .kpi .v { font-size: 22px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .kpi .d { font-size: 12px; color: var(--muted); }
-  .ok { color: var(--ok); }
-  .bad { color: var(--bad); }
+/* ── Header ── */
+.header{background:#111;border-bottom:1px solid #1E1E1E;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+.logo-circle{width:40px;height:40px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:#fff;}
+.brand-sub{font-size:11px;color:#555;margin-top:1px;}
+.header a{margin-left:auto;font-size:12px;color:#555;text-decoration:none;border:1px solid #2A2A2A;border-radius:6px;padding:7px 14px;transition:all .15s;white-space:nowrap;}
+.header a:hover{border-color:#CC1F1F;color:#CC1F1F;}
 
-  .bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; position: relative; overflow: visible; }
-  .bar i { display: block; height: 100%; border-radius: 3px; }
-  .bar b { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); opacity: .6; }
+/* ── Layout ── */
+.container{max-width:680px;margin:0 auto;padding:28px 16px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:#fff;margin-bottom:2px;}
+.page-sub{font-size:12px;color:#555;margin-bottom:24px;display:flex;align-items:center;gap:8px;}
+.dot{width:6px;height:6px;border-radius:50%;}
+.dot.verde{background:#22C55E;}
+.dot.cinza{background:#555;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-  .table-box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
-  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-  th, td { padding: 8px 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
-  th { background: var(--head); color: var(--head-ink); font-size: 12px; font-weight: 600; text-align: center; vertical-align: middle; }
-  th.grp { background: var(--accent); text-align: center; }
-  td:first-child { text-align: left; }
-  td:first-child { font-weight: 600; }
-  /* coluna Operadora fixa ao rolar a tabela para o lado */
-  th.op, td:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--line); }
-  th.op { z-index: 2; }
-  td:first-child { background: var(--card); }
-  /* cor da linha inteira conforme o resultado da operadora */
-  tr.row-ok td { color: var(--ok); }
-  tr.row-bad td { color: var(--bad); }
-  td.pct { font-weight: 700; }
-  td.pct.ok { background: var(--ok-bg); color: var(--ok); }
-  td.pct.bad { background: var(--bad-bg); color: var(--bad); }
-  /* total do setor: linha inteira com fundo verde/vermelho conforme % da meta x % desejado do dia */
-  tr.total td, tr.total td:first-child, tr.total td.pct { font-weight: 700; border-bottom: 0; border-top: 2px solid currentColor; }
-  tr.total.total-ok td, tr.total.total-ok td:first-child { background: var(--ok-bg); color: var(--ok); }
-  tr.total.total-bad td, tr.total.total-bad td:first-child { background: var(--bad-bg); color: var(--bad); }
-  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 10px; }
-  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+/* ── Legenda ── */
+.legenda{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+.legenda-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#666;}
+.badge{width:10px;height:10px;border-radius:3px;}
+.badge.verde{background:#22C55E;}
+.badge.amarelo{background:#F59E0B;}
+.badge.vermelho{background:#EF4444;}
+
+/* ── Data / Meta card ── */
+.data-row{display:flex;justify-content:space-between;align-items:center;background:#161616;border:1px solid #222;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;}
+.data-label{color:#666;}
+.data-val{color:#fff;font-weight:600;}
+.meta-edit{font-size:11px;color:#444;cursor:pointer;border:1px solid #333;border-radius:5px;padding:4px 9px;transition:.15s;}
+.meta-edit:hover{border-color:#666;color:#aaa;}
+
+/* ── Cards dos operadores ── */
+.cards{display:flex;flex-direction:column;gap:12px;}
+.card{background:#161616;border:1px solid #222;border-radius:12px;padding:16px 18px;transition:border-color .15s;}
+.card:hover{border-color:#333;}
+
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.card-pos{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#333;margin-right:10px;width:22px;}
+.card-nome{font-weight:700;font-size:15px;color:#F0F0F0;flex:1;}
+.card-valor{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.5px;}
+.card-valor.verde{color:#22C55E;}
+.card-valor.amarelo{color:#F59E0B;}
+.card-valor.vermelho{color:#EF4444;}
+.card-valor.neutro{color:#888;}
+
+.bar-wrap{height:6px;background:#222;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.bar-fill.verde{background:#22C55E;}
+.bar-fill.amarelo{background:#F59E0B;}
+.bar-fill.vermelho{background:#EF4444;}
+
+.card-footer{display:flex;justify-content:space-between;font-size:11px;color:#555;}
+.pct-badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;}
+.pct-badge.verde{background:#22C55E22;color:#22C55E;}
+.pct-badge.amarelo{background:#F59E0B22;color:#F59E0B;}
+.pct-badge.vermelho{background:#EF444422;color:#EF4444;}
+
+/* ── Total ── */
+.total-card{background:#1A1A1A;border:1px solid #CC1F1F44;border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;}
+.total-label{font-size:13px;color:#888;}
+.total-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#CC1F1F;letter-spacing:.5px;}
+
+/* ── Status ── */
+.status-bar{text-align:center;font-size:11px;color:#444;margin-top:22px;padding-bottom:30px;}
+.btn-refresh{background:none;border:1px solid #2A2A2A;color:#555;font-size:11px;border-radius:5px;padding:5px 12px;cursor:pointer;margin-left:8px;transition:.15s;}
+.btn-refresh:hover{border-color:#555;color:#aaa;}
+
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:60px 20px;color:#444;}
+.loading .spinner{width:36px;height:36px;border:3px solid #222;border-top-color:#CC1F1F;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.erro{background:#1A0A0A;border:1px solid #CC1F1F44;border-radius:10px;padding:16px;color:#EF4444;font-size:13px;text-align:center;}
+
+/* ── Modal de meta ── */
+.modal-bg{display:none;position:fixed;inset:0;background:#000c;z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#1A1A1A;border:1px solid #333;border-radius:14px;padding:24px;width:320px;}
+.modal h3{font-size:15px;margin-bottom:14px;}
+.modal input{width:100%;background:#111;border:1px solid #333;border-radius:8px;color:#F0F0F0;font-size:16px;padding:12px 14px;outline:none;margin-bottom:14px;}
+.modal input:focus{border-color:#CC1F1F;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;padding:11px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.btn-ok{background:#CC1F1F;color:#fff;}
+.btn-cancel{background:#222;color:#888;}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Televendas <span>Fox Pneus</span></h1>
-      <div class="sub" id="sub"></div>
-    </div>
-    <div class="metas" id="metas"></div>
-  </header>
 
-  <section class="kpis" id="kpis"></section>
-
-  <div class="table-box">
-    <table>
-      <thead id="thead"></thead>
-      <tbody id="tbody"></tbody>
-    </table>
+<header class="header">
+  <div class="logo-circle">🦊</div>
+  <div>
+    <div class="brand-name">Fox Pneus</div>
+    <div class="brand-sub">Grupo Redefox</div>
   </div>
-  <div class="legend">
-    <span><i class="dot" style="background:var(--ok)"></i>No ritmo (% atingido ≥ % desejado do dia)</span>
-    <span><i class="dot" style="background:var(--bad)"></i>Abaixo do ritmo</span>
-    <span>Ordenado pelo maior % atingido</span>
+  <a href="/consulta.html">Consulta Descontos</a>
+</header>
+
+<div class="container">
+  <div class="page-title">Televendas</div>
+  <div class="page-sub" id="sub-status">
+    <span class="dot cinza" id="dot-status"></span>
+    <span id="txt-status">Carregando…</span>
+  </div>
+
+  <div class="legenda">
+    <div class="legenda-item"><span class="badge verde"></span> No ritmo (≥ meta do dia)</div>
+    <div class="legenda-item"><span class="badge amarelo"></span> Perto (≥ 70% da meta)</div>
+    <div class="legenda-item"><span class="badge vermelho"></span> Abaixo do ritmo</div>
+  </div>
+
+  <div class="data-row">
+    <span class="data-label">Meta diária por operador</span>
+    <span>
+      <span class="data-val" id="meta-display">R$ —</span>
+      <button class="meta-edit" onclick="abrirModalMeta()">✏️ Editar</button>
+    </span>
+  </div>
+
+  <div id="cards-container">
+    <div class="loading"><div class="spinner"></div>Buscando vendas de hoje…</div>
+  </div>
+
+  <div id="total-container"></div>
+
+  <div class="status-bar">
+    <span id="ultima-atualizacao">—</span>
+    <button class="btn-refresh" onclick="carregar(true)">↻ Atualizar agora</button>
+  </div>
+</div>
+
+<!-- Modal de meta -->
+<div class="modal-bg" id="modal-meta">
+  <div class="modal">
+    <h3>Meta diária por operador (R$)</h3>
+    <input type="number" id="input-meta" placeholder="Ex: 10000" min="0" step="500">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-ok" onclick="salvarMeta()">Salvar</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ============================================================
-   CONFIGURAÇÃO
-   ============================================================ */
-// Endereço do App da Web do Apps Script (opcional). Vazio = não usa.
-const FONTE_URL = "";
-// Arquivo de dados publicado junto com o site (atualizado pelo Apps Script ou manualmente)
-const FONTE_ARQUIVO = "/televendas-dados.json";
+/* ── Configurações ── */
+const URL_BASE = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
 
-// Dias úteis = segunda a sábado, menos estes feriados (confirmar a cada mês)
-const FERIADOS = [
-  "2026-10-12",
-  "2026-11-02", "2026-11-20",
-  "2026-12-25"
-];
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
-const OPERADORAS = [
-  { nome: "KESSYA DIAS MARQUES", curto: "KESSYA", metas: [480000, 528000, 576000] },
-  { nome: "ANA CLARA MARTINS HENRIQUE", curto: "ANA CLARA", metas: [280000, 308000, 336000] },
-  { nome: "SABRINA ROCHA PARDO", curto: "SABRINA ROCHA", metas: [480000, 528000, 576000] },
-  { nome: "GRAZIELE MACHADO GARCIA", curto: "GRAZIELE GARCIA", metas: [480000, 528000, 576000] }
-];
-
-/* Reserva: usada só se o arquivo de dados e o App da Web não responderem.
-   Mesmo formato do televendas-dados.json. */
-const DADOS_RESERVA = {
-  "atualizadoEm": "2026-10-21",
-  "mes": "2026-10",
-  "dadosAte": "2026-10-20",
-  "vendas": {
-    "KESSYA DIAS MARQUES": {
-      "2026-10-01": 17377.75,
-      "2026-10-02": 20375.87,
-      "2026-10-03": 27518.01,
-      "2026-10-05": 16768.69,
-      "2026-10-06": 21960.84,
-      "2026-10-07": 12543.55,
-      "2026-10-08": 31086.38,
-      "2026-10-09": 24609.55,
-      "2026-10-10": 23816.65,
-      "2026-10-13": 26476.36,
-      "2026-10-14": 33395.57,
-      "2026-10-15": 19093.9,
-      "2026-10-16": 35619.37,
-      "2026-10-17": 13554.25,
-      "2026-10-19": 24727.3,
-      "2026-10-20": 7427.59
-    },
-    "ANA CLARA MARTINS HENRIQUE": {
-      "2026-10-01": 14398.49,
-      "2026-10-02": 19969.74,
-      "2026-10-03": 18482.93,
-      "2026-10-13": 150,
-      "2026-10-17": 4421.74,
-      "2026-10-19": 4032.15,
-      "2026-10-20": 8630.28
-    },
-    "SABRINA ROCHA PARDO": {
-      "2026-10-01": 4899.37,
-      "2026-10-02": 5362.94,
-      "2026-10-03": 1852,
-      "2026-10-05": 11034.73,
-      "2026-10-06": 13367.08,
-      "2026-10-07": 25284.54,
-      "2026-10-08": 25553.44,
-      "2026-10-09": 18248.96,
-      "2026-10-10": 17711.44,
-      "2026-10-13": 26228.87,
-      "2026-10-14": 26280.62,
-      "2026-10-15": 23082.57,
-      "2026-10-16": 29734.69,
-      "2026-10-17": 13691.1,
-      "2026-10-19": 14028.45,
-      "2026-10-20": 17038
-    },
-    "GRAZIELE MACHADO GARCIA": {
-      "2026-10-01": 22015.46,
-      "2026-10-02": 9111.85,
-      "2026-10-03": 10508.26,
-      "2026-10-05": 28589.21,
-      "2026-10-06": 28970.87,
-      "2026-10-07": 17475.89,
-      "2026-10-08": 25967.09,
-      "2026-10-09": 22312.3,
-      "2026-10-10": 18201.04,
-      "2026-10-13": 22498.12,
-      "2026-10-14": 39595.97,
-      "2026-10-15": 35504.08,
-      "2026-10-16": 19097.67,
-      "2026-10-17": 14136.08,
-      "2026-10-19": 23129.78,
-      "2026-10-20": 11513.02
-    }
+/* ── Meta diária (salva no localStorage) ── */
+let META_DIARIA = 10000;
+function carregarMeta() {
+  try { META_DIARIA = parseFloat(localStorage.getItem('fox_meta_televendas')) || 10000; } catch(e){}
+  document.getElementById('meta-display').textContent = formatBRL(META_DIARIA);
+}
+function abrirModalMeta() {
+  document.getElementById('input-meta').value = META_DIARIA;
+  document.getElementById('modal-meta').classList.add('open');
+}
+function fecharModal() {
+  document.getElementById('modal-meta').classList.remove('open');
+}
+function salvarMeta() {
+  const v = parseFloat(document.getElementById('input-meta').value);
+  if (v > 0) {
+    META_DIARIA = v;
+    try { localStorage.setItem('fox_meta_televendas', v); } catch(e){}
+    document.getElementById('meta-display').textContent = formatBRL(META_DIARIA);
+    fecharModal();
+    carregar(true);
   }
-};
-/* ===================== fim da configuração ===================== */
-
-let DADOS = DADOS_RESERVA;
-
-const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const brl0 = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const pct = v => (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
-const iso = d => d.toISOString().slice(0, 10);
-const ddmm = s => s.slice(8, 10) + "/" + s.slice(5, 7);
-
-// dias úteis do mês dos dados, do dia 1º até "ate" (inclusive)
-function diasUteisAte(ate) {
-  const [y, m] = DADOS.mes.split("-").map(Number);
-  const dias = [];
-  for (let d = new Date(Date.UTC(y, m - 1, 1)); iso(d) <= ate && d.getUTCMonth() === m - 1; d.setUTCDate(d.getUTCDate() + 1)) {
-    if (d.getUTCDay() !== 0 && !FERIADOS.includes(iso(d))) dias.push(iso(d));
-  }
-  return dias;
 }
 
-function calendario() {
-  const diasUteisMes = diasUteisAte(DADOS.mes + "-31").length;
-  // dias úteis já trabalhados = dias úteis do mês ANTES de hoje (vira à meia-noite)
+/* ── Data de hoje (BRT) ── */
+function hojeISO() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // YYYY-MM-DD
+}
+
+/* ── Formatação ── */
+function formatBRL(v) {
+  return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* ── Cor baseada no % atingido ── */
+function corPorPct(pct) {
+  if (pct >= 100) return 'verde';
+  if (pct >= 70)  return 'amarelo';
+  return 'vermelho';
+}
+
+/* ── % esperado para a hora atual (considera 8h às 20h = 12h de trabalho) ── */
+function pctEsperado() {
   const agora = new Date();
-  const ontem = iso(new Date(Date.UTC(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1)));
-  const trabalhados = Math.min(diasUteisAte(ontem).length, diasUteisMes);
-  return {
-    diasUteisMes,
-    trabalhados,
-    restantes: Math.max(diasUteisMes - trabalhados, 0),
-    // % desejado arredondado para inteiro (ex.: 57,7% -> 58%)
-    desejado: Math.round(trabalhados / diasUteisMes * 100) / 100,
-    // últimos 5 dias úteis com vendas carregadas no Movere
-    ultimos5: DADOS.dadosAte ? diasUteisAte(DADOS.dadosAte).slice(-5) : []
-  };
+  const h = agora.getHours() + agora.getMinutes() / 60;
+  const ini = 8, fim = 20;
+  if (h <= ini) return 0;
+  if (h >= fim) return 100;
+  return Math.round(((h - ini) / (fim - ini)) * 100);
 }
 
-let meta = 0;
-try { const s = localStorage.getItem("tv-meta"); if (s !== null && +s >= 0 && +s <= 2) meta = +s; } catch (e) {}
-
-function render() {
-  const cal = calendario();
-  const { diasUteisMes, trabalhados, restantes, desejado, ultimos5 } = cal;
-
-  const ops = OPERADORAS.map(o => {
-    const vendas = DADOS.vendas[o.nome] || {};
-    const m = o.metas[meta];
-    const fat = Object.values(vendas).reduce((a, b) => a + b, 0);
-    const falta = Math.max(m - fat, 0);
-    const p = m ? fat / m : 0;
-    return {
-      nome: o.nome, curto: o.curto, meta: m, fat, falta, p,
-      precisaDia: restantes ? falta / restantes : falta,
-      dias: ultimos5.map(d => vendas[d] || 0),
-      ok: p >= desejado
-    };
+/* ── Busca Supabase ── */
+async function buscarVendas() {
+  const data = hojeISO();
+  const url = `${URL_BASE}/rest/v1/vendas_televendas?data_ref=eq.${data}&order=valor_venda.desc`;
+  const r = await fetch(url, {
+    headers: { 'apikey': KEY, 'Authorization': `Bearer ${KEY}` }
   });
-  const setor = {
-    nome: "TOTAL SETOR",
-    meta: ops.reduce((a, o) => a + o.meta, 0),
-    fat: ops.reduce((a, o) => a + o.fat, 0),
-    dias: ultimos5.map((_, i) => ops.reduce((a, o) => a + o.dias[i], 0))
-  };
-  setor.falta = Math.max(setor.meta - setor.fat, 0);
-  setor.p = setor.fat / setor.meta;
-  setor.metaDia = setor.meta / diasUteisMes;
-  setor.precisaDia = restantes ? setor.falta / restantes : setor.falta;
-  setor.ok = setor.p >= desejado;
-
-  const quando = DADOS.atualizadoEm.split("-").reverse().join("/") + (DADOS.atualizadoAs ? " às " + DADOS.atualizadoAs : "");
-  document.getElementById("sub").textContent =
-    `Vendas até ${DADOS.dadosAte ? ddmm(DADOS.dadosAte) : "—"} · atualizado em ${quando} · fonte: Movere`;
-
-  const totais = [0, 1, 2].map(i => OPERADORAS.reduce((a, o) => a + o.metas[i], 0));
-  document.getElementById("metas").innerHTML = ["Meta 1", "Meta 2 (+10%)", "Meta 3 (+20%)"].map((t, i) =>
-    `<button data-m="${i}" class="${i === meta ? "on" : ""}">${t}<small>${brl(totais[i]).replace(",00", "")}</small></button>`
-  ).join("");
-
-  const cor = setor.ok ? "var(--ok)" : "var(--bad)";
-  document.getElementById("kpis").innerHTML = `
-    <div class="kpi"><div class="l">Faturamento do setor</div><div class="v">${brl(setor.fat)}</div>
-      <div class="d">meta ${brl(setor.meta)}</div></div>
-    <div class="kpi"><div class="l">% da meta</div><div class="v ${setor.ok ? "ok" : "bad"}">${pct(setor.p)}</div>
-      <div class="bar"><i style="width:${Math.min(setor.p, 1) * 100}%;background:${cor}"></i><b style="left:${desejado * 100}%"></b></div></div>
-    <div class="kpi"><div class="l">% desejado do dia</div><div class="v">${pct(desejado)}</div>
-      <div class="d">${trabalhados} de ${diasUteisMes} dias úteis</div></div>
-    <div class="kpi"><div class="l">Falta para a meta</div><div class="v">${brl(setor.falta)}</div>
-      <div class="d">${restantes} dias úteis restantes</div></div>
-    <div class="kpi"><div class="l">Setor precisa por dia</div><div class="v">${brl(setor.precisaDia)}</div>
-      <div class="d">meta diária original ${brl(setor.metaDia)}</div></div>`;
-
-  document.getElementById("thead").innerHTML = `
-    <tr><th class="op" rowspan="2">Operadora</th><th rowspan="2">Meta</th><th class="grp" colspan="${ultimos5.length || 1}">Últimos 5 dias úteis</th>
-      <th rowspan="2">Faturamento<br>do mês</th><th rowspan="2">Precisa por dia<br>(${restantes} dias)</th><th rowspan="2">% atingido</th></tr>
-    <tr>${ultimos5.length ? ultimos5.map(d => `<th class="dia">${ddmm(d)}</th>`).join("") : "<th>—</th>"}</tr>`;
-
-  const linha = (o, total) => `
-    <tr class="${total ? (o.ok ? "total total-ok" : "total total-bad") : o.ok ? "row-ok" : "row-bad"}">
-      <td title="${o.nome}">${o.curto || o.nome}</td><td>${brl0(o.meta)}</td>
-      ${o.dias.length ? o.dias.map(v => `<td class="dia-v">${brl0(v)}</td>`).join("") : '<td class="dia-v">—</td>'}
-      <td>${brl(o.fat)}</td>
-      <td>${brl(o.precisaDia)}</td>
-      <td class="pct ${total ? "" : o.ok ? "ok" : "bad"}">${pct(o.p)}</td>
-    </tr>`;
-  // maior % atingido primeiro
-  const ordem = [...ops].sort((a, b) => b.p - a.p);
-  document.getElementById("tbody").innerHTML = ordem.map(o => linha(o, false)).join("") + linha(setor, true);
+  if (!r.ok) throw new Error(`Supabase ${r.status}`);
+  return r.json();
 }
 
-document.getElementById("metas").addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (!b) return;
-  meta = +b.dataset.m;
-  try { localStorage.setItem("tv-meta", meta); } catch (e) {}
-  render();
-});
+/* ── Render ── */
+function renderCards(vendas) {
+  const container = document.getElementById('cards-container');
+  const totalContainer = document.getElementById('total-container');
 
-// usa a fonte com os dados mais recentes (mês, dia das vendas e hora da atualização)
-const chave = d => [d.mes, d.dadosAte || "", d.atualizadoEm || "", d.atualizadoAs || ""].join("|");
-const valido = d => d && typeof d.mes === "string" && d.vendas && typeof d.vendas === "object" && d.atualizadoEm;
+  if (!vendas || vendas.length === 0) {
+    container.innerHTML = `
+      <div class="erro">
+        Sem dados para hoje ainda.<br>
+        <small style="color:#666;margin-top:6px;display:block">
+          Execute o script <strong>sync_televendas.py</strong> para sincronizar as vendas do Movere.
+        </small>
+      </div>`;
+    totalContainer.innerHTML = '';
+    return;
+  }
 
-async function buscar(url) {
+  const pctEsp = pctEsperado();
+  let total = 0;
+
+  const html = vendas.map((v, i) => {
+    const pctAting = META_DIARIA > 0 ? Math.round((v.valor_venda / META_DIARIA) * 100) : 0;
+    const cor = corPorPct(pctAting);
+    const barW = Math.min(pctAting, 100);
+    total += v.valor_venda || 0;
+
+    const sinc = v.atualizado_em
+      ? new Date(v.atualizado_em).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' })
+      : '—';
+
+    return `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-pos">${i + 1}</span>
+        <span class="card-nome">${v.operador_nome}</span>
+        <span class="card-valor ${v.valor_venda > 0 ? cor : 'neutro'}">${formatBRL(v.valor_venda)}</span>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-fill ${cor}" style="width:${barW}%"></div>
+      </div>
+      <div class="card-footer">
+        <span>${v.qtd_clientes || 0} cliente${v.qtd_clientes !== 1 ? 's' : ''} · ${v.qtd_itens || 0} itens</span>
+        <span>
+          <span class="pct-badge ${cor}">${pctAting}%</span>
+          <span style="margin-left:6px">meta esperada: ${pctEsp}%</span>
+        </span>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="cards">${html}</div>`;
+
+  totalContainer.innerHTML = `
+    <div class="total-card">
+      <span class="total-label">Total do time hoje</span>
+      <span class="total-val">${formatBRL(total)}</span>
+    </div>`;
+}
+
+/* ── Status ── */
+function setStatus(ok, msg) {
+  const dot = document.getElementById('dot-status');
+  const txt = document.getElementById('txt-status');
+  dot.className = 'dot ' + (ok ? 'verde' : 'cinza');
+  txt.textContent = msg;
+}
+
+/* ── Carregar ── */
+async function carregar(forcar = false) {
   try {
-    const sep = url.includes("?") ? "&" : "?";
-    const r = await fetch(url + sep + "t=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) return null;
-    const d = await r.json();
-    return valido(d) ? d : null;
+    setStatus(false, 'Atualizando…');
+    const vendas = await buscarVendas();
+    renderCards(vendas);
+
+    const agora = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', timeZone:'America/Sao_Paulo' });
+    document.getElementById('ultima-atualizacao').textContent = `Atualizado às ${agora}`;
+    setStatus(true, `Dados de hoje · ${new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' })}`);
   } catch (e) {
-    return null;
+    setStatus(false, 'Erro ao carregar');
+    document.getElementById('cards-container').innerHTML =
+      `<div class="erro">Erro ao buscar dados: ${e.message}</div>`;
   }
 }
 
-async function carregar() {
-  const fontes = await Promise.all([FONTE_ARQUIVO, FONTE_URL].filter(Boolean).map(buscar));
-  const melhor = fontes.filter(Boolean).reduce((a, b) => (chave(b) > chave(a) ? b : a), DADOS);
-  if (melhor !== DADOS) {
-    DADOS = melhor;
-    render();
-  }
-}
-
-render();
+/* ── Inicializar ── */
+carregarMeta();
 carregar();
+setInterval(carregar, REFRESH_INTERVAL_MS);
+
+// Fechar modal clicando fora
+document.getElementById('modal-meta').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
 </script>
 </body>
 </html>
