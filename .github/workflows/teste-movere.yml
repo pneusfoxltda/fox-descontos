@@ -1,0 +1,33 @@
+name: Teste Movere (Debug)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instala dependências
+        run: |
+          pip install playwright beautifulsoup4 httpx --break-system-packages 2>/dev/null || \
+          pip install playwright beautifulsoup4 httpx
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Roda teste
+        env:
+          MOVERE_USER: ${{ secrets.MOVERE_USER }}
+          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
+        run: python3 teste_movere.py
+
+      - name: Sobe screenshots e HTML como artefatos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-movere
+          path: |
+            screenshot_*.png
+            html_capturado.html
+          if-no-files-found: warn
