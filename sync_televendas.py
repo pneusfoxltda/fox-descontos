@@ -1,8 +1,13 @@
 """
-sync_televendas.py
-==================
-Busca as vendas do dia dos 4 operadores de televendas no Movere ERP
-e salva no Supabase para o televendas.html exibir em tempo real.
+sync_televendas.py - v3
+========================
+Sincroniza TODOS os dias úteis do mês atual para os 4 operadores.
+
+Lógica:
+  1. Calcula dias úteis (seg-sáb) do mês até hoje
+  2. Consulta Supabase para ver quais (data, operador) já existem
+  3. Executa no Movere apenas os que faltam + sempre atualiza hoje
+  4. Salva R$0 quando não há vendas no dia (evita re-consulta)
 
 Credenciais via variáveis de ambiente:
   MOVERE_USER  — login do Movere
@@ -12,13 +17,16 @@ Credenciais via variáveis de ambiente:
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, date, timedelta, timezone
+from calendar import monthrange
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 import httpx
 
-# ─── Configurações ─────────────────────────────────────────────────────────────
+# ─── Timezone Brasília ─────────────────────────────────────────────────────────
+TZ_SP = timezone(timedelta(hours=-3))
 
+# ─── Configurações ─────────────────────────────────────────────────────────────
 MOVERE_USER = os.environ.get("MOVERE_USER", "")
 MOVERE_PASS = os.environ.get("MOVERE_PASS", "")
 
@@ -40,7 +48,7 @@ OPERADORES = [
 MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
-# ─── Classes CSS do relatório HTML do Movere ──────────────────────────────────
+# Classes CSS do relatório Movere
 LABEL_CLS = [
     'a5119','a5128','a5137','a5146','a5155','a5164','a5173','a5182',
     'a5191','a5200','a5209','a5218','a5227','a5236','a5245','a5261'
@@ -50,7 +58,19 @@ VALUE_CLS = [
     'a5195','a5204','a5213','a5222','a5231','a5240','a5249','a5265'
 ]
 
-# ─── Parser do HTML do relatório ──────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
+    """Dias úteis (seg-sáb) do mês até ate_hoje, como strings 'YYYY-MM-DD'."""
+    total = monthrange(ano, mes)[1]
+    dias = []
+    for d in range(1, total + 1):
+        dt = date(ano, mes, d)
+        if dt > ate_hoje:
+            break
+        if dt.weekday() <= 5:   # 0=seg … 5=sáb; 6=dom fica de fora
+            dias.append(dt.strftime('%Y-%m-%d'))
+    return dias
 
 def parse_report_html(html: str) -> dict:
     soup = BeautifulSoup(html, 'html.parser')
@@ -75,16 +95,39 @@ def parse_br_number(s: str) -> float:
     except Exception:
         return 0.0
 
-# ─── Salvar no Supabase ────────────────────────────────────────────────────────
+# ─── Supabase ─────────────────────────────────────────────────────────────────
 
-async def salvar_supabase(operador: dict, data_ref: str, dados: dict):
+async def buscar_existentes(mes_ini: str, mes_fim: str) -> set:
+    """Retorna set de (data_ref, operador_codigo) que já existem no Supabase."""
+    url = (
+        f"{SUPABASE_URL}/rest/v1/vendas_televendas"
+        f"?select=data_ref,operador_codigo"
+        f"&data_ref=gte.{mes_ini}&data_ref=lte.{mes_fim}"
+    )
+    headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(url, headers=headers)
+            if r.status_code == 200:
+                return {(row['data_ref'], row['operador_codigo']) for row in r.json()}
+    except Exception as e:
+        print(f"  ⚠️  Erro ao consultar Supabase: {e}")
+    return set()
+
+async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero: bool = False):
     VALOR_KEY = 'Valor Venda Líquida (Venda - Devolução)'
-    valor = parse_br_number(dados.get(VALOR_KEY, '0'))
+    valor = 0.0 if force_zero else parse_br_number(dados.get(VALOR_KEY, '0'))
 
-    qtd_cli_str = dados.get('Quantidade Clientes Atendidos', '0').replace('.', '')
-    qtd_ite_str = dados.get('Quantidade Itens Atendidos', '0').replace('.', '')
-    qtd_clientes = int(qtd_cli_str) if qtd_cli_str.isdigit() else 0
-    qtd_itens    = int(qtd_ite_str) if qtd_ite_str.isdigit() else 0
+    qtd_clientes = 0
+    qtd_itens    = 0
+    if not force_zero:
+        qtd_cli = dados.get('Quantidade Clientes Atendidos', '0').replace('.', '')
+        qtd_ite = dados.get('Quantidade Itens Atendidos',   '0').replace('.', '')
+        qtd_clientes = int(qtd_cli) if qtd_cli.isdigit() else 0
+        qtd_itens    = int(qtd_ite) if qtd_ite.isdigit() else 0
 
     payload = {
         'data_ref':        data_ref,
@@ -93,16 +136,14 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict):
         'valor_venda':     valor,
         'qtd_clientes':    qtd_clientes,
         'qtd_itens':       qtd_itens,
-        'atualizado_em':   datetime.now().isoformat(),
+        'atualizado_em':   datetime.now(TZ_SP).isoformat(),
     }
-
     headers = {
         'apikey':        SUPABASE_KEY,
         'Authorization': f'Bearer {SUPABASE_KEY}',
         'Content-Type':  'application/json',
         'Prefer':        'resolution=merge-duplicates,return=minimal',
     }
-
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.post(
             f"{SUPABASE_URL}/rest/v1/vendas_televendas",
@@ -111,294 +152,229 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict):
         )
         return r.status_code, valor
 
-# ─── Automação do Movere ───────────────────────────────────────────────────────
+# ─── Login ────────────────────────────────────────────────────────────────────
 
 async def login(page):
-    print("  Abrindo Movere...")
-    await page.goto(f"{MOVERE_BASE}/foxpneus/default.aspx", wait_until='domcontentloaded', timeout=30000)
+    print("  🔑  Login no Movere…")
+    await page.goto(f"{MOVERE_BASE}/foxpneus/default.aspx",
+                    wait_until='domcontentloaded', timeout=30000)
     await page.wait_for_timeout(2000)
 
     for sel in ['#txtLogin', 'input[name="txtLogin"]', 'input[type="text"]:visible']:
         try:
             if await page.locator(sel).count() > 0:
-                await page.fill(sel, MOVERE_USER)
-                break
+                await page.fill(sel, MOVERE_USER); break
         except Exception:
             pass
 
     for sel in ['#txtSenha', 'input[name="txtSenha"]', 'input[type="password"]:visible']:
         try:
             if await page.locator(sel).count() > 0:
-                await page.fill(sel, MOVERE_PASS)
-                break
+                await page.fill(sel, MOVERE_PASS); break
         except Exception:
             pass
 
-    for sel in ['#btnEntrar', 'input[value="Entrar"]', 'button:has-text("Entrar")', 'input[type="submit"]:visible']:
+    for sel in ['#btnEntrar', 'input[value="Entrar"]',
+                'button:has-text("Entrar")', 'input[type="submit"]:visible']:
         try:
             if await page.locator(sel).count() > 0:
-                await page.click(sel)
-                break
+                await page.click(sel); break
         except Exception:
             pass
 
     await page.wait_for_load_state('networkidle', timeout=20000)
-    print("  Login OK!")
+    print("  ✅  Login OK!")
 
+# ─── Preencher formulário ─────────────────────────────────────────────────────
 
 async def preencher_formulario(page, operador: dict, data_fmt: str):
-    """
-    Preenche todos os campos do relatório 553 via JavaScript + Playwright.
-    Garante: Visão Empresarial=REDE FOX PNEUS, datas, operador,
-             Listar somente resumo, Agrupamento=Vendedor,
-             Filtrar somente base de venda, Formato=HTML.
-    """
-
+    """Preenche TODOS os campos obrigatórios do relatório 553."""
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1500)
 
-    # ── 1. Visão Empresarial = "1" (REDE FOX PNEUS) ──────────────────────────
-    # Busca o campo pelo texto do label na mesma linha
+    # 1. Visão Empresarial = 1 (REDE FOX PNEUS)
     await page.evaluate("""() => {
-        const tds = [...document.querySelectorAll('td, div')];
-        for (const td of tds) {
+        for (const td of document.querySelectorAll('td, div')) {
             if (td.childElementCount === 0 && td.innerText &&
                 td.innerText.trim() === 'Visão Empresarial') {
                 const row = td.closest('tr');
                 if (row) {
-                    const input = row.querySelector('input[type="text"]');
-                    if (input && (!input.value || input.value.trim() === '')) {
-                        input.value = '1';
-                        input.dispatchEvent(new Event('change', {bubbles:true}));
-                        input.dispatchEvent(new Event('blur',   {bubbles:true}));
+                    const inp = row.querySelector('input[type="text"]');
+                    if (inp && (!inp.value || inp.value.trim() === '')) {
+                        inp.value = '1';
+                        inp.dispatchEvent(new Event('change', {bubbles:true}));
+                        inp.dispatchEvent(new Event('blur',   {bubbles:true}));
                     }
                 }
                 break;
             }
         }
     }""")
-    await page.wait_for_timeout(1200)
+    await page.wait_for_timeout(900)
 
-    # ── 2. Data Inicial ───────────────────────────────────────────────────────
-    data_preenchida = False
-    for sel in ['#dtaini', 'input[name="dtaini"]', 'input[id*="dtaini"]',
-                'input[id*="DataIni"]', 'input[id*="dataini"]']:
+    # 2. Data Inicial
+    for sel in ['#dtaini','input[name="dtaini"]','input[id*="dtaini"]','input[id*="DataIni"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.triple_click()
-                await el.fill(data_fmt)
-                await el.press('Tab')
-                data_preenchida = True
+                await el.triple_click(); await el.fill(data_fmt); await el.press('Tab')
                 break
         except Exception:
             pass
+    await page.wait_for_timeout(400)
 
-    if not data_preenchida:
-        # Fallback via JS: primeiro input de data (rosa/obrigatório)
-        await page.evaluate(f"""() => {{
-            const inputs = [...document.querySelectorAll('input[type="text"]')];
-            for (const inp of inputs) {{
-                const style = window.getComputedStyle(inp);
-                if (style.backgroundColor && style.backgroundColor.includes('255')) {{
-                    inp.value = '{data_fmt}';
-                    inp.dispatchEvent(new Event('change', {{bubbles:true}}));
-                    inp.dispatchEvent(new Event('blur',   {{bubbles:true}}));
-                    break;
-                }}
-            }}
-        }}""")
-    await page.wait_for_timeout(500)
-
-    # ── 3. Data Final ─────────────────────────────────────────────────────────
-    for sel in ['#dtafim', 'input[name="dtafim"]', 'input[id*="dtafim"]',
-                'input[id*="DataFim"]', 'input[id*="datafim"]']:
+    # 3. Data Final
+    for sel in ['#dtafim','input[name="dtafim"]','input[id*="dtafim"]','input[id*="DataFim"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.triple_click()
-                await el.fill(data_fmt)
-                await el.press('Tab')
+                await el.triple_click(); await el.fill(data_fmt); await el.press('Tab')
                 break
         except Exception:
             pass
-    await page.wait_for_timeout(500)
+    await page.wait_for_timeout(400)
 
-    # ── 4. Operador ───────────────────────────────────────────────────────────
-    for sel in ['input[id*="operador"]', 'input[id*="Operador"]',
-                'input[id*="cliforOperador"]', 'input[name*="operador"]']:
+    # 4. Operador
+    for sel in ['input[id*="operador"]','input[id*="Operador"]',
+                'input[id*="cliforOperador"]','input[name*="operador"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
                 await el.clear()
                 await el.type(operador['codigo'], delay=80)
                 await page.wait_for_timeout(1200)
-                # Fecha autocomplete se aparecer
-                for drop_sel in ['li.autocomplete-result', '.dropdown-item',
-                                  '[class*="suggest"]', 'li[class*="auto"]']:
+                for drop in ['li.autocomplete-result','.dropdown-item','[class*="suggest"]']:
                     try:
-                        item = page.locator(drop_sel).first
+                        item = page.locator(drop).first
                         if await item.count() > 0:
-                            await item.click()
-                            break
+                            await item.click(); break
                     except Exception:
                         pass
                 await el.press('Tab')
-                await page.wait_for_timeout(800)
+                await page.wait_for_timeout(600)
                 break
         except Exception:
             pass
 
-    # ── 5. Checkboxes e radio via JavaScript ──────────────────────────────────
+    # 5. Checkboxes e rádio (Listar resumo, Vendedor, Filtrar base)
     await page.evaluate("""() => {
-        // --- Função auxiliar ---
-        function checkInputNearText(texto, tipo='checkbox', valor=true) {
-            const todos = [...document.querySelectorAll('td, label, span, div')];
-            for (const el of todos) {
+        function check(texto, tipo, valor) {
+            for (const el of document.querySelectorAll('td,label,span,div')) {
                 if (el.childElementCount === 0 && el.innerText &&
                     el.innerText.trim().replace(/[?]/g,'').includes(texto)) {
-
-                    // Verifica a própria célula
-                    let inp = el.querySelector('input[type="' + tipo + '"]');
-                    if (!inp) {
-                        // Verifica a linha / pai
-                        const row = el.closest('tr') || el.parentElement;
-                        if (row) inp = row.querySelector('input[type="' + tipo + '"]');
-                    }
-                    if (!inp) {
-                        // Verifica o próximo td irmão
-                        const next = el.nextElementSibling;
-                        if (next) inp = next.querySelector('input[type="' + tipo + '"]');
-                    }
-                    if (inp) {
-                        inp.checked = valor;
-                        inp.dispatchEvent(new Event('change', {bubbles:true}));
-                        inp.dispatchEvent(new Event('click',  {bubbles:true}));
-                        return true;
-                    }
+                    let inp = el.querySelector('input[type="'+tipo+'"]')
+                           || (() => { const row = el.closest('tr')||el.parentElement;
+                                       return row && row.querySelector('input[type="'+tipo+'"]'); })()
+                           || (() => { const n = el.nextElementSibling;
+                                       return n && n.querySelector('input[type="'+tipo+'"]'); })();
+                    if (inp) { inp.checked = valor;
+                               inp.dispatchEvent(new Event('change',{bubbles:true})); return true; }
                 }
             }
             return false;
         }
+        check('Listar somente resumo',       'checkbox', true);
+        check('Filtrar somente base de venda','checkbox', true);
 
-        // Listar somente resumo?
-        checkInputNearText('Listar somente resumo', 'checkbox', true);
-
-        // Filtrar somente base de venda?
-        checkInputNearText('Filtrar somente base de venda', 'checkbox', true);
-
-        // Agrupamento = Vendedor (radio)
-        const radios = [...document.querySelectorAll('input[type="radio"]')];
-        for (const r of radios) {
-            // Texto do label ou do elemento irmão
-            const parent = r.parentElement;
-            const rowEl  = r.closest('td') || r.parentElement;
-            const txt = (parent ? parent.innerText : '') + ' ' + (rowEl ? rowEl.innerText : '');
-            if (txt.trim() === 'Vendedor' || txt.includes('Vendedor')) {
-                // Confirma que é o radio de Agrupamento verificando a linha
-                const tr = r.closest('tr');
-                if (tr && tr.innerText.includes('Agrupamento')) {
+        // Radio Agrupamento = Vendedor
+        for (const r of document.querySelectorAll('input[type="radio"]')) {
+            const tr = r.closest('tr');
+            if (tr && tr.innerText.includes('Agrupamento')) {
+                const p = r.parentElement;
+                if (p && p.innerText.trim() === 'Vendedor') {
                     r.checked = true;
-                    r.dispatchEvent(new Event('change', {bubbles:true}));
+                    r.dispatchEvent(new Event('change',{bubbles:true}));
                     break;
                 }
-                // Se não encontrou via linha, usa o primeiro "Vendedor" encontrado
-                r.checked = true;
-                r.dispatchEvent(new Event('change', {bubbles:true}));
-                break;
             }
         }
     }""")
-    await page.wait_for_timeout(500)
+    await page.wait_for_timeout(400)
 
-    # ── 6. Formato = Visualização HTML ────────────────────────────────────────
+    # 6. Formato = Visualização HTML
     try:
-        selects = await page.query_selector_all('select')
-        for sel_el in selects:
-            opts = await sel_el.query_selector_all('option')
-            for opt in opts:
+        for sel_el in await page.query_selector_all('select'):
+            for opt in await sel_el.query_selector_all('option'):
                 txt = await opt.inner_text()
                 if 'HTML' in txt or 'Visualiza' in txt:
-                    val = await opt.get_attribute('value')
-                    await sel_el.select_option(value=val)
+                    await sel_el.select_option(value=await opt.get_attribute('value'))
                     break
     except Exception:
         pass
     await page.wait_for_timeout(300)
 
+# ─── Capturar relatório ───────────────────────────────────────────────────────
 
-async def buscar_operador(page, operador: dict, data_hoje: str) -> str | None:
-    html_capturado = []
-    data_fmt = datetime.strptime(data_hoje, '%Y-%m-%d').strftime('%d/%m/%Y')
+async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
+    html_cap = []
+    data_fmt = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
 
-    async def on_response(response):
+    async def on_resp(response):
         if 'ImpressaoRelatorio' in response.url and response.status == 200:
             ct = response.headers.get('content-type', '')
             if 'html' in ct.lower():
                 try:
                     body = await response.text()
                     if 'a5119' in body or 'Valor Venda' in body:
-                        html_capturado.append(body)
+                        html_cap.append(body)
                 except Exception:
                     pass
 
-    page.on('response', on_response)
-
-    # Preenche o formulário com todos os campos obrigatórios
+    page.on('response', on_resp)
     await preencher_formulario(page, operador, data_fmt)
 
-    # Clica em Executar
-    executar_clicado = False
-    for sel in [
-        'input[value="Executar"]', '#btnExecutar',
-        'button:has-text("Executar")', 'input[id*="Executar"]',
-        'a:has-text("Executar")',
-    ]:
+    for sel in ['input[value="Executar"]','#btnExecutar',
+                'button:has-text("Executar")','input[type="submit"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.click()
-                executar_clicado = True
-                break
+                await el.click(); break
         except Exception:
             pass
 
-    if not executar_clicado:
-        # Fallback: botão vermelho "Executar"
-        try:
-            btn = await page.query_selector('input[type="submit"]')
-            if btn:
-                await btn.click()
-                executar_clicado = True
-        except Exception:
-            pass
-
-    if not executar_clicado:
-        print(f"  ⚠️  Botão 'Executar' não encontrado para {operador['nome']}")
-
-    # Aguarda o relatório (até 20 s)
     for _ in range(40):
-        if html_capturado:
-            break
+        if html_cap: break
         await page.wait_for_timeout(500)
 
-    page.remove_listener('response', on_response)
-    return html_capturado[0] if html_capturado else None
+    page.remove_listener('response', on_resp)
+    return html_cap[0] if html_cap else None
 
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
     if not MOVERE_USER or not MOVERE_PASS:
-        print("❌  Variáveis MOVERE_USER e MOVERE_PASS não definidas!")
+        print("❌  MOVERE_USER / MOVERE_PASS não definidos!")
         sys.exit(1)
 
-    # Usa horário de Brasília para data de referência
-    from datetime import timezone, timedelta
-    tz_sp = timezone(timedelta(hours=-3))
-    agora_sp = datetime.now(tz_sp)
-    data_hoje = agora_sp.strftime('%Y-%m-%d')
+    agora_sp  = datetime.now(TZ_SP)
+    hoje      = agora_sp.date()
+    ano, mes  = hoje.year, hoje.month
+    data_hoje = hoje.strftime('%Y-%m-%d')
+    mes_ini   = f"{ano}-{mes:02d}-01"
+    mes_fim   = f"{ano}-{mes:02d}-31"
 
-    print(f"\n🔄  Sincronizando televendas — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)\n")
+    print(f"\n🔄  Sync Televendas — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)\n")
+
+    # Dias úteis do mês até hoje
+    todos_dias = dias_uteis_mes(ano, mes, hoje)
+    print(f"  Dias úteis até hoje: {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
+
+    # Registros já existentes no Supabase
+    existentes = await buscar_existentes(mes_ini, mes_fim)
+    print(f"  Registros no Supabase: {len(existentes)}\n")
+
+    # Fila: dias faltantes + sempre atualiza hoje
+    fila = []
+    for dia in todos_dias:
+        for op in OPERADORES:
+            if (dia, op['codigo']) not in existentes or dia == data_hoje:
+                fila.append((dia, op))
+
+    print(f"  Queries a executar: {len(fila)}\n")
+
+    if not fila:
+        print("  ✅  Tudo já atualizado.\n")
+        return
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
@@ -415,34 +391,44 @@ async def main():
             await browser.close()
             return
 
-        resultados = []
+        total_hoje = 0
+        qtd_ok = 0
 
-        for op in OPERADORES:
-            print(f"  → {op['nome']} ({op['codigo']})…")
+        for i, (dia, op) in enumerate(fila):
+            data_br = datetime.strptime(dia, '%Y-%m-%d').strftime('%d/%m/%Y')
+            print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}…")
             try:
-                html = await buscar_operador(page, op, data_hoje)
+                html = await buscar_relatorio(page, op, dia)
                 if html:
-                    dados = parse_report_html(html)
-                    print(f"     Campos capturados: {list(dados.keys())[:4]}")
-                    status, valor = await salvar_supabase(op, data_hoje, dados)
-                    emoji = "✅" if status in (200, 201) else "⚠️"
-                    print(f"     {emoji} R$ {valor:,.2f}  (Supabase {status})")
-                    resultados.append({'nome': op['nome'], 'valor': valor})
+                    dados  = parse_report_html(html)
+                    st, v  = await salvar_supabase(op, dia, dados)
+                    emoji  = "✅" if st in (200, 201) else "⚠️"
+                    print(f"    {emoji}  R$ {v:>12,.2f}  (Supabase {st})")
+                    if dia == data_hoje:
+                        total_hoje += v
+                    qtd_ok += 1
                 else:
-                    print(f"     ⚠️  HTML não capturado — verifique os campos do formulário")
+                    # Sem vendas neste dia → salva R$ 0 para não re-consultar
+                    st, _  = await salvar_supabase(op, dia, {}, force_zero=True)
+                    print(f"    —   R$ 0,00  (sem dados — Supabase {st})")
             except Exception as e:
-                print(f"     ❌  Erro: {e}")
+                print(f"    ❌  Erro: {e}")
+
+            # Re-login a cada 25 queries para manter sessão ativa
+            if (i + 1) % 25 == 0 and (i + 1) < len(fila):
+                print("\n  🔁  Re-login para manter sessão…\n")
+                try:
+                    await login(page)
+                except Exception:
+                    pass
 
         await browser.close()
 
-    print(f"\n{'─'*40}")
-    print("RESUMO:")
-    total = 0
-    for r in sorted(resultados, key=lambda x: x['valor'], reverse=True):
-        print(f"  {r['nome']:<20} R$ {r['valor']:>10,.2f}")
-        total += r['valor']
-    print(f"  {'TOTAL':<20} R$ {total:>10,.2f}")
-    print(f"{'─'*40}\n")
+    print(f"\n{'─'*45}")
+    print(f"  Registros salvos : {qtd_ok}/{len(fila)}")
+    if total_hoje > 0:
+        print(f"  Total hoje       : R$ {total_hoje:,.2f}")
+    print(f"{'─'*45}\n")
 
 if __name__ == '__main__':
     asyncio.run(main())
