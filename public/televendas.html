@@ -448,7 +448,7 @@ function renderCalendario() {
     if(isInRange) cls += ' cal-dia-in-range';
     if(isSel || isRangeEnd) cls += ' cal-dia-sel';
     if(isRangeStart) cls += ' cal-dia-range-start';
-    html += `<div class="${cls}" onclick="selecionarData(${d},${calViewMes},${calViewAno})">${d}</div>`;
+    html += `<div class="${cls}" onclick="event.stopPropagation();selecionarData(${d},${calViewMes},${calViewAno})">${d}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
