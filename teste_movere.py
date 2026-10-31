@@ -18,7 +18,7 @@ MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ── CONFIGURAÇÃO DO TESTE ──────────────────────────────────────────────────────
-DATA_TESTE = "01/10/2026"          # formato dd/mm/aaaa
+DATA_TESTE = "31/10/2026"          # formato dd/mm/aaaa
 OPERADOR   = {"codigo": "294862", "nome": "Graziele Garcia"}
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -248,6 +248,14 @@ async def main():
 
         # ── 3. Executar ───────────────────────────────────────────────────────
         print(f"\n  3. Executar…")
+
+        # Aguarda networkidle para garantir que qualquer ImpressaoRelatorio do
+        # carregamento inicial já concluiu antes do listener ser ativado.
+        try:
+            await page.wait_for_load_state('networkidle', timeout=8000)
+            print("     networkidle OK (requests iniciais drenados)")
+        except Exception:
+            print("     networkidle timeout — continuando mesmo assim")
 
         async def on_resp(response):
             if 'ImpressaoRelatorio' in response.url and response.status == 200:
