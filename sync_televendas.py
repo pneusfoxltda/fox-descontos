@@ -79,7 +79,7 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 # ─── Configurações v5 ─────────────────────────────────────────────────────────
 
 MODO_DETALHADO = True   # True = captura clientes individuais / False = v4 (só totais)
-RETROATIVO     = False  # True = reprocessa dias passados sem clientes (pode ser lento)
+RETROATIVO     = True   # True = reprocessa dias passados sem clientes (pode ser lento)
 DEBUG_HTML     = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
