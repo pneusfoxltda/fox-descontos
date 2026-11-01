@@ -78,7 +78,7 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ─── Configurações v5 ─────────────────────────────────────────────────────────
 
-MODO_DETALHADO   = True   # True = captura clientes individuais / False = v4 (só totais)
+MODO_DETALHADO   = False  # True = captura clientes individuais / False = v4 (só totais)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem clientes (uso pontual)
 DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual (vendas retroativas)
