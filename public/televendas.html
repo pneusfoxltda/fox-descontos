@@ -489,6 +489,16 @@ function verMesCompleto() {
   dataRef = null;
   dataRefFim = null;
   rangeStart = null;
+  // Usa o mês exibido no calendário (permite ver outubro, setembro, etc.)
+  const hoje = new Date();
+  const ehMesAtual = (calViewAno === hoje.getFullYear() && calViewMes === hoje.getMonth());
+  if (ehMesAtual) {
+    mesVisaoAno = null;
+    mesVisaoMes = null;
+  } else {
+    mesVisaoAno = calViewAno;
+    mesVisaoMes = calViewMes + 1; // calViewMes é 0-indexed
+  }
   atualizarBotaoFiltro();
   document.getElementById('cal-popup').classList.remove('aberto');
   carregar(true);
@@ -498,6 +508,8 @@ function limparFiltro() {
   dataRef = null;
   dataRefFim = null;
   rangeStart = null;
+  mesVisaoAno = null;
+  mesVisaoMes = null;
   atualizarBotaoFiltro();
   carregar(true);
 }
@@ -506,6 +518,7 @@ function atualizarBotaoFiltro() {
   const btn   = document.getElementById('filtro-data-btn');
   const txt   = document.getElementById('filtro-data-txt');
   const clear = document.getElementById('filtro-data-clear');
+  const MESES_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   if(dataRef && dataRefFim) {
     const d1 = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
     const d2 = dataRefFim.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
@@ -514,6 +527,10 @@ function atualizarBotaoFiltro() {
     clear.style.display = 'inline-flex';
   } else if(dataRef) {
     txt.textContent = dataRef.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    btn.classList.add('ativo');
+    clear.style.display = 'inline-flex';
+  } else if(mesVisaoAno !== null) {
+    txt.textContent = `${MESES_SHORT[mesVisaoMes-1]}/${mesVisaoAno}`;
     btn.classList.add('ativo');
     clear.style.display = 'inline-flex';
   } else {
@@ -546,6 +563,8 @@ let metas = {...METAS_DEFAULT};
 let metaIdx = 0; // 0=100%, 1=110%, 2=120%
 let feriados = {}; // { "YYYY-MM": [dia, dia, ...] }
 const META_MULT = [1, 1.1, 1.2];
+let mesVisaoAno = null;  // null = mês atual; número = mês específico (visão mensal de mês passado)
+let mesVisaoMes = null;  // 1-12
 
 function loadPrefs() {
   try {
@@ -604,13 +623,22 @@ function diasUteisPassados(ano, mes, hoje) {
 
 /* ── Busca Supabase ── */
 async function buscarMes() {
-  const agora = dataRefAtiva();
-  const ano = agora.getFullYear();
-  const mes = String(agora.getMonth()+1).padStart(2,'0');
+  let ano, mesNum;
+  if (mesVisaoAno !== null) {
+    ano = mesVisaoAno;
+    mesNum = mesVisaoMes;
+  } else {
+    const agora = dataRefAtiva();
+    ano = agora.getFullYear();
+    mesNum = agora.getMonth() + 1;
+  }
+  const mes = String(mesNum).padStart(2,'0');
   const ini = `${ano}-${mes}-01`;
-  const fim = `${ano}-${mes}-31`;
+  // Usa último dia real do mês (evita enviar datas inválidas como 31/Nov)
+  const lastDay = new Date(ano, mesNum, 0).getDate();
+  const fim = `${ano}-${mes}-${String(lastDay).padStart(2,'0')}`;
 
-  const url = `${SB_URL}/rest/v1/vendas_televendas?data_ref=gte.${ini}&data_ref=lte.${fim}&order=data_ref.asc`;
+  const url = `${SB_URL}/rest/v1/vendas_televendas?select=*&data_ref=gte.${ini}&data_ref=lte.${fim}&order=data_ref.asc`;
   const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`}});
   if(!r.ok) throw new Error(`Supabase ${r.status}`);
   return r.json();
@@ -822,13 +850,19 @@ function render(rows) {
   // Restaurar elementos que podem ter sido ocultados
   document.getElementById('metas-row').style.display = '';
 
-  const agora = dataRefAtiva();
   const hoje = new Date();
-  const ano = agora.getFullYear();
-  const mes = agora.getMonth()+1;
-  // Se mês selecionado é passado, usa último dia do mês; senão usa dia da data ref
+  // Determina o mês a exibir: visão específica ou mês atual
+  let ano, mes;
+  if (mesVisaoAno !== null) {
+    ano = mesVisaoAno;
+    mes = mesVisaoMes;
+  } else {
+    ano = hoje.getFullYear();
+    mes = hoje.getMonth() + 1;
+  }
+  // Se mês selecionado é passado, usa último dia do mês; senão usa dia de hoje
   const mesCompleto = (ano < hoje.getFullYear()) || (ano === hoje.getFullYear() && mes < hoje.getMonth()+1);
-  const diaHoje = mesCompleto ? new Date(ano, mes, 0).getDate() : agora.getDate();
+  const diaHoje = mesCompleto ? new Date(ano, mes, 0).getDate() : hoje.getDate();
 
   const duTotal = diasUteis(ano, mes).length;
   const duPassados = diasUteisPassados(ano, mes, diaHoje);
@@ -877,15 +911,42 @@ function render(rows) {
     : null;
 
   // page-meta
+  const MESES_NOME_PM = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const ultimaDia = datas5.length > 0 ? dataBR(datas5[datas5.length-1]) : '—';
+  const labelMes = (mesVisaoAno !== null)
+    ? `${MESES_NOME_PM[mes-1]} ${ano}`
+    : `até ${ultimaDia}`;
   document.getElementById('page-meta').textContent =
-    `Vendas até ${ultimaDia} · ${ultSync ? 'atualizado em ' + ultSync : 'aguardando sincronização'} · fonte: Movere`;
+    semDados
+      ? `${MESES_NOME_PM[mes-1]} ${ano} — aguardando sincronização · fonte: Movere`
+      : `Vendas ${labelMes} · ${ultSync ? 'atualizado em ' + ultSync : 'aguardando'} · fonte: Movere`;
 
   atualizarSyncInfo(calcularIntervalo());
 
   // KPIs
   const kpiBar = Math.min(pctMeta, 100);
-  document.getElementById('kpis').innerHTML = `
+  document.getElementById('kpis').innerHTML = semDados ? `
+    <div class="kpi">
+      <div class="kpi-label">Meta do setor</div>
+      <div class="kpi-valor">${brl(metaSetorTotal)}</div>
+      <div class="kpi-sub">Meta 1 definida</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Dias úteis no mês</div>
+      <div class="kpi-valor">${duTotal}</div>
+      <div class="kpi-sub">${duRestantes} restantes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Meta diária do setor</div>
+      <div class="kpi-valor">${brl(metaSetorTotal/duTotal)}</div>
+      <div class="kpi-sub">para atingir Meta 1</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Faturamento do setor</div>
+      <div class="kpi-valor" style="color:#9aabb8;font-size:16px;">Aguardando dados</div>
+      <div class="kpi-sub">sync ainda não executado</div>
+    </div>
+  ` : `
     <div class="kpi">
       <div class="kpi-label">Faturamento do setor</div>
       <div class="kpi-valor">${brl(totalMes)}</div>
@@ -914,25 +975,26 @@ function render(rows) {
     </div>
   `;
 
-  // Tabela
-  if(rows.length === 0) {
-    document.getElementById('tabela-wrap').innerHTML =
-      `<div class="erro" style="margin-top:16px">Sem dados para este mês ainda.<br><small>Execute o script sync_televendas.py para sincronizar.</small></div>`;
-    return;
-  }
+  // Banner quando não há dados ainda (mês atual sem sync)
+  const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const semDados = rows.length === 0;
+  const ehMesAtualSemDados = semDados && !mesCompleto;
+  const ehMesPassadoSemDados = semDados && mesCompleto;
 
-  // Ordenar operadores por % atingido desc
+  // Ordenar operadores por % atingido desc (ou por nome se sem dados)
   const opsOrdenadas = OPERADORES.map(op => {
     const data = porOp[op.codigo];
     const metaOp2 = metaOp(op.codigo, mult);
-    const pctOp = metaOp2 > 0 ? data.totalMes / metaOp2 * 100 : 0;
+    const pctOp = metaOp2 > 0 && !semDados ? data.totalMes / metaOp2 * 100 : 0;
     const faltaOp = Math.max(0, metaOp2 - data.totalMes);
-    const precisaOp = faltaOp / duRestantes;
-    return {...op, ...data, metaOp: metaOp2, pctOp, faltaOp, precisaOp};
-  }).sort((a,b)=>b.pctOp-a.pctOp);
+    const precisaOp = metaOp2 / duTotal; // meta diária original (sempre disponível)
+    const precisaRestante = faltaOp / duRestantes;
+    return {...op, ...data, metaOp: metaOp2, pctOp, faltaOp, precisaOp, precisaRestante};
+  }).sort((a,b) => semDados ? 0 : b.pctOp - a.pctOp);
 
-  const colDias = datas5.map(d=>`<th class="th-dias">${dataBR(d)}</th>`).join('');
-  const colDiasTotals = datas5.map(d=>{
+  // Colunas de dias recentes (só quando há dados)
+  const colDias = semDados ? '' : datas5.map(d=>`<th class="th-dias">${dataBR(d)}</th>`).join('');
+  const colDiasTotals = semDados ? '' : datas5.map(d=>{
     const tot = OPERADORES.reduce((a,op)=>{
       return a + (porOp[op.codigo]?.porDia?.[d]||0);
     },0);
@@ -940,56 +1002,91 @@ function render(rows) {
   }).join('');
 
   const linhas = opsOrdenadas.map(op => {
-    const onTarget = op.pctOp >= pctDesejado;
-    const rowClass = onTarget ? 'row-verde' : 'row-vermelho';
-    const badge = onTarget ? 'verde' : (op.pctOp >= pctDesejado*0.7 ? 'amarelo' : 'vermelho');
-    const diasCols = datas5.map(d=>
+    const onTarget = !semDados && op.pctOp >= pctDesejado;
+    const rowClass = semDados ? '' : (onTarget ? 'row-verde' : 'row-vermelho');
+    const badge = semDados ? '' : (onTarget ? 'verde' : (op.pctOp >= pctDesejado*0.7 ? 'amarelo' : 'vermelho'));
+    const diasCols = semDados ? '' : datas5.map(d=>
       `<td class="dia-col" style="font-size:13px">${op.porDia[d] ? brl(op.porDia[d]) : '—'}</td>`
     ).join('');
+    const fatCol = semDados
+      ? `<td style="font-size:14px;color:#9aabb8;font-weight:500">— aguardando —</td>`
+      : `<td style="font-size:15px;font-weight:700;color:#1a2332">${brl(op.totalMes)}</td>`;
+    const precisaCol = semDados
+      ? `<td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaOp)}/dia</td>`
+      : `<td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaRestante)}</td>`;
+    const pctCol = semDados
+      ? `<td style="color:#9aabb8;font-size:13px;">—</td>`
+      : `<td style="text-align:center"><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td>`;
     return `
     <tr class="${rowClass}">
       <td style="font-size:16px;font-weight:800;color:#1a2332">${op.nome.toUpperCase()}</td>
       <td class="meta-col" style="font-size:15px;font-weight:700">${brl(op.metaOp)}</td>
       ${diasCols}
-      <td style="font-size:15px;font-weight:700;color:#1a2332">${brl(op.totalMes)}</td>
-      <td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaOp)}</td>
-      <td style="text-align:center"><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td>
+      ${fatCol}
+      ${precisaCol}
+      ${pctCol}
     </tr>`;
   }).join('');
 
+  // Banner de aviso quando sem dados
+  const bannerSemDados = ehMesAtualSemDados
+    ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
+        ⏳ <div><strong>${MESES_NOME[mes-1]} ${ano}</strong> — Aguardando dados do mês.<br>
+        <span style="font-size:12px;color:#b45309;">As vendas aparecerão aqui após a primeira sincronização com o Movere.</span></div>
+      </div>`
+    : (ehMesPassadoSemDados
+      ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#6b7280;">
+          📭 Sem vendas registradas para <strong>${MESES_NOME[mes-1]} ${ano}</strong>.
+        </div>`
+      : '');
+
+  // Cabeçalho da tabela: com ou sem colunas de dias
+  const theadColspan = semDados ? '' : `<th colspan="${datas5.length}" class="th-dias">Últimos ${datas5.length} dias úteis</th>`;
+  const theadDias = semDados ? '' : `<tr>${colDias}</tr>`;
+  const rowspanDias = semDados ? '' : `rowspan="2"`;
+
+  const colPrecisaLabel = semDados
+    ? `Meta por dia<br>(${duTotal} dias úteis)`
+    : `Precisa por dia<br>(${duRestantes} restantes)`;
+
   document.getElementById('tabela-wrap').innerHTML = `
-  <div class="table-wrap" style="margin-top:16px;">
+  ${bannerSemDados}
+  <div class="table-wrap" style="margin-top:${bannerSemDados?'0':'16px'};">
     <table>
       <thead>
         <tr>
-          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Operadora</th>
-          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Meta</th>
-          <th colspan="${datas5.length}" class="th-dias">Últimos ${datas5.length} dias úteis</th>
-          <th rowspan="2" style="border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15)">Faturamento<br>do mês</th>
-          <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Precisa por dia<br>(${duRestantes} dias)</th>
-          <th rowspan="2">% atingido</th>
+          <th ${semDados?'':'rowspan="2"'} style="border-right:1px solid rgba(255,255,255,0.15)">Operadora</th>
+          <th ${semDados?'':'rowspan="2"'} style="border-right:1px solid rgba(255,255,255,0.15)">Meta</th>
+          ${theadColspan}
+          <th ${semDados?'':'rowspan="2"'} style="border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15)">${semDados?'Faturamento':'Faturamento<br>do mês'}</th>
+          <th ${semDados?'':'rowspan="2"'} style="border-right:1px solid rgba(255,255,255,0.15)">${colPrecisaLabel}</th>
+          <th ${semDados?'':'rowspan="2"'}>% atingido</th>
         </tr>
-        <tr>
-          ${colDias}
-        </tr>
+        ${theadDias}
       </thead>
       <tbody>
         ${linhas}
-        <tr class="total-row ${pctMeta>=pctDesejado?'row-verde':'row-vermelho'}">
+        <tr class="total-row ${semDados?'':pctMeta>=pctDesejado?'row-verde':'row-vermelho'}">
           <td style="font-size:16px;font-weight:800;color:#1a2332">TOTAL SETOR</td>
           <td class="meta-col">${brl(metaSetorTotal)}</td>
           ${colDiasTotals}
-          <td>${brl(totalMes)}</td>
-          <td>${brl(precisaPorDia)}</td>
-          <td><span class="pct-badge ${pctMeta>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</span></td>
+          ${semDados
+            ? `<td style="font-size:14px;color:#9aabb8;font-weight:500">— aguardando —</td>`
+            : `<td>${brl(totalMes)}</td>`}
+          ${semDados
+            ? `<td style="font-size:13px;font-weight:700;color:#1a2332">${brl(metaSetorTotal/duTotal)}/dia</td>`
+            : `<td>${brl(precisaPorDia)}</td>`}
+          ${semDados
+            ? `<td style="color:#9aabb8;">—</td>`
+            : `<td><span class="pct-badge ${pctMeta>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</span></td>`}
         </tr>
       </tbody>
     </table>
-    <div class="legenda">
+    ${!semDados ? `<div class="legenda">
       <div class="leg-item"><span class="leg-dot" style="background:#16a34a"></span> No ritmo (% atingido ≥ % desejado do dia)</div>
       <div class="leg-item"><span class="leg-dot" style="background:#CC1F1F"></span> Abaixo do ritmo</div>
       <span style="margin-left:auto">Ordenado pelo maior % atingido</span>
-    </div>
+    </div>` : `<div style="padding:10px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#9aabb8;">${duTotal} dias úteis em ${MESES_NOME[mes-1]} · ${duRestantes} dias restantes</div>`}
   </div>`;
 }
 
@@ -1075,7 +1172,12 @@ function abrirModal() {
   container.innerHTML = OPERADORES.map(op=>`
     <div class="modal-row">
       <label>${op.nome}</label>
-      <input type="number" id="inp-${op.codigo}" value="${metas[op.codigo]||0}" step="10000">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <input type="number" id="inp-${op.codigo}" value="${metas[op.codigo]||0}" step="10000" oninput="previewMetas()" style="width:100%;">
+        <div id="prev-${op.codigo}" style="font-size:11px;color:#9aabb8;padding:0 2px;">
+          Meta 2: ${brl((metas[op.codigo]||0)*1.1)} &nbsp;·&nbsp; Meta 3: ${brl((metas[op.codigo]||0)*1.2)}
+        </div>
+      </div>
     </div>
   `).join('');
   renderCalFeriados(ano, mes);
@@ -1092,6 +1194,16 @@ function salvarMetas() {
   savePrefs();
   fecharModal();
   carregar();
+}
+
+function previewMetas() {
+  OPERADORES.forEach(op => {
+    const inp = document.getElementById(`inp-${op.codigo}`);
+    const prev = document.getElementById(`prev-${op.codigo}`);
+    if(!inp || !prev) return;
+    const v = parseFloat(inp.value) || 0;
+    prev.innerHTML = `Meta 2: ${brl(v*1.1)} &nbsp;·&nbsp; Meta 3: ${brl(v*1.2)}`;
+  });
 }
 
 /* ── Autenticação ── */
