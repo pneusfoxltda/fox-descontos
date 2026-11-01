@@ -941,6 +941,9 @@ function render(rows) {
         .toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'})
     : null;
 
+  // Flags de estado (declaradas aqui, antes de qualquer uso)
+  const semDados = rows.length === 0;
+
   // page-meta
   const MESES_NOME_PM = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const ultimaDia = datas5.length > 0 ? dataBR(datas5[datas5.length-1]) : '—';
@@ -1008,7 +1011,6 @@ function render(rows) {
 
   // Banner quando não há dados ainda (mês atual sem sync)
   const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const semDados = rows.length === 0;
   const ehMesAtualSemDados = semDados && !mesCompleto;
   const ehMesPassadoSemDados = semDados && mesCompleto;
 
