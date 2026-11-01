@@ -499,6 +499,7 @@ function verMesCompleto() {
     mesVisaoAno = calViewAno;
     mesVisaoMes = calViewMes + 1; // calViewMes é 0-indexed
   }
+  metas = metasDoMes(); // carrega metas do mês selecionado
   atualizarBotaoFiltro();
   document.getElementById('cal-popup').classList.remove('aberto');
   carregar(true);
@@ -510,6 +511,7 @@ function limparFiltro() {
   rangeStart = null;
   mesVisaoAno = null;
   mesVisaoMes = null;
+  metas = metasDoMes(); // volta para metas do mês atual
   atualizarBotaoFiltro();
   carregar(true);
 }
@@ -559,27 +561,56 @@ const METAS_DEFAULT = {
   "298172": 280000,
 };
 
-let metas = {...METAS_DEFAULT};
+// metasPorMes: { "YYYY-MM": { "cod": valor, ... }, ... }
+let metasPorMes = {};
+let metas = {...METAS_DEFAULT}; // metas do mês visível (derivado de metasPorMes)
 let metaIdx = 0; // 0=100%, 1=110%, 2=120%
 let feriados = {}; // { "YYYY-MM": [dia, dia, ...] }
 const META_MULT = [1, 1.1, 1.2];
 let mesVisaoAno = null;  // null = mês atual; número = mês específico (visão mensal de mês passado)
 let mesVisaoMes = null;  // 1-12
 
+function chaveMetaMes() {
+  // Retorna "YYYY-MM" do mês sendo visualizado
+  if (mesVisaoAno !== null) {
+    return `${mesVisaoAno}-${String(mesVisaoMes).padStart(2,'0')}`;
+  }
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}`;
+}
+
+function metasDoMes() {
+  // Retorna metas do mês visível, com fallback para METAS_DEFAULT
+  const chave = chaveMetaMes();
+  return metasPorMes[chave] ? {...METAS_DEFAULT, ...metasPorMes[chave]} : {...METAS_DEFAULT};
+}
+
 function loadPrefs() {
   try {
-    const m = localStorage.getItem('fox_tv_metas');
-    if (m) metas = {...METAS_DEFAULT, ...JSON.parse(m)};
+    // Carrega estrutura por mês (novo formato)
+    const mp = localStorage.getItem('fox_tv_metas_por_mes');
+    if (mp) metasPorMes = JSON.parse(mp);
+    // Migração: formato antigo (único objeto global) → copia para o mês atual
+    const mAntigo = localStorage.getItem('fox_tv_metas');
+    if (mAntigo && !mp) {
+      const hoje = new Date();
+      const chave = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+      metasPorMes[chave] = JSON.parse(mAntigo);
+    }
     const mi = localStorage.getItem('fox_tv_meta_idx');
     if (mi !== null) metaIdx = parseInt(mi);
     const f = localStorage.getItem('fox_tv_feriados');
     if (f) feriados = JSON.parse(f);
   } catch(e){}
+  metas = metasDoMes();
 }
 
 function savePrefs() {
   try {
-    localStorage.setItem('fox_tv_metas', JSON.stringify(metas));
+    // Salva metas do mês atual no map por mês
+    const chave = chaveMetaMes();
+    metasPorMes[chave] = {...metas};
+    localStorage.setItem('fox_tv_metas_por_mes', JSON.stringify(metasPorMes));
     localStorage.setItem('fox_tv_meta_idx', metaIdx);
     localStorage.setItem('fox_tv_feriados', JSON.stringify(feriados));
   } catch(e){}
