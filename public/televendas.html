@@ -307,7 +307,11 @@ td.meta-col{color:#6b7280;}
 <!-- Modal de metas e feriados -->
 <div class="modal-bg" id="modal-metas">
   <div class="modal">
-    <h3>Configurações — <span id="modal-mes-label"></span></h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <button class="cal-nav" onclick="navegarMesModal(-1)" title="Mês anterior" style="flex-shrink:0;">‹</button>
+      <h3 style="margin:0;font-size:15px;color:#0f1f3d;text-align:center;">Configurações — <span id="modal-mes-label"></span></h3>
+      <button class="cal-nav" onclick="navegarMesModal(1)" title="Próximo mês" style="flex-shrink:0;">›</button>
+    </div>
     <div class="modal-section-title">Metas mensais (R$)</div>
     <div class="modal-grid" id="modal-inputs"></div>
     <div class="modal-section-title">Feriados / dias não úteis <span id="modal-du-label" style="font-size:11px;font-weight:400;color:#9aabb8;"></span></div>
@@ -1201,33 +1205,68 @@ function renderCalFeriados(ano, mes) {
 }
 
 /* ── Modal ── */
+let modalAno = null, modalMes = null;  // mês sendo editado no modal
+
 function abrirModal() {
-  const agora = dataRefAtiva();
-  const ano = agora.getFullYear();
-  const mes = agora.getMonth() + 1;
+  // Usa o mês visível no dashboard (não a data de hoje)
+  if (mesVisaoAno !== null) {
+    modalAno = mesVisaoAno;
+    modalMes = mesVisaoMes;
+  } else {
+    const h = new Date();
+    modalAno = h.getFullYear();
+    modalMes = h.getMonth() + 1;
+  }
+  renderModal();
+  document.getElementById('modal-metas').classList.add('open');
+}
+
+function navegarMesModal(delta) {
+  modalMes += delta;
+  if (modalMes > 12) { modalMes = 1; modalAno++; }
+  if (modalMes < 1)  { modalMes = 12; modalAno--; }
+  renderModal();
+}
+
+function renderModal() {
+  const chaveModal = `${modalAno}-${String(modalMes).padStart(2,'0')}`;
+  // Carrega metas do mês sendo editado (zeros se não configurado)
+  const metasMod = metasPorMes[chaveModal]
+    ? {...metasPorMes[chaveModal]}
+    : Object.fromEntries(OPERADORES.map(op => [op.codigo, 0]));
+
   const container = document.getElementById('modal-inputs');
   container.innerHTML = OPERADORES.map(op=>`
     <div class="modal-row">
       <label>${op.nome}</label>
       <div style="display:flex;flex-direction:column;gap:4px;">
-        <input type="number" id="inp-${op.codigo}" value="${metas[op.codigo]||0}" step="10000" oninput="previewMetas()" style="width:100%;">
+        <input type="number" id="inp-${op.codigo}" value="${metasMod[op.codigo]||0}" step="10000" oninput="previewMetas()" style="width:100%;">
         <div id="prev-${op.codigo}" style="font-size:11px;color:#9aabb8;padding:0 2px;">
-          Meta 2: ${brl((metas[op.codigo]||0)*1.1)} &nbsp;·&nbsp; Meta 3: ${brl((metas[op.codigo]||0)*1.2)}
+          Meta 2: ${brl((metasMod[op.codigo]||0)*1.1)} &nbsp;·&nbsp; Meta 3: ${brl((metasMod[op.codigo]||0)*1.2)}
         </div>
       </div>
     </div>
   `).join('');
-  renderCalFeriados(ano, mes);
-  document.getElementById('modal-metas').classList.add('open');
+  renderCalFeriados(modalAno, modalMes);
 }
+
 function fecharModal() {
   document.getElementById('modal-metas').classList.remove('open');
 }
+
 function salvarMetas() {
+  const chaveModal = `${modalAno}-${String(modalMes).padStart(2,'0')}`;
+  const metasSalvas = {};
   OPERADORES.forEach(op => {
     const v = parseFloat(document.getElementById(`inp-${op.codigo}`).value);
-    if(v >= 0) metas[op.codigo] = v;
+    metasSalvas[op.codigo] = (v >= 0) ? v : 0;
   });
+  // Salva no mês certo do modal (independente do mês visível no dashboard)
+  metasPorMes[chaveModal] = metasSalvas;
+  // Se o mês salvo é o mês atualmente visível, atualiza metas globais
+  if (chaveModal === chaveMetaMes()) {
+    metas = {...metasSalvas};
+  }
   savePrefs();
   fecharModal();
   carregar();
