@@ -83,6 +83,12 @@ RETROATIVO       = False  # True = reprocessa TODOS os dias sem clientes (uso po
 DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual (vendas retroativas)
 
+# ── MÊS RETROATIVO (uso pontual) ─────────────────────────────────────────────
+# Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
+# Após rodar, volte ambos para None.
+MES_RETRO_ANO = 2026   # Ex: 2026  | None = usa mês atual
+MES_RETRO_MES = 10     # Ex: 10    | None = usa mês atual
+
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
 LABEL_CLS = [
@@ -613,9 +619,16 @@ async def main():
 
     agora_sp  = datetime.now(TZ_SP)
     hoje      = agora_sp.date()
-    ano, mes  = hoje.year, hoje.month
-    data_hoje = hoje.strftime('%Y-%m-%d')
     import calendar as _cal
+    # Mês retroativo ou mês atual
+    if MES_RETRO_ANO and MES_RETRO_MES:
+        ano, mes = MES_RETRO_ANO, MES_RETRO_MES
+        # Para mês retroativo, processa todos os dias úteis do mês (sem limitar a "até hoje")
+        data_ref_fim = date(ano, mes, _cal.monthrange(ano, mes)[1])
+    else:
+        ano, mes = hoje.year, hoje.month
+        data_ref_fim = hoje
+    data_hoje = hoje.strftime('%Y-%m-%d')
     ultimo_dia = _cal.monthrange(ano, mes)[1]
     mes_ini   = f"{ano}-{mes:02d}-01"
     mes_fim   = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
@@ -624,7 +637,7 @@ async def main():
     print(f"\n🔄  Sync Televendas v5 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
-    todos_dias = dias_uteis_mes(ano, mes, hoje)
+    todos_dias = dias_uteis_mes(ano, mes, data_ref_fim)
     if todos_dias:
         print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
     else:
@@ -634,7 +647,10 @@ async def main():
     print(f"  Registros Supabase  : {len(existentes)} pares (data, operador)")
 
     # ── Monta fila ────────────────────────────────────────────────────────────
-    # Dias do mês atual (para refresh_mes_todo)
+    # Mês retroativo: força todos os dias na fila
+    eh_retro = bool(MES_RETRO_ANO and MES_RETRO_MES)
+    if eh_retro:
+        print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
     mes_atual = data_hoje[:7]   # 'YYYY-MM'
     dias_mes_atual = set(d for d in todos_dias if d.startswith(mes_atual))
 
@@ -646,7 +662,10 @@ async def main():
             eh_hoje = (dia == data_hoje)
             eh_mes_atual = (dia in dias_mes_atual)
 
-            if info is None:
+            if eh_retro:
+                # Modo retroativo: força todos os dias do mês
+                fila.append((dia, op, 'retro_mes'))
+            elif info is None:
                 # Nunca capturado
                 fila.append((dia, op, 'novo'))
             elif info['valor'] == 0.0:
