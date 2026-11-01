@@ -1204,29 +1204,26 @@ function _mostrarSetor() {
 
   if(allClientes.length > 0) {
     const sorted = [...allClientes].sort((a,b) => b.valor - a.valor);
-    const hasItens = sorted.some(c => c.itens != null);
+    const hasData = sorted.some(c => c.data);
     const linhas = sorted.map(c => `<tr>
+      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo||'—'}</td>
       <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome||'—'}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#6b7280;font-size:12px;">${c.vendedor}</td>
-      ${hasItens?`<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:center;font-size:13px;">${c.itens??'—'}</td>`:''}
       <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
+      ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : '—'}</td>` : ''}
     </tr>`).join('');
-    const totIt = sorted.reduce((a,c) => a+(c.itens||0), 0);
     document.getElementById('modal-cli-content').innerHTML = `
       <table style="width:100%;border-collapse:collapse;">
         <thead><tr style="background:#0f1f3d;">
-          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Cliente</th>
           <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Código</th>
-          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Vendedor</th>
-          ${hasItens?'<th style="padding:10px 12px;text-align:center;font-size:12px;color:#fff;">Itens</th>':''}
+          <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Cliente</th>
           <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;">Valor</th>
+          ${hasData ? '<th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Data</th>' : ''}
         </tr></thead>
         <tbody>${linhas}</tbody>
         <tfoot><tr style="background:#f0f4f8;">
-          <td colspan="${hasItens?4:3}" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${sorted.length} venda${sorted.length!==1?'s':''}</td>
-          ${hasItens?`<td style="padding:10px 12px;text-align:center;font-weight:700;font-size:13px;color:#1a2332;">${totIt}</td>`:''}
+          <td colspan="2" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${sorted.length} cliente${sorted.length!==1?'s':''}</td>
           <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalValor)}</td>
+          ${hasData ? '<td></td>' : ''}
         </tr></tfoot>
       </table>`;
   } else if(totalCli > 0) {
@@ -1254,7 +1251,7 @@ function _exportarModal() {
     exigirAcesso(() => {
       const d = window._exportModalData;
       if(d.allClientes && d.allClientes.length) {
-        _gerarCSV(d.allClientes.map(c => [c.vendedor, c.codigo||'', c.nome||'', c.data||'', c.itens??'', (c.valor||0).toFixed(2).replace('.',',')]), 'setor');
+        _gerarCSV(d.allClientes.map(c => [c.codigo||'', '', c.nome||'', c.vendedor, c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||'']), 'setor');
       } else { exportarCSV(null); }
     });
   } else if(window._exportModalCodigo) {
@@ -1270,16 +1267,16 @@ function _exportar(codigoVendedor) {
     const op = dados[cod];
     if(!op || op.valor === 0) continue;
     if(op.clientes && op.clientes.length > 0) {
-      op.clientes.forEach(c => linhas.push([op.nome, c.codigo||'', c.nome||'', c.data||'', c.itens??'', (c.valor||0).toFixed(2).replace('.',',')]));
+      op.clientes.forEach(c => linhas.push([c.codigo||'', '', c.nome||'', op.nome, c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||'']));
     } else {
-      linhas.push([op.nome, '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', '', op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',',')]);
+      linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome, op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
     }
   }
   if(!linhas.length) { alert('Sem dados para exportar.'); return; }
   _gerarCSV(linhas, codigoVendedor ? dados[codigoVendedor]?.nome : 'geral');
 }
 function _gerarCSV(linhas, nomeArq) {
-  const headers = ['Vendedor','Cód. Cliente','Nome Cliente','Data','Qtd. Itens','Valor (R$)'];
+  const headers = ['Cód. Cliente','Contato','Nome Cliente','Vendedor','Qtd. Itens','Valor (R$)','Data'];
   const csv = '﻿' + [headers, ...linhas].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
@@ -1307,43 +1304,34 @@ function _mostrarClientes(codigo, nomeOp) {
   const hasItens  = clientes.some(c => c.itens != null);
 
   if(clientes.length > 0) {
-    // Dados individuais por cliente disponíveis
-    const linhas = clientes.map(c => {
-      const tdItens = hasItens ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:center;color:#374151;font-size:13px;">${c.itens ?? '—'}</td>` : '';
-      const dataCol = c.data ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data.slice(8,10)}/${c.data.slice(5,7)}</td>` : '';
-      return `<tr>
+    // Dados individuais por cliente — exibe Nome + Código + Data + Valor
+    const hasData = clientes.some(c => c.data);
+    const linhas = clientes.map(c => `
+      <tr>
+        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo || '—'}</td>
         <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome || '—'}</td>
-        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo}</td>
-        ${dataCol}
-        ${tdItens}
         <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
-      </tr>`;
-    }).join('');
+        ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : '—'}</td>` : ''}
+      </tr>`).join('');
 
-    const totalV  = clientes.reduce((a,c) => a + c.valor, 0);
-    const totalIt = clientes.reduce((a,c) => a + (c.itens||0), 0);
-    const hasData = clientes[0] && clientes[0].data;
-    const thData  = hasData  ? '<th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Data</th>' : '';
-    const thItens = hasItens ? '<th style="padding:10px 12px;text-align:center;font-size:12px;color:#fff;font-weight:700;">Itens</th>' : '';
-    const tdTotData  = hasData  ? '<td style="padding:10px 12px;color:#9aabb8;font-size:12px;"></td>' : '';
-    const tdTotItens = hasItens ? `<td style="padding:10px 12px;text-align:center;font-weight:700;font-size:13px;color:#1a2332;">${totalIt}</td>` : '';
+    const totalV = clientes.reduce((a,c) => a + c.valor, 0);
 
     document.getElementById('modal-cli-content').innerHTML = `
       <table style="width:100%;border-collapse:collapse;">
         <thead>
           <tr style="background:#0f1f3d;">
-            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Cliente</th>
             <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Código</th>
-            ${thData}${thItens}
+            <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Cliente</th>
             <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;font-weight:700;">Valor</th>
+            ${hasData ? '<th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Data</th>' : ''}
           </tr>
         </thead>
         <tbody>${linhas}</tbody>
         <tfoot>
           <tr style="background:#f0f4f8;">
-            <td colspan="2" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${clientes.length} cliente${clientes.length!==1?'s':''}</td>
-            ${tdTotData}${tdTotItens}
+            <td colspan="${hasData ? 3 : 2}" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total — ${clientes.length} cliente${clientes.length!==1?'s':''}</td>
             <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalV)}</td>
+            ${hasData ? '<td></td>' : ''}
           </tr>
         </tfoot>
       </table>`;
