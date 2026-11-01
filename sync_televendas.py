@@ -35,7 +35,7 @@ Mudanças vs v4:
 
 Lógica:
   1. Busca Supabase: quais (data, operador) existem, valor total e se tem clientes
-  2. Fila = sem dados + R$0 + hoje + (sem clientes se RETROATIVO=True)
+  2. Fila = sem dados + R$0 + hoje + mês atual (REFRESH_MES_TODO) + (sem clientes se RETROATIVO=True)
   3. Movere (modo detalhado):
      → Achou clientes:   apaga linhas antigas, insere uma por cliente
      → Não achou + hoje: salva R$0 agregado (sem vendas ainda)
@@ -78,9 +78,10 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ─── Configurações v5 ─────────────────────────────────────────────────────────
 
-MODO_DETALHADO = True   # True = captura clientes individuais / False = v4 (só totais)
-RETROATIVO     = True   # True = reprocessa dias passados sem clientes (pode ser lento)
-DEBUG_HTML     = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
+MODO_DETALHADO   = True   # True = captura clientes individuais / False = v4 (só totais)
+RETROATIVO       = False  # True = reprocessa TODOS os dias sem clientes (uso pontual)
+DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
+REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual (vendas retroativas)
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
@@ -628,12 +629,17 @@ async def main():
     print(f"  Registros Supabase  : {len(existentes)} pares (data, operador)")
 
     # ── Monta fila ────────────────────────────────────────────────────────────
+    # Dias do mês atual (para refresh_mes_todo)
+    mes_atual = data_hoje[:7]   # 'YYYY-MM'
+    dias_mes_atual = set(d for d in todos_dias if d.startswith(mes_atual))
+
     fila = []
     for dia in todos_dias:
         for op in OPERADORES:
             chave  = (dia, op['codigo'])
             info   = existentes.get(chave)   # None | {'valor': float, 'tem_clientes': bool}
             eh_hoje = (dia == data_hoje)
+            eh_mes_atual = (dia in dias_mes_atual)
 
             if info is None:
                 # Nunca capturado
@@ -644,10 +650,13 @@ async def main():
             elif eh_hoje:
                 # Hoje → refresh sempre
                 fila.append((dia, op, 'hoje'))
+            elif REFRESH_MES_TODO and eh_mes_atual:
+                # Mês atual → sempre re-sincroniza (vendas retroativas no ERP)
+                fila.append((dia, op, 'mes_atual'))
             elif MODO_DETALHADO and RETROATIVO and not info['tem_clientes']:
                 # Tem valor mas só dados agregados → reprocessa em modo retroativo
                 fila.append((dia, op, 'retroativo'))
-            # else: tem valor (>0) e não é hoje → mantém
+            # else: tem valor (>0) e mês anterior → mantém
 
     print(f"  Queries a executar  : {len(fila)}\n")
 
