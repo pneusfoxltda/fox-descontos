@@ -580,9 +580,13 @@ function chaveMetaMes() {
 }
 
 function metasDoMes() {
-  // Retorna metas do mês visível, com fallback para METAS_DEFAULT
+  // Retorna metas do mês visível; se não configurada, retorna zeros (sem fallback para default)
   const chave = chaveMetaMes();
-  return metasPorMes[chave] ? {...METAS_DEFAULT, ...metasPorMes[chave]} : {...METAS_DEFAULT};
+  if (metasPorMes[chave]) return {...metasPorMes[chave]};
+  // Mês sem meta configurada → zeros
+  const zeros = {};
+  Object.keys(METAS_DEFAULT).forEach(k => zeros[k] = 0);
+  return zeros;
 }
 
 function loadPrefs() {
