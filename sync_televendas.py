@@ -615,15 +615,20 @@ async def main():
     hoje      = agora_sp.date()
     ano, mes  = hoje.year, hoje.month
     data_hoje = hoje.strftime('%Y-%m-%d')
+    import calendar as _cal
+    ultimo_dia = _cal.monthrange(ano, mes)[1]
     mes_ini   = f"{ano}-{mes:02d}-01"
-    mes_fim   = f"{ano}-{mes:02d}-31"
+    mes_fim   = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (clientes individuais)" if MODO_DETALHADO else "RESUMO (totais)"
     print(f"\n🔄  Sync Televendas v5 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     todos_dias = dias_uteis_mes(ano, mes, hoje)
-    print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
+    if todos_dias:
+        print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
+    else:
+        print(f"  Dias úteis até hoje : 0  (nenhum dia útil até hoje no mês)")
 
     existentes = await buscar_existentes(mes_ini, mes_fim)
     print(f"  Registros Supabase  : {len(existentes)} pares (data, operador)")
