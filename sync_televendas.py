@@ -344,8 +344,20 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list) -
             'atualizado_em':   agora,
         })
 
-    total_valor   = sum(it.get('vlr_venda', 0.0) for it in items)
-    clientes_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
+    # ── Deduplica: mesmo (codigo_cliente, codigo_item) → soma valores ────────────
+    dedup: dict = {}
+    for row in payload:
+        key = (row['codigo_cliente'], row['codigo_item'])
+        if key in dedup:
+            dedup[key]['vlr_venda']  += row['vlr_venda']
+            dedup[key]['quantidade'] += row['quantidade']
+        else:
+            dedup[key] = dict(row)
+    payload = list(dedup.values())
+    # ─────────────────────────────────────────────────────────────────────────────
+
+    total_valor   = sum(r['vlr_venda'] for r in payload)
+    clientes_uniq = len({r['codigo_cliente'] for r in payload if r['codigo_cliente']})
 
     # 1. Upsert na tabela de detalhes (em chunks de 400)
     CHUNK = 400
