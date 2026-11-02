@@ -72,7 +72,7 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
-DEBUG_HTML       = True   # True = salva HTML bruto em /tmp/movere_debug_*.html
+DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
@@ -385,17 +385,20 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list) -
             'operador_nome':   operador['nome'],
             'valor_venda':     total_valor,
             'qtd_clientes':    clientes_uniq,
-            'qtd_itens':       len(items),
+            'qtd_itens':       len(payload),   # após dedup
             'atualizado_em':   agora,
         }
-        await client.post(
+        r_total = await client.post(
             f"{SUPABASE_URL}/rest/v1/vendas_televendas"
             f"?on_conflict=data_ref,operador_codigo",
             headers=_headers_sb({'Prefer': 'resolution=merge-duplicates,return=minimal'}),
             json=payload_total,
         )
+        if r_total.status_code not in (200, 201):
+            print(f"    ⚠️  Supabase resumo {r_total.status_code}: {r_total.text[:200]}")
+            err += 1
 
-    return (200 if err == 0 else 207), total_valor, len(items)
+    return (200 if err == 0 else 207), total_valor, len(payload)
 
 # ─── Login ────────────────────────────────────────────────────────────────────
 
