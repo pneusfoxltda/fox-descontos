@@ -1,47 +1,38 @@
 """
-sync_televendas.py - v5
+sync_televendas.py - v6
 ========================
-Agora captura clientes individuais por venda (modo detalhado).
-Com fallback automático para totais agregados (comportamento v4).
+Melhoria do CSV: rotina 553 com Agrupamento=Cliente captura
+itens individuais por cliente e salva em tabela separada.
 
 ━━━ MIGRAÇÃO SUPABASE — executar UMA VEZ antes de usar ━━━━━━━━━━━━━
 (SQL Editor do Supabase → cole e execute)
 
-  -- 1. Adicionar colunas de cliente
-  ALTER TABLE vendas_televendas
-    ADD COLUMN IF NOT EXISTS nome_cliente   TEXT,
-    ADD COLUMN IF NOT EXISTS codigo_cliente TEXT;
+  CREATE TABLE IF NOT EXISTS vendas_televendas_clientes (
+    id               BIGSERIAL PRIMARY KEY,
+    data_ref         DATE        NOT NULL,
+    operador_codigo  TEXT        NOT NULL,
+    operador_nome    TEXT        NOT NULL,
+    codigo_cliente   TEXT        NOT NULL,
+    nome_cliente     TEXT        NOT NULL,
+    codigo_item      TEXT        NOT NULL,
+    descricao_item   TEXT        NOT NULL,
+    quantidade       NUMERIC     DEFAULT 0,
+    vlr_venda        NUMERIC     DEFAULT 0,
+    atualizado_em    TIMESTAMPTZ NOT NULL,
+    UNIQUE(data_ref, operador_codigo, codigo_cliente, codigo_item)
+  );
 
-  -- 2. Remover constraint única antiga (impede múltiplas linhas por op/dia)
-  --    Para saber o nome exato: SELECT constraint_name
-  --    FROM information_schema.table_constraints
-  --    WHERE table_name = 'vendas_televendas';
-  ALTER TABLE vendas_televendas
-    DROP CONSTRAINT IF EXISTS vendas_televendas_data_ref_operador_codigo_key;
-
-  -- (Opcional) Adicionar nova constraint de 3 colunas:
-  -- ALTER TABLE vendas_televendas
-  --   ADD CONSTRAINT vendas_televendas_unico
-  --   UNIQUE(data_ref, operador_codigo, codigo_cliente);
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Mudanças vs v4:
-  - MODO_DETALHADO: desmarca "Listar somente resumo" → relatório com clientes individuais
-  - RETROATIVO:     se True, reprocessa dias passados que só têm dados agregados
-  - DEBUG_HTML:     salva HTML bruto em /tmp para depurar a estrutura do Movere
-  - parse_report_html_detalhado(): extrai tabela de clientes do relatório expandido
-  - deletar_dia_operador():        apaga linhas antigas antes de inserir novas
-  - salvar_clientes_supabase():    insere uma linha por cliente em batch
-
-Lógica:
-  1. Busca Supabase: quais (data, operador) existem, valor total e se tem clientes
-  2. Fila = sem dados + R$0 + hoje + mês atual (REFRESH_MES_TODO) + (sem clientes se RETROATIVO=True)
-  3. Movere (modo detalhado):
-     → Achou clientes:   apaga linhas antigas, insere uma por cliente
-     → Não achou + hoje: salva R$0 agregado (sem vendas ainda)
-     → Não achou + passado: mantém o que já existe no Supabase
-  4. Fallback: se o parser não reconhecer a estrutura HTML,
-     salva o resumo agregado (comportamento v4 — sem perder dados)
+Mudanças vs v5:
+  - MODO_DETALHADO=True agora seta Agrupamento=Cliente no formulário
+  - parse_report_html_detalhado() reescrito para estrutura real do Movere:
+      linha cliente → 4 células (cod, nome, '', '')
+      linha item    → 13 células (cod_item, desc, ..., qty, ..., vlr_venda, ...)
+      linha total   → começa com 'Total Cliente:'
+  - salvar_clientes_supabase() salva em vendas_televendas_clientes (por item)
+    E também salva o total agregado em vendas_televendas (para o dashboard)
+  - Não precisa mais de ALTER TABLE / DROP CONSTRAINT na tabela principal
 """
 
 import asyncio
@@ -49,6 +40,7 @@ import os
 import sys
 from datetime import datetime, date, timedelta, timezone
 from calendar import monthrange
+from html.parser import HTMLParser
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 import httpx
@@ -76,18 +68,18 @@ OPERADORES = [
 MOVERE_BASE   = "https://foxpneus.moveresoftware.com"
 RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
-# ─── Configurações v5 ─────────────────────────────────────────────────────────
+# ─── Configurações ────────────────────────────────────────────────────────────
 
-MODO_DETALHADO   = False  # True = captura clientes individuais / False = v4 (só totais)
-RETROATIVO       = False  # True = reprocessa TODOS os dias sem clientes (uso pontual)
+MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
+RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
 DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
-REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual (vendas retroativas)
+REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 
-# ── MÊS RETROATIVO (uso pontual) ─────────────────────────────────────────────
+# ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
 # Após rodar, volte ambos para None.
-MES_RETRO_ANO = 2026   # Ex: 2026  | None = usa mês atual
-MES_RETRO_MES = 10     # Ex: 10    | None = usa mês atual
+MES_RETRO_ANO = None   # Ex: 2026  | None = usa mês atual
+MES_RETRO_MES = None   # Ex: 10    | None = usa mês atual
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
@@ -109,12 +101,11 @@ def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
         dt = date(ano, mes, d)
         if dt > ate_hoje:
             break
-        if dt.weekday() <= 5:          # seg–sáb
+        if dt.weekday() <= 5:
             dias.append(dt.strftime('%Y-%m-%d'))
     return dias
 
 def parse_br_number(s: str) -> float:
-    """Converte '1.234,56' → 1234.56"""
     try:
         return float(s.strip().replace('R$','').replace(' ','').replace('.','').replace(',','.'))
     except Exception:
@@ -146,116 +137,94 @@ def parse_report_html(html: str) -> dict:
             label = None
     return data
 
-# ─── Parser modo detalhado (v5) ───────────────────────────────────────────────
+# ─── Parser modo detalhado (v6 — estrutura real do Movere) ────────────────────
 
-def parse_report_html_detalhado(html: str) -> list[dict]:
+class _TblParser(HTMLParser):
+    """Parser de tabela HTML leve (sem BeautifulSoup)."""
+    def __init__(self):
+        super().__init__()
+        self.all_rows = []
+        self._row = []
+        self._cell = ''
+        self._in = False
+
+    def handle_starttag(self, tag, attrs):
+        t = tag.lower()
+        if t == 'tr':
+            self._row = []
+        elif t in ('td', 'th'):
+            self._in = True; self._cell = ''
+
+    def handle_endtag(self, tag):
+        t = tag.lower()
+        if t in ('td', 'th'):
+            self._row.append(self._cell.strip()); self._in = False
+        elif t == 'tr':
+            if self._row: self.all_rows.append(self._row[:])
+
+    def handle_data(self, data):
+        if self._in: self._cell += data
+
+
+def parse_report_html_detalhado(html: str) -> list:
     """
-    Tenta extrair linhas individuais de clientes do relatório detalhado.
-    Retorna lista de dicts {codigo_cliente, nome_cliente, qtd_itens, valor_venda}
-    ou lista vazia se a estrutura não for reconhecida.
+    Extrai itens individuais por cliente do HTML da rotina 553
+    com Agrupamento=Cliente (sem "Listar somente resumo").
 
-    O Movere rotina 553 sem "Listar somente resumo" provavelmente exibe
-    uma tabela HTML com colunas como "Cód. Cliente", "Nome", "Qtd. Itens", "Valor".
-    Esta função tenta detectar esse padrão automaticamente.
+    Estrutura real do Movere:
+      Linha cliente : 4 células — [cod_cli, nome_cli, '', '']
+                      (primeiro campo é dígitos, últimas 2 vazias)
+      Linha item    : 13 células — [cod_item, descrição, cód_fab, fornec,
+                                    peso, qtd, preço_tab, vlr_venda, ...]
+      Linha total   : começa com 'Total Cliente:'
+
+    Retorna lista de dicts:
+      { codigo_cliente, nome_cliente, codigo_item, descricao_item,
+        quantidade, vlr_venda }
     """
-    soup = BeautifulSoup(html, 'html.parser')
-    clientes = []
+    p = _TblParser()
+    p.feed(html)
 
-    # ── Estratégia 1: tabelas HTML com cabeçalhos de cliente ──────────────────
-    for table in soup.find_all('table'):
-        headers   = []
-        col_idx   = {}
-        linhas    = table.find_all('tr')
+    records = []
+    cod_cli = None
+    nome_cli = None
 
-        for row in linhas:
-            cells = row.find_all(['th', 'td'])
-            texts = [c.get_text(strip=True) for c in cells]
+    for cells in p.all_rows:
+        if not cells:
+            continue
+        first = cells[0].strip()
 
-            if not headers:
-                # Detecta linha de cabeçalho pelo conteúdo
-                joined = ' '.join(texts).lower()
-                palavras_chave = ['cliente', 'nome', 'código', 'codigo', 'cod.']
-                if any(p in joined for p in palavras_chave):
-                    headers = texts
-                    for i, h in enumerate(texts):
-                        h_l = h.lower()
-                        # Código do cliente
-                        if ('cód' in h_l or 'cod' in h_l) and ('cli' in h_l or 'for' in h_l or len(h_l) < 8):
-                            col_idx.setdefault('codigo', i)
-                        # Nome do cliente
-                        elif 'nome' in h_l or ('cli' in h_l and 'cód' not in h_l and 'cod' not in h_l):
-                            col_idx.setdefault('nome', i)
-                        # Valor
-                        elif 'valor' in h_l or 'total' in h_l or 'venda' in h_l:
-                            col_idx.setdefault('valor', i)
-                        # Qtd. Itens
-                        elif ('item' in h_l or 'iten' in h_l or 'qtd' in h_l or 'qt.' in h_l) \
-                             and 'cli' not in h_l:
-                            col_idx.setdefault('qtd_itens', i)
-                continue
+        # ── Linha de cabeçalho de cliente ──────────────────────────────────
+        # Critério: 4 células, primeira = número, células 2 e 3 vazias
+        if (len(cells) == 4
+                and first.isdigit()
+                and not cells[2].strip()
+                and not cells[3].strip()):
+            cod_cli  = first
+            nome_cli = cells[1].strip()
+            continue
 
-            # Linha de dados
-            if len(texts) < 2:
-                continue
-            # Pula totais/subtotais
-            if texts and any(
-                t in texts[0].lower()
-                for t in ['total', 'subtotal', 'resumo', 'consolidado']
-            ):
-                continue
+        # ── Total por cliente → ignora ─────────────────────────────────────
+        if first.startswith('Total'):
+            continue
 
-            cli = {}
-            if 'codigo' in col_idx and col_idx['codigo'] < len(texts):
-                v = texts[col_idx['codigo']].strip()
-                if v and v not in ('-', '—', ''):
-                    cli['codigo_cliente'] = v
-            if 'nome' in col_idx and col_idx['nome'] < len(texts):
-                v = texts[col_idx['nome']].strip()
-                if v and v not in ('-', '—', ''):
-                    cli['nome_cliente'] = v
-            if 'valor' in col_idx and col_idx['valor'] < len(texts):
-                cli['valor_venda'] = parse_br_number(texts[col_idx['valor']])
-            if 'qtd_itens' in col_idx and col_idx['qtd_itens'] < len(texts):
-                cli['qtd_itens'] = parse_int(texts[col_idx['qtd_itens']])
+        # ── Linha de item (≥ 12 células, cliente já definido) ──────────────
+        # Colunas: [0]=cod_item [1]=desc [2]=cod_fab [3]=fornec
+        #          [4]=peso [5]=qtd [6]=preco_tab [7]=vlr_venda ...
+        if cod_cli and len(cells) >= 12:
+            try:
+                records.append({
+                    'codigo_cliente': cod_cli,
+                    'nome_cliente':   nome_cli or '',
+                    'codigo_item':    cells[0],
+                    'descricao_item': cells[1],
+                    'quantidade':     parse_br_number(cells[5]),
+                    'vlr_venda':      parse_br_number(cells[7]),
+                })
+            except Exception:
+                pass
 
-            # Só inclui se tiver pelo menos nome ou código
-            if cli.get('nome_cliente') or cli.get('codigo_cliente'):
-                clientes.append(cli)
-
-        if clientes:
-            return clientes          # achou na primeira tabela relevante
-
-    # ── Estratégia 2: divs repetidos com padrão cliente (Movere custom) ───────
-    # Alguns relatórios Movere usam classes com padrão de repetição numérica.
-    # Ex.: a5119, a5128, a5137... (label) e a5123, a5132, a5141... (valor).
-    # No modo detalhado pode haver padrões similares para cada linha de cliente.
-    # Tentamos detectar pares onde label parece código/nome de cliente.
-    data_resumo = parse_report_html(html)
-    if data_resumo:
-        # O HTML usa o formato resumo mesmo em modo "detalhado" do formulário —
-        # retorna lista vazia para acionar o fallback para salvar_supabase (v4).
-        return []
-
-    # ── Estratégia 3: linhas de lista (li, p, div simples) ───────────────────
-    # Tenta encontrar padrões como "CÓDIGO - NOME - VALOR" em elementos inline.
-    import re
-    padrao_linha = re.compile(
-        r'(?P<codigo>\d{4,8})\s*[-–]\s*(?P<nome>[A-Z][^R$\n]{3,60})\s*R?\$?\s*(?P<valor>[\d.,]+)',
-        re.IGNORECASE
-    )
-    for elem in soup.find_all(['li', 'p', 'span', 'div']):
-        if elem.find(['table', 'ul', 'ol']):
-            continue    # ignora containers
-        txt = elem.get_text(strip=True)
-        m = padrao_linha.match(txt)
-        if m:
-            clientes.append({
-                'codigo_cliente': m.group('codigo'),
-                'nome_cliente':   m.group('nome').strip(),
-                'valor_venda':    parse_br_number(m.group('valor')),
-            })
-
-    return clientes
+    return records
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 
@@ -271,95 +240,52 @@ def _headers_sb(extras: dict = None) -> dict:
 
 async def buscar_existentes(mes_ini: str, mes_fim: str) -> dict:
     """
-    Retorna dict {(data_ref, operador_codigo): {'valor': float, 'tem_clientes': bool}}
-    Agrega múltiplas linhas por (data_ref, operador) quando há dados individuais.
+    Retorna dict {(data_ref, operador_codigo): {'valor': float, 'tem_detalhes': bool}}
+    Verifica a tabela principal (totais) e se já existe na tabela de detalhes.
     """
-    url = (
+    # 1. Busca totais na tabela principal
+    url_principal = (
         f"{SUPABASE_URL}/rest/v1/vendas_televendas"
-        f"?select=data_ref,operador_codigo,valor_venda,codigo_cliente"
+        f"?select=data_ref,operador_codigo,valor_venda"
         f"&data_ref=gte.{mes_ini}&data_ref=lte.{mes_fim}"
+        f"&nome_cliente=is.null"   # somente linhas de resumo
     )
+    # 2. Busca detalhes existentes
+    url_detalhe = (
+        f"{SUPABASE_URL}/rest/v1/vendas_televendas_clientes"
+        f"?select=data_ref,operador_codigo"
+        f"&data_ref=gte.{mes_ini}&data_ref=lte.{mes_fim}"
+        f"&limit=2000"
+    )
+    result = {}
     try:
         async with httpx.AsyncClient(timeout=20) as client:
-            r = await client.get(url, headers=_headers_sb())
+            r = await client.get(url_principal, headers=_headers_sb())
             if r.status_code == 200:
-                result = {}
                 for row in r.json():
                     chave = (row['data_ref'], str(row['operador_codigo']))
-                    valor = float(row.get('valor_venda') or 0)
-                    tem_cli = bool(row.get('codigo_cliente'))
-                    if chave not in result:
-                        result[chave] = {'valor': 0.0, 'tem_clientes': False}
-                    result[chave]['valor'] += valor
-                    if tem_cli:
-                        result[chave]['tem_clientes'] = True
-                return result
+                    result[chave] = {
+                        'valor': float(row.get('valor_venda') or 0),
+                        'tem_detalhes': False
+                    }
             else:
-                print(f"  ⚠️  Supabase GET {r.status_code}: {r.text[:200]}")
+                print(f"  ⚠️  Supabase GET principal {r.status_code}: {r.text[:200]}")
+
+            r2 = await client.get(url_detalhe, headers=_headers_sb())
+            if r2.status_code == 200:
+                for row in r2.json():
+                    chave = (row['data_ref'], str(row['operador_codigo']))
+                    if chave in result:
+                        result[chave]['tem_detalhes'] = True
+                    else:
+                        result[chave] = {'valor': 0.0, 'tem_detalhes': True}
+            # 404 = tabela ainda não existe → ignora silenciosamente
     except Exception as e:
         print(f"  ⚠️  Erro ao consultar Supabase: {e}")
-    return {}
-
-async def deletar_dia_operador(operador_codigo: str, data_ref: str) -> bool:
-    """Apaga TODAS as linhas de (data_ref, operador) — preparação para INSERT."""
-    url = (
-        f"{SUPABASE_URL}/rest/v1/vendas_televendas"
-        f"?data_ref=eq.{data_ref}&operador_codigo=eq.{operador_codigo}"
-    )
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.delete(url, headers=_headers_sb())
-            return r.status_code in (200, 204)
-    except Exception as e:
-        print(f"    ⚠️  Erro ao deletar linhas: {e}")
-        return False
-
-async def salvar_clientes_supabase(operador: dict, data_ref: str, clientes: list) -> tuple:
-    """
-    Salva clientes individuais: DELETE linhas antigas → INSERT uma por cliente.
-    Retorna (status_code, total_valor, qtd_clientes).
-    """
-    # 1. Apagar linhas antigas do dia/operador
-    ok = await deletar_dia_operador(operador['codigo'], data_ref)
-    if not ok:
-        print(f"    ⚠️  Falha ao deletar linhas antigas — abortando INSERT")
-        return (500, 0.0, 0)
-
-    agora = datetime.now(TZ_SP).isoformat()
-    payload = []
-    for cli in clientes:
-        payload.append({
-            'data_ref':        data_ref,
-            'operador_codigo': operador['codigo'],
-            'operador_nome':   operador['nome'],
-            'codigo_cliente':  (cli.get('codigo_cliente') or '').strip(),
-            'nome_cliente':    (cli.get('nome_cliente')   or '').strip(),
-            'valor_venda':     cli.get('valor_venda', 0.0),
-            'qtd_clientes':    1,       # cada linha = 1 cliente
-            'qtd_itens':       cli.get('qtd_itens', 0),
-            'atualizado_em':   agora,
-        })
-
-    total = sum(c.get('valor_venda', 0.0) for c in clientes)
-
-    # 2. INSERT em batch (Supabase aceita array no POST)
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            r = await client.post(
-                f"{SUPABASE_URL}/rest/v1/vendas_televendas",
-                headers=_headers_sb({'Prefer': 'return=minimal'}),
-                json=payload,
-            )
-            return (r.status_code, total, len(clientes))
-    except Exception as e:
-        print(f"    ⚠️  Erro ao salvar clientes: {e}")
-        return (500, total, len(clientes))
+    return result
 
 async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero: bool = False):
-    """
-    Salva TOTAL AGREGADO (comportamento v4 — fallback quando não há dados individuais).
-    Usa upsert com on_conflict para a constraint existente ou novas colunas.
-    """
+    """Salva TOTAL AGREGADO em vendas_televendas (dashboard)."""
     VALOR_KEY = 'Valor Total das Notas Emitidas'
     valor = 0.0 if force_zero else parse_br_number(dados.get(VALOR_KEY, '0'))
 
@@ -378,11 +304,8 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
         'valor_venda':     valor,
         'qtd_clientes':    qtd_clientes,
         'qtd_itens':       qtd_itens,
-        # Sem codigo_cliente/nome_cliente → linha agregada
         'atualizado_em':   datetime.now(TZ_SP).isoformat(),
     }
-
-    # Tenta upsert padrão; se falhar (constraint mudada), usa DELETE+INSERT simples
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             r = await client.post(
@@ -391,19 +314,76 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
                 headers=_headers_sb({'Prefer': 'resolution=merge-duplicates,return=minimal'}),
                 json=payload,
             )
-            if r.status_code not in (200, 201):
-                # Constraint pode ter mudado → tenta DELETE+INSERT
-                await deletar_dia_operador(operador['codigo'], data_ref)
-                r2 = await client.post(
-                    f"{SUPABASE_URL}/rest/v1/vendas_televendas",
-                    headers=_headers_sb({'Prefer': 'return=minimal'}),
-                    json=payload,
-                )
-                return r2.status_code, valor
             return r.status_code, valor
     except Exception as e:
         print(f"    ⚠️  Erro ao salvar agregado: {e}")
         return 500, valor
+
+async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list) -> tuple:
+    """
+    Salva itens por cliente em vendas_televendas_clientes (upsert por item).
+    Também salva o total agregado em vendas_televendas (para o dashboard).
+    Retorna (status_code, total_valor, qtd_itens).
+    """
+    if not items:
+        return 0, 0.0, 0
+
+    agora    = datetime.now(TZ_SP).isoformat()
+    payload  = []
+    for it in items:
+        payload.append({
+            'data_ref':        data_ref,
+            'operador_codigo': operador['codigo'],
+            'operador_nome':   operador['nome'],
+            'codigo_cliente':  (it.get('codigo_cliente') or '').strip(),
+            'nome_cliente':    (it.get('nome_cliente')   or '').strip(),
+            'codigo_item':     (it.get('codigo_item')    or '').strip(),
+            'descricao_item':  (it.get('descricao_item') or '').strip(),
+            'quantidade':      it.get('quantidade', 0.0),
+            'vlr_venda':       it.get('vlr_venda',  0.0),
+            'atualizado_em':   agora,
+        })
+
+    total_valor   = sum(it.get('vlr_venda', 0.0) for it in items)
+    clientes_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
+
+    # 1. Upsert na tabela de detalhes (em chunks de 400)
+    CHUNK = 400
+    ok = 0; err = 0
+    headers_upsert = _headers_sb({'Prefer': 'resolution=merge-duplicates,return=minimal'})
+    async with httpx.AsyncClient(timeout=30) as client:
+        for i in range(0, len(payload), CHUNK):
+            chunk = payload[i:i + CHUNK]
+            r = await client.post(
+                f"{SUPABASE_URL}/rest/v1/vendas_televendas_clientes"
+                f"?on_conflict=data_ref,operador_codigo,codigo_cliente,codigo_item",
+                headers=headers_upsert,
+                json=chunk,
+            )
+            if r.status_code in (200, 201):
+                ok += len(chunk)
+            else:
+                err += len(chunk)
+                print(f"    ⚠️  Supabase detalhe {r.status_code}: {r.text[:200]}")
+
+        # 2. Salva total agregado em vendas_televendas (para o dashboard)
+        payload_total = {
+            'data_ref':        data_ref,
+            'operador_codigo': operador['codigo'],
+            'operador_nome':   operador['nome'],
+            'valor_venda':     total_valor,
+            'qtd_clientes':    clientes_uniq,
+            'qtd_itens':       len(items),
+            'atualizado_em':   agora,
+        }
+        await client.post(
+            f"{SUPABASE_URL}/rest/v1/vendas_televendas"
+            f"?on_conflict=data_ref,operador_codigo",
+            headers=_headers_sb({'Prefer': 'resolution=merge-duplicates,return=minimal'}),
+            json=payload_total,
+        )
+
+    return (200 if err == 0 else 207), total_valor, len(items)
 
 # ─── Login ────────────────────────────────────────────────────────────────────
 
@@ -505,27 +485,88 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
         except Exception:
             pass
 
-    # 5. Checkboxes — v5: MODO_DETALHADO desmarca "Listar somente resumo"
-    listar_resumo_valor = 'false' if MODO_DETALHADO else 'true'
-    await page.evaluate(f"""() => {{
-        function check(texto, tipo, valor) {{
-            for (const el of document.querySelectorAll('td,label,span,div')) {{
-                if (el.childElementCount === 0 && el.innerText &&
-                    el.innerText.trim().replace(/[?]/g,'').includes(texto)) {{
-                    let inp = el.querySelector('input[type="'+tipo+'"]')
-                           || (() => {{ const row = el.closest('tr')||el.parentElement;
-                                        return row && row.querySelector('input[type="'+tipo+'"]'); }})()
-                           || (() => {{ const n = el.nextElementSibling;
-                                        return n && n.querySelector('input[type="'+tipo+'"]'); }})();
-                    if (inp) {{ inp.checked = valor;
-                                inp.dispatchEvent(new Event('change',{{bubbles:true}})); return true; }}
-                }}
-            }}
-            return false;
-        }}
-        check('Listar somente resumo',        'checkbox', {listar_resumo_valor});
-        check('Filtrar somente base de venda', 'checkbox', true);
-    }}""")
+    # 5. Checkboxes e Agrupamento
+    if MODO_DETALHADO:
+        # Modo detalhado:
+        #   - "Listar somente resumo" → DESMARCADO
+        #   - "Filtrar somente base de venda" → MARCADO
+        #   - Agrupamento → CLIENTE (radio button)
+        await page.evaluate("""() => {
+            function findAndSet(texto, tipo, valor) {
+                for (const el of document.querySelectorAll('td,label,span,div')) {
+                    if (el.childElementCount === 0 && el.innerText &&
+                        el.innerText.trim().replace(/[?]/g,'').includes(texto)) {
+                        let inp = el.querySelector('input[type="'+tipo+'"]')
+                               || (() => { const row = el.closest('tr')||el.parentElement;
+                                           return row && row.querySelector('input[type="'+tipo+'"]'); })()
+                               || (() => { const n = el.nextElementSibling;
+                                           return n && n.querySelector('input[type="'+tipo+'"]'); })();
+                        if (inp) {
+                            inp.checked = valor;
+                            inp.dispatchEvent(new Event('change',{bubbles:true}));
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // Desmarca "Listar somente resumo"
+            findAndSet('Listar somente resumo', 'checkbox', false);
+            // Marca "Filtrar somente base de venda"
+            findAndSet('Filtrar somente base de venda', 'checkbox', true);
+
+            // Agrupamento = Cliente (radio button)
+            // A linha de Agrupamento contém: Vendedor | Fornecedor | Estabelecimento | Cliente | ...
+            for (const row of document.querySelectorAll('tr')) {
+                const txt = row.innerText || '';
+                if (txt.includes('Vendedor') && txt.includes('Fornecedor') && txt.includes('Cliente')) {
+                    for (const el of row.querySelectorAll('td, span, label, div')) {
+                        if (el.childElementCount === 0 && (el.innerText||'').trim() === 'Cliente') {
+                            // Procura o radio na mesma célula
+                            const td = el.closest('td') || el.parentElement;
+                            if (td) {
+                                const radio = td.querySelector('input[type="radio"]');
+                                if (radio) {
+                                    radio.checked = true;
+                                    radio.dispatchEvent(new Event('change',{bubbles:true}));
+                                    break;
+                                }
+                            }
+                            // Tenta elemento anterior (padrão radio + label)
+                            const prev = el.previousElementSibling;
+                            if (prev && prev.type === 'radio') {
+                                prev.checked = true;
+                                prev.dispatchEvent(new Event('change',{bubbles:true}));
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }""")
+    else:
+        # Modo resumo (v4 puro)
+        await page.evaluate("""() => {
+            function check(texto, tipo, valor) {
+                for (const el of document.querySelectorAll('td,label,span,div')) {
+                    if (el.childElementCount === 0 && el.innerText &&
+                        el.innerText.trim().replace(/[?]/g,'').includes(texto)) {
+                        let inp = el.querySelector('input[type="'+tipo+'"]')
+                               || (() => { const row = el.closest('tr')||el.parentElement;
+                                           return row && row.querySelector('input[type="'+tipo+'"]'); })()
+                               || (() => { const n = el.nextElementSibling;
+                                           return n && n.querySelector('input[type="'+tipo+'"]'); })();
+                        if (inp) { inp.checked = valor;
+                                   inp.dispatchEvent(new Event('change',{bubbles:true})); return true; }
+                    }
+                }
+                return false;
+            }
+            check('Listar somente resumo',        'checkbox', true);
+            check('Filtrar somente base de venda', 'checkbox', true);
+        }""")
     await page.wait_for_timeout(400)
 
     # FIX: desmarcar checkboxes de aro acidentalmente marcados
@@ -569,10 +610,8 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
             if 'html' in ct.lower():
                 try:
                     body = await response.text()
-                    # v4: verificava 'a5119' (classe do resumo)
-                    # v5: aceita também HTML de relatório detalhado (tabelas, etc.)
-                    tem_resumo   = 'a5119' in body or 'Valor Venda' in body
-                    tem_detalhe  = '<table' in body or 'Quantidade' in body
+                    tem_resumo  = 'a5119' in body or 'Valor Venda' in body
+                    tem_detalhe = 'Total Cliente' in body
                     if (tem_resumo or tem_detalhe) and len(body) > 500:
                         html_cap.append(body)
                 except Exception:
@@ -620,67 +659,57 @@ async def main():
     agora_sp  = datetime.now(TZ_SP)
     hoje      = agora_sp.date()
     import calendar as _cal
-    # Mês retroativo ou mês atual
+
     if MES_RETRO_ANO and MES_RETRO_MES:
         ano, mes = MES_RETRO_ANO, MES_RETRO_MES
-        # Para mês retroativo, processa todos os dias úteis do mês (sem limitar a "até hoje")
         data_ref_fim = date(ano, mes, _cal.monthrange(ano, mes)[1])
     else:
         ano, mes = hoje.year, hoje.month
         data_ref_fim = hoje
-    data_hoje = hoje.strftime('%Y-%m-%d')
-    ultimo_dia = _cal.monthrange(ano, mes)[1]
-    mes_ini   = f"{ano}-{mes:02d}-01"
-    mes_fim   = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
-    modo_txt = "DETALHADO (clientes individuais)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v5 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    data_hoje  = hoje.strftime('%Y-%m-%d')
+    ultimo_dia = _cal.monthrange(ano, mes)[1]
+    mes_ini    = f"{ano}-{mes:02d}-01"
+    mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
+
+    modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
+    print(f"\n🔄  Sync Televendas v6 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     todos_dias = dias_uteis_mes(ano, mes, data_ref_fim)
-    if todos_dias:
-        print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0]} → {todos_dias[-1]})")
-    else:
-        print(f"  Dias úteis até hoje : 0  (nenhum dia útil até hoje no mês)")
+    print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0] if todos_dias else '-'} → {todos_dias[-1] if todos_dias else '-'})")
 
     existentes = await buscar_existentes(mes_ini, mes_fim)
     print(f"  Registros Supabase  : {len(existentes)} pares (data, operador)")
 
-    # ── Monta fila ────────────────────────────────────────────────────────────
-    # Mês retroativo: força todos os dias na fila
-    eh_retro = bool(MES_RETRO_ANO and MES_RETRO_MES)
+    eh_retro   = bool(MES_RETRO_ANO and MES_RETRO_MES)
+    mes_atual  = data_hoje[:7]
+    dias_mes_atual = set(d for d in todos_dias if d.startswith(mes_atual))
+
     if eh_retro:
         print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
-    mes_atual = data_hoje[:7]   # 'YYYY-MM'
-    dias_mes_atual = set(d for d in todos_dias if d.startswith(mes_atual))
 
     fila = []
     for dia in todos_dias:
         for op in OPERADORES:
-            chave  = (dia, op['codigo'])
-            info   = existentes.get(chave)   # None | {'valor': float, 'tem_clientes': bool}
-            eh_hoje = (dia == data_hoje)
+            chave = (dia, op['codigo'])
+            info  = existentes.get(chave)
+            eh_hoje    = (dia == data_hoje)
             eh_mes_atual = (dia in dias_mes_atual)
 
             if eh_retro:
-                # Modo retroativo: força todos os dias do mês
                 fila.append((dia, op, 'retro_mes'))
             elif info is None:
-                # Nunca capturado
                 fila.append((dia, op, 'novo'))
             elif info['valor'] == 0.0:
-                # R$0 = possível falha anterior → retenta
                 fila.append((dia, op, 'zero'))
             elif eh_hoje:
-                # Hoje → refresh sempre
                 fila.append((dia, op, 'hoje'))
             elif REFRESH_MES_TODO and eh_mes_atual:
-                # Mês atual → sempre re-sincroniza (vendas retroativas no ERP)
                 fila.append((dia, op, 'mes_atual'))
-            elif MODO_DETALHADO and RETROATIVO and not info['tem_clientes']:
-                # Tem valor mas só dados agregados → reprocessa em modo retroativo
+            elif MODO_DETALHADO and RETROATIVO and not info['tem_detalhes']:
                 fila.append((dia, op, 'retroativo'))
-            # else: tem valor (>0) e mês anterior → mantém
+            # else: valor > 0, mês anterior, mantém
 
     print(f"  Queries a executar  : {len(fila)}\n")
 
@@ -703,23 +732,21 @@ async def main():
             await browser.close()
             return
 
-        total_hoje = 0.0
-        qtd_ok     = 0
-        qtd_cli    = 0
-        qtd_skip   = 0
+        total_hoje  = 0.0
+        qtd_ok      = 0
+        qtd_itens_t = 0
+        qtd_skip    = 0
 
         for i, (dia, op, motivo) in enumerate(fila):
             data_br = datetime.strptime(dia, '%Y-%m-%d').strftime('%d/%m/%Y')
             eh_hoje = (dia == data_hoje)
-            chave   = (dia, op['codigo'])
-            info_anterior = existentes.get(chave)
+            info_anterior = existentes.get((dia, op['codigo']))
 
             print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}  [{motivo}]…")
             try:
                 html = await buscar_relatorio(page, op, dia)
 
                 if html:
-                    # ── Salva HTML de debug se solicitado ─────────────────────
                     if DEBUG_HTML:
                         dbg = f"/tmp/movere_debug_{op['codigo']}_{dia}.html"
                         with open(dbg, 'w', encoding='utf-8') as f:
@@ -727,58 +754,51 @@ async def main():
                         print(f"    🔍  HTML salvo: {dbg}")
 
                     if MODO_DETALHADO:
-                        # ── Tenta parser detalhado ────────────────────────────
-                        clientes = parse_report_html_detalhado(html)
+                        items = parse_report_html_detalhado(html)
 
-                        if clientes:
-                            st, total, n = await salvar_clientes_supabase(op, dia, clientes)
+                        if items:
+                            st, total, n = await salvar_clientes_supabase(op, dia, items)
                             emoji = "✅" if st in (200, 201) else "⚠️"
-                            print(f"    {emoji}  R$ {total:>12,.2f}  —  {n} clientes  (Supabase {st})")
-                            if eh_hoje:
-                                total_hoje += total
-                            qtd_ok  += 1
-                            qtd_cli += n
+                            cli_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
+                            print(f"    {emoji}  R$ {total:>12,.2f}  —  {cli_uniq} clientes, {n} itens  (Supabase {st})")
+                            if eh_hoje: total_hoje += total
+                            qtd_ok      += 1
+                            qtd_itens_t += n
                         else:
-                            # Fallback: salva total agregado (modo v4)
+                            # Fallback: salva só o total agregado (v4)
                             dados = parse_report_html(html)
                             if dados:
                                 st, v = await salvar_supabase(op, dia, dados)
                                 emoji = "✅" if st in (200, 201) else "⚠️"
-                                print(f"    {emoji}  R$ {v:>12,.2f}  (fallback agregado — parser sem clientes)")
-                                if eh_hoje:
-                                    total_hoje += v
+                                print(f"    {emoji}  R$ {v:>12,.2f}  (fallback resumo — sem itens no HTML)")
+                                if eh_hoje: total_hoje += v
                                 qtd_ok += 1
                             else:
-                                # HTML sem estrutura reconhecível
                                 if eh_hoje:
                                     await salvar_supabase(op, dia, {}, force_zero=True)
-                                    print(f"    —   R$ 0,00  (HTML sem estrutura — Supabase R$0)")
+                                    print(f"    —   R$ 0,00  (HTML sem estrutura reconhecida)")
                                 else:
                                     _v = info_anterior['valor'] if info_anterior else 0
                                     print(f"    🔒  HTML sem estrutura — mantendo R$ {_v:,.2f}")
                                 qtd_skip += 1
                     else:
-                        # Modo resumo (v4 puro)
+                        # Modo resumo puro (v4)
                         dados = parse_report_html(html)
                         st, v = await salvar_supabase(op, dia, dados)
                         emoji = "✅" if st in (200, 201) else "⚠️"
                         print(f"    {emoji}  R$ {v:>12,.2f}  (Supabase {st})")
-                        if eh_hoje:
-                            total_hoje += v
+                        if eh_hoje: total_hoje += v
                         qtd_ok += 1
 
                 elif eh_hoje:
-                    # Hoje sem HTML → zero (sem vendas ainda)
                     st, _ = await salvar_supabase(op, dia, {}, force_zero=True)
                     print(f"    —   R$ 0,00  (sem vendas hoje — Supabase {st})")
-
                 else:
-                    # Dia passado sem HTML → não sobrescreve
                     _v = info_anterior['valor'] if info_anterior else 0
                     if _v > 0:
                         print(f"    🔒  Sem HTML — mantendo R$ {_v:,.2f}")
                     else:
-                        print(f"    ⚠️  Sem HTML — pulando (sem dado real)")
+                        print(f"    ⚠️  Sem HTML — pulando")
                     qtd_skip += 1
 
             except Exception as e:
@@ -786,7 +806,6 @@ async def main():
                 import traceback; traceback.print_exc()
                 qtd_skip += 1
 
-            # Re-login a cada 25 queries
             if (i + 1) % 25 == 0 and (i + 1) < len(fila):
                 print("\n  🔁  Re-login para manter sessão…\n")
                 try:
@@ -797,12 +816,12 @@ async def main():
         await browser.close()
 
     print(f"\n{'─'*50}")
-    print(f"  Capturados       : {qtd_ok}/{len(fila)}")
-    if MODO_DETALHADO and qtd_cli > 0:
-        print(f"  Clientes salvos  : {qtd_cli}")
-    print(f"  Pulados/erro     : {qtd_skip}/{len(fila)}")
+    print(f"  Capturados      : {qtd_ok}/{len(fila)}")
+    if MODO_DETALHADO and qtd_itens_t > 0:
+        print(f"  Itens salvos    : {qtd_itens_t}")
+    print(f"  Pulados/erro    : {qtd_skip}/{len(fila)}")
     if total_hoje > 0:
-        print(f"  Total hoje       : R$ {total_hoje:,.2f}")
+        print(f"  Total hoje      : R$ {total_hoje:,.2f}")
     print(f"{'─'*50}\n")
 
 
