@@ -72,7 +72,7 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
-DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
+DEBUG_HTML       = True   # True = salva HTML bruto em /tmp/movere_debug_*.html
 REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
@@ -517,32 +517,56 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             findAndSet('Filtrar somente base de venda', 'checkbox', true);
 
             // Agrupamento = Cliente (radio button)
-            // A linha de Agrupamento contém: Vendedor | Fornecedor | Estabelecimento | Cliente | ...
+            // Estratégia 1: localiza a linha que contém Vendedor/Fornecedor/Cliente
+            // e procura o radio dentro da célula com texto "Cliente"
+            let clienteRadioMarcado = false;
             for (const row of document.querySelectorAll('tr')) {
                 const txt = row.innerText || '';
                 if (txt.includes('Vendedor') && txt.includes('Fornecedor') && txt.includes('Cliente')) {
+                    // Tenta por texto "Cliente"
                     for (const el of row.querySelectorAll('td, span, label, div')) {
-                        if (el.childElementCount === 0 && (el.innerText||'').trim() === 'Cliente') {
-                            // Procura o radio na mesma célula
+                        const elTxt = (el.innerText||'').trim();
+                        if (el.childElementCount === 0 && elTxt === 'Cliente') {
                             const td = el.closest('td') || el.parentElement;
                             if (td) {
                                 const radio = td.querySelector('input[type="radio"]');
                                 if (radio) {
                                     radio.checked = true;
                                     radio.dispatchEvent(new Event('change',{bubbles:true}));
-                                    break;
+                                    clienteRadioMarcado = true; break;
                                 }
                             }
-                            // Tenta elemento anterior (padrão radio + label)
                             const prev = el.previousElementSibling;
                             if (prev && prev.type === 'radio') {
                                 prev.checked = true;
                                 prev.dispatchEvent(new Event('change',{bubbles:true}));
-                                break;
+                                clienteRadioMarcado = true; break;
                             }
                         }
                     }
+                    // Estratégia 2: pega todos os radios da linha e marca o último
+                    // (ordem usual: Vendedor=0, Fornecedor=1, Estabelecimento=2, Cliente=3)
+                    if (!clienteRadioMarcado) {
+                        const radios = Array.from(row.querySelectorAll('input[type="radio"]'));
+                        if (radios.length > 0) {
+                            const r = radios[radios.length - 1];
+                            r.checked = true;
+                            r.dispatchEvent(new Event('change',{bubbles:true}));
+                            clienteRadioMarcado = true;
+                        }
+                    }
                     break;
+                }
+            }
+            // Estratégia 3: qualquer radio cujo label/parent contém "Cliente"
+            if (!clienteRadioMarcado) {
+                for (const r of document.querySelectorAll('input[type="radio"]')) {
+                    const ctx = (r.closest('td')||r.parentElement||{}).innerText || '';
+                    if (ctx.trim() === 'Cliente' || (r.nextSibling && (r.nextSibling.textContent||'').trim() === 'Cliente')) {
+                        r.checked = true;
+                        r.dispatchEvent(new Event('change',{bubbles:true}));
+                        break;
+                    }
                 }
             }
         }""")
@@ -690,6 +714,34 @@ async def main():
         print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
 
     fila = []
+
+    # ── Mês anterior: verifica dias faltando / com zero ──────────────────────
+    if not eh_retro:
+        prev_mes = mes - 1 if mes > 1 else 12
+        prev_ano = ano if mes > 1 else ano - 1
+        prev_ult = _cal.monthrange(prev_ano, prev_mes)[1]
+        prev_ini = f"{prev_ano}-{prev_mes:02d}-01"
+        prev_fim = f"{prev_ano}-{prev_mes:02d}-{prev_ult:02d}"
+        dias_prev = dias_uteis_mes(prev_ano, prev_mes, date(prev_ano, prev_mes, prev_ult))
+        exist_prev = await buscar_existentes(prev_ini, prev_fim)
+        faltando_prev = sum(
+            1 for d in dias_prev for op in OPERADORES
+            if exist_prev.get((d, op['codigo'])) is None
+            or exist_prev.get((d, op['codigo']), {}).get('valor', 1) == 0.0
+        )
+        if faltando_prev:
+            print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : {faltando_prev} pares faltando/zero → serão sincronizados")
+        for dia in dias_prev:
+            for op in OPERADORES:
+                chave = (dia, op['codigo'])
+                info  = exist_prev.get(chave)
+                if info is None:
+                    fila.append((dia, op, 'novo'))
+                elif info['valor'] == 0.0:
+                    fila.append((dia, op, 'zero'))
+                elif MODO_DETALHADO and not info['tem_detalhes']:
+                    fila.append((dia, op, 'retroativo'))
+
     for dia in todos_dias:
         for op in OPERADORES:
             chave = (dia, op['codigo'])
