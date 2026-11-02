@@ -1461,25 +1461,125 @@ function _exportarModal() {
     exportarCSV(window._exportModalCodigo);
   }
 }
-function _exportar(codigoVendedor) {
+
+/* Busca linhas detalhadas (nome_cliente IS NOT NULL) para um dia específico */
+async function buscarDetalheDia(iso, opCodigo = null) {
+  let all = [], offset = 0;
+  const filtroOp = opCodigo ? `&operador_codigo=eq.${opCodigo}` : '';
+  while (true) {
+    const url = `${SB_URL}/rest/v1/vendas_televendas?select=*` +
+      `&data_ref=eq.${iso}&nome_cliente=not.is.null${filtroOp}` +
+      `&order=operador_codigo.asc,codigo_cliente.asc&limit=1000&offset=${offset}`;
+    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, Prefer:'count=none'}});
+    if(!r.ok) throw new Error(`Supabase ${r.status}`);
+    const rows = await r.json();
+    all = all.concat(rows);
+    if(rows.length < 1000) break;
+    offset += 1000;
+  }
+  return all;
+}
+
+async function _exportar(codigoVendedor) {
   const dados = window._drillData;
   if(!dados) { alert('Sem dados para exportar.'); return; }
   const codigos = codigoVendedor ? [codigoVendedor] : Object.keys(dados);
-  const linhas = [];
+  const linhas  = [];
+
+  // Verifica se estamos em visão de dia específico
+  const isDiaView = dataRef && !dataRefFim;
+  const isoAtual  = isDiaView ? toISO(dataRef) : null;
+
   for(const cod of codigos) {
     const op = dados[cod];
     if(!op || op.valor === 0) continue;
+
     if(op.clientes && op.clientes.length > 0) {
-      op.clientes.forEach(c => linhas.push([c.codigo||'', '', c.nome||'', op.nome, c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||'']));
+      // Dados detalhados já disponíveis no _drillData
+      op.clientes.forEach(c => linhas.push([
+        c.codigo||'', '', c.nome||'', op.nome,
+        c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||''
+      ]));
+
+    } else if(isDiaView && isoAtual) {
+      // Dia específico: buscar linhas detalhadas no Supabase sob demanda
+      try {
+        const rows = await buscarDetalheDia(isoAtual, cod);
+
+        if(rows.length === 0) {
+          linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+            op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+          continue;
+        }
+
+        // Detecta se há mais de 1 linha por codigo_cliente (cada linha = 1 item)
+        const contPorCod = {};
+        rows.forEach(r => {
+          const k = r.codigo_cliente || r.cod_cliente || r.nome_cliente || '?';
+          contPorCod[k] = (contPorCod[k] || 0) + 1;
+        });
+        const modoMultiItem = Object.values(contPorCod).some(v => v > 1);
+
+        if(modoMultiItem) {
+          // Múltiplos itens por cliente: nome_cliente = descrição do item
+          const grupos = new Map();
+          rows.forEach(r => {
+            const k = r.codigo_cliente || r.cod_cliente || '?';
+            if(!grupos.has(k)) grupos.set(k, {codigo: r.codigo_cliente||r.cod_cliente||'', itens:[]});
+            grupos.get(k).itens.push({
+              desc:  r.nome_cliente || '',
+              valor: r.valor_venda  || 0,
+              data:  r.data_ref     || ''
+            });
+          });
+          grupos.forEach(g => {
+            g.itens.forEach((item, idx) => {
+              linhas.push([
+                idx === 0 ? (g.codigo||'') : '',  // Cód. Cliente
+                '',                                // Contato
+                '',                                // Nome Cliente (não disponível neste modo)
+                idx === 0 ? op.nome : '',          // Vendedor
+                item.desc,                         // Item
+                item.valor.toFixed(2).replace('.',','),
+                idx === 0 ? item.data : ''
+              ]);
+            });
+          });
+
+        } else {
+          // Uma linha por cliente: nome_cliente = nome do cliente
+          rows.forEach(r => {
+            linhas.push([
+              r.codigo_cliente || r.cod_cliente || '',
+              '',
+              r.nome_cliente || '',
+              op.nome,
+              r.qtd_itens ?? '',
+              (r.valor_venda || 0).toFixed(2).replace('.',','),
+              r.data_ref || ''
+            ]);
+          });
+        }
+
+      } catch(e) {
+        console.error('Erro ao buscar detalhes CSV:', e);
+        linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+          op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+      }
+
     } else {
-      linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome, op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+      // Mês completo ou período sem detalhes por cliente
+      linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+        op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
     }
   }
+
   if(!linhas.length) { alert('Sem dados para exportar.'); return; }
   _gerarCSV(linhas, codigoVendedor ? dados[codigoVendedor]?.nome : 'geral');
 }
+
 function _gerarCSV(linhas, nomeArq) {
-  const headers = ['Cód. Cliente','Contato','Nome Cliente','Vendedor','Qtd. Itens','Valor (R$)','Data'];
+  const headers = ['Cód. Cliente','Contato','Nome Cliente','Vendedor','Item / Qtd. Itens','Valor (R$)','Data'];
   const csv = '﻿' + [headers, ...linhas].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
