@@ -17,6 +17,13 @@ on:
 
   workflow_dispatch: # permite rodar manualmente no GitHub
 
+# Garante que apenas 1 run rode por vez.
+# Se um novo trigger chegar enquanto outro está rodando, ele aguarda na fila (1 pendente).
+# Triggers adicionais enquanto já há 1 pendente são descartados automaticamente pelo GitHub.
+concurrency:
+  group: sync-televendas
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
