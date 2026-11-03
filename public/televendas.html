@@ -595,16 +595,6 @@ function metasDoMes() {
 
 function loadPrefs() {
   try {
-    // Carrega estrutura por mês (novo formato)
-    const mp = localStorage.getItem('fox_tv_metas_por_mes');
-    if (mp) metasPorMes = JSON.parse(mp);
-    // Migração: formato antigo (único objeto global) → copia para o mês atual
-    const mAntigo = localStorage.getItem('fox_tv_metas');
-    if (mAntigo && !mp) {
-      const hoje = new Date();
-      const chave = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
-      metasPorMes[chave] = JSON.parse(mAntigo);
-    }
     const mi = localStorage.getItem('fox_tv_meta_idx');
     if (mi !== null) metaIdx = parseInt(mi);
     const f = localStorage.getItem('fox_tv_feriados');
@@ -615,13 +605,46 @@ function loadPrefs() {
 
 function savePrefs() {
   try {
-    // Salva metas do mês atual no map por mês
-    const chave = chaveMetaMes();
-    metasPorMes[chave] = {...metas};
-    localStorage.setItem('fox_tv_metas_por_mes', JSON.stringify(metasPorMes));
     localStorage.setItem('fox_tv_meta_idx', metaIdx);
     localStorage.setItem('fox_tv_feriados', JSON.stringify(feriados));
   } catch(e){}
+}
+
+/* ── Metas no Supabase ── */
+async function carregarMetasSupabase() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/metas_televendas?select=*`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+    });
+    if (!r.ok) return;
+    const rows = await r.json();
+    metasPorMes = {};
+    rows.forEach(row => {
+      if (!metasPorMes[row.mes]) metasPorMes[row.mes] = {};
+      metasPorMes[row.mes][row.operador_codigo] = Number(row.meta_base);
+    });
+    metas = metasDoMes();
+  } catch(e) { console.warn('Erro ao carregar metas:', e); }
+}
+
+async function salvarMetasSupabase(chave, metasSalvas) {
+  const rows = Object.entries(metasSalvas).map(([cod, val]) => ({
+    mes: chave,
+    operador_codigo: cod,
+    meta_base: val
+  }));
+  try {
+    await fetch(`${SB_URL}/rest/v1/metas_televendas`, {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(rows)
+    });
+  } catch(e) { console.warn('Erro ao salvar metas:', e); }
 }
 
 function metaTotal(mult) {
@@ -1276,13 +1299,14 @@ function salvarMetas() {
     const v = parseFloat(document.getElementById(`inp-${op.codigo}`).value);
     metasSalvas[op.codigo] = (v >= 0) ? v : 0;
   });
-  // Salva no mês certo do modal (independente do mês visível no dashboard)
+  // Salva localmente
   metasPorMes[chaveModal] = metasSalvas;
-  // Se o mês salvo é o mês atualmente visível, atualiza metas globais
   if (chaveModal === chaveMetaMes()) {
     metas = {...metasSalvas};
   }
   savePrefs();
+  // Salva no Supabase (persiste para todos os dispositivos)
+  salvarMetasSupabase(chaveModal, metasSalvas);
   fecharModal();
   carregar();
 }
@@ -1699,7 +1723,11 @@ function atualizarSyncInfo(intervalo) {
 
 /* ── Init ── */
 loadPrefs();
-carregar();
+// Carrega metas do Supabase (persiste entre dispositivos) e depois os dados
+carregarMetasSupabase().then(() => {
+  metas = metasDoMes();
+  carregar();
+});
 agendarAtualizacao();
 
 document.getElementById('modal-metas').addEventListener('click', function(e){
