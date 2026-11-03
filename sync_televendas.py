@@ -78,8 +78,8 @@ REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
 # Após rodar, volte ambos para None.
-MES_RETRO_ANO = 2026   # Ex: 2026  | None = usa mês atual  ← RESETAR PARA None APÓS RODAR
-MES_RETRO_MES = 10     # Ex: 10    | None = usa mês atual  ← RESETAR PARA None APÓS RODAR
+MES_RETRO_ANO = None   # Ex: 2026  | None = usa mês atual
+MES_RETRO_MES = None   # Ex: 10    | None = usa mês atual
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
@@ -763,7 +763,7 @@ async def main():
 
     fila = []
 
-    # ── Mês anterior: verifica dias faltando / com zero ──────────────────────
+    # ── Mês anterior: sempre re-sincroniza TODOS os dias úteis ──────────────
     if not eh_retro:
         prev_mes = mes - 1 if mes > 1 else 12
         prev_ano = ano if mes > 1 else ano - 1
@@ -772,13 +772,8 @@ async def main():
         prev_fim = f"{prev_ano}-{prev_mes:02d}-{prev_ult:02d}"
         dias_prev = dias_uteis_mes(prev_ano, prev_mes, date(prev_ano, prev_mes, prev_ult))
         exist_prev = await buscar_existentes(prev_ini, prev_fim)
-        faltando_prev = sum(
-            1 for d in dias_prev for op in OPERADORES
-            if exist_prev.get((d, op['codigo'])) is None
-            or exist_prev.get((d, op['codigo']), {}).get('valor', 1) == 0.0
-        )
-        if faltando_prev:
-            print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : {faltando_prev} pares faltando/zero → serão sincronizados")
+        total_prev = len(dias_prev) * len(OPERADORES)
+        print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : re-sincronizando todos os {total_prev} pares ({len(dias_prev)} dias úteis × {len(OPERADORES)} operadores)")
         for dia in dias_prev:
             for op in OPERADORES:
                 chave = (dia, op['codigo'])
@@ -787,8 +782,8 @@ async def main():
                     fila.append((dia, op, 'novo'))
                 elif info['valor'] == 0.0:
                     fila.append((dia, op, 'zero'))
-                elif MODO_DETALHADO and not info['tem_detalhes']:
-                    fila.append((dia, op, 'retroativo'))
+                else:
+                    fila.append((dia, op, 'retroativo'))  # sempre re-verifica ajustes
 
     for dia in todos_dias:
         for op in OPERADORES:
