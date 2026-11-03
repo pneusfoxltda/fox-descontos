@@ -75,6 +75,11 @@ RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso po
 DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 
+# Quantos últimos dias úteis do mês anterior re-verificar a cada sync
+# (ajustes/devoluções no Movere raramente ocorrem para dias antigos)
+# 10 = ~40 pares vs 92 antes → sync cai de 24 min para ~10 min
+DIAS_PREV_RETROATIVO = 10
+
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
 # Após rodar, volte ambos para None.
@@ -763,17 +768,35 @@ async def main():
 
     fila = []
 
-    # ── Mês anterior: sempre re-sincroniza TODOS os dias úteis ──────────────
+    # ── Mês anterior: re-sincroniza apenas os últimos DIAS_PREV_RETROATIVO dias úteis ──
+    # Ajustes/devoluções no Movere costumam ocorrer nos primeiros dias do mês seguinte,
+    # raramente para datas antigas. Limitar a janela reduz o sync de 24 min → ~10 min.
     if not eh_retro:
         prev_mes = mes - 1 if mes > 1 else 12
         prev_ano = ano if mes > 1 else ano - 1
         prev_ult = _cal.monthrange(prev_ano, prev_mes)[1]
         prev_ini = f"{prev_ano}-{prev_mes:02d}-01"
         prev_fim = f"{prev_ano}-{prev_mes:02d}-{prev_ult:02d}"
-        dias_prev = dias_uteis_mes(prev_ano, prev_mes, date(prev_ano, prev_mes, prev_ult))
+        todos_dias_prev = dias_uteis_mes(prev_ano, prev_mes, date(prev_ano, prev_mes, prev_ult))
+        # Limita à janela dos últimos N dias úteis
+        dias_prev = todos_dias_prev[-DIAS_PREV_RETROATIVO:]
         exist_prev = await buscar_existentes(prev_ini, prev_fim)
         total_prev = len(dias_prev) * len(OPERADORES)
-        print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : re-sincronizando todos os {total_prev} pares ({len(dias_prev)} dias úteis × {len(OPERADORES)} operadores)")
+        total_mes  = len(todos_dias_prev) * len(OPERADORES)
+        print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : re-verificando últimos {total_prev} pares "
+              f"({len(dias_prev)} de {len(todos_dias_prev)} dias úteis × {len(OPERADORES)} operadores) "
+              f"[dias novos/zero do mês todo são sempre incluídos]")
+        # Dias antigos fora da janela: só re-sincroniza se estiver faltando ou zerado
+        for dia in todos_dias_prev[:-DIAS_PREV_RETROATIVO]:
+            for op in OPERADORES:
+                chave = (dia, op['codigo'])
+                info  = exist_prev.get(chave)
+                if info is None:
+                    fila.append((dia, op, 'novo'))
+                elif info['valor'] == 0.0:
+                    fila.append((dia, op, 'zero'))
+                # else: já tem valor → mantém (não re-verifica dias antigos)
+        # Janela recente: sempre re-verifica ajustes
         for dia in dias_prev:
             for op in OPERADORES:
                 chave = (dia, op['codigo'])
@@ -783,7 +806,7 @@ async def main():
                 elif info['valor'] == 0.0:
                     fila.append((dia, op, 'zero'))
                 else:
-                    fila.append((dia, op, 'retroativo'))  # sempre re-verifica ajustes
+                    fila.append((dia, op, 'retroativo'))  # re-verifica ajustes recentes
 
     for dia in todos_dias:
         for op in OPERADORES:
