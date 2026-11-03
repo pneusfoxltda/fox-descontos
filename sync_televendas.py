@@ -166,7 +166,7 @@ class _TblParser(HTMLParser):
         if self._in: self._cell += data
 
 
-def parse_report_html_detalhado(html: str) -> list:
+def parse_report_html_detalhado(html: str) -> tuple:
     """
     Extrai itens individuais por cliente do HTML da rotina 553
     com Agrupamento=Cliente (sem "Listar somente resumo").
@@ -178,15 +178,17 @@ def parse_report_html_detalhado(html: str) -> list:
                                     peso, qtd, preço_tab, vlr_venda, ...]
       Linha total   : começa com 'Total Cliente:'
 
-    Retorna lista de dicts:
-      { codigo_cliente, nome_cliente, codigo_item, descricao_item,
-        quantidade, vlr_venda }
+    Retorna (records, client_totals):
+      records       = lista de dicts com itens por cliente
+      client_totals = dict {codigo_cliente: total_valor} lido das linhas
+                      "Total Cliente:" — valor correto para o dashboard
     """
     p = _TblParser()
     p.feed(html)
 
-    records = []
-    cod_cli = None
+    records      = []
+    client_totals = {}   # {cod_cli: total_venda_correto}
+    cod_cli  = None
     nome_cli = None
 
     for cells in p.all_rows:
@@ -204,13 +206,22 @@ def parse_report_html_detalhado(html: str) -> list:
             nome_cli = cells[1].strip()
             continue
 
-        # ── Total por cliente → ignora ─────────────────────────────────────
-        if first.startswith('Total'):
+        # ── Total por cliente → captura o valor correto ────────────────────
+        # A linha começa com "Total Cliente:" e o total está na última célula
+        # numérica. Esse valor é o que bate com o relatório resumo do Movere.
+        if first.startswith('Total') and cod_cli:
+            for cell in reversed(cells):
+                v = parse_br_number(cell)
+                if v > 0:
+                    client_totals[cod_cli] = v
+                    break
             continue
 
         # ── Linha de item (≥ 12 células, cliente já definido) ──────────────
         # Colunas: [0]=cod_item [1]=desc [2]=cod_fab [3]=fornec
         #          [4]=peso [5]=qtd [6]=preco_tab [7]=vlr_venda ...
+        # NOTA: cells[7] pode ser o valor total da nota (repetido por item).
+        # O valor correto de faturamento vem da linha "Total Cliente:" acima.
         if cod_cli and len(cells) >= 12:
             try:
                 records.append({
@@ -224,7 +235,7 @@ def parse_report_html_detalhado(html: str) -> list:
             except Exception:
                 pass
 
-    return records
+    return records, client_totals
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 
@@ -319,10 +330,16 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
         print(f"    ⚠️  Erro ao salvar agregado: {e}")
         return 500, valor
 
-async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list) -> tuple:
+async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
+                                   client_totals: dict = None) -> tuple:
     """
     Salva itens por cliente em vendas_televendas_clientes (upsert por item).
     Também salva o total agregado em vendas_televendas (para o dashboard).
+
+    client_totals: dict {codigo_cliente: total_venda} lido das linhas
+    "Total Cliente:" do HTML — valor correto para o dashboard.
+    Se fornecido, usa esse total em vez de somar vlr_venda dos itens.
+
     Retorna (status_code, total_valor, qtd_itens).
     """
     if not items:
@@ -356,7 +373,15 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list) -
     payload = list(dedup.values())
     # ─────────────────────────────────────────────────────────────────────────────
 
-    total_valor   = sum(r['vlr_venda'] for r in payload)
+    # ── Valor correto para o dashboard ───────────────────────────────────────────
+    # Prioridade: linhas "Total Cliente:" do HTML (bate com relatório resumo)
+    # Fallback:   soma de vlr_venda dos itens (pode estar inflado se cells[7]
+    #             contiver o valor total da nota em vez do valor do item)
+    if client_totals:
+        total_valor = sum(client_totals.values())
+    else:
+        total_valor = sum(r['vlr_venda'] for r in payload)
+
     clientes_uniq = len({r['codigo_cliente'] for r in payload if r['codigo_cliente']})
 
     # 1. Upsert na tabela de detalhes (em chunks de 400)
@@ -821,13 +846,14 @@ async def main():
                         print(f"    🔍  HTML salvo: {dbg}")
 
                     if MODO_DETALHADO:
-                        items = parse_report_html_detalhado(html)
+                        items, client_totals = parse_report_html_detalhado(html)
 
                         if items:
-                            st, total, n = await salvar_clientes_supabase(op, dia, items)
+                            st, total, n = await salvar_clientes_supabase(op, dia, items, client_totals)
                             emoji = "✅" if st in (200, 201) else "⚠️"
                             cli_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
-                            print(f"    {emoji}  R$ {total:>12,.2f}  —  {cli_uniq} clientes, {n} itens  (Supabase {st})")
+                            fonte = "Total Cliente" if client_totals else "soma itens"
+                            print(f"    {emoji}  R$ {total:>12,.2f}  —  {cli_uniq} clientes, {n} itens  [{fonte}]  (Supabase {st})")
                             if eh_hoje: total_hoje += total
                             qtd_ok      += 1
                             qtd_itens_t += n
