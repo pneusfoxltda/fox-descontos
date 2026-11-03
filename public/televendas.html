@@ -619,12 +619,50 @@ async function carregarMetasSupabase() {
     if (!r.ok) return;
     const rows = await r.json();
     metasPorMes = {};
+    const feriadosSB = {};
     rows.forEach(row => {
+      // Linhas de feriados têm prefixo 'feriado_DD'
+      if (row.operador_codigo.startsWith('feriado_')) {
+        const dia = parseInt(row.operador_codigo.replace('feriado_', ''), 10);
+        if (!feriadosSB[row.mes]) feriadosSB[row.mes] = [];
+        if (!feriadosSB[row.mes].includes(dia)) feriadosSB[row.mes].push(dia);
+        return;
+      }
       if (!metasPorMes[row.mes]) metasPorMes[row.mes] = {};
       metasPorMes[row.mes][row.operador_codigo] = Number(row.meta_base);
     });
+    // Mescla feriados do Supabase (sobrepõe localStorage para meses salvos no servidor)
+    Object.assign(feriados, feriadosSB);
     metas = metasDoMes();
   } catch(e) { console.warn('Erro ao carregar metas:', e); }
+}
+
+async function salvarFeriadosSupabase(chave, ferDias) {
+  try {
+    // 1. Remove os feriados antigos do mês
+    const filtro = encodeURIComponent('like.feriado_%');
+    await fetch(
+      `${SB_URL}/rest/v1/metas_televendas?mes=eq.${chave}&operador_codigo=${filtro}`,
+      { method: 'DELETE', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+    );
+    // 2. Insere os novos feriados (se houver)
+    if (ferDias && ferDias.length > 0) {
+      const rows = ferDias.map(dia => ({
+        mes: chave,
+        operador_codigo: `feriado_${String(dia).padStart(2, '0')}`,
+        meta_base: 1
+      }));
+      await fetch(`${SB_URL}/rest/v1/metas_televendas`, {
+        method: 'POST',
+        headers: {
+          apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(rows)
+      });
+    }
+  } catch(e) { console.warn('Erro ao salvar feriados:', e); }
 }
 
 async function salvarMetasSupabase(chave, metasSalvas) {
@@ -1307,6 +1345,8 @@ function salvarMetas() {
   savePrefs();
   // Salva no Supabase (persiste para todos os dispositivos)
   salvarMetasSupabase(chaveModal, metasSalvas);
+  // Salva feriados no Supabase (compartilhado com todos os dispositivos)
+  salvarFeriadosSupabase(chaveModal, feriados[chaveModal] || []);
   fecharModal();
   carregar();
 }
