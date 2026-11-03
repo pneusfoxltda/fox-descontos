@@ -78,8 +78,8 @@ REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
 # Após rodar, volte ambos para None.
-MES_RETRO_ANO = None   # Ex: 2026  | None = usa mês atual
-MES_RETRO_MES = None   # Ex: 10    | None = usa mês atual
+MES_RETRO_ANO = 2026   # Ex: 2026  | None = usa mês atual  ← RESETAR PARA None APÓS RODAR
+MES_RETRO_MES = 10     # Ex: 10    | None = usa mês atual  ← RESETAR PARA None APÓS RODAR
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
