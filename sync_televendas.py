@@ -207,22 +207,31 @@ def parse_report_html_detalhado(html: str) -> tuple:
             continue
 
         # ── Total por cliente → captura o valor correto ────────────────────
-        # A linha começa com "Total Cliente:" e o total está na última célula
-        # numérica. Esse valor é o que bate com o relatório resumo do Movere.
-        if first.startswith('Total') and cod_cli:
-            for cell in reversed(cells):
-                v = parse_br_number(cell)
-                if v > 0:
-                    client_totals[cod_cli] = v
-                    break
+        # CRÍTICO: no Movere, cells[0] costuma ser VAZIO na linha "Total
+        # Cliente:" — o texto fica em outra célula.  Por isso verificamos
+        # TODAS as células, não só cells[0].
+        is_total_cli = any('Total Cliente' in c for c in cells)
+        if is_total_cli:
+            if cod_cli:
+                for cell in reversed(cells):
+                    v = parse_br_number(cell)
+                    if v > 0:
+                        client_totals[cod_cli] = v
+                        break
+            cod_cli = None; nome_cli = None
+            continue
+
+        # Pula outras linhas de "Total" (total geral, etc.) para não
+        # confundi-las com linhas de item.
+        if any(c.strip().lower().startswith('total') for c in cells):
             continue
 
         # ── Linha de item (≥ 12 células, cliente já definido) ──────────────
         # Colunas: [0]=cod_item [1]=desc [2]=cod_fab [3]=fornec
         #          [4]=peso [5]=qtd [6]=preco_tab [7]=vlr_venda ...
-        # NOTA: cells[7] pode ser o valor total da nota (repetido por item).
-        # O valor correto de faturamento vem da linha "Total Cliente:" acima.
-        if cod_cli and len(cells) >= 12:
+        # IMPORTANTE: cells[0] deve ser NÃO-VAZIO (código do item).
+        # Linhas "Descrição" têm cells[0]='' e 12+ células → devem ser puladas.
+        if cod_cli and len(cells) >= 12 and first:
             try:
                 records.append({
                     'codigo_cliente': cod_cli,
@@ -331,14 +340,13 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
         return 500, valor
 
 async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
-                                   client_totals: dict = None) -> tuple:
+                                   override_total: float = 0.0) -> tuple:
     """
     Salva itens por cliente em vendas_televendas_clientes (upsert por item).
     Também salva o total agregado em vendas_televendas (para o dashboard).
 
-    client_totals: dict {codigo_cliente: total_venda} lido das linhas
-    "Total Cliente:" do HTML — valor correto para o dashboard.
-    Se fornecido, usa esse total em vez de somar vlr_venda dos itens.
+    override_total: se > 0, usa esse valor no dashboard em vez de somar
+    vlr_venda dos itens (que pode estar inflado — cells[7] = total da nota).
 
     Retorna (status_code, total_valor, qtd_itens).
     """
@@ -374,11 +382,11 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
     # ─────────────────────────────────────────────────────────────────────────────
 
     # ── Valor correto para o dashboard ───────────────────────────────────────────
-    # Prioridade: linhas "Total Cliente:" do HTML (bate com relatório resumo)
+    # Prioridade: override_total (vindo de "Total Cliente:" ou parser resumo CSS)
     # Fallback:   soma de vlr_venda dos itens (pode estar inflado se cells[7]
     #             contiver o valor total da nota em vez do valor do item)
-    if client_totals:
-        total_valor = sum(client_totals.values())
+    if override_total and override_total > 0:
+        total_valor = override_total
     else:
         total_valor = sum(r['vlr_venda'] for r in payload)
 
@@ -849,10 +857,24 @@ async def main():
                         items, client_totals = parse_report_html_detalhado(html)
 
                         if items:
-                            st, total, n = await salvar_clientes_supabase(op, dia, items, client_totals)
+                            # ── Determina o melhor total para o dashboard ──────
+                            # Método A: parser de resumo CSS (divs a5119/a5123)
+                            dados_resumo  = parse_report_html(html)
+                            VALOR_KEY     = 'Valor Total das Notas Emitidas'
+                            valor_resumo  = parse_br_number(dados_resumo.get(VALOR_KEY, '0')) if dados_resumo else 0.0
+
+                            # Método B: linhas "Total Cliente:" do HTML detalhado
+                            valor_totais  = sum(client_totals.values()) if client_totals else 0.0
+
+                            # Prioridade: resumo CSS > Total Cliente: > soma itens
+                            override_total = valor_resumo or valor_totais or 0.0
+                            fonte = ("resumo CSS"   if valor_resumo > 0
+                                     else "Total Cliente" if valor_totais > 0
+                                     else "soma itens")
+
+                            st, total, n = await salvar_clientes_supabase(op, dia, items, override_total)
                             emoji = "✅" if st in (200, 201) else "⚠️"
                             cli_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
-                            fonte = "Total Cliente" if client_totals else "soma itens"
                             print(f"    {emoji}  R$ {total:>12,.2f}  —  {cli_uniq} clientes, {n} itens  [{fonte}]  (Supabase {st})")
                             if eh_hoje: total_hoje += total
                             qtd_ok      += 1
