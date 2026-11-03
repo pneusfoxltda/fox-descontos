@@ -1324,7 +1324,7 @@ function tentarLogin() {
   const erroEl = document.getElementById('login-erro');
   const usuarios = getUsuarios();
   if(!usuarios.length) {
-    erroEl.textContent = 'Nenhum usuário cadastrado. Configure no painel admin (?admin=1).';
+    erroEl.textContent = 'Nenhum usuário cadastrado. Contate o administrador.';
     erroEl.style.display = 'block'; return;
   }
   const found = usuarios.find(u => u.user === user && u.pass === pass);
@@ -1647,8 +1647,11 @@ function fecharClientes() {
 
 /* ── Admin ── */
 if(new URLSearchParams(window.location.search).get('admin') === '1') {
-  document.getElementById('btn-admin').style.display = '';
-  document.getElementById('btn-usuarios').style.display = '';
+  // Exige login antes de mostrar botões admin
+  exigirAcesso(function() {
+    document.getElementById('btn-admin').style.display = '';
+    document.getElementById('btn-usuarios').style.display = '';
+  });
 }
 
 /* ── Auto-atualização dinâmica ── */
