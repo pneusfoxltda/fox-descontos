@@ -1014,8 +1014,17 @@ function render(rows) {
     datasSet.add(r.data_ref);
   });
 
-  // Últimas 5 datas com dados
-  const datas5 = Array.from(datasSet).sort().slice(-5);
+  // Últimas 5 datas com dados — filtra domingos e feriados configurados
+  const ferKey = `${ano}-${String(mes).padStart(2,'0')}`;
+  const ferDiasSet = new Set((feriados[ferKey] || []).map(d => String(d).padStart(2,'0')));
+  const datas5 = Array.from(datasSet)
+    .filter(d => {
+      const dow = new Date(d + 'T12:00:00').getDay(); // T12 evita fuso horário
+      const dia = d.split('-')[2]; // 'DD'
+      return dow !== 0 && !ferDiasSet.has(dia);
+    })
+    .sort()
+    .slice(-5);
 
   // Totais do setor
   const totalMes = Object.values(porOp).reduce((a,op)=>a+op.totalMes,0);
