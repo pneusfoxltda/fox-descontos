@@ -6,6 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Televendas — Fox Pneus</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#f4f6f9;color:#1a2332;font-family:'Inter',sans-serif;min-height:100vh;}
@@ -331,7 +332,7 @@ td.meta-col{color:#6b7280;}
     <div class="cli-modal-header">
       <h3 id="modal-cli-titulo"></h3>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="btn-export" id="btn-export-modal" onclick="_exportarModal()" title="Exportar para CSV">⬇ CSV</button>
+        <button class="btn-export" id="btn-export-modal" onclick="_exportarModalXLSX()" title="Exportar para Excel">⬇ Excel</button>
         <button class="cli-modal-close" onclick="fecharClientes()">✕</button>
       </div>
     </div>
@@ -867,7 +868,7 @@ function renderDia(rows) {
     ${rowsDia.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas nesta data.</div>' : ''}
     <div class="export-bar">
       ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
-      <button class="btn-export" onclick="exportarCSV(null)">⬇ Exportar CSV</button>
+      <button class="btn-export" onclick="exportarXLSX(null)">⬇ Exportar Excel</button>
     </div>
   </div>`;
 }
@@ -950,7 +951,7 @@ function renderPeriodo(rows) {
     ${rowsPer.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas neste período.</div>' : ''}
     <div class="export-bar">
       ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
-      <button class="btn-export" onclick="exportarCSV(null)">⬇ Exportar CSV</button>
+      <button class="btn-export" onclick="exportarXLSX(null)">⬇ Exportar Excel</button>
     </div>
   </div>`;
 }
@@ -1528,10 +1529,9 @@ function _mostrarSetor() {
   document.getElementById('modal-clientes').classList.add('open');
 }
 
-/* ── Exportação CSV ── */
+/* ── Exportação CSV (mantido para compatibilidade) ── */
 function exportarCSV(codigoVendedor) { exigirAcesso(() => _exportar(codigoVendedor)); }
 function _exportarModal() {
-  // exporta o que está sendo mostrado no modal atualmente
   if(window._exportModalData) {
     exigirAcesso(() => {
       const d = window._exportModalData;
@@ -1542,6 +1542,143 @@ function _exportarModal() {
   } else if(window._exportModalCodigo) {
     exportarCSV(window._exportModalCodigo);
   }
+}
+
+/* ── Exportação XLSX ── */
+function exportarXLSX(codigoVendedor) { exigirAcesso(() => _exportarXLSX(codigoVendedor)); }
+function _exportarModalXLSX() {
+  if(window._exportModalData) {
+    exigirAcesso(() => {
+      const d = window._exportModalData;
+      if(d.allClientes && d.allClientes.length) {
+        _gerarXLSX(d.allClientes.map(c => [c.codigo||'', '', c.nome||'', c.vendedor, c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||'']), 'setor');
+      } else { exportarXLSX(null); }
+    });
+  } else if(window._exportModalCodigo) {
+    exportarXLSX(window._exportModalCodigo);
+  }
+}
+
+async function _exportarXLSX(codigoVendedor) {
+  const dados = window._drillData;
+  if(!dados) { alert('Sem dados para exportar.'); return; }
+  const codigos = codigoVendedor ? [codigoVendedor] : Object.keys(dados);
+  const linhas  = [];
+
+  const isDiaView = dataRef && !dataRefFim;
+  const isoAtual  = isDiaView ? toISO(dataRef) : null;
+
+  for(const cod of codigos) {
+    const op = dados[cod];
+    if(!op || op.valor === 0) continue;
+
+    if(op.clientes && op.clientes.length > 0) {
+      op.clientes.forEach(c => linhas.push([
+        c.codigo||'', '', c.nome||'', op.nome,
+        c.itens??'', (c.valor||0).toFixed(2).replace('.',','), c.data||''
+      ]));
+    } else if(isDiaView && isoAtual) {
+      try {
+        const rows = await buscarDetalheDia(isoAtual, cod);
+        if(rows.length === 0) {
+          linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+            op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+          continue;
+        }
+        const grupos = new Map();
+        rows.forEach(r => {
+          const k = r.codigo_cliente || '?';
+          if(!grupos.has(k)) grupos.set(k, { codigo: r.codigo_cliente||'', nome: r.nome_cliente||'', itens: [] });
+          grupos.get(k).itens.push({ desc: r.descricao_item||r.codigo_item||'', valor: r.vlr_venda||0 });
+        });
+        grupos.forEach(cli => {
+          cli.itens.forEach((item, idx) => {
+            linhas.push([
+              idx === 0 ? cli.codigo : '',
+              '',
+              idx === 0 ? cli.nome   : '',
+              idx === 0 ? op.nome    : '',
+              item.desc,
+              item.valor.toFixed(2).replace('.',','),
+              isoAtual
+            ]);
+          });
+        });
+      } catch(e) {
+        linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+          op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+      }
+    } else {
+      linhas.push(['', '', op.qtdClientes ? `${op.qtdClientes} clientes` : '', op.nome,
+        op.qtdItens||'', (op.valor||0).toFixed(2).replace('.',','), '']);
+    }
+  }
+
+  if(!linhas.length) { alert('Sem dados para exportar.'); return; }
+  _gerarXLSX(linhas, codigoVendedor ? dados[codigoVendedor]?.nome : 'geral');
+}
+
+function _gerarXLSX(linhas, nomeArq) {
+  if(!window.XLSX) { alert('Biblioteca Excel não carregada. Verifique sua conexão.'); return; }
+
+  const headers = ['Cód. Cliente','Contato','Nome Cliente','Vendedor','Descrição do Item','Valor (R$)','Valor da compra','Data'];
+  const sheetData = [headers];
+  const merges    = [];
+
+  // Detecta grupos de linhas por cliente (linha nova = cod != '')
+  let i = 0;
+  while(i < linhas.length) {
+    const startSheet = sheetData.length; // índice (0-based) da 1ª linha do grupo
+    // Coleta todas as linhas do mesmo cliente
+    let j = i + 1;
+    while(j < linhas.length && linhas[j][0] === '') j++;
+    const grupo = linhas.slice(i, j);
+
+    // Total do cliente = soma dos valores do grupo
+    const total = grupo.reduce((s, r) => s + parseFloat((r[5]||'0').replace(',','.')), 0);
+
+    grupo.forEach((r, idx) => {
+      const valor = parseFloat((r[5]||'0').replace(',','.'));
+      sheetData.push([
+        r[0],                      // Cód. Cliente
+        r[1],                      // Contato
+        r[2],                      // Nome Cliente
+        r[3],                      // Vendedor
+        r[4],                      // Descrição do Item
+        valor,                     // Valor (R$) — número para o Excel formatar
+        idx === 0 ? total : null,  // Valor da compra — só na 1ª linha do grupo
+        r[6]                       // Data
+      ]);
+    });
+
+    // Mescla colunas de identificação e valor total se o grupo tiver > 1 item
+    if(grupo.length > 1) {
+      const endSheet = sheetData.length - 1;
+      [0, 1, 2, 3, 6].forEach(col => {
+        merges.push({ s: { r: startSheet, c: col }, e: { r: endSheet, c: col } });
+      });
+    }
+
+    i = j;
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!merges'] = merges;
+  ws['!cols'] = [
+    { wch: 14 }, // Cód. Cliente
+    { wch: 15 }, // Contato
+    { wch: 28 }, // Nome Cliente
+    { wch: 22 }, // Vendedor
+    { wch: 52 }, // Descrição do Item
+    { wch: 14 }, // Valor (R$)
+    { wch: 18 }, // Valor da compra
+    { wch: 12 }, // Data
+  ];
+
+  const wb   = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Televendas');
+  const hoje = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `televendas_${(nomeArq||'export').toLowerCase().replace(/\s+/g,'_')}_${hoje}.xlsx`);
 }
 
 /* Busca linhas detalhadas da tabela de clientes para um dia específico */
