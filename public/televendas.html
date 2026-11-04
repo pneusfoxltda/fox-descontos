@@ -1911,6 +1911,21 @@ function fecharClientes() {
 /* ── Admin ── restaura botões se sessão admin ainda ativa */
 if(isAdmin()) mostrarBotoesAdmin();
 
+// Abre login automaticamente se URL contém ?admin=1 ou ?login e usuário não está logado
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if((params.get('admin') === '1' || params.has('login')) && !isAdmin()) {
+    carregarUsuariosSupabase().then(() => {
+      window._loginCallback = null; // sem ação pós-login (admin já aparece pelo flag)
+      document.getElementById('modal-login').classList.add('open');
+      document.getElementById('login-user').value = '';
+      document.getElementById('login-pass').value = '';
+      document.getElementById('login-erro').style.display = 'none';
+      setTimeout(() => document.getElementById('login-user').focus(), 150);
+    });
+  }
+})();
+
 /* ── Auto-atualização dinâmica ── */
 let timerAuto = null;
 
