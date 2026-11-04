@@ -2,18 +2,15 @@ name: Sync Televendas
 
 on:
   schedule:
-    # ── Seg–Sáb 6h46–18h11 BRT (9h46–21h11 UTC): a cada 5 min, 14 min antes ──
-    - cron: '46,51,56 9 * * 1-6'                               # 6h46–6h56 BRT
-    - cron: '1,6,11,16,21,26,31,36,41,46,51,56 10-20 * * 1-6' # 7h01–17h56 BRT
-    - cron: '1,6,11 21 * * 1-6'                                # 18h01–18h11 BRT
+    # ── Seg–Sáb 7h16–18h46 BRT (10h16–21h46 UTC): a cada 30 min ──
+    - cron: '16,46 10-21 * * 1-6'                              # 7h16–18h46 BRT
 
-    # ── Seg–Sáb 18h16–23h16 BRT: a cada 30 min, 14 min antes ──
-    - cron: '16,46 21 * * 1-6'                                 # 18h16–18h46 BRT
+    # ── Seg–Sáb 19h16–23h16 BRT: a cada 30 min ──
     - cron: '16,46 22,23 * * 1-6'                              # 19h16–20h46 BRT
     - cron: '16,46 0,1 * * 0,2-6'                              # 21h16–22h46 BRT (UTC Ter–Dom)
     - cron: '16 2 * * 0,2-6'                                   # 23h16 BRT (UTC Ter–Dom)
 
-    # ── Domingo BRT: a cada hora, 14 min antes ──
+    # ── Domingo BRT: a cada hora ──
     - cron: '46 2-22 * * 0'                                    # 23h46 Sáb–19h46 Dom BRT
     - cron: '46 23 * * 0'                                      # 20h46 Dom BRT
     - cron: '46 0,1 * * 1'                                     # 21h46–22h46 Dom BRT (UTC Seg)
