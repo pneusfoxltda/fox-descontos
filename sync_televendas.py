@@ -348,19 +348,108 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
         print(f"    ⚠️  Erro ao salvar agregado: {e}")
         return 500, valor
 
+# ─── Correção de vlr_venda inflado ───────────────────────────────────────────
+
+def _normalizar_desc_lado(desc: str) -> str:
+    """Remove sufixos de lado (LD / LE) para comparar itens 'irmãos'."""
+    return desc.upper().rstrip().removesuffix(' LD').removesuffix(' LE')
+
+
+def _corrigir_vlr_inflado(items: list, client_totals: dict) -> list:
+    """
+    Detecta e corrige itens onde vlr_venda é múltiplo inteiro (≥ 2×) do valor
+    de um item 'irmão' (mesma descrição, apenas LD↔LE diferente no final).
+
+    Isso ocorre quando o Movere insere o total da nota fiscal em cells[7]
+    em vez do valor individual do item — ex.: COXIM DT LD = 332,31 = 3× 110,77.
+
+    A correção só é aplicada quando a soma dos itens do cliente REALMENTE supera
+    o 'Total Cliente:' extraído do HTML (client_totals), evitando falsos positivos.
+    """
+    if not client_totals:
+        return items
+
+    from collections import defaultdict
+
+    # Mapeia índice global → codigo_cliente
+    por_cliente: dict[str, list[int]] = defaultdict(list)
+    for i, it in enumerate(items):
+        por_cliente[it['codigo_cliente']].append(i)
+
+    corrected: dict[int, float] = {}  # índice → novo vlr_venda correto
+
+    for cod_cli, indices in por_cliente.items():
+        total_correto = client_totals.get(cod_cli, 0.0)
+        if not total_correto:
+            continue
+
+        soma = sum(items[i]['vlr_venda'] for i in indices)
+
+        # Só corrige se houver inflação real (tolerância de 0,5 %)
+        if soma <= total_correto * 1.005:
+            continue
+
+        # Detectar pares LD/LE onde um valor é múltiplo inteiro do outro
+        for idx_i in indices:
+            it_i  = items[idx_i]
+            base_i = _normalizar_desc_lado(it_i['descricao_item'])
+            v_i    = it_i['vlr_venda']
+
+            for idx_j in indices:
+                if idx_i == idx_j:
+                    continue
+                it_j   = items[idx_j]
+                base_j = _normalizar_desc_lado(it_j['descricao_item'])
+                v_j    = it_j['vlr_venda']
+
+                if base_i != base_j or v_j <= 0:
+                    continue
+
+                ratio = v_i / v_j
+                # ratio ≥ 2 e próximo de inteiro → v_i é o total da nota
+                if ratio >= 1.9 and abs(ratio - round(ratio)) < 0.03:
+                    corrected[idx_i] = v_j
+                    print(
+                        f"    ⚠️  VLR INFLADO CORRIGIDO [{cod_cli}] "
+                        f"'{it_i['descricao_item']}': "
+                        f"R${v_i:.2f} → R${v_j:.2f} "
+                        f"(era {round(ratio):.0f}× '{it_j['descricao_item']}')"
+                    )
+                    break  # um par encontrado por item é suficiente
+
+    if not corrected:
+        return items
+
+    result = []
+    for i, it in enumerate(items):
+        if i in corrected:
+            result.append({**it, 'vlr_venda': corrected[i]})
+        else:
+            result.append(it)
+    return result
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
-                                   override_total: float = 0.0) -> tuple:
+                                   override_total: float = 0.0,
+                                   client_totals: dict = None) -> tuple:
     """
     Salva itens por cliente em vendas_televendas_clientes (upsert por item).
     Também salva o total agregado em vendas_televendas (para o dashboard).
 
-    override_total: se > 0, usa esse valor no dashboard em vez de somar
-    vlr_venda dos itens (que pode estar inflado — cells[7] = total da nota).
+    override_total:  se > 0, usa esse valor no dashboard em vez de somar
+                     vlr_venda dos itens (que pode estar inflado).
+    client_totals:   dict {codigo_cliente: total_correto} extraído das linhas
+                     'Total Cliente:' do HTML — usado para detectar e corrigir
+                     itens com vlr_venda inflado (total da nota em vez do item).
 
     Retorna (status_code, total_valor, qtd_itens).
     """
     # Filtro de segurança: descarta itens com vlr_venda = 0 antes de salvar
     items = [it for it in items if (it.get('vlr_venda') or 0) > 0]
+
+    # Corrige itens inflados (cells[7] = total da nota) usando pares LD/LE
+    items = _corrigir_vlr_inflado(items, client_totals)
     if not items:
         return 0, 0.0, 0
 
@@ -896,7 +985,7 @@ async def main():
                                      else "Total Cliente" if valor_totais > 0
                                      else "soma itens")
 
-                            st, total, n = await salvar_clientes_supabase(op, dia, items, override_total)
+                            st, total, n = await salvar_clientes_supabase(op, dia, items, override_total, client_totals=client_totals)
                             emoji = "✅" if st in (200, 201) else "⚠️"
                             cli_uniq = len({it['codigo_cliente'] for it in items if it.get('codigo_cliente')})
                             print(f"    {emoji}  R$ {total:>12,.2f}  —  {cli_uniq} clientes, {n} itens  [{fonte}]  (Supabase {st})")
