@@ -633,6 +633,12 @@ async function carregarMetasSupabase() {
     });
     // Mescla feriados do Supabase (sobrepõe localStorage para meses salvos no servidor)
     Object.assign(feriados, feriadosSB);
+    // Migração automática: sobe para Supabase qualquer mês com feriados só no localStorage
+    Object.keys(feriados).forEach(mes => {
+      if (!feriadosSB[mes] && feriados[mes] && feriados[mes].length > 0) {
+        salvarFeriadosSupabase(mes, feriados[mes]);
+      }
+    });
     metas = metasDoMes();
   } catch(e) { console.warn('Erro ao carregar metas:', e); }
 }
