@@ -1391,15 +1391,20 @@ function isAutenticado() { return sessionStorage.getItem('fox_tv_auth') === '1';
 /* Sincronização de usuários com Supabase */
 async function carregarUsuariosSupabase() {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/usuarios_televendas?select=username,password&order=id`, {
+    const r = await fetch(`${SB_URL}/rest/v1/usuarios_televendas?select=username,password,is_admin&order=id`, {
       headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     });
     if(!r.ok) return;
     const rows = await r.json();
     if(Array.isArray(rows) && rows.length > 0) {
-      saveUsuarios(rows.map(u => ({ user: u.username, pass: u.password })));
+      saveUsuarios(rows.map(u => ({ user: u.username, pass: u.password, admin: !!u.is_admin })));
     }
   } catch(e) { console.warn('Erro ao carregar usuários:', e); }
+}
+function isAdmin() { return sessionStorage.getItem('fox_tv_auth_admin') === '1'; }
+function mostrarBotoesAdmin() {
+  document.getElementById('btn-admin').style.display = '';
+  document.getElementById('btn-usuarios').style.display = '';
 }
 async function salvarUsuarioSupabase(username, password) {
   try {
@@ -1447,6 +1452,10 @@ function tentarLogin() {
   if(found) {
     sessionStorage.setItem('fox_tv_auth', '1');
     sessionStorage.setItem('fox_tv_auth_user', user);
+    if(found.admin) {
+      sessionStorage.setItem('fox_tv_auth_admin', '1');
+      mostrarBotoesAdmin();
+    }
     fecharLogin();
     if(window._loginCallback) { window._loginCallback(); window._loginCallback = null; }
   } else {
@@ -1899,14 +1908,8 @@ function fecharClientes() {
   document.getElementById('modal-clientes').classList.remove('open');
 }
 
-/* ── Admin ── */
-if(new URLSearchParams(window.location.search).get('admin') === '1') {
-  // Exige login antes de mostrar botões admin
-  exigirAcesso(function() {
-    document.getElementById('btn-admin').style.display = '';
-    document.getElementById('btn-usuarios').style.display = '';
-  });
-}
+/* ── Admin ── restaura botões se sessão admin ainda ativa */
+if(isAdmin()) mostrarBotoesAdmin();
 
 /* ── Auto-atualização dinâmica ── */
 let timerAuto = null;
