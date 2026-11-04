@@ -1,4 +1,4 @@
-name: Sync Televendas
+name: Sync Televendas 
 
 on:
   schedule:
