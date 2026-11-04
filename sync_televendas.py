@@ -236,15 +236,19 @@ def parse_report_html_detalhado(html: str) -> tuple:
         #          [4]=peso [5]=qtd [6]=preco_tab [7]=vlr_venda ...
         # IMPORTANTE: cells[0] deve ser NÃO-VAZIO (código do item).
         # Linhas "Descrição" têm cells[0]='' e 12+ células → devem ser puladas.
+        # Linhas com vlr_venda=0 (cabeçalhos/resumos do Movere) também são puladas.
         if cod_cli and len(cells) >= 12 and first:
             try:
+                vlr = parse_br_number(cells[7])
+                if vlr <= 0:
+                    continue  # Pula itens sem valor de venda (cabeçalhos/resumos)
                 records.append({
                     'codigo_cliente': cod_cli,
                     'nome_cliente':   nome_cli or '',
                     'codigo_item':    cells[0],
                     'descricao_item': cells[1],
                     'quantidade':     parse_br_number(cells[5]),
-                    'vlr_venda':      parse_br_number(cells[7]),
+                    'vlr_venda':      vlr,
                 })
             except Exception:
                 pass
@@ -355,6 +359,8 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
 
     Retorna (status_code, total_valor, qtd_itens).
     """
+    # Filtro de segurança: descarta itens com vlr_venda = 0 antes de salvar
+    items = [it for it in items if (it.get('vlr_venda') or 0) > 0]
     if not items:
         return 0, 0.0, 0
 
