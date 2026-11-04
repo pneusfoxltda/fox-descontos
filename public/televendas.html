@@ -1021,7 +1021,10 @@ function render(rows) {
   const totalMes = Object.values(porOp).reduce((a,op)=>a+op.totalMes,0);
   const pctMeta = metaSetorTotal > 0 ? totalMes / metaSetorTotal * 100 : 0;
   const faltaMeta = Math.max(0, metaSetorTotal - totalMes);
-  const duRestantes = Math.max(1, duTotal - duPassados);
+  // Dias restantes inclui hoje (ainda está em curso) — só exclui dias estritamente anteriores a hoje
+  const duRestantes = Math.max(1, mesCompleto
+    ? duTotal - duPassados
+    : diasUteis(ano, mes).filter(d => d >= diaHoje).length);
   const precisaPorDia = faltaMeta / duRestantes;
 
   // Data última sync
