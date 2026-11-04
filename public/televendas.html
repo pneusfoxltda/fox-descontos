@@ -1388,9 +1388,42 @@ function getUsuarios() {
 function saveUsuarios(u) { localStorage.setItem('fox_tv_usuarios', JSON.stringify(u)); }
 function isAutenticado() { return sessionStorage.getItem('fox_tv_auth') === '1'; }
 
-function exigirAcesso(callback) {
+/* Sincronização de usuários com Supabase */
+async function carregarUsuariosSupabase() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/usuarios_televendas?select=username,password&order=id`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if(!r.ok) return;
+    const rows = await r.json();
+    if(Array.isArray(rows) && rows.length > 0) {
+      saveUsuarios(rows.map(u => ({ user: u.username, pass: u.password })));
+    }
+  } catch(e) { console.warn('Erro ao carregar usuários:', e); }
+}
+async function salvarUsuarioSupabase(username, password) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/usuarios_televendas`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+                 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ username, password })
+    });
+  } catch(e) { console.warn('Erro ao salvar usuário:', e); }
+}
+async function excluirUsuarioSupabase(username) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/usuarios_televendas?username=eq.${encodeURIComponent(username)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+  } catch(e) { console.warn('Erro ao excluir usuário:', e); }
+}
+
+async function exigirAcesso(callback) {
   if(isAutenticado()) { callback(); return; }
   window._loginCallback = callback;
+  await carregarUsuariosSupabase();   // sincroniza antes de abrir o modal
   document.getElementById('modal-login').classList.add('open');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
@@ -1446,7 +1479,7 @@ function renderListaUsuarios() {
       <button class="btn-del-user" onclick="removerUsuario(${i})" title="Remover">✕</button>
     </div>`).join('');
 }
-function adicionarUsuario() {
+async function adicionarUsuario() {
   const user = document.getElementById('novo-user').value.trim();
   const pass = document.getElementById('novo-pass').value;
   const msg  = document.getElementById('user-msg');
@@ -1455,6 +1488,7 @@ function adicionarUsuario() {
   if(usuarios.find(u => u.user === user)) { msg.textContent = 'Usuário já existe.'; msg.style.color='#CC1F1F'; msg.style.display='block'; return; }
   usuarios.push({user, pass});
   saveUsuarios(usuarios);
+  await salvarUsuarioSupabase(user, pass);  // salva no Supabase também
   document.getElementById('novo-user').value = '';
   document.getElementById('novo-pass').value = '';
   msg.textContent = `Usuário "${user}" adicionado.`;
@@ -1462,11 +1496,12 @@ function adicionarUsuario() {
   msg.style.display = 'block';
   renderListaUsuarios();
 }
-function removerUsuario(idx) {
+async function removerUsuario(idx) {
   const usuarios = getUsuarios();
   const nome = usuarios[idx]?.user;
   usuarios.splice(idx, 1);
   saveUsuarios(usuarios);
+  await excluirUsuarioSupabase(nome);  // remove do Supabase também
   const msg = document.getElementById('user-msg');
   msg.textContent = `Usuário "${nome}" removido.`;
   msg.style.color = '#CC1F1F';
