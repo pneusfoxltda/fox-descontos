@@ -3,10 +3,10 @@ name: Sync Televendas
 on:
   schedule:
     # ── Seg–Sáb, de hora em hora, 15 min antes da hora cheia ─────────────────
-    # Inicia: 6h45 → 7h45 → 8h45 … 17h45 BRT
-    # Dados prontos às: 7h → 8h → 9h … 18h BRT
-    # BRT = UTC−3 fixo (Brasil aboliu horário de verão em 2019)
-    - cron: '45 9-20 * * 1-6'
+    # Porto Velho / Rondônia = UTC−4 (Horário do Amazonas, fixo)
+    # Inicia: 6h45 → 7h45 → 8h45 … 17h45 AMT (Porto Velho)
+    # Dados prontos às: 7h → 8h → 9h … 18h (horário local Porto Velho)
+    - cron: '45 10-21 * * 1-6'
 
   workflow_dispatch: # permite rodar manualmente no GitHub
 
