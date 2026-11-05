@@ -1,5 +1,5 @@
 """
-sync_atacado.py - v1
+sync_atacado.py - v2
 =====================
 Sync de vendas dos Vendedores de Atacado (Fox Pneus).
 Tabelas Supabase: vendas_atacado (totais diários por vendedor).
@@ -206,9 +206,76 @@ async def login(page):
 
 # ─── Preencher formulário (Vendedor 1) ───────────────────────────────────────
 
+async def _fill_autocomplete_field(page, selectors: list[str], codigo: str, label_debug: str) -> bool:
+    """Preenche campo de autocomplete do Movere com código.
+    Retorna True se o campo foi encontrado e preenchido."""
+
+    # --- diagnóstico: lista todos os inputs disponíveis ---
+    all_ids = await page.evaluate("""() => {
+        return Array.from(document.querySelectorAll('input[type="text"],input:not([type])'))
+               .map(el => el.id + '|' + el.name + '|' + el.className)
+               .filter(s => s.trim() !== '||');
+    }""")
+    print(f"  DEBUG inputs ({label_debug}): {all_ids[:20]}")
+
+    for sel in selectors:
+        try:
+            el = page.locator(sel).first
+            cnt = await el.count()
+            if cnt == 0:
+                continue
+            print(f"  🎯 {label_debug}: usando seletor '{sel}'")
+
+            await el.scroll_into_view_if_needed()
+            await el.click(click_count=3)
+            await el.type(codigo, delay=80)
+            await page.wait_for_timeout(2000)   # aguarda autocomplete AJAX
+
+            # 1ª tentativa: clique no primeiro item da lista suspensa
+            autocomplete_ok = False
+            for drop_sel in [
+                'li.autocomplete-result',
+                '.dropdown-item',
+                '[class*="suggest"]',
+                '.ui-menu-item',
+                '.ui-autocomplete li',
+                '[class*="autocomplete"] li',
+                '[class*="result"]',
+            ]:
+                try:
+                    item = page.locator(drop_sel).first
+                    if await item.count() > 0:
+                        await item.click()
+                        autocomplete_ok = True
+                        print(f"    Autocomplete clicado via '{drop_sel}'")
+                        break
+                except Exception:
+                    pass
+
+            # 2ª tentativa: teclado (ArrowDown + Enter) — funciona em qualquer autocomplete jQuery-UI
+            if not autocomplete_ok:
+                await el.press('ArrowDown')
+                await page.wait_for_timeout(400)
+                await page.keyboard.press('Enter')
+                await page.wait_for_timeout(400)
+                print(f"    Autocomplete via ArrowDown+Enter")
+
+            await page.wait_for_timeout(700)
+
+            # verifica o que ficou no campo
+            val = await el.input_value()
+            print(f"    Valor campo após fill: '{val}'")
+            return True
+
+        except Exception as e:
+            print(f"  Seletor '{sel}' erro: {e}")
+
+    return False
+
+
 async def preencher_formulario_atacado(page, vendedor: dict, data_fmt: str):
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
-    await page.wait_for_timeout(1500)
+    await page.wait_for_timeout(2000)
 
     # 1. Visão Empresarial = 1
     await page.evaluate("""() => {
@@ -249,59 +316,54 @@ async def preencher_formulario_atacado(page, vendedor: dict, data_fmt: str):
             pass
     await page.wait_for_timeout(400)
 
-    # 4. Vendedor 1 — tenta vários seletores (Movere pode variar)
-    vendedor_preenchido = False
-    for sel in [
-        '[id*="idcliforvendedor1"]',
-        '[id*="vendedor1"]',
-        '[id*="Vendedor1"]',
-        'input[id*="vendedor"][id*="1"]',
-    ]:
-        try:
-            el = page.locator(sel).first
-            if await el.count() > 0:
-                await el.clear()
-                await el.type(vendedor['codigo'], delay=80)
-                await page.wait_for_timeout(1200)
-                for drop in ['li.autocomplete-result','.dropdown-item','[class*="suggest"]']:
-                    try:
-                        item = page.locator(drop).first
-                        if await item.count() > 0:
-                            await item.click(); break
-                    except Exception:
-                        pass
-                await el.press('Tab')
-                await page.wait_for_timeout(600)
-                vendedor_preenchido = True
-                break
-        except Exception:
-            pass
+    # 4. Vendedor 1 — seletores ampliados + autocomplete robusto
+    vendedor_preenchido = await _fill_autocomplete_field(
+        page,
+        selectors=[
+            '[id*="idcliforvendedor1"]',   # padrão Movere (igual operador)
+            '[id*="idcliforvendedor"]',    # sem número — pega o 1º
+            '[id*="vendedor1"]',
+            '[id*="Vendedor1"]',
+            'input[id*="vendedor"][id*="1"]',
+            'input[name*="vendedor1"]',
+            'input[name*="Vendedor1"]',
+        ],
+        codigo=vendedor['codigo'],
+        label_debug='Vendedor1',
+    )
 
-    # Fallback: busca campo pelo label "Vendedor 1" via JS
+    # Fallback: busca campo via proximidade ao label "Vendedor 1"
     if not vendedor_preenchido:
-        await page.evaluate(f"""() => {{
+        print(f"  ⚠️  Seletores diretos não encontraram campo — tentando JS por label…")
+        result = await page.evaluate(f"""() => {{
             const codigo = '{vendedor['codigo']}';
-            // Procura label com texto "Vendedor 1" ou "Vendedor1"
-            for (const el of document.querySelectorAll('td, label, span, div')) {{
-                const txt = (el.innerText || '').trim();
-                if ((txt === 'Vendedor 1' || txt === 'Vendedor1') && el.childElementCount === 0) {{
-                    // Encontrou o label — procura input próximo
+            for (const el of document.querySelectorAll('td,label,span,div,th')) {{
+                const txt = (el.innerText || el.textContent || '').trim();
+                if (txt === 'Vendedor 1' || txt === 'Vendedor1') {{
                     const container = el.closest('tr') || el.parentElement;
                     if (!container) continue;
-                    const input = container.querySelector('input[type="text"]');
+                    const input = container.querySelector('input[type="text"],input:not([type])');
                     if (input) {{
+                        input.focus();
+                        input.click();
                         input.value = codigo;
-                        ['input','change','blur'].forEach(e =>
+                        ['input','change','blur','keyup'].forEach(e =>
                             input.dispatchEvent(new Event(e, {{bubbles:true}})));
-                        return true;
+                        return 'OK:' + input.id + '/' + input.name;
                     }}
                 }}
             }}
-            return false;
+            return 'NOT_FOUND';
         }}""")
-        await page.wait_for_timeout(1000)
+        print(f"    JS fallback: {result}")
+        await page.wait_for_timeout(1500)
+        # ArrowDown+Enter mesmo via fallback
+        await page.keyboard.press('ArrowDown')
+        await page.wait_for_timeout(400)
+        await page.keyboard.press('Enter')
+        await page.wait_for_timeout(600)
 
-    # 5. Modo resumo: "Listar somente resumo" = MARCADO + "Filtrar somente base de venda" = MARCADO
+    # 5. Modo resumo + filtro base de venda
     await page.evaluate("""() => {
         function check(texto, tipo, valor) {
             for (const el of document.querySelectorAll('td,label,span,div')) {
@@ -386,7 +448,21 @@ async def buscar_relatorio_atacado(page, vendedor: dict, data_iso: str) -> str |
         await page.wait_for_timeout(500)
 
     page.remove_listener('response', on_resp)
-    return html_cap[-1] if html_cap else None
+
+    if not html_cap:
+        return None
+
+    html = html_cap[-1]
+
+    # ── Verificação crítica: o vendedor foi realmente filtrado? ──────────────
+    # O relatório exibe "Vendedor 1: 291608-NOME" na seção de filtros.
+    # Se o campo ficou vazio, o código do vendedor NÃO estará no HTML.
+    if vendedor['codigo'] not in html:
+        print(f"    ❌  AVISO: código {vendedor['codigo']} NÃO encontrado no HTML "
+              f"→ Vendedor 1 não foi filtrado! Descartando resultado para evitar dado errado.")
+        return None
+
+    return html
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
