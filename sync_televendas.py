@@ -1,5 +1,5 @@
 """
-sync_televendas.py - v6
+sync_televendas.py - v7
 ========================
 Melhoria do CSV: rotina 553 com Agrupamento=Cliente captura
 itens individuais por cliente e salva em tabela separada.
@@ -24,14 +24,20 @@ itens individuais por cliente e salva em tabela separada.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Mudanças vs v5:
+Mudanças vs v6:
+  - buscar_relatorio: removido filtro de URL 'ImpressaoRelatorio' do listener
+    de resposta (Movere mudou o padrão de URL → todas as queries retornavam
+    "Sem HTML — pulando"). Agora confia apenas na verificação de conteúdo
+    (a5119 / Valor Venda / Total Cliente) para identificar o relatório.
+  - Executar: seletores ampliados (8 opções) + fallback JS (btn.click /
+    form.submit) caso nenhum seletor Playwright encontre o botão.
+  - Fallback de frames: se o listener não capturou nada, lê o conteúdo de
+    todos os frames da página procurando o HTML do relatório.
+
+Mudanças vs v5 (v6):
   - MODO_DETALHADO=True agora seta Agrupamento=Cliente no formulário
-  - parse_report_html_detalhado() reescrito para estrutura real do Movere:
-      linha cliente → 4 células (cod, nome, '', '')
-      linha item    → 13 células (cod_item, desc, ..., qty, ..., vlr_venda, ...)
-      linha total   → começa com 'Total Cliente:'
+  - parse_report_html_detalhado() reescrito para estrutura real do Movere
   - salvar_clientes_supabase() salva em vendas_televendas_clientes (por item)
-    E também salva o total agregado em vendas_televendas (para o dashboard)
   - Não precisa mais de ALTER TABLE / DROP CONSTRAINT na tabela principal
 """
 
@@ -777,7 +783,9 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
     data_fmt = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
 
     async def on_resp(response):
-        if 'ImpressaoRelatorio' in response.url and response.status == 200:
+        # v7: removido filtro de URL — Movere mudou padrão de URL.
+        # Confia apenas na verificação de conteúdo (a5119/Valor Venda/Total Cliente).
+        if response.status == 200:
             ct = response.headers.get('content-type', '')
             if 'html' in ct.lower():
                 try:
@@ -798,18 +806,52 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
 
     page.on('response', on_resp)
 
-    for sel in ['input[value="Executar"]','#btnExecutar',
-                'button:has-text("Executar")','input[type="submit"]']:
+    executar_clicado = False
+    for sel in ['input[value="Executar"]', '#btnExecutar',
+                'button:has-text("Executar")', 'input[type="submit"]',
+                'button[type="submit"]', '#cmdExecutar',
+                'input[id*="Executar"]', 'button[id*="Executar"]']:
         try:
             el = page.locator(sel).first
             if await el.count() > 0:
-                await el.click(); break
+                await el.click()
+                executar_clicado = True
+                break
+        except Exception:
+            pass
+
+    # Fallback JS: clica pelo DOM ou submete o form diretamente
+    if not executar_clicado:
+        try:
+            await page.evaluate("""() => {
+                const btn = document.querySelector(
+                    'input[value="Executar"],#btnExecutar,#cmdExecutar,' +
+                    'input[id*="Executar"],button[id*="Executar"],' +
+                    'input[type="submit"],button[type="submit"]'
+                );
+                if (btn) { btn.click(); return; }
+                const form = document.querySelector('form');
+                if (form) { form.submit(); }
+            }""")
         except Exception:
             pass
 
     for _ in range(40):
         if html_cap: break
         await page.wait_for_timeout(500)
+
+    # Fallback de frames: se o listener não capturou nada, lê todos os frames
+    if not html_cap:
+        for frame in [page, *page.frames]:
+            try:
+                content = await frame.content()
+                tem_resumo  = 'a5119' in content or 'Valor Venda' in content
+                tem_detalhe = 'Total Cliente' in content
+                if (tem_resumo or tem_detalhe) and len(content) > 500:
+                    html_cap.append(content)
+                    break
+            except Exception:
+                pass
 
     if html_cap:
         try:
@@ -845,7 +887,7 @@ async def main():
     mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v6 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    print(f"\n🔄  Sync Televendas v7 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     todos_dias = dias_uteis_mes(ano, mes, data_ref_fim)
