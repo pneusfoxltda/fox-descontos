@@ -1092,7 +1092,7 @@ function render(rows) {
     </div>
     <div class="kpi">
       <div class="kpi-label">% da meta</div>
-      <div class="kpi-valor ${pctMeta>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</div>
+      <div class="kpi-valor ${Math.round(pctMeta)>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</div>
       <div class="kpi-sub">desejado: ${pct(pctDesejado)}</div>
     </div>
     <div class="kpi">
@@ -1138,9 +1138,9 @@ function render(rows) {
   }).join('');
 
   const linhas = opsOrdenadas.map(op => {
-    const onTarget = !semDados && op.pctOp >= pctDesejado;
+    const onTarget = !semDados && Math.round(op.pctOp) >= pctDesejado;
     const rowClass = semDados ? '' : (onTarget ? 'row-verde' : 'row-vermelho');
-    const badge = semDados ? '' : (onTarget ? 'verde' : (op.pctOp >= pctDesejado*0.7 ? 'amarelo' : 'vermelho'));
+    const badge = semDados ? '' : (onTarget ? 'verde' : (Math.round(op.pctOp) >= Math.round(pctDesejado*0.7) ? 'amarelo' : 'vermelho'));
     const diasCols = semDados ? '' : datas5.map(d=>
       `<td class="dia-col" style="font-size:13px">${op.porDia[d] ? brl(op.porDia[d]) : '—'}</td>`
     ).join('');
@@ -1202,7 +1202,7 @@ function render(rows) {
       </thead>
       <tbody>
         ${linhas}
-        <tr class="total-row ${semDados?'':pctMeta>=pctDesejado?'row-verde':'row-vermelho'}">
+        <tr class="total-row ${semDados?'':Math.round(pctMeta)>=pctDesejado?'row-verde':'row-vermelho'}">
           <td style="font-size:16px;font-weight:800;color:#1a2332">TOTAL SETOR</td>
           <td class="meta-col">${brl(metaSetorTotal)}</td>
           ${colDiasTotals}
@@ -1214,7 +1214,7 @@ function render(rows) {
             : `<td>${brl(precisaPorDia)}</td>`}
           ${semDados
             ? `<td style="color:#9aabb8;">—</td>`
-            : `<td><span class="pct-badge ${pctMeta>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</span></td>`}
+            : `<td><span class="pct-badge ${Math.round(pctMeta)>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</span></td>`}
         </tr>
       </tbody>
     </table>
