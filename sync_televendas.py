@@ -1,5 +1,5 @@
 """
-sync_televendas.py - v7
+sync_televendas.py - v8
 ========================
 Melhoria do CSV: rotina 553 com Agrupamento=Cliente captura
 itens individuais por cliente e salva em tabela separada.
@@ -24,7 +24,14 @@ itens individuais por cliente e salva em tabela separada.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Mudanças vs v6:
+Mudanças vs v7 (v8):
+  - Janela retroativa simplificada: últimos JANELA_RETRO_DIAS=20 dias corridos
+    (elimina lógica de mês atual/mês anterior; hoje sempre re-sincroniza,
+    dias passados só re-sincronizam se faltando ou zerados)
+  - Waits reduzidos em preencher_formulario (~2,5 s menos por query)
+  - Loop de espera reduzido (30×400 ms = 12 s máx em vez de 40×500 ms = 20 s)
+
+Mudanças vs v6 (v7):
   - buscar_relatorio: removido filtro de URL 'ImpressaoRelatorio' do listener
     de resposta (Movere mudou o padrão de URL → todas as queries retornavam
     "Sem HTML — pulando"). Agora confia apenas na verificação de conteúdo
@@ -78,13 +85,13 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
-DEBUG_HTML       = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
-REFRESH_MES_TODO = True   # True = re-sincroniza TODOS os dias do mês atual
+DEBUG_HTML        = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
 
-# Quantos últimos dias úteis do mês anterior re-verificar a cada sync
-# (ajustes/devoluções no Movere raramente ocorrem para dias antigos)
-# 10 = ~40 pares vs 92 antes → sync cai de 24 min para ~10 min
-DIAS_PREV_RETROATIVO = 10
+# Janela de verificação retroativa (dias corridos, contando hoje).
+# Hoje        → sempre re-sincroniza (dados em tempo real).
+# Na janela   → re-sincroniza somente se faltando ou zerado.
+# Fora da janela → ignorado (dados antigos estáveis).
+JANELA_RETRO_DIAS = 20
 
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
@@ -576,7 +583,7 @@ async def login(page):
 
 async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
-    await page.wait_for_timeout(1500)
+    await page.wait_for_timeout(800)
 
     # 1. Visão Empresarial = 1
     await page.evaluate("""() => {
@@ -587,7 +594,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                 inp.dispatchEvent(new Event(e, {bubbles:true})));
         }
     }""")
-    await page.wait_for_timeout(600)
+    await page.wait_for_timeout(300)
 
     # 2. Data Inicial
     for sel in ['[id*="cdtaini"]','[name*="cdtaini"]',
@@ -601,7 +608,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                 break
         except Exception:
             pass
-    await page.wait_for_timeout(400)
+    await page.wait_for_timeout(200)
 
     # 3. Data Final
     for sel in ['[id*="cdtafim"]','[name*="cdtafim"]',
@@ -615,7 +622,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                 break
         except Exception:
             pass
-    await page.wait_for_timeout(400)
+    await page.wait_for_timeout(200)
 
     # 4. Operador
     for sel in ['[id*="idcliforoperador"]','input[id*="operador"]',
@@ -625,7 +632,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             if await el.count() > 0:
                 await el.clear()
                 await el.type(operador['codigo'], delay=80)
-                await page.wait_for_timeout(1200)
+                await page.wait_for_timeout(800)
                 for drop in ['li.autocomplete-result','.dropdown-item','[class*="suggest"]']:
                     try:
                         item = page.locator(drop).first
@@ -634,7 +641,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                     except Exception:
                         pass
                 await el.press('Tab')
-                await page.wait_for_timeout(600)
+                await page.wait_for_timeout(300)
                 break
         except Exception:
             pass
@@ -745,7 +752,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             check('Listar somente resumo',        'checkbox', true);
             check('Filtrar somente base de venda', 'checkbox', true);
         }""")
-    await page.wait_for_timeout(400)
+    await page.wait_for_timeout(200)
 
     # FIX: desmarcar checkboxes de aro acidentalmente marcados
     await page.evaluate("""() => {
@@ -762,7 +769,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             }
         }
     }""")
-    await page.wait_for_timeout(300)
+    await page.wait_for_timeout(150)
 
     # 6. Formato HTML
     try:
@@ -774,7 +781,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                     break
     except Exception:
         pass
-    await page.wait_for_timeout(300)
+    await page.wait_for_timeout(150)
 
 # ─── Capturar relatório ───────────────────────────────────────────────────────
 
@@ -836,9 +843,9 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         except Exception:
             pass
 
-    for _ in range(40):
+    for _ in range(30):
         if html_cap: break
-        await page.wait_for_timeout(500)
+        await page.wait_for_timeout(400)
 
     # Fallback de frames: se o listener não capturou nada, lê todos os frames
     if not html_cap:
@@ -887,84 +894,47 @@ async def main():
     mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v7 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    print(f"\n🔄  Sync Televendas v8 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
-
-    todos_dias = dias_uteis_mes(ano, mes, data_ref_fim)
-    print(f"  Dias úteis até hoje : {len(todos_dias)}  ({todos_dias[0] if todos_dias else '-'} → {todos_dias[-1] if todos_dias else '-'})")
-
-    existentes = await buscar_existentes(mes_ini, mes_fim)
-    print(f"  Registros Supabase  : {len(existentes)} pares (data, operador)")
-
-    eh_retro   = bool(MES_RETRO_ANO and MES_RETRO_MES)
-    mes_atual  = data_hoje[:7]
-    dias_mes_atual = set(d for d in todos_dias if d.startswith(mes_atual))
-
-    if eh_retro:
-        print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
 
     fila = []
 
-    # ── Mês anterior: re-sincroniza apenas os últimos DIAS_PREV_RETROATIVO dias úteis ──
-    # Ajustes/devoluções no Movere costumam ocorrer nos primeiros dias do mês seguinte,
-    # raramente para datas antigas. Limitar a janela reduz o sync de 24 min → ~10 min.
-    if not eh_retro:
-        prev_mes = mes - 1 if mes > 1 else 12
-        prev_ano = ano if mes > 1 else ano - 1
-        prev_ult = _cal.monthrange(prev_ano, prev_mes)[1]
-        prev_ini = f"{prev_ano}-{prev_mes:02d}-01"
-        prev_fim = f"{prev_ano}-{prev_mes:02d}-{prev_ult:02d}"
-        todos_dias_prev = dias_uteis_mes(prev_ano, prev_mes, date(prev_ano, prev_mes, prev_ult))
-        # Limita à janela dos últimos N dias úteis
-        dias_prev = todos_dias_prev[-DIAS_PREV_RETROATIVO:]
-        exist_prev = await buscar_existentes(prev_ini, prev_fim)
-        total_prev = len(dias_prev) * len(OPERADORES)
-        total_mes  = len(todos_dias_prev) * len(OPERADORES)
-        print(f"  Mês anterior ({prev_mes:02d}/{prev_ano}) : re-verificando últimos {total_prev} pares "
-              f"({len(dias_prev)} de {len(todos_dias_prev)} dias úteis × {len(OPERADORES)} operadores) "
-              f"[dias novos/zero do mês todo são sempre incluídos]")
-        # Dias antigos fora da janela: só re-sincroniza se estiver faltando ou zerado
-        for dia in todos_dias_prev[:-DIAS_PREV_RETROATIVO]:
+    if bool(MES_RETRO_ANO and MES_RETRO_MES):
+        # Modo retroativo manual: processa mês inteiro indicado
+        todos_dias_retro = dias_uteis_mes(ano, mes, data_ref_fim)
+        existentes_fila  = await buscar_existentes(mes_ini, mes_fim)
+        print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
+        for dia in todos_dias_retro:
             for op in OPERADORES:
-                chave = (dia, op['codigo'])
-                info  = exist_prev.get(chave)
-                if info is None:
-                    fila.append((dia, op, 'novo'))
-                elif info['valor'] == 0.0:
-                    fila.append((dia, op, 'zero'))
-                # else: já tem valor → mantém (não re-verifica dias antigos)
-        # Janela recente: sempre re-verifica ajustes
-        for dia in dias_prev:
-            for op in OPERADORES:
-                chave = (dia, op['codigo'])
-                info  = exist_prev.get(chave)
-                if info is None:
-                    fila.append((dia, op, 'novo'))
-                elif info['valor'] == 0.0:
-                    fila.append((dia, op, 'zero'))
-                else:
-                    fila.append((dia, op, 'retroativo'))  # re-verifica ajustes recentes
-
-    for dia in todos_dias:
-        for op in OPERADORES:
-            chave = (dia, op['codigo'])
-            info  = existentes.get(chave)
-            eh_hoje    = (dia == data_hoje)
-            eh_mes_atual = (dia in dias_mes_atual)
-
-            if eh_retro:
                 fila.append((dia, op, 'retro_mes'))
-            elif info is None:
-                fila.append((dia, op, 'novo'))
-            elif info['valor'] == 0.0:
-                fila.append((dia, op, 'zero'))
-            elif eh_hoje:
-                fila.append((dia, op, 'hoje'))
-            elif REFRESH_MES_TODO and eh_mes_atual:
-                fila.append((dia, op, 'mes_atual'))
-            elif MODO_DETALHADO and RETROATIVO and not info['tem_detalhes']:
-                fila.append((dia, op, 'retroativo'))
-            # else: valor > 0, mês anterior, mantém
+    else:
+        # Janela: últimos JANELA_RETRO_DIAS dias corridos (incluindo hoje)
+        # Hoje        → sempre re-sincroniza (dados em tempo real)
+        # Na janela   → re-sincroniza somente se faltando ou zerado
+        # Fora da janela → ignorado (dados antigos estáveis)
+        janela_ini_dt  = hoje - timedelta(days=JANELA_RETRO_DIAS - 1)
+        janela_ini_str = janela_ini_dt.strftime('%Y-%m-%d')
+        janela_fim_str = data_hoje
+
+        dias_janela = []
+        for d in range(JANELA_RETRO_DIAS):
+            dt = hoje - timedelta(days=d)
+            if dt.weekday() <= 5:  # segunda a sábado
+                dias_janela.append(dt.strftime('%Y-%m-%d'))
+
+        existentes_fila = await buscar_existentes(janela_ini_str, janela_fim_str)
+
+        print(f"  Janela de verificação : últimos {JANELA_RETRO_DIAS} dias  "
+              f"({janela_ini_str} → {janela_fim_str})")
+        print(f"  Dias úteis na janela  : {len(dias_janela)}")
+        print(f"  Registros Supabase    : {len(existentes_fila)} pares (data, operador)")
+
+        for dia in dias_janela:
+            for op in OPERADORES:
+                # Todos os dias da janela são sempre re-sincronizados
+                # para capturar qualquer ajuste feito no Movere.
+                motivo = 'hoje' if dia == data_hoje else 'atualizar'
+                fila.append((dia, op, motivo))
 
     print(f"  Queries a executar  : {len(fila)}\n")
 
@@ -995,7 +965,7 @@ async def main():
         for i, (dia, op, motivo) in enumerate(fila):
             data_br = datetime.strptime(dia, '%Y-%m-%d').strftime('%d/%m/%Y')
             eh_hoje = (dia == data_hoje)
-            info_anterior = existentes.get((dia, op['codigo']))
+            info_anterior = existentes_fila.get((dia, op['codigo']))
 
             print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}  [{motivo}]…")
             try:
