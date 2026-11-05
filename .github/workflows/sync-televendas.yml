@@ -2,9 +2,10 @@ name: Sync Televendas
 
 on:
   schedule:
-    # ── Seg–Sáb 6h45–17h45 BRT (9h45–20h45 UTC) ──────────────────────────────
-    # Inicia 15 min antes da hora cheia → dados prontos às 7h, 8h … 18h BRT.
-    # (BRT = UTC−3; ajustar para UTC−2 durante horário de verão out–fev)
+    # ── Seg–Sáb, de hora em hora, 15 min antes da hora cheia ─────────────────
+    # Inicia: 6h45 → 7h45 → 8h45 … 17h45 BRT
+    # Dados prontos às: 7h → 8h → 9h … 18h BRT
+    # BRT = UTC−3 fixo (Brasil aboliu horário de verão em 2019)
     - cron: '45 9-20 * * 1-6'
 
   workflow_dispatch: # permite rodar manualmente no GitHub
@@ -31,7 +32,7 @@ jobs:
 
       - name: Instalar dependências
         run: |
-          pip install playwright httpx beautifulsoup4
+          pip install playwright httpx beautifulsoup4 holidays
           playwright install chromium --with-deps
 
       - name: Rodar sync
@@ -40,11 +41,13 @@ jobs:
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
         run: python sync_televendas.py
 
-      - name: Upload HTMLs de diagnóstico
+      - name: Upload diagnóstico (HTML + screenshots)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: movere-debug-html
-          path: /tmp/movere_debug_*.html
+          name: movere-debug
+          path: |
+            /tmp/movere_debug_*.html
+            /tmp/movere_ss_*.png
           if-no-files-found: ignore
           retention-days: 3
