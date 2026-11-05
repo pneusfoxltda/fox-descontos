@@ -1,6 +1,23 @@
 """
-sync_televendas.py - v9
+sync_televendas.py - v10
 ========================
+DIAGNÓSTICO: screenshots + log de todas as respostas Movere
+para identificar por que o HTML não é capturado.
+
+Mudanças vs v9 (v10):
+  - buscar_relatorio: on_resp loga TODAS as respostas do domínio
+    Movere (URL, content-type, tamanho) para diagnóstico no Actions.
+  - buscar_relatorio: remove filtro 'html' no content-type —
+    aceita qualquer resposta do Movere com conteúdo > 2000 bytes.
+  - buscar_relatorio: adiciona screenshots após form-fill e após
+    Executar (para os 2 primeiros pares) → /tmp/movere_ss_*.png.
+  - buscar_relatorio: imprime page.url antes e depois de Executar.
+  - preencher_formulario: após digitar o código do operador, tenta
+    clicar no botão de busca (🔍) além do Tab — o Movere pode exigir
+    o clique na lupa para validar o operador antes de Executar.
+  - Janela de verificação: mudada de 20 dias corridos para os
+    últimos DIAS_JANELA_MES=5 dias úteis do mês + hoje sempre incluso.
+
 Melhoria do CSV: rotina 553 com Agrupamento=Cliente captura
 itens individuais por cliente e salva em tabela separada.
 
@@ -67,6 +84,11 @@ from html.parser import HTMLParser
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 import httpx
+try:
+    import holidays as _holidays_lib
+    _FERIADOS_BR = _holidays_lib.Brazil()
+except ImportError:
+    _FERIADOS_BR = set()  # fallback: sem verificação de feriados
 
 TZ_SP = timezone(timedelta(hours=-3))
 
@@ -95,13 +117,13 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
-DEBUG_HTML        = True   # True = salva HTML bruto em /tmp/movere_debug_*.html
+DEBUG_HTML        = True   # True = salva HTML/screenshots em /tmp para diagnóstico
 
-# Janela de verificação retroativa (dias corridos, contando hoje).
-# Hoje        → sempre re-sincroniza (dados em tempo real).
-# Na janela   → re-sincroniza somente se faltando ou zerado.
-# Fora da janela → ignorado (dados antigos estáveis).
-JANELA_RETRO_DIAS = 20
+# Janela de sincronização:
+#   Mês ATUAL    → todos os dias úteis até hoje (dados em tempo real)
+#   Mês ANTERIOR → apenas os últimos N dias úteis (ajustes tardios)
+# Ex.: hoje=05/11 → Nov: [03,04,05] + Out: [27,28,29,30,31] = ~8 dias × 4 ops
+DIAS_MES_ANT_JANELA = 5  # últimos N dias úteis do mês anterior
 
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 # Para re-sincronizar um mês passado completo, preencha ANO e MES abaixo.
@@ -122,6 +144,14 @@ VALUE_CLS = [
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+def _e_dia_util(dt: date) -> bool:
+    """Retorna True se o dia é útil (Seg–Sáb) e não é feriado nacional brasileiro."""
+    if dt.weekday() == 6:  # domingo
+        return False
+    if _FERIADOS_BR and dt in _FERIADOS_BR:
+        return False
+    return True
+
 def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
     total = monthrange(ano, mes)[1]
     dias = []
@@ -129,7 +159,7 @@ def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
         dt = date(ano, mes, d)
         if dt > ate_hoje:
             break
-        if dt.weekday() <= 5:
+        if _e_dia_util(dt):
             dias.append(dt.strftime('%Y-%m-%d'))
     return dias
 
@@ -634,7 +664,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             pass
     await page.wait_for_timeout(200)
 
-    # 4. Operador
+    # 4. Operador — digita código e clica na lupa de busca (Movere exige confirmação)
     for sel in ['[id*="idcliforoperador"]','input[id*="operador"]',
                 'input[id*="Operador"]','input[name*="operador"]']:
         try:
@@ -642,16 +672,54 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             if await el.count() > 0:
                 await el.clear()
                 await el.type(operador['codigo'], delay=80)
-                await page.wait_for_timeout(800)
-                for drop in ['li.autocomplete-result','.dropdown-item','[class*="suggest"]']:
+                await page.wait_for_timeout(600)
+
+                # Tenta clicar no botão lupa (🔍) ao lado do campo de operador
+                # O Movere exige esse clique para validar o código antes de Executar
+                lupa_clicada = False
+                for lupa_sel in [
+                    'input[id*="operador"] ~ input[type="button"]',
+                    'input[id*="operador"] ~ button',
+                    'input[id*="Operador"] + input[type="button"]',
+                    'input[id*="Operador"] + button',
+                ]:
                     try:
-                        item = page.locator(drop).first
-                        if await item.count() > 0:
-                            await item.click(); break
+                        lupa = page.locator(lupa_sel).first
+                        if await lupa.count() > 0:
+                            await lupa.click()
+                            lupa_clicada = True
+                            break
                     except Exception:
                         pass
+
+                # Fallback JS: clica no primeiro botão após o campo operador
+                if not lupa_clicada:
+                    try:
+                        lupa_clicada = await page.evaluate("""() => {
+                            const inp = document.querySelector(
+                                '[id*="idcliforoperador"],[id*="operador"],[id*="Operador"]'
+                            );
+                            if (!inp) return false;
+                            // Busca botão irmão ou próximo input[type=button]
+                            let el = inp.nextElementSibling;
+                            while (el) {
+                                if (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit')) {
+                                    el.click(); return true;
+                                }
+                                if (el.tagName === 'BUTTON') { el.click(); return true; }
+                                el = el.nextElementSibling;
+                            }
+                            return false;
+                        }""")
+                    except Exception:
+                        pass
+
+                # Aguarda lookup AJAX validar o operador
+                await page.wait_for_timeout(1200)
+
+                # Fallback: Tab para disparar evento blur/change
                 await el.press('Tab')
-                await page.wait_for_timeout(300)
+                await page.wait_for_timeout(400)
                 break
         except Exception:
             pass
@@ -795,11 +863,13 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
 
 # ─── Capturar relatório ───────────────────────────────────────────────────────
 
-# URLs do formulário/login — não queremos capturar essas páginas como relatório
-_URL_EXCLUIR = ('default.aspx', 'rotina553.aspx', '/login', '/default')
+# URLs de login/portal — não queremos capturar essas páginas como relatório
+# NOTA: rotina553.aspx NÃO está aqui — o relatório pode ser uma POST-response
+# da mesma URL depois de clicar Executar.
+_URL_EXCLUIR = ('default.aspx', '/login', '/Login', 'LoginPage')
 
 def _e_html_relatorio(url: str, body: str) -> bool:
-    """Verifica se um HTML grande do Movere é o relatório (não o formulário)."""
+    """Verifica se um HTML grande do Movere é o relatório (não o login)."""
     if MOVERE_BASE not in url:
         return False
     for excl in _URL_EXCLUIR:
@@ -809,13 +879,14 @@ def _e_html_relatorio(url: str, body: str) -> bool:
     return len(body) > 2000
 
 def _frame_e_relatorio(url: str, body: str) -> bool:
-    """Verifica se um frame é o relatório (não o formulário/login)."""
+    """Verifica se um frame é o relatório (não o login)."""
     for excl in _URL_EXCLUIR:
         if excl in url:
             return False
     return len(body) > 2000
 
-async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
+async def buscar_relatorio(page, operador: dict, data_iso: str,
+                           debug_ss: bool = False) -> str | None:
     html_cap  = []
     popup_pgs = []
     data_fmt  = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -823,26 +894,60 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
 
     # ── Listener de resposta na página principal ──────────────────────────────
     async def on_resp(response):
-        # v9: sem filtro de string — aceita qualquer HTML grande do domínio Movere.
-        # (Movere pode ter mudado a estrutura do relatório; não dependemos mais de
-        #  'a5119', 'Valor Venda' ou 'Total Cliente'.)
+        url = response.url
+        # Ignora recursos de outros domínios (CDN, analytics, etc.)
+        if MOVERE_BASE not in url:
+            return
+        # Ignora recursos estáticos
+        url_path = url.split('?')[0].lower()
+        for ext in ('.css', '.js', '.png', '.jpg', '.gif', '.ico', '.woff', '.woff2', '.svg', '.map'):
+            if url_path.endswith(ext):
+                return
+
+        ct   = response.headers.get('content-type', '')
+        clen = response.headers.get('content-length', '?')
+        st   = response.status
+        # v10: loga TODAS as respostas dinâmicas do Movere para diagnóstico
+        print(f"        🌐 [{st}] ...{url[-60:]} | {ct[:30]} | {clen}b")
+
         if html_cap:
-            return  # já capturou, ignora o resto
-        if response.status == 200:
-            ct = response.headers.get('content-type', '')
-            if 'html' in ct.lower():
-                try:
-                    body = await response.text()
-                    if _e_html_relatorio(response.url, body):
-                        html_cap.append(body)
-                except Exception:
-                    pass
+            return  # já capturou
+
+        if st != 200:
+            return
+
+        # Verifica se não é página de login/portal
+        for excl in _URL_EXCLUIR:
+            if excl in url:
+                print(f"        ↳ ignorado (excluído: {excl})")
+                return
+
+        # v10: aceita qualquer tipo de conteúdo (não filtra por 'html')
+        # Movere pode retornar text/html, text/plain, application/xhtml+xml, etc.
+        try:
+            body = await response.text()
+            if len(body) > 2000:
+                html_cap.append(body)
+                print(f"        ✅ Capturado: {len(body)} bytes")
+        except Exception as e:
+            print(f"        ⚠️ Erro ao ler resposta: {e}")
 
     # ── Handler de popup/nova janela ──────────────────────────────────────────
     def on_new_page(popup):
         popup_pgs.append(popup)
 
     await preencher_formulario(page, operador, data_fmt)
+
+    print(f"        (URL após form-fill: ...{page.url[-60:]})")
+
+    # Screenshot 1: formulário preenchido (apenas para os 2 primeiros pares)
+    if debug_ss and DEBUG_HTML:
+        try:
+            ss1 = f"/tmp/movere_ss_{operador['codigo']}_{data_iso}_1form.png"
+            await page.screenshot(path=ss1)
+            print(f"        📸 Screenshot form: {ss1}")
+        except Exception as e:
+            print(f"        ⚠️ Screenshot form falhou: {e}")
 
     try:
         await page.wait_for_load_state('networkidle', timeout=8000)
@@ -866,27 +971,72 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         except Exception:
             pass
 
-    # Fallback JS: clica pelo DOM ou submete o form diretamente
+    # Fallback JS 1: clica qualquer botão submit visível na página
     if not executar_clicado:
         try:
-            await page.evaluate("""() => {
+            clicou = await page.evaluate("""() => {
                 const btn = document.querySelector(
                     'input[value="Executar"],#btnExecutar,#cmdExecutar,' +
                     'input[id*="Executar"],button[id*="Executar"],' +
                     'input[type="submit"],button[type="submit"]'
                 );
-                if (btn) { btn.click(); return; }
-                const form = document.querySelector('form');
-                if (form) { form.submit(); }
+                if (btn) { btn.click(); return true; }
+                return false;
             }""")
+            if clicou:
+                executar_clicado = True
         except Exception:
             pass
+
+    # Fallback JS 2: __doPostBack para ASP.NET WebForms
+    # (form.submit() genérico não envia o __EVENTTARGET correto)
+    if not executar_clicado:
+        try:
+            clicou = await page.evaluate("""() => {
+                // Tenta encontrar o ID do botão Executar no DOM
+                const candidatos = [
+                    ...document.querySelectorAll('input[type="submit"],input[type="button"],button')
+                ];
+                for (const el of candidatos) {
+                    const txt = (el.value || el.innerText || el.id || '').toLowerCase();
+                    if (txt.includes('execut') || txt.includes('gerar') || txt.includes('pesquis')) {
+                        const id = el.id || el.name;
+                        if (id && typeof __doPostBack === 'function') {
+                            __doPostBack(id, '');
+                            return true;
+                        }
+                        el.click();
+                        return true;
+                    }
+                }
+                // Último recurso: __doPostBack com IDs comuns do Movere
+                if (typeof __doPostBack === 'function') {
+                    __doPostBack('btnExecutar', '');
+                    return true;
+                }
+                return false;
+            }""")
+            if clicou:
+                executar_clicado = True
+        except Exception:
+            pass
+
+    print(f"        (URL após Executar: ...{page.url[-60:]} | clicado={executar_clicado})")
 
     # Aguarda resposta na página principal ou abertura de popup
     for _ in range(30):
         if html_cap or popup_pgs:
             break
         await page.wait_for_timeout(400)
+
+    # Screenshot 2: resultado após espera (apenas para os 2 primeiros pares)
+    if debug_ss and DEBUG_HTML:
+        try:
+            ss2 = f"/tmp/movere_ss_{operador['codigo']}_{data_iso}_2result.png"
+            await page.screenshot(path=ss2)
+            print(f"        📸 Screenshot resultado: {ss2}")
+        except Exception as e:
+            print(f"        ⚠️ Screenshot resultado falhou: {e}")
 
     # ── Tenta capturar HTML de popup, se abriu ────────────────────────────────
     if not html_cap and popup_pgs:
@@ -967,7 +1117,7 @@ async def main():
     mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v9 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    print(f"\n🔄  Sync Televendas v10 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     fila = []
@@ -981,31 +1131,42 @@ async def main():
             for op in OPERADORES:
                 fila.append((dia, op, 'retro_mes'))
     else:
-        # Janela: últimos JANELA_RETRO_DIAS dias corridos (incluindo hoje)
-        # Hoje        → sempre re-sincroniza (dados em tempo real)
-        # Na janela   → re-sincroniza somente se faltando ou zerado
-        # Fora da janela → ignorado (dados antigos estáveis)
-        janela_ini_dt  = hoje - timedelta(days=JANELA_RETRO_DIAS - 1)
-        janela_ini_str = janela_ini_dt.strftime('%Y-%m-%d')
+        # ── Mês atual: todos os dias úteis até hoje (excl. feriados) ─────────
+        dias_mes_atual = []
+        for d in range(1, hoje.day + 1):
+            dt = date(hoje.year, hoje.month, d)
+            if _e_dia_util(dt):
+                dias_mes_atual.append(dt.strftime('%Y-%m-%d'))
+
+        # ── Mês anterior: últimos DIAS_MES_ANT_JANELA dias úteis ─────────────
+        mes_ant = hoje.month - 1 if hoje.month > 1 else 12
+        ano_ant = hoje.year if hoje.month > 1 else hoje.year - 1
+        ultimo_dia_ant = _cal.monthrange(ano_ant, mes_ant)[1]
+        dias_mes_ant_todos = []
+        for d in range(1, ultimo_dia_ant + 1):
+            dt = date(ano_ant, mes_ant, d)
+            if _e_dia_util(dt):
+                dias_mes_ant_todos.append(dt.strftime('%Y-%m-%d'))
+        dias_mes_ant = dias_mes_ant_todos[-DIAS_MES_ANT_JANELA:]
+
+        # Junta: mês anterior (últimos 5) + mês atual (todos)
+        dias_janela = dias_mes_ant + dias_mes_atual
+
+        # Range para buscar_existentes abrange os dois meses
+        janela_ini_str = dias_janela[0] if dias_janela else data_hoje
         janela_fim_str = data_hoje
 
-        dias_janela = []
-        for d in range(JANELA_RETRO_DIAS):
-            dt = hoje - timedelta(days=d)
-            if dt.weekday() <= 5:  # segunda a sábado
-                dias_janela.append(dt.strftime('%Y-%m-%d'))
+        # Para o buscar_existentes precisamos cobrir os dois meses
+        mes_ant_ini = f"{ano_ant}-{mes_ant:02d}-01"
+        existentes_fila = await buscar_existentes(mes_ant_ini, janela_fim_str)
 
-        existentes_fila = await buscar_existentes(janela_ini_str, janela_fim_str)
-
-        print(f"  Janela de verificação : últimos {JANELA_RETRO_DIAS} dias  "
-              f"({janela_ini_str} → {janela_fim_str})")
-        print(f"  Dias úteis na janela  : {len(dias_janela)}")
-        print(f"  Registros Supabase    : {len(existentes_fila)} pares (data, operador)")
+        print(f"  Mês anterior ({mes_ant:02d}/{ano_ant}): últimos {DIAS_MES_ANT_JANELA} dias úteis → {', '.join(d[5:] for d in dias_mes_ant) or '—'}")
+        print(f"  Mês atual    ({hoje.month:02d}/{hoje.year}): todos os dias úteis → {', '.join(d[5:] for d in dias_mes_atual) or '—'}")
+        print(f"  Total dias   : {len(dias_janela)}  ×  {len(OPERADORES)} operadores = {len(dias_janela)*len(OPERADORES)} queries")
+        print(f"  Registros Supabase : {len(existentes_fila)} pares (data, operador)")
 
         for dia in dias_janela:
             for op in OPERADORES:
-                # Todos os dias da janela são sempre re-sincronizados
-                # para capturar qualquer ajuste feito no Movere.
                 motivo = 'hoje' if dia == data_hoje else 'atualizar'
                 fila.append((dia, op, motivo))
 
@@ -1042,7 +1203,7 @@ async def main():
 
             print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}  [{motivo}]…")
             try:
-                html = await buscar_relatorio(page, op, dia)
+                html = await buscar_relatorio(page, op, dia, debug_ss=(i < 2))
 
                 if html:
                     if MODO_DETALHADO:
@@ -1129,6 +1290,11 @@ async def main():
     print(f"  Pulados/erro    : {qtd_skip}/{len(fila)}")
     if total_hoje > 0:
         print(f"  Total hoje      : R$ {total_hoje:,.2f}")
+    if DEBUG_HTML:
+        import glob as _glob
+        ss_files = _glob.glob('/tmp/movere_ss_*.png')
+        if ss_files:
+            print(f"  Screenshots     : {len(ss_files)} arquivo(s) em /tmp/movere_ss_*.png")
     print(f"{'─'*50}\n")
 
 
