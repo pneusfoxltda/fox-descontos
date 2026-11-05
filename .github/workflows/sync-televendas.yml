@@ -39,3 +39,12 @@ jobs:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
         run: python sync_televendas.py
+
+      - name: Upload HTMLs de diagnóstico
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: movere-debug-html
+          path: /tmp/movere_debug_*.html
+          if-no-files-found: ignore
+          retention-days: 3
