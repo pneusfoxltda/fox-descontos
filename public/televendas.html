@@ -1958,13 +1958,12 @@ function atualizarSyncInfo(intervalo) {
   const el = document.getElementById('sync-info');
   if(!el) return;
 
-  // Dados prontos na hora cheia (sync roda :45, dados prontos em :00)
+  // Próximo sync do backend: sempre aos :45 de cada hora
   const agora = new Date();
   const minAtual = agora.getMinutes();
-  const minAteProximo = minAtual === 0 ? 60 : (60 - minAtual);
+  const minAteProximo = minAtual < 45 ? (45 - minAtual) : (60 - minAtual + 45);
   const proxima = new Date(agora.getTime() + minAteProximo * 60 * 1000);
   proxima.setSeconds(0, 0);
-  proxima.setMinutes(0);
   const hhmm = proxima.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 
   el.innerHTML = `Atualiza de hora em hora (7h–18h) · próxima às ${hhmm}<br><small style="color:#556">Fonte: Movere ERP</small>`;
