@@ -1,5 +1,5 @@
 """
-sync_televendas.py - v8
+sync_televendas.py - v9
 ========================
 Melhoria do CSV: rotina 553 com Agrupamento=Cliente captura
 itens individuais por cliente e salva em tabela separada.
@@ -23,6 +23,16 @@ itens individuais por cliente e salva em tabela separada.
   );
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Mudanças vs v8 (v9):
+  - buscar_relatorio: removidos filtros de string do relatório
+    ('a5119', 'Valor Venda', 'Total Cliente') — Movere pode ter mudado
+    o HTML do relatório. Agora aceita qualquer HTML grande do domínio.
+  - Adicionado handler de popup (context.on 'page') para capturar
+    relatórios que abram em nova janela/aba.
+  - Frame fallback: também sem filtro de string — aceita qualquer
+    frame com conteúdo grande que não seja a página de login/formulário.
+  - DEBUG_HTML=True por padrão para diagnóstico (salva HTML em /tmp).
 
 Mudanças vs v7 (v8):
   - Janela retroativa simplificada: últimos JANELA_RETRO_DIAS=20 dias corridos
@@ -85,7 +95,7 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
 RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
-DEBUG_HTML        = False  # True = salva HTML bruto em /tmp/movere_debug_*.html
+DEBUG_HTML        = True   # True = salva HTML bruto em /tmp/movere_debug_*.html
 
 # Janela de verificação retroativa (dias corridos, contando hoje).
 # Hoje        → sempre re-sincroniza (dados em tempo real).
@@ -785,24 +795,52 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
 
 # ─── Capturar relatório ───────────────────────────────────────────────────────
 
-async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
-    html_cap = []
-    data_fmt = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
+# URLs do formulário/login — não queremos capturar essas páginas como relatório
+_URL_EXCLUIR = ('default.aspx', 'rotina553.aspx', '/login', '/default')
 
+def _e_html_relatorio(url: str, body: str) -> bool:
+    """Verifica se um HTML grande do Movere é o relatório (não o formulário)."""
+    if MOVERE_BASE not in url:
+        return False
+    for excl in _URL_EXCLUIR:
+        if excl in url:
+            return False
+    # Aceita qualquer HTML do domínio Movere com conteúdo substancial
+    return len(body) > 2000
+
+def _frame_e_relatorio(url: str, body: str) -> bool:
+    """Verifica se um frame é o relatório (não o formulário/login)."""
+    for excl in _URL_EXCLUIR:
+        if excl in url:
+            return False
+    return len(body) > 2000
+
+async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
+    html_cap  = []
+    popup_pgs = []
+    data_fmt  = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
+    context   = page.context
+
+    # ── Listener de resposta na página principal ──────────────────────────────
     async def on_resp(response):
-        # v7: removido filtro de URL — Movere mudou padrão de URL.
-        # Confia apenas na verificação de conteúdo (a5119/Valor Venda/Total Cliente).
+        # v9: sem filtro de string — aceita qualquer HTML grande do domínio Movere.
+        # (Movere pode ter mudado a estrutura do relatório; não dependemos mais de
+        #  'a5119', 'Valor Venda' ou 'Total Cliente'.)
+        if html_cap:
+            return  # já capturou, ignora o resto
         if response.status == 200:
             ct = response.headers.get('content-type', '')
             if 'html' in ct.lower():
                 try:
                     body = await response.text()
-                    tem_resumo  = 'a5119' in body or 'Valor Venda' in body
-                    tem_detalhe = 'Total Cliente' in body
-                    if (tem_resumo or tem_detalhe) and len(body) > 500:
+                    if _e_html_relatorio(response.url, body):
                         html_cap.append(body)
                 except Exception:
                     pass
+
+    # ── Handler de popup/nova janela ──────────────────────────────────────────
+    def on_new_page(popup):
+        popup_pgs.append(popup)
 
     await preencher_formulario(page, operador, data_fmt)
 
@@ -812,6 +850,7 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         pass
 
     page.on('response', on_resp)
+    context.on('page', on_new_page)
 
     executar_clicado = False
     for sel in ['input[value="Executar"]', '#btnExecutar',
@@ -843,22 +882,55 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         except Exception:
             pass
 
+    # Aguarda resposta na página principal ou abertura de popup
     for _ in range(30):
-        if html_cap: break
+        if html_cap or popup_pgs:
+            break
         await page.wait_for_timeout(400)
 
-    # Fallback de frames: se o listener não capturou nada, lê todos os frames
-    if not html_cap:
-        for frame in [page, *page.frames]:
+    # ── Tenta capturar HTML de popup, se abriu ────────────────────────────────
+    if not html_cap and popup_pgs:
+        for popup in popup_pgs:
             try:
-                content = await frame.content()
-                tem_resumo  = 'a5119' in content or 'Valor Venda' in content
-                tem_detalhe = 'Total Cliente' in content
-                if (tem_resumo or tem_detalhe) and len(content) > 500:
+                await popup.wait_for_load_state('domcontentloaded', timeout=12000)
+                await popup.wait_for_timeout(1500)
+                content = await popup.content()
+                if len(content) > 2000:
+                    html_cap.append(content)
+                    break
+                # Se ainda pequeno, aguarda mais um pouco
+                await popup.wait_for_timeout(2000)
+                content = await popup.content()
+                if len(content) > 2000:
                     html_cap.append(content)
                     break
             except Exception:
                 pass
+            finally:
+                try:
+                    await popup.close()
+                except Exception:
+                    pass
+
+    # ── Fallback de frames: lê todos os frames sem filtro de string ───────────
+    if not html_cap:
+        for frame in [page, *page.frames]:
+            try:
+                content = await frame.content()
+                if _frame_e_relatorio(frame.url, content):
+                    html_cap.append(content)
+                    break
+            except Exception:
+                pass
+
+    # ── Debug: salva HTML capturado ───────────────────────────────────────────
+    if html_cap and DEBUG_HTML:
+        dbg = f"/tmp/movere_debug_{operador['codigo']}_{data_iso}.html"
+        try:
+            with open(dbg, 'w', encoding='utf-8') as f:
+                f.write(html_cap[-1])
+        except Exception:
+            pass
 
     if html_cap:
         try:
@@ -868,6 +940,7 @@ async def buscar_relatorio(page, operador: dict, data_iso: str) -> str | None:
         await page.wait_for_timeout(500)
 
     page.remove_listener('response', on_resp)
+    context.remove_listener('page', on_new_page)
     return html_cap[-1] if html_cap else None
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -894,7 +967,7 @@ async def main():
     mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v8 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    print(f"\n🔄  Sync Televendas v9 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     fila = []
@@ -972,12 +1045,6 @@ async def main():
                 html = await buscar_relatorio(page, op, dia)
 
                 if html:
-                    if DEBUG_HTML:
-                        dbg = f"/tmp/movere_debug_{op['codigo']}_{dia}.html"
-                        with open(dbg, 'w', encoding='utf-8') as f:
-                            f.write(html)
-                        print(f"    🔍  HTML salvo: {dbg}")
-
                     if MODO_DETALHADO:
                         items, client_totals = parse_report_html_detalhado(html)
 
