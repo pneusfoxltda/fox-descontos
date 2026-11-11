@@ -33,7 +33,8 @@ jobs:
       - name: Instalar dependências
         run: |
           pip install playwright httpx beautifulsoup4 holidays
-          playwright install chromium --with-deps
+          playwright install chromium --with-deps || \
+          (sudo apt-get update --fix-missing -y && playwright install chromium --with-deps)
 
       - name: Rodar sync
         env:
