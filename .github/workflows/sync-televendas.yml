@@ -30,11 +30,24 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar dependências
+      - name: Instalar dependências Python
+        run: pip install playwright httpx beautifulsoup4 holidays
+
+      - name: Cache do navegador Playwright
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-v1
+
+      - name: Instalar Chromium (somente se não estiver em cache)
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
+        run: playwright install chromium
+
+      - name: Instalar dependências do sistema (com retry se DNS falhar)
         run: |
-          pip install playwright httpx beautifulsoup4 holidays
-          playwright install chromium --with-deps || \
-          (sudo apt-get update --fix-missing -y && playwright install chromium --with-deps)
+          playwright install-deps chromium || \
+          (sudo apt-get update --fix-missing -y && playwright install-deps chromium)
 
       - name: Rodar sync
         env:
