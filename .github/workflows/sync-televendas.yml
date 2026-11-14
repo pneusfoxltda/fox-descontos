@@ -33,12 +33,16 @@ jobs:
       - name: Instalar dependências Python
         run: pip install playwright httpx beautifulsoup4 holidays
 
+      - name: Obter versão do Playwright (para chave de cache)
+        id: pw-ver
+        run: echo "version=$(pip show playwright | grep ^Version | awk '{print $2}')" >> $GITHUB_OUTPUT
+
       - name: Cache do navegador Playwright
         id: cache-playwright
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-v1
+          key: playwright-chromium-${{ runner.os }}-${{ steps.pw-ver.outputs.version }}
 
       - name: Instalar Chromium (somente se não estiver em cache)
         if: steps.cache-playwright.outputs.cache-hit != 'true'
