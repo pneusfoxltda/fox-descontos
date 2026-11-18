@@ -1,13 +1,50 @@
 """
-sync_televendas.py - v13
+sync_televendas.py - v12
 ========================
-Melhorias v13:
-  1. Usa SUPABASE_SERVICE_KEY via variável de ambiente (corrige erro RLS 42501).
-  2. Proteção contra falso-zero no dia atual: se o Movere falhar (503/timeout)
-     e não retornar HTML, mantém o valor anterior do Supabase em vez de zerar.
-  3. Janela padrão otimizada (últimos 3 dias úteis = 12 queries) para rodar
-     em ~2 min a cada hora sem derrubar/bloquear a sessão no Movere.
-  4. Retry automático (1 tentativa extra) caso o botão Executar falhe.
+BUGS CRÍTICOS CORRIGIDOS via análise do HTML real do relatório (203KB):
+
+Bug #1 — Grupo Empresarial não setado (causa do relatório em branco)
+  - preencher_formulario não setava f0362idgrupoempresarial=4 (TODAS FILIAIS)
+  - Campo obrigatório; sem ele o Movere devolve o formulário sem dados
+  - Fix v12: step 1b seta o campo logo após Visão Empresarial
+
+Bug #2 — Parser com classes CSS erradas (nenhum item extraído)
+  - parse_report_html_detalhado usava _TblParser (TR/TD) mas o HTML real do
+    SSRS usa <DIV class="aXXXX"> para todos os valores do relatório
+  - Classes corretas descobertas via análise do HTML real:
+      .a1152=cod_cliente, .a1156=nome_cliente
+      .a1180=cod_item,    .a1184=desc_item
+      .a1200=quantidade,  .a1212=vlr_venda
+      .a1245='Total Cliente:', .a1267=vlr_venda_total
+  - Nota: parse_report_html (resumo) já estava correto — .a5119/.a5123 OK
+  - Fix v12: parse_report_html_detalhado completamente reescrita
+
+Herdado da v11 (captura HTML — 0/36 queries capturavam antes):
+  1. Filtro html no content-type → remove JS/CSS/.axd
+  2. Sem early exit no on_resp → coleta todos os HTMLs
+  3. Wait loop sai cedo apenas para URL diferente de rotina553.aspx
+  4. Prioridade: URL com relatório > não-formulário > maior HTML
+  5. Frame fallback sempre roda
+  6. Log de todos os HTMLs capturados com URL + tamanho
+━━━ MIGRAÇÃO SUPABASE — executar UMA VEZ antes de usar ━━━━━━━━━━━━━
+(SQL Editor do Supabase → cole e execute)
+
+  CREATE TABLE IF NOT EXISTS vendas_televendas_clientes (
+    id               BIGSERIAL PRIMARY KEY,
+    data_ref         DATE        NOT NULL,
+    operador_codigo  TEXT        NOT NULL,
+    operador_nome    TEXT        NOT NULL,
+    codigo_cliente   TEXT        NOT NULL,
+    nome_cliente     TEXT        NOT NULL,
+    codigo_item      TEXT        NOT NULL,
+    descricao_item   TEXT        NOT NULL,
+    quantidade       NUMERIC     DEFAULT 0,
+    vlr_venda        NUMERIC     DEFAULT 0,
+    atualizado_em    TIMESTAMPTZ NOT NULL,
+    UNIQUE(data_ref, operador_codigo, codigo_cliente, codigo_item)
+  );
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
 import asyncio
@@ -15,15 +52,15 @@ import os
 import sys
 from datetime import datetime, date, timedelta, timezone
 from calendar import monthrange
+from html.parser import HTMLParser
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 import httpx
-
 try:
     import holidays as _holidays_lib
     _FERIADOS_BR = _holidays_lib.Brazil()
 except ImportError:
-    _FERIADOS_BR = set()
+    _FERIADOS_BR = set()  # fallback: sem verificação de feriados
 
 TZ_SP = timezone(timedelta(hours=-3))
 
@@ -31,9 +68,7 @@ MOVERE_USER = os.environ.get("MOVERE_USER", "")
 MOVERE_PASS = os.environ.get("MOVERE_PASS", "")
 
 SUPABASE_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co"
-# Prioriza a service_role key do GitHub Secrets; fallback para anon key se rodar local sem env
-SUPABASE_KEY = os.environ.get(
-    "SUPABASE_SERVICE_KEY",
+SUPABASE_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
     ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6"
     "ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30"
@@ -52,18 +87,18 @@ RELATORIO_URL = f"{MOVERE_BASE}/foxpneus/rotinas/005/rotina553.aspx"
 
 # ─── Configurações ────────────────────────────────────────────────────────────
 
-MODO_DETALHADO = True   # True = captura itens por cliente / False = só totais
-RETROATIVO     = False  # True = reprocessa o mês inteiro + janela anterior (uso pontual)
-DEBUG_HTML     = True   # True = salva HTML/screenshots em /tmp para diagnóstico
+MODO_DETALHADO   = True   # True = captura itens por cliente / False = só totais (v4)
+RETROATIVO       = False  # True = reprocessa TODOS os dias sem detalhes (uso pontual)
+DEBUG_HTML        = True   # True = salva HTML/screenshots em /tmp para diagnóstico
 
-# Janela de sincronização padrão (execuções horárias):
-# Busca apenas os últimos N dias úteis (ex: 3 = hoje + 2 dias úteis anteriores)
-# Evita sobrecarga/erro 503 no Movere e conclui em ~2 minutos.
-JANELA_DIAS_UTEIS = 3
+# Janela de sincronização:
+#   Mês ATUAL    → todos os dias úteis até hoje (dados em tempo real)
+#   Mês ANTERIOR → apenas os últimos N dias úteis (ajustes tardios)
+DIAS_MES_ANT_JANELA = 5  # últimos N dias úteis do mês anterior
 
 # ── Mês retroativo (uso pontual) ──────────────────────────────────────────────
 MES_RETRO_ANO = None   # Ex: 2026  | None = usa mês atual
-MES_RETRO_MES = None   # Ex: 11    | None = usa mês atual
+MES_RETRO_MES = None   # Ex: 10    | None = usa mês atual
 
 # ─── Classes CSS do Movere (resumo) ───────────────────────────────────────────
 
@@ -79,21 +114,12 @@ VALUE_CLS = [
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _e_dia_util(dt: date) -> bool:
+    """Retorna True se o dia é útil (Seg–Sáb) e não é feriado nacional brasileiro."""
     if dt.weekday() == 6:  # domingo
         return False
     if _FERIADOS_BR and dt in _FERIADOS_BR:
         return False
     return True
-
-def ultimos_dias_uteis(ate_hoje: date, qtd: int) -> list:
-    dias = []
-    cursor = ate_hoje
-    while len(dias) < qtd:
-        if _e_dia_util(cursor):
-            dias.append(cursor.strftime('%Y-%m-%d'))
-        cursor -= timedelta(days=1)
-    dias.reverse()
-    return dias
 
 def dias_uteis_mes(ano: int, mes: int, ate_hoje: date) -> list:
     total = monthrange(ano, mes)[1]
@@ -112,9 +138,16 @@ def parse_br_number(s: str) -> float:
     except Exception:
         return 0.0
 
-# ─── Parser modo resumo ───────────────────────────────────────────────────────
+def parse_int(s: str) -> int:
+    try:
+        return int(s.strip().replace('.','').replace(',',''))
+    except Exception:
+        return 0
+
+# ─── Parser modo resumo (v4) ──────────────────────────────────────────────────
 
 def parse_report_html(html: str) -> dict:
+    """Extrai pares chave/valor do relatório em modo resumo (Listar somente resumo = sim)."""
     soup = BeautifulSoup(html, 'html.parser')
     data = {}
     label = None
@@ -131,12 +164,31 @@ def parse_report_html(html: str) -> dict:
             label = None
     return data
 
-# ─── Parser modo detalhado ────────────────────────────────────────────────────
+# ─── Parser modo detalhado (v12 — SSRS DIV classes reais) ────────────────────
 
 def parse_report_html_detalhado(html: str) -> tuple:
+    """
+    Extrai itens individuais por cliente do HTML SSRS da rotina 553
+    (Agrupamento=Cliente, sem "Listar somente resumo").
+
+    Estrutura HTML SSRS — cada campo é um <DIV class="aXXXX"> com valor fixo:
+      .a1152 = cod_cliente       .a1156 = nome_cliente
+      .a1180 = cod_item          .a1184 = descricao_item
+      .a1200 = quantidade        .a1212 = vlr_venda  ← chave
+      .a1245 = 'Total Cliente:'  .a1267 = vlr_venda total do cliente
+
+    Algoritmo: coleta sequência plana das classes-chave em ordem de documento,
+    depois percorre essa sequência agrupando por cliente e item.
+
+    Retorna (records, client_totals):
+      records       = lista de dicts com itens por cliente
+      client_totals = {codigo_cliente: total_venda} das linhas "Total Cliente:"
+    """
     soup = BeautifulSoup(html, 'html.parser')
+
     KEY_CLASSES = {'a1152', 'a1156', 'a1180', 'a1184', 'a1200', 'a1212', 'a1245', 'a1267'}
 
+    # Sequência plana (classe, texto) apenas das classes que nos interessam
     seq = []
     for div in soup.find_all('div'):
         cls = (div.get('class') or [''])[0]
@@ -144,9 +196,9 @@ def parse_report_html_detalhado(html: str) -> tuple:
             text = div.get_text(strip=True)
             seq.append((cls, text))
 
+    # Diagnóstico rápido
     counts = {}
-    for c, _ in seq:
-        counts[c] = counts.get(c, 0) + 1
+    for c, _ in seq: counts[c] = counts.get(c, 0) + 1
     print(f"        📊 Chaves SSRS: {counts}")
 
     records       = []
@@ -158,6 +210,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
     while i < len(seq):
         cls, text = seq[i]
 
+        # ── Cabeçalho de cliente (.a1152 = cod, .a1156 = nome) ───────────────
         if cls == 'a1152':
             cod_cli  = text
             nome_cli = ''
@@ -167,6 +220,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
                 i += 1
             continue
 
+        # ── Linha de item (.a1180 = cod_item) ────────────────────────────────
         if cls == 'a1180' and cod_cli:
             cod_item  = text
             desc_item = ''
@@ -176,6 +230,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
             j = i + 1
             while j < len(seq):
                 c2, v2 = seq[j]
+                # Para se bater em novo item, novo cliente ou total
                 if c2 in ('a1180', 'a1152', 'a1245'):
                     break
                 if c2 == 'a1184':
@@ -200,6 +255,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
             i = j
             continue
 
+        # ── Total por cliente (.a1245 + .a1267) ──────────────────────────────
         if cls == 'a1245' and 'Total Cliente' in text:
             j = i + 1
             while j < len(seq) and j < i + 25:
@@ -212,6 +268,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
                 if c2 in ('a1152', 'a1180'):
                     break
                 j += 1
+            # Após Total Cliente vem próximo cliente (ou Total Geral)
             cod_cli  = None
             nome_cli = ''
             i += 1
@@ -220,6 +277,7 @@ def parse_report_html_detalhado(html: str) -> tuple:
         i += 1
 
     return records, client_totals
+
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 
@@ -234,6 +292,9 @@ def _headers_sb(extras: dict = None) -> dict:
     return h
 
 async def buscar_existentes(mes_ini: str, mes_fim: str) -> dict:
+    """
+    Retorna dict {(data_ref, operador_codigo): {'valor': float, 'tem_detalhes': bool}}
+    """
     url_principal = (
         f"{SUPABASE_URL}/rest/v1/vendas_televendas"
         f"?select=data_ref,operador_codigo,valor_venda"
@@ -273,6 +334,7 @@ async def buscar_existentes(mes_ini: str, mes_fim: str) -> dict:
     return result
 
 async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero: bool = False):
+    """Salva TOTAL AGREGADO em vendas_televendas (dashboard)."""
     VALOR_KEY = 'Valor Total das Notas Emitidas'
     valor = 0.0 if force_zero else parse_br_number(dados.get(VALOR_KEY, '0'))
 
@@ -311,11 +373,13 @@ async def salvar_supabase(operador: dict, data_ref: str, dados: dict, force_zero
 def _normalizar_desc_lado(desc: str) -> str:
     return desc.upper().rstrip().removesuffix(' LD').removesuffix(' LE')
 
+
 def _corrigir_vlr_inflado(items: list, client_totals: dict) -> list:
     if not client_totals:
         return items
 
     from collections import defaultdict
+
     por_cliente: dict[str, list[int]] = defaultdict(list)
     for i, it in enumerate(items):
         por_cliente[it['codigo_cliente']].append(i)
@@ -328,11 +392,12 @@ def _corrigir_vlr_inflado(items: list, client_totals: dict) -> list:
             continue
 
         soma = sum(items[i]['vlr_venda'] for i in indices)
+
         if soma <= total_correto * 1.005:
             continue
 
         for idx_i in indices:
-            it_i   = items[idx_i]
+            it_i  = items[idx_i]
             base_i = _normalizar_desc_lado(it_i['descricao_item'])
             v_i    = it_i['vlr_venda']
 
@@ -352,25 +417,38 @@ def _corrigir_vlr_inflado(items: list, client_totals: dict) -> list:
                     print(
                         f"    ⚠️  VLR INFLADO CORRIGIDO [{cod_cli}] "
                         f"'{it_i['descricao_item']}': "
-                        f"R${v_i:.2f} → R${v_j:.2f}"
+                        f"R${v_i:.2f} → R${v_j:.2f} "
+                        f"(era {round(ratio):.0f}× '{it_j['descricao_item']}')"
                     )
                     break
 
     if not corrected:
         return items
 
-    return [{**it, 'vlr_venda': corrected[i]} if i in corrected else it for i, it in enumerate(items)]
+    result = []
+    for i, it in enumerate(items):
+        if i in corrected:
+            result.append({**it, 'vlr_venda': corrected[i]})
+        else:
+            result.append(it)
+    return result
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
                                    override_total: float = 0.0,
                                    client_totals: dict = None) -> tuple:
+    """
+    Salva itens por cliente em vendas_televendas_clientes (upsert por item).
+    Também salva o total agregado em vendas_televendas (para o dashboard).
+    """
     items = [it for it in items if (it.get('vlr_venda') or 0) > 0]
     items = _corrigir_vlr_inflado(items, client_totals)
     if not items:
         return 0, 0.0, 0
 
-    agora   = datetime.now(TZ_SP).isoformat()
-    payload = []
+    agora    = datetime.now(TZ_SP).isoformat()
+    payload  = []
     for it in items:
         payload.append({
             'data_ref':        data_ref,
@@ -395,7 +473,11 @@ async def salvar_clientes_supabase(operador: dict, data_ref: str, items: list,
             dedup[key] = dict(row)
     payload = list(dedup.values())
 
-    total_valor   = override_total if (override_total and override_total > 0) else sum(r['vlr_venda'] for r in payload)
+    if override_total and override_total > 0:
+        total_valor = override_total
+    else:
+        total_valor = sum(r['vlr_venda'] for r in payload)
+
     clientes_uniq = len({r['codigo_cliente'] for r in payload if r['codigo_cliente']})
 
     CHUNK = 400
@@ -476,6 +558,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
     await page.wait_for_timeout(800)
 
+    # 1. Visão Empresarial = 1
     await page.evaluate("""() => {
         const inp = document.querySelector('[id*="idvisaoempresarial"]');
         if (inp && (!inp.value || inp.value.trim() === '')) {
@@ -486,6 +569,8 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     }""")
     await page.wait_for_timeout(300)
 
+    # 1b. Grupo Empresarial = 4 (TODAS FILIAIS) — campo obrigatório no formulário
+    #     Sem isso o Movere devolve o formulário em branco sem executar o relatório
     await page.evaluate("""() => {
         const inp = document.querySelector(
             '[id*="idgrupoempresarial"],[id*="f0362"],[name*="idgrupoempresarial"]'
@@ -498,6 +583,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     }""")
     await page.wait_for_timeout(300)
 
+    # 2. Data Inicial
     for sel in ['[id*="cdtaini"]','[name*="cdtaini"]',
                 'input[id*="dtaini"]','input[id*="DataIni"]']:
         try:
@@ -511,6 +597,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             pass
     await page.wait_for_timeout(200)
 
+    # 3. Data Final
     for sel in ['[id*="cdtafim"]','[name*="cdtafim"]',
                 'input[id*="dtafim"]','input[id*="DataFim"]']:
         try:
@@ -524,6 +611,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
             pass
     await page.wait_for_timeout(200)
 
+    # 4. Operador — digita código e clica na lupa de busca (Movere exige confirmação)
     for sel in ['[id*="idcliforoperador"]','input[id*="operador"]',
                 'input[id*="Operador"]','input[name*="operador"]']:
         try:
@@ -533,6 +621,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                 await el.type(operador['codigo'], delay=80)
                 await page.wait_for_timeout(600)
 
+                # Tenta clicar no botão lupa (🔍) ao lado do campo de operador
                 lupa_clicada = False
                 for lupa_sel in [
                     'input[id*="operador"] ~ input[type="button"]',
@@ -549,6 +638,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                     except Exception:
                         pass
 
+                # Fallback JS: busca no container/row do campo operador
                 if not lupa_clicada:
                     try:
                         lupa_clicada = await page.evaluate("""() => {
@@ -556,8 +646,10 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                                 '[id*="idcliforoperador"],[id*="operador"],[id*="Operador"]'
                             );
                             if (!inp) return false;
+                            // Busca no mesmo <tr> ou container pai
                             const container = inp.closest('tr') || inp.closest('td') || inp.parentElement;
                             if (container) {
+                                // Tenta botão irmão seguinte
                                 let el = inp.nextElementSibling;
                                 while (el) {
                                     if (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit')) {
@@ -566,11 +658,17 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                                     if (el.tagName === 'BUTTON') { el.click(); return true; }
                                     el = el.nextElementSibling;
                                 }
-                                const btn = container.querySelector('input[type="button"],button,input[type="submit"]');
+                                // Tenta qualquer botão no container
+                                const btn = container.querySelector(
+                                    'input[type="button"],button,input[type="submit"]'
+                                );
                                 if (btn) { btn.click(); return true; }
+                                // Tenta container pai (pode estar em td adjacente)
                                 const tr = inp.closest('tr');
                                 if (tr) {
-                                    const tdbtn = tr.querySelector('input[type="button"],button,input[type="submit"]');
+                                    const tdbtn = tr.querySelector(
+                                        'input[type="button"],button,input[type="submit"]'
+                                    );
                                     if (tdbtn) { tdbtn.click(); return true; }
                                 }
                             }
@@ -579,13 +677,17 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
                     except Exception:
                         pass
 
+                # Aguarda lookup AJAX validar o operador
                 await page.wait_for_timeout(1200)
+
+                # Fallback: Tab para disparar evento blur/change
                 await el.press('Tab')
                 await page.wait_for_timeout(400)
                 break
         except Exception:
             pass
 
+    # 5. Checkboxes e Agrupamento
     if MODO_DETALHADO:
         await page.evaluate("""() => {
             function findAndSet(texto, tipo, valor) {
@@ -679,6 +781,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
         }""")
     await page.wait_for_timeout(200)
 
+    # FIX: desmarcar checkboxes de aro acidentalmente marcados
     await page.evaluate("""() => {
         for (const cb of document.querySelectorAll('input[type="checkbox"]')) {
             if (!cb.checked) continue;
@@ -695,6 +798,7 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     }""")
     await page.wait_for_timeout(150)
 
+    # 6. Formato HTML
     try:
         for sel_el in await page.query_selector_all('select'):
             for opt in await sel_el.query_selector_all('option'):
@@ -710,13 +814,26 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
 
 _URL_EXCLUIR = ('default.aspx', '/login', '/Login', 'LoginPage')
 
+def _frame_e_relatorio(url: str, body: str) -> bool:
+    """Verifica se um frame parece ser o relatório (não o login)."""
+    for excl in _URL_EXCLUIR:
+        if excl in url:
+            return False
+    return len(body) > 2000
+
 async def buscar_relatorio(page, operador: dict, data_iso: str,
                            debug_ss: bool = False) -> str | None:
-    html_cap_items = []
+    # v11: armazena tuplas (url, body) para identificar a melhor resposta
+    html_cap_items = []   # list of (url, body)
     popup_pgs      = []
     data_fmt       = datetime.strptime(data_iso, '%Y-%m-%d').strftime('%d/%m/%Y')
     context        = page.context
 
+    # ── Listener de resposta ──────────────────────────────────────────────────
+    # v11 FIX:
+    #   - Recoloca filtro 'html' no content-type (remove JS/CSS/.axd)
+    #   - Remove 'if html_cap: return' — coleta TODOS os HTMLs do Movere
+    #   - Armazena (url, body) para escolher o melhor depois
     async def on_resp(response):
         url = response.url
         if MOVERE_BASE not in url:
@@ -728,6 +845,8 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
                 return
 
         ct = response.headers.get('content-type', '')
+        # v11: só captura respostas HTML — filtra application/x-javascript,
+        # application/octet-stream, etc. (incluindo WebResource.axd que era o bug)
         if 'html' not in ct.lower():
             return
 
@@ -739,6 +858,7 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
             return
         for excl in _URL_EXCLUIR:
             if excl in url:
+                print(f"        ↳ ignorado (excluído: {excl})")
                 return
 
         try:
@@ -755,12 +875,14 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
     await preencher_formulario(page, operador, data_fmt)
     print(f"        (URL após form-fill: ...{page.url[-60:]})")
 
+    # Screenshot 1: formulário preenchido (primeiros 4 pares para diagnóstico)
     if debug_ss and DEBUG_HTML:
         try:
             ss1 = f"/tmp/movere_ss_{operador['codigo']}_{data_iso}_1form.png"
             await page.screenshot(path=ss1)
-        except Exception:
-            pass
+            print(f"        📸 Screenshot form: {ss1}")
+        except Exception as e:
+            print(f"        ⚠️ Screenshot form falhou: {e}")
 
     try:
         await page.wait_for_load_state('networkidle', timeout=8000)
@@ -831,25 +953,39 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
 
     print(f"        (URL após Executar: ...{page.url[-60:]} | clicado={executar_clicado})")
 
-    for tick in range(37):
+    # ── v11: espera inteligente ───────────────────────────────────────────────
+    # Sai cedo APENAS se temos um HTML de URL diferente de rotina553.aspx
+    # (o relatório real vem de outra URL — ImpressaoRelatorio, etc.)
+    # Aguarda até 15 segundos para o relatório carregar (iframe/nova resposta)
+    for tick in range(37):  # 37 × 400ms ≈ 15 segundos
         await page.wait_for_timeout(400)
         bons = [b for u, b in html_cap_items if 'rotina553' not in u.lower()]
         if bons or popup_pgs:
             print(f"        ⚡ Relatório detectado no tick {tick+1} ({(tick+1)*400}ms)")
             break
 
+    # Screenshot 2: estado após espera
     if debug_ss and DEBUG_HTML:
         try:
             ss2 = f"/tmp/movere_ss_{operador['codigo']}_{data_iso}_2result.png"
             await page.screenshot(path=ss2)
-        except Exception:
-            pass
+            print(f"        📸 Screenshot resultado: {ss2}")
+        except Exception as e:
+            print(f"        ⚠️ Screenshot resultado falhou: {e}")
 
+    # Log de diagnóstico: todos os HTMLs capturados
     if html_cap_items:
         print(f"        HTMLs capturados: {[(u.split('/')[-1][:40], len(b)) for u, b in html_cap_items]}")
     else:
         print(f"        HTMLs capturados: nenhum")
 
+    # Log de frames para diagnóstico
+    all_frames = page.frames
+    frame_urls = [f.url for f in all_frames if f.url and f.url != 'about:blank']
+    if len(frame_urls) > 1:
+        print(f"        Frames ({len(all_frames)}): {[u[-50:] for u in frame_urls]}")
+
+    # ── Popups ────────────────────────────────────────────────────────────────
     if popup_pgs:
         for popup in popup_pgs:
             try:
@@ -858,6 +994,13 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
                 content = await popup.content()
                 if len(content) > 2000:
                     html_cap_items.append((popup.url or 'popup://', content))
+                    print(f"        📋 Popup capturado: {len(content)} bytes")
+                else:
+                    await popup.wait_for_timeout(2000)
+                    content = await popup.content()
+                    if len(content) > 2000:
+                        html_cap_items.append((popup.url or 'popup://', content))
+                        print(f"        📋 Popup (2a espera) capturado: {len(content)} bytes")
             except Exception:
                 pass
             finally:
@@ -866,9 +1009,12 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
                 except Exception:
                     pass
 
+    # ── Frame fallback: sempre executa (v11) ─────────────────────────────────
+    # Captura conteúdo de iframes que podem ter carregado o relatório
     for frame in [page, *page.frames]:
         try:
             furl = frame.url or ''
+            # Prioriza frames com URL de relatório (ImpressaoRelatorio, etc.)
             is_relatorio_url = any(
                 kw in furl.lower()
                 for kw in ['impressao', 'relatorio', 'report', 'visualiza']
@@ -876,21 +1022,28 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
             content = await frame.content()
             if is_relatorio_url and len(content) > 2000:
                 html_cap_items.append((furl, content))
+                print(f"        📋 Frame relatorio: {furl[-60:]} ({len(content)}b)")
             elif len(content) > 2000 and 'rotina553' not in furl.lower():
+                # Frame sem URL de relatório mas com conteúdo substancial
+                # (pode ser iframe anônimo ou about:blank com conteúdo injetado)
                 already = any(b == content for _, b in html_cap_items)
                 if not already:
                     html_cap_items.append((furl or 'frame://', content))
+                    print(f"        📋 Frame extra: {furl[-40:] or 'anônimo'} ({len(content)}b)")
         except Exception:
             pass
 
+    # ── Escolhe o melhor HTML ─────────────────────────────────────────────────
     best_html = None
     if html_cap_items:
+        # Prioridade 1: URL contém palavras-chave de relatório
         for u, b in html_cap_items:
             if any(kw in u.lower() for kw in ['impressao', 'relatorio', 'report', 'visualiza', 'popup']):
                 best_html = b
                 print(f"        🎯 P1 — URL relatório: ...{u[-60:]} ({len(b)}b)")
                 break
 
+        # Prioridade 2: Qualquer URL que não seja o formulário principal
         if not best_html:
             outros = [(u, b) for u, b in html_cap_items if 'rotina553' not in u.lower()]
             if outros:
@@ -898,11 +1051,13 @@ async def buscar_relatorio(page, operador: dict, data_iso: str,
                 best_html = b
                 print(f"        🎯 P2 — não-formulário: ...{u[-60:]} ({len(b)}b)")
 
+        # Prioridade 3: Maior HTML (pode ser o formulário com dados embutidos)
         if not best_html:
             u, b = max(html_cap_items, key=lambda x: len(x[1]))
             best_html = b
             print(f"        🔄 P3 — fallback maior HTML: ...{u[-60:]} ({len(b)}b)")
 
+    # ── Debug: salva melhor HTML ───────────────────────────────────────────────
     if best_html and DEBUG_HTML:
         dbg = f"/tmp/movere_debug_{operador['codigo']}_{data_iso}.html"
         try:
@@ -929,8 +1084,8 @@ async def main():
         print("❌  MOVERE_USER / MOVERE_PASS não definidos!")
         sys.exit(1)
 
-    agora_sp = datetime.now(TZ_SP)
-    hoje     = agora_sp.date()
+    agora_sp  = datetime.now(TZ_SP)
+    hoje      = agora_sp.date()
     import calendar as _cal
 
     if MES_RETRO_ANO and MES_RETRO_MES:
@@ -946,26 +1101,54 @@ async def main():
     mes_fim    = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
 
     modo_txt = "DETALHADO (itens por cliente → vendas_televendas_clientes)" if MODO_DETALHADO else "RESUMO (totais)"
-    print(f"\n🔄  Sync Televendas v13 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
+    print(f"\n🔄  Sync Televendas v12 — {agora_sp.strftime('%d/%m/%Y %H:%M')} (Brasília)")
     print(f"    Modo: {modo_txt}\n")
 
     fila = []
 
-    if RETROATIVO or bool(MES_RETRO_ANO and MES_RETRO_MES):
-        dias_janela = dias_uteis_mes(ano, mes, data_ref_fim)
-        existentes_fila = await buscar_existentes(mes_ini, mes_fim)
-        print(f"  ⚠️  Modo RETROATIVO: sincronizando {mes:02d}/{ano} completo ({len(dias_janela)} dias)\n")
+    if bool(MES_RETRO_ANO and MES_RETRO_MES):
+        todos_dias_retro = dias_uteis_mes(ano, mes, data_ref_fim)
+        existentes_fila  = await buscar_existentes(mes_ini, mes_fim)
+        print(f"  ⚠️  Modo RETROATIVO: re-sincronizando {mes:02d}/{ano} completo\n")
+        for dia in todos_dias_retro:
+            for op in OPERADORES:
+                fila.append((dia, op, 'retro_mes'))
     else:
-        dias_janela = ultimos_dias_uteis(hoje, JANELA_DIAS_UTEIS)
+        # ── Mês atual: todos os dias úteis até hoje (excl. feriados) ─────────
+        dias_mes_atual = []
+        for d in range(1, hoje.day + 1):
+            dt = date(hoje.year, hoje.month, d)
+            if _e_dia_util(dt):
+                dias_mes_atual.append(dt.strftime('%Y-%m-%d'))
+
+        # ── Mês anterior: últimos DIAS_MES_ANT_JANELA dias úteis ─────────────
+        mes_ant = hoje.month - 1 if hoje.month > 1 else 12
+        ano_ant = hoje.year if hoje.month > 1 else hoje.year - 1
+        ultimo_dia_ant = _cal.monthrange(ano_ant, mes_ant)[1]
+        dias_mes_ant_todos = []
+        for d in range(1, ultimo_dia_ant + 1):
+            dt = date(ano_ant, mes_ant, d)
+            if _e_dia_util(dt):
+                dias_mes_ant_todos.append(dt.strftime('%Y-%m-%d'))
+        dias_mes_ant = dias_mes_ant_todos[-DIAS_MES_ANT_JANELA:]
+
+        dias_janela = dias_mes_ant + dias_mes_atual
+
         janela_ini_str = dias_janela[0] if dias_janela else data_hoje
-        existentes_fila = await buscar_existentes(janela_ini_str, data_hoje)
-        print(f"  Janela rápida ({JANELA_DIAS_UTEIS} dias úteis): {', '.join(d[5:] for d in dias_janela)}")
+        janela_fim_str = data_hoje
+
+        mes_ant_ini = f"{ano_ant}-{mes_ant:02d}-01"
+        existentes_fila = await buscar_existentes(mes_ant_ini, janela_fim_str)
+
+        print(f"  Mês anterior ({mes_ant:02d}/{ano_ant}): últimos {DIAS_MES_ANT_JANELA} dias úteis → {', '.join(d[5:] for d in dias_mes_ant) or '—'}")
+        print(f"  Mês atual    ({hoje.month:02d}/{hoje.year}): todos os dias úteis → {', '.join(d[5:] for d in dias_mes_atual) or '—'}")
+        print(f"  Total dias   : {len(dias_janela)}  ×  {len(OPERADORES)} operadores = {len(dias_janela)*len(OPERADORES)} queries")
         print(f"  Registros Supabase : {len(existentes_fila)} pares (data, operador)")
 
-    for dia in dias_janela:
-        for op in OPERADORES:
-            motivo = 'hoje' if dia == data_hoje else 'atualizar'
-            fila.append((dia, op, motivo))
+        for dia in dias_janela:
+            for op in OPERADORES:
+                motivo = 'hoje' if dia == data_hoje else 'atualizar'
+                fila.append((dia, op, motivo))
 
     print(f"  Queries a executar  : {len(fila)}\n")
 
@@ -1000,13 +1183,8 @@ async def main():
 
             print(f"  [{i+1:>3}/{len(fila)}] {data_br}  {op['nome']}  [{motivo}]…")
             try:
+                # debug_ss para os primeiros 4 pares (2 operadores × 2 dias)
                 html = await buscar_relatorio(page, op, dia, debug_ss=(i < 4))
-
-                # Retry único caso o Movere dê erro 503 ou não carregue o formulário
-                if not html:
-                    print("        ⏳ Sem HTML na 1ª tentativa — aguardando 3s e tentando novamente…")
-                    await page.wait_for_timeout(3000)
-                    html = await buscar_relatorio(page, op, dia, debug_ss=False)
 
                 if html:
                     if MODO_DETALHADO:
@@ -1016,6 +1194,7 @@ async def main():
                             dados_resumo  = parse_report_html(html)
                             VALOR_KEY     = 'Valor Total das Notas Emitidas'
                             valor_resumo  = parse_br_number(dados_resumo.get(VALOR_KEY, '0')) if dados_resumo else 0.0
+
                             valor_totais  = sum(client_totals.values()) if client_totals else 0.0
 
                             override_total = valor_resumo or valor_totais or 0.0
@@ -1039,12 +1218,12 @@ async def main():
                                 if eh_hoje: total_hoje += v
                                 qtd_ok += 1
                             else:
-                                _v = info_anterior['valor'] if info_anterior else 0
-                                if eh_hoje and _v == 0:
+                                if eh_hoje:
                                     await salvar_supabase(op, dia, {}, force_zero=True)
-                                    print(f"    —   R$ 0,00  (relatório vazio — sem vendas hoje)")
+                                    print(f"    —   R$ 0,00  (HTML sem estrutura reconhecida)")
                                 else:
-                                    print(f"    🔒  HTML sem dados — mantendo R$ {_v:,.2f}")
+                                    _v = info_anterior['valor'] if info_anterior else 0
+                                    print(f"    🔒  HTML sem estrutura — mantendo R$ {_v:,.2f}")
                                 qtd_skip += 1
                     else:
                         dados = parse_report_html(html)
@@ -1054,13 +1233,15 @@ async def main():
                         if eh_hoje: total_hoje += v
                         qtd_ok += 1
 
+                elif eh_hoje:
+                    st, _ = await salvar_supabase(op, dia, {}, force_zero=True)
+                    print(f"    —   R$ 0,00  (sem vendas hoje — Supabase {st})")
                 else:
-                    # Proteção unificada: NUNCA sobrescreve com zero quando o HTML falha (ex: erro 503)
                     _v = info_anterior['valor'] if info_anterior else 0
                     if _v > 0:
-                        print(f"    🔒  Falha na captura (sem HTML) — mantendo R$ {_v:,.2f}")
+                        print(f"    🔒  Sem HTML — mantendo R$ {_v:,.2f}")
                     else:
-                        print(f"    ⚠️  Falha na captura (sem HTML) — pulando gravação")
+                        print(f"    ⚠️  Sem HTML — pulando")
                     qtd_skip += 1
 
             except Exception as e:
@@ -1068,7 +1249,7 @@ async def main():
                 import traceback; traceback.print_exc()
                 qtd_skip += 1
 
-            if (i + 1) % 20 == 0 and (i + 1) < len(fila):
+            if (i + 1) % 25 == 0 and (i + 1) < len(fila):
                 print("\n  🔁  Re-login para manter sessão…\n")
                 try:
                     await login(page)
@@ -1084,7 +1265,13 @@ async def main():
     print(f"  Pulados/erro    : {qtd_skip}/{len(fila)}")
     if total_hoje > 0:
         print(f"  Total hoje      : R$ {total_hoje:,.2f}")
+    if DEBUG_HTML:
+        import glob as _glob
+        ss_files = _glob.glob('/tmp/movere_ss_*.png')
+        if ss_files:
+            print(f"  Screenshots     : {len(ss_files)} arquivo(s) em /tmp/movere_ss_*.png")
     print(f"{'─'*50}\n")
+
 
 if __name__ == '__main__':
     asyncio.run(main())
