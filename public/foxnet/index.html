@@ -269,6 +269,7 @@ footer{border-top:1px solid #ffffff0d;padding:26px 6vw;color:var(--mut);font-siz
 
 <div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--lime);padding:12px 20px;border-radius:10px;font-size:14px;display:none;z-index:200"></div>
 
+
 <script>
 /* Fase 1: cada módulo abre a página real que já existe neste projeto (cada uma com o seu login). */
 const REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/", televendas:"/televendas.html"};
@@ -465,8 +466,10 @@ function infoBusca(){
 function openLogin(){ location.href="/"; }
 function toastMsg(m){toast.textContent=m;toast.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>toast.style.display="none",2600)}
 
+
 window.addEventListener("hashchange",route);
 route();
 </script>
+<script src="/fernanda.js" defer></script>
 </body>
 </html>
