@@ -128,7 +128,7 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
     <h1 class="frase" id="frase"></h1>
     <div class="tabs" id="tabs"><button class="tab" data-f="" onclick="filtrar('')">⌂ Início</button><button class="tab" data-f="fav" onclick="filtrar('fav')">☆ Favoritos</button></div>
     <form class="search" onsubmit="event.preventDefault();buscar()">
-      <span>🔎</span><input id="q" placeholder="Busque sistemas, lojas, cidades, carros…" autocomplete="off"><button type="submit">Buscar</button>
+      <span>🔎</span><input id="q" placeholder="Busque sistemas, lojas, cidades, carros…" autocomplete="off" oninput="if(!this.value&&termo){termo='';renderTiles()}"><button type="submit">Buscar</button>
     </form>
     <div class="cats" id="cats"></div>
   </div>
@@ -256,7 +256,9 @@ function renderSide(){
 }
 function renderTiles(){
   const f=getFav();
-  const lista = filtro==="fav" ? SIS.filter(x=>f.includes(x.id)) : SIS.filter(x=>!filtro||x.cat===filtro);
+  let lista = filtro==="fav" ? SIS.filter(x=>f.includes(x.id)) : SIS.filter(x=>!filtro||x.cat===filtro);
+  if(termo) lista = lista.filter(x=>norm(x.t+" "+(x.c||"")+" "+x.cat).includes(termo));
+  q.placeholder = filtro==="fav" ? "Busque nos seus favoritos…" : "Busque sistemas, lojas, cidades, carros…";
   tiles.innerHTML = lista.length ? lista.map(tile).join("")
     : `<div class="empty-fav" style="grid-column:1/-1">Você ainda não tem favoritos. Clique em ⌂ Início, passe o mouse num sistema e clique na ☆.</div>`;
   const c=CATS.find(x=>x[0]===filtro);
@@ -267,21 +269,26 @@ function renderTiles(){
   renderSide();
 }
 const exp_t=document.getElementById("exp-t"), exp_h=document.getElementById("exp-h");
-function filtrar(k){ filtro=k; if((location.hash||"#/")!=="#/") location.hash="#/"; renderTiles(); if(k) setTimeout(()=>document.getElementById("explorar").scrollIntoView({behavior:"smooth",block:"start"}),60); }
+function filtrar(k){ filtro=k; termo=""; q.value=""; if((location.hash||"#/")!=="#/") location.hash="#/"; renderTiles(); if(k) setTimeout(()=>document.getElementById("explorar").scrollIntoView({behavior:"smooth",block:"start"}),60); }
 function abrir(id){
   const s=SIS.find(x=>x.id===id); if(!s) return;
   if(s.soon) return toastMsg(s.t+": em construção 🚧");
   if(s.url) return window.open(s.url,"_blank","noopener");
   go(s.go);
 }
-/* Busca: filtra os blocos; se não achar nenhum, pergunta para a Fernanda */
+/* Busca: na aba Favoritos procura só nos favoritos; nas outras, em todos os sistemas.
+   Achou 1 → abre; achou vários → mostra só eles; não achou → pergunta para a Fernanda. */
+let termo="";
 function buscar(){
-  const t=norm(q.value); if(!t) return;
-  const achou=SIS.filter(s=>norm(s.t+" "+s.cat).includes(t));
-  if(achou.length===1) return abrir(achou[0].id);
+  const t=norm(q.value); if(!t){ termo=""; renderTiles(); return; }
+  const f=getFav();
+  const base = filtro==="fav" ? SIS.filter(x=>f.includes(x.id)) : SIS;
+  const achou = base.filter(x=>norm(x.t+" "+(x.c||"")+" "+x.cat).includes(t));
+  if(achou.length===1){ q.value=""; termo=""; return abrir(achou[0].id); }
+  if(achou.length>1){ termo=t; renderTiles(); document.getElementById("explorar").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(filtro==="fav"){ toastMsg("Nenhum favorito com “"+q.value+"”. Clique em ⌂ Início para buscar em tudo."); return; }
   if(typeof feOpen==="function"){ feOpen(); feIn.value=q.value; feSend(); q.value=""; }
 }
-
 /* ── Navegação ── */
 function go(h){
   const id=h.replace("#/","");
