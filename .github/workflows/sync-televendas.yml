@@ -57,6 +57,7 @@ jobs:
         env:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python sync_televendas.py
 
       - name: Upload diagnóstico (HTML + screenshots)
