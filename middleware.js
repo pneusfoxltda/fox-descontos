@@ -17,12 +17,16 @@
  * abriu, para descobrir o IP de cada loja.
  *
  * Endereços:
- *   foxnet.vercel.app/   (ou qualquer domínio que comece com "foxnet")
- *                        → abre direto o FOXNET (a página de /foxnet/)
- *   /descontos           → App de descontos, em qualquer domínio
- *   fox-descontos.vercel.app/ continua abrindo o App de descontos, como antes.
+ *   Domínio da intranet (qualquer um que comece com "foxnet", ex.: foxnet.foxpneu.com.br)
+ *     → mostra SÓ o FOXNET. A raiz abre a intranet; qualquer outro endereço
+ *       (Consulta, Descontos, Cadastrar, Televendas…) é enviado para o
+ *       domínio dos sistemas: SISTEMAS_URL (fox-descontos.vercel.app).
+ *   fox-descontos.vercel.app → continua com todos os sistemas, como antes.
+ *   /descontos → App de descontos (no domínio dos sistemas).
  */
 import { ipAddress, next, rewrite } from '@vercel/functions';
+
+export const SISTEMAS_URL = 'https://fox-descontos.vercel.app';
 
 export const config = {
   // Vale para todas as páginas e arquivos do site.
@@ -85,11 +89,22 @@ export function ehDominioFoxnet(hostname) {
   return /^foxnet[.-]/i.test(String(hostname || ''));
 }
 
+// No domínio da intranet só existem estes endereços; o resto vai para o domínio dos sistemas.
+export function ehDaIntranet(caminho) {
+  return caminho === '/' || caminho === '/foxnet' || caminho.startsWith('/foxnet/') ||
+    caminho === '/fernanda.js' || caminho === '/favicon.svg';
+}
+
 function encaminhar(url, request) {
   const caminho = url.pathname.replace(/\/+$/, '') || '/';
-  // App de descontos com endereço próprio, em qualquer domínio
+  if (ehDominioFoxnet(url.hostname)) {
+    if (!ehDaIntranet(caminho)) {
+      return Response.redirect(SISTEMAS_URL + url.pathname + url.search, 307);
+    }
+    if (caminho === '/') return rewrite(new URL('/foxnet/', request.url));
+    return next();
+  }
+  // App de descontos com endereço próprio
   if (caminho === '/descontos') return rewrite(new URL('/index.html', request.url));
-  // Domínio do FOXNET: a raiz abre direto a intranet
-  if (ehDominioFoxnet(url.hostname) && caminho === '/') return rewrite(new URL('/foxnet/', request.url));
   return next();
 }
