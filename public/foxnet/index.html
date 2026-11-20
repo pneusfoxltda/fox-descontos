@@ -173,6 +173,7 @@ const EXT = {
   gpt:"https://chatgpt.com/",
   gemini:"https://gemini.google.com/app",
   gmail:"https://mail.google.com/mail/",
+  academy:"https://academy.bridgestone.com.br/Performa/Web/Portal/Main/Home.aspx",
   claude:"https://claude.ai/",
   claudeCode:"https://claude.ai/code",
 };
@@ -213,12 +214,13 @@ const SIS = [
   {id:"oleo",      t:"Busca de Óleo", c:"Óleo",           ic:"🛢️", cat:"lojas",      bg:["#E0F2FE","#93C5FD"], url:EXT.oleo},
   {id:"calc",      t:"Calculadora de Medidas", c:"Medidas",  ic:"📐", cat:"lojas",      bg:["#EDE9FE","#C4B5FD"], url:EXT.calc},
   {id:"ligacoes",  t:"Ligações das lojas", c:"Ligações",      ic:"📞", cat:"lojas",      bg:["#F1F1F4","#D4D4DC"], soon:true},
+  {id:"academy",   t:"Bridgestone Academy",     c:"Academy",  ic:"🎓", cat:"treinamentos", bg:["#E8EEF9","#A9BCE6"], url:EXT.academy},
   {id:"appfox",    t:"App Fox", c:"App Fox",                 ic:"🚀", cat:"sistemas",   bg:["#FCE7F3","#F9A8D4"], url:EXT.appfox},
   {id:"chatgpt",   t:"ChatGPT", c:"ChatGPT",                 ic:"🤖", cat:"ia",         bg:["#D1FAE5","#6EE7B7"], url:EXT.gpt},
   {id:"gemini",    t:"Gemini", c:"Gemini",                  ic:"✨", cat:"ia",         bg:["#DBEAFE","#A5B4FC"], url:EXT.gemini},
   {id:"claude",    t:"Claude", c:"Claude",                  ic:"🧠", cat:"ia",         bg:["#FFEDD5","#FDBA74"], url:EXT.claude},
 ];
-const CATS = [["","✦ Todos"],["descontos","🏷️ Descontos"],["televendas","📞 Televendas"],["lojas","🏪 Lojas"],["sistemas","🗂️ Sistemas"],["ia","🤖 Inteligência Artificial"]];
+const CATS = [["","✦ Todos"],["descontos","🏷️ Descontos"],["televendas","📞 Televendas"],["lojas","🏪 Lojas"],["sistemas","🗂️ Sistemas"],["treinamentos","🎓 Treinamentos"],["ia","🤖 Inteligência Artificial"]];
 
 const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const norm = s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();

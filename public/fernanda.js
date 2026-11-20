@@ -18,6 +18,7 @@ const FE_EXT = {
   gpt:"https://chatgpt.com/",
   gemini:"https://gemini.google.com/app",
   gmail:"https://mail.google.com/mail/",
+  academy:"https://academy.bridgestone.com.br/Performa/Web/Portal/Main/Home.aspx",
   claude:"https://claude.ai/",
   claudeCode:"https://claude.ai/code",
 };
@@ -72,6 +73,7 @@ const FE_KB = [
   {k:["email","e-mail","gmail","correio"], t:"Gmail", d:"E-mail da empresa", url:FE_EXT.gmail},
   {k:["oleo","filtro","lubrificante","troca de oleo","autooleo"], t:"Busca de Óleo (AutoÓleo)", d:"Óleo e filtros certos por veículo", url:FE_EXT.oleo},
   {k:["medida","calculadora","aro","diametro","pneu maior","trocar medida","equivalente","compativel"], t:"Calculadora de Medidas", d:"Comparar medidas de pneu", url:FE_EXT.calc},
+  {k:["academy","bridgestone academy","treinamento","treinamentos","curso","cursos","capacitacao","certificado","aula"], t:"Bridgestone Academy", d:"Treinamentos e cursos", url:FE_EXT.academy},
   {k:["app fox","appfox"], t:"App Fox", d:"app-fox.vercel.app", url:FE_EXT.appfox},
   {k:["chatgpt","gpt","openai"], t:"ChatGPT", d:"Assistente de IA", url:FE_EXT.gpt},
   {k:["gemini","bard"], t:"Gemini", d:"IA do Google", url:FE_EXT.gemini},
