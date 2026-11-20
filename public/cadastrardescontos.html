@@ -236,14 +236,18 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
-const ADMIN_USER = "ti@redefox.com.br";
-const ADMIN_PASS = "FoxAdmin@2025";
+/* Login seguro (Supabase Auth): mesma sessão do App de descontos e do Painel do televendas */
+const sbAuth = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+let TOKEN = null;
+sbAuth.auth.onAuthStateChange((_e, sessao) => { TOKEN = sessao ? sessao.access_token : null; });
+const NIVEIS_CAD = ["admin", "comercial", "televendas"];   // quem pode cadastrar desconto
 
-const H = {"apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY};
-const HJ = {...H, "Content-Type": "application/json", "Prefer": "return=minimal"};
+const H = () => ({"apikey": SUPA_KEY, "Authorization": "Bearer " + (TOKEN || SUPA_KEY)});
+const HJ = () => ({...H(), "Content-Type": "application/json", "Prefer": "return=minimal"});
 
 let session = null;
 let tipo = "orcamento";
@@ -281,7 +285,7 @@ function clearSession() {
 // ── VENDEDORES ──
 async function loadVendedores() {
   try {
-    const r = await fetch(SUPA_URL + "/rest/v1/configuracoes?chave=eq.vendedores&select=valor", { headers: H });
+    const r = await fetch(SUPA_URL + "/rest/v1/configuracoes?chave=eq.vendedores&select=valor", { headers: H() });
     const d = await r.json();
     if (d && d[0] && d[0].valor) {
       const raw = d[0].valor;
@@ -310,6 +314,20 @@ function showMain(s) {
 }
 
 // ── LOGIN ──
+async function entrarComSessao(sessao) {
+  if (!sessao) return null;
+  TOKEN = sessao.access_token;
+  const { data: p } = await sbAuth.from("perfis").select("nome,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
+  const funcoes = (p && p.funcoes) || [];
+  if (!p || !p.ativo || !funcoes.some(f => NIVEIS_CAD.includes(f))) {
+    await sbAuth.auth.signOut();
+    return { erro: p && !p.ativo ? "Seu acesso está desativado. Fale com o TI." : "Seu usuário não tem acesso ao cadastro de descontos. Fale com o TI." };
+  }
+  const s = { username: p.nome || p.email, email: p.email, role: funcoes.join(",") };
+  showMain(s);
+  return s;
+}
+
 async function doLogin() {
   const email = document.getElementById("l-email").value.trim().toLowerCase();
   const pass = document.getElementById("l-pass").value;
@@ -317,25 +335,12 @@ async function doLogin() {
   errEl.style.display = "none";
   const btn = document.getElementById("btn-login");
   btn.textContent = "Entrando..."; btn.disabled = true;
-
-  // Admin fixo
-  if (email === ADMIN_USER.toLowerCase() && pass === ADMIN_PASS) {
-    const s = { username: "Admin", email: ADMIN_USER, role: "admin" };
-    saveSession(s); showMain(s);
-    btn.textContent = "Entrar"; btn.disabled = false;
-    return;
-  }
-
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/usuarios?email=eq.${encodeURIComponent(email)}&select=nome,email,senha,role`, { headers: H });
-    const d = await r.json();
-    if (d && d[0] && d[0].senha === pass) {
-      const u = d[0];
-      const s = { username: u.nome || u.email, email: u.email, role: u.role };
-      saveSession(s); showMain(s);
-    } else {
-      errEl.textContent = "Usuário ou senha incorretos.";
-      errEl.style.display = "block";
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    if (error) { errEl.textContent = "E-mail ou senha incorretos."; errEl.style.display = "block"; }
+    else {
+      const r = await entrarComSessao(data.session);
+      if (r && r.erro) { errEl.textContent = r.erro; errEl.style.display = "block"; }
     }
   } catch(e) {
     errEl.textContent = "Erro ao conectar. Tente novamente.";
@@ -346,7 +351,7 @@ async function doLogin() {
 
 // ── LOGOUT ──
 document.getElementById("btn-logout").onclick = () => {
-  clearSession();
+  sbAuth.auth.signOut(); clearSession();
   session = null;
   document.getElementById("main-screen").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
@@ -410,7 +415,7 @@ async function salvar() {
   try {
     const r = await fetch(SUPA_URL + "/rest/v1/descontos", {
       method: "POST",
-      headers: HJ,
+      headers: HJ(),
       body: JSON.stringify(payload)
     });
     if (r.ok || r.status === 201) {
@@ -450,15 +455,11 @@ async function salvar() {
   btn.textContent = "💾 Salvar Desconto Autorizado";
 }
 
-// ── INIT ──
-(function init() {
-  const s = loadSession();
-  if (s) { showMain(s); }
-  else {
-    document.getElementById("login-screen").style.display = "flex";
-    document.getElementById("main-screen").style.display = "none";
-  }
-})();
+// ── INIT ── (já entrou no FOXNET? aproveita a mesma sessão)
+clearSession(); // sessão antiga, sem segurança
+document.getElementById("login-screen").style.display = "flex";
+document.getElementById("main-screen").style.display = "none";
+sbAuth.auth.getSession().then(({ data }) => { if (data.session) entrarComSessao(data.session); });
 </script>
   <script src="/fernanda.js" defer></script>
 </body>
