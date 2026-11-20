@@ -167,6 +167,9 @@ begin
   end loop;
 end $$;
 
+-- Avisa a API do Supabase das funções novas
+notify pgrst, 'reload schema';
+
 -- Conferência: as regras que ficaram
 select tablename as tabela, policyname as regra, cmd as acao, array_to_string(roles, ',') as para
 from pg_policies
