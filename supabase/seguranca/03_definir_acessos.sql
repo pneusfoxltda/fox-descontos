@@ -11,8 +11,17 @@
 -- o sistema atual continua funcionando igual.
 -- ════════════════════════════════════════════════════════════════════════
 
+-- Admin: o login ti@redefox.com.br é criado pela tela do Supabase
+-- (Authentication → Users → Add user), com senha que só o TI conhece.
+-- Aqui ele só recebe o perfil de admin.
+insert into public.perfis (id, nome, email, funcoes)
+select id, 'TI Fox', lower(email), '{admin}'
+from auth.users
+where lower(email) = 'ti@redefox.com.br'
+on conflict (id) do update set funcoes = '{admin}', ativo = true;
+
 update public.perfis set funcoes = '{admin}'
- where email in ('gilcimar.freitass21@gmail.com', 'ti@redefox.com.br');
+ where email = 'gilcimar.freitass21@gmail.com';
 
 update public.perfis set funcoes = '{comercial}'
  where email in ('lorhanny.beatriz@redefox.com.br', 'luigi.ribeiro@redefox.com.br',
