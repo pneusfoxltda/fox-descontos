@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { sb, tokenAtual, clienteAvulso, papelLegado, carregarPerfil, NIVEIS } from "./supabase.js";
 // ── Supabase Client ──────────────────────────────────────────────
 const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
@@ -270,6 +270,9 @@ export default function App(){
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
+  // Lista do Consultar: mostra aos poucos (60 por vez) para a tela não travar
+  const[limiteLista,setLimiteLista]=useState(60);
+  useEffect(()=>{setLimiteLista(60);},[filtroStatus]);
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
     if(filtroStatus==="todos")return true;
     if(filtroStatus==="liberado")return !!q.liberado;
@@ -730,6 +733,30 @@ export default function App(){
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const totVal=useMemo(()=>filtered.reduce((s,q)=>s+(parseFloat(q.valor)||0),0),[filtered]);
   const chartColors=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
+  // Ações das linhas sempre com a versão atual das funções (a lista é memorizada)
+  const acoes=useRef({});
+  acoes.current={clickRow,doLiberar,doDel};
+  const ehAdmin=session?.role==="admin";
+  const listaConsultar=useMemo(()=>quotesPorStatus.slice(0,limiteLista).map(q=>(
+          <div className="list-row cl" key={q._id||q.tipo+q.numero} onClick={()=>acoes.current.clickRow(q)}>
+            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
+            <div style={{flex:1}}>
+              <div className="list-d">{q.medida} — {q.segmento}</div>
+              <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
+            </div>
+            <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
+            <span className="list-val">{fmtVal(q.valor)}</span>
+            <span className={`badge ${q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
+              <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
+              {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
+            </div>
+            <button onClick={e=>acoes.current.doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"#1A2E1A":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+              {q.liberado?"✓":"Liberar"}
+            </button>
+            {ehAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))acoes.current.doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"#E57373",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
+          </div>
+  )),[quotesPorStatus,limiteLista,ehAdmin]);
   if(!session&&recuperando)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
     <h1 className="login-t" style={{marginBottom:6}}>Criar nova senha</h1>
     <p style={{fontSize:12,color:MUTED,marginBottom:18,textAlign:"center"}}>Escolha uma senha com pelo menos 8 caracteres.</p>
@@ -1705,32 +1732,11 @@ export default function App(){
         </div>
       </div>
       {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
-        <div className="card-np">{quotes.filter(q=>{
-            if(filtroStatus==="todos")return true;
-            if(filtroStatus==="liberado")return !!q.liberado;
-            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
-            return true;
-          }).map((q,i)=>(
-          <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
-            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
-            <div style={{flex:1}}>
-              <div className="list-d">{q.medida} — {q.segmento}</div>
-              <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
-            </div>
-            <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
-            <span className="list-val">{fmtVal(q.valor)}</span>
-            <span className={`badge ${q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
-              <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
-              {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
-            </div>
-            <button onClick={e=>doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"#1A2E1A":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
-              {q.liberado?"✓":"Liberar"}
-            </button>
-            {session.role==="admin"&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"#E57373",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
-          </div>
-        ))}</div>
+        <div className="card-np">{listaConsultar}
+          {quotesPorStatus.length>limiteLista&&<div style={{padding:"14px",textAlign:"center"}}>
+            <button className="btn-out" onClick={()=>setLimiteLista(l=>l+60)}>Mostrar mais ({quotesPorStatus.length-limiteLista} restantes)</button>
+          </div>}
+        </div>
       )}
     </>)}
     {/* USERS */}
