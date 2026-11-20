@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { sb, tokenAtual, clienteAvulso, papelLegado, carregarPerfil, NIVEIS } from "./supabase.js";
 // ── Supabase Client ──────────────────────────────────────────────
 const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
@@ -7,7 +8,7 @@ const supa = {
     const base = SUPA_URL + "/rest/v1/" + table;
     const headers = {
       "apikey": SUPA_KEY,
-      "Authorization": "Bearer " + SUPA_KEY,
+      "Authorization": "Bearer " + tokenAtual(),
       "Content-Type": "application/json",
       "Prefer": "return=representation"
     };
@@ -30,7 +31,7 @@ const supa = {
           const body = table==="descontos"
             ? {p_numero:match.numero,p_tipo:match.tipo,p_fields:obj}
             : {p_email:match.email,p_fields:obj};
-          const rpcHeaders={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+          const rpcHeaders={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
           const r = await fetch(SUPA_URL+"/rest/v1/rpc/"+rpcName,{method:"POST",headers:rpcHeaders,body:JSON.stringify(body)});
           if(!r.ok){const e=await r.text();return{data:null,error:e};}
           return{data:null,error:null};
@@ -50,7 +51,6 @@ const supa = {
     };
   }
 };
-const ADMIN_USER="ti@redefox.com.br", ADMIN_PASS="FoxAdmin@2025";
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
 const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
@@ -254,6 +254,8 @@ export default function App(){
   const[adminSenhaModal,setAdminSenhaModal]=useState(null);
   const[adminNovaSenha,setAdminNovaSenha]=useState("");
   const[logsUsuarios,setLogsUsuarios]=useState([]);
+  const[recuperando,setRecuperando]=useState(false);
+  const[novaSenhaRec,setNovaSenhaRec]=useState({a:"",b:"",msg:""});
   const[vendedores,setVendedores]=useState(["Graziele Garcia","Kessya Marques","Ana Clara","Sabrina Duarte","Sabrina Rocha"]);
   const[novoVendedor,setNovoVendedor]=useState("");
   const[users,setUsers]=useState([]);
@@ -270,10 +272,9 @@ export default function App(){
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
     if(filtroStatus==="todos")return true;
-    if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
-    if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
-    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
-    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="liberado")return !!q.liberado;
+    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
     if(filtroStatus==="perdida")return !!q.perdida;
     return true;
   }),[quotes,filtroStatus]);
@@ -320,17 +321,35 @@ export default function App(){
     },100);
     return()=>clearTimeout(timer);
   },[tab,dashKey]);
+  // ── Login seguro (Supabase Auth): a sessão vem do Supabase e o nível vem da tabela perfis ──
+  const destinoInicial=s=>hasRole(s,"admin")||hasRole(s,"gerente")?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar2")?"cadastrar":"consultar";
+  const entrarComSessao=async(sess)=>{
+    if(!sess){setSession(null);return null;}
+    const p=await carregarPerfil(sess.user.id);
+    if(!p||!p.ativo||!(p.funcoes||[]).length){
+      await sb.auth.signOut();setSession(null);
+      setLoginErr(p&&!p.ativo?"Seu acesso está desativado. Fale com o TI.":"Seu usuário ainda não tem nível de acesso. Fale com o TI.");
+      return null;
+    }
+    const s={username:p.nome||p.email,email:p.email,role:papelLegado(p.funcoes),funcoes:p.funcoes,foto:p.foto||null};
+    setSession(s);return s;
+  };
   useEffect(()=>{
-    try{
-      const saved=localStorage.getItem("fox_session");
-      if(saved){
-        const s=JSON.parse(saved);
-        setSession(s);
-        setTab(s.role==="admin"||s.role==="gerente"||(s.role||"").includes("gerente")?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar1")||hasRole(s,"cadastrar2")?"cadastrar":"consultar");
-      }
-    }catch(e){}
+    localStorage.removeItem("fox_session"); // sessão antiga (sem segurança)
+    sb.auth.getSession().then(async({data})=>{
+      if(data.session&&!/type=recovery/.test(location.hash)){const s=await entrarComSessao(data.session);if(s)setTab(destinoInicial(s));}
+    });
+    const {data:sub}=sb.auth.onAuthStateChange((evento)=>{
+      if(evento==="PASSWORD_RECOVERY")setRecuperando(true);
+      if(evento==="SIGNED_OUT")setSession(null);
+    });
+    return()=>sub.subscription.unsubscribe();
   },[]);
-  useEffect(()=>{(async()=>{try{
+  const carregarUsuarios=async()=>{
+    const {data}=await sb.from("perfis").select("id,nome,email,funcoes,ativo,foto").order("nome");
+    if(data)setUsers(data.map(p=>({id:p.id,nome:p.nome,email:p.email,funcoes:p.funcoes||[],ativo:p.ativo,foto:p.foto,role:papelLegado(p.funcoes||[]),ultimoAcesso:null})));
+  };
+  useEffect(()=>{if(!session)return;(async()=>{try{
     const db = await supa.from("descontos");
     const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
@@ -343,21 +362,19 @@ export default function App(){
       telefoneCliente:q.telefone_cliente||null
     })));}
     // Auto-marcar expiradas como perdidas
-    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+    const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
     fetch(SUPA_URL+"/rest/v1/rpc/auto_perdida",{method:"POST",headers:rpcH,body:JSON.stringify({})}).then(()=>{
       setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
     }).catch(()=>{});
-    const ub = await supa.from("usuarios");
-    const {data:us} = await ub.select();
-    if(us) setUsers(us.map(u=>({nome:u.nome,email:u.email,pass:u.senha,role:u.role,ultimoAcesso:u.ultimo_acesso||null})));
+    if(hasRole(session,"admin")) await carregarUsuarios();
     // Carrega vendedores do Supabase
     try{
-      const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+      const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
       const rc=await fetch(SUPA_URL+"/rest/v1/configuracoes?chave=eq.vendedores&select=valor",{headers:hc});
       const dc=await rc.json();
       if(dc&&dc[0]&&Array.isArray(dc[0].valor)&&dc[0].valor.length>0)setVendedores(dc[0].valor);
     }catch(e){}
-  }catch(e){console.log("Erro ao carregar:",e);}})();}, []);
+  }catch(e){console.log("Erro ao carregar:",e);}})();}, [session?.email]);
   const saveQ=async q=>{setQuotes(q);}; // dados salvos direto no Supabase
   const saveU=async u=>{setUsers(u);}; // dados salvos direto no Supabase
   const toast_=(msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),3200);};
@@ -414,15 +431,13 @@ export default function App(){
       toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
   };
-  const doToggleRole=async(u,role)=>{
-    const current=(u.role||"").split(",").filter(Boolean);
-    const updated=current.includes(role)?current.filter(r=>r!==role):[...current,role];
-    const newRole=updated.join(",");
-    try{
-      const db=await supa.from("usuarios");
-      await db.update({role:newRole},{email:u.email});
-      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,role:newRole}:x));
-    }catch(e){toast_("Erro ao atualizar.",false);}
+  const doToggleRole=async(u,nivel)=>{
+    const tem=(u.funcoes||[]).includes(nivel);
+    if(tem&&nivel==="admin"&&u.email===session.email){toast_("Você não pode tirar o seu próprio acesso de admin.",false);return;}
+    const funcoes=tem?u.funcoes.filter(f=>f!==nivel):[...(u.funcoes||[]),nivel];
+    const {error}=await sb.from("perfis").update({funcoes}).eq("id",u.id);
+    if(error){toast_("Erro ao atualizar: "+error.message,false);return;}
+    setUsers(prev=>prev.map(x=>x.id===u.id?{...x,funcoes,role:papelLegado(funcoes)}:x));
   };
   const doEdit=(q)=>{
     const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0];
@@ -552,53 +567,54 @@ export default function App(){
   const registrarLogin=async(email,nome)=>{
     try{
       const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
-      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
       await fetch(SUPA_URL+"/rest/v1/logs_usuarios",{method:"POST",headers:h,body:JSON.stringify({email,nome,ip,acao:"login"})});
-      await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(email),{method:"PATCH",headers:h,body:JSON.stringify({ultimo_acesso:new Date().toISOString()})});
     }catch(e){}
   };
-  const doLogin=()=>{
-    const u=loginForm.email.trim().toLowerCase(),p=loginForm.pass;
-    if(u===ADMIN_USER&&p===ADMIN_PASS){const s={username:"admin",email:"admin",role:"admin"};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));setTab("dashboard");setLoginErr("");registrarLogin("admin@foxpneus.com.br","Admin");return;}
-    const f=users.find(x=>x.email.toLowerCase()===u&&x.pass===p);
-    if(f){const s={username:f.nome||f.email,email:f.email,role:f.role};setSession(s);localStorage.setItem("fox_session",JSON.stringify(s));
-      const r=f.role||"";
-      const dest=r==="admin"||r.includes("gerente")?"dashboard":r.includes("televendas")||r.includes("cadastrar1")||r.includes("cadastrar2")?"cadastrar":"consultar";
-      setTab(dest);setLoginErr("");registrarLogin(f.email,f.nome||f.email);return;}
-    setLoginErr("Usuário ou senha incorretos.");
+  const doLogin=async()=>{
+    const email=loginForm.email.trim().toLowerCase(),senha=loginForm.pass;
+    if(!email||!senha){setLoginErr("Informe e-mail e senha.");return;}
+    setLoginErr("");
+    const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
+    if(error){setLoginErr("E-mail ou senha incorretos.");return;}
+    const s=await entrarComSessao(data.session);if(!s)return;
+    setTab(destinoInicial(s));registrarLogin(s.email,s.username);
   };
-  const doLogout=()=>{setSession(null);localStorage.removeItem("fox_session");setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
+  const doLogout=()=>{sb.auth.signOut();setSession(null);setLoginForm({email:"",pass:""});setLoginErr("");setResult(null);setNotFound(false);};
   const doAlterarSenha=async()=>{
     const{email,senhaAtual,novaSenha,confirmar}=alterarForm;
     if(!email||!senhaAtual||!novaSenha||!confirmar){setAlterarMsg({txt:"Preencha todos os campos.",ok:false});return;}
     if(novaSenha!==confirmar){setAlterarMsg({txt:"Nova senha e confirmação não coincidem.",ok:false});return;}
-    if(novaSenha.length<4){setAlterarMsg({txt:"Mínimo 4 caracteres.",ok:false});return;}
-    const u=users.find(x=>x.email.toLowerCase()===email.trim().toLowerCase()&&x.pass===senhaAtual);
-    if(!u){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
-    try{
-      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=minimal"};
-      const r=await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(u.email),{method:"PATCH",headers:h,body:JSON.stringify({senha:novaSenha})});
-      if(!r.ok){const errTxt=await r.text();setAlterarMsg({txt:"Erro ao salvar no servidor: "+errTxt.substring(0,120),ok:false});return;}
-      setUsers(prev=>prev.map(x=>x.email===u.email?{...x,pass:novaSenha}:x));
-      setAlterarMsg({txt:"Senha alterada! Faça login novamente.",ok:true});
-      setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
-      setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
-    }catch(e){setAlterarMsg({txt:"Erro ao alterar senha.",ok:false});}
+    if(novaSenha.length<8){setAlterarMsg({txt:"A nova senha precisa ter pelo menos 8 caracteres.",ok:false});return;}
+    const {error}=await sb.auth.signInWithPassword({email:email.trim().toLowerCase(),password:senhaAtual});
+    if(error){setAlterarMsg({txt:"E-mail ou senha atual incorretos.",ok:false});return;}
+    const {error:e2}=await sb.auth.updateUser({password:novaSenha});
+    await sb.auth.signOut();
+    if(e2){setAlterarMsg({txt:"Não foi possível trocar a senha: "+e2.message,ok:false});return;}
+    setAlterarMsg({txt:"Senha alterada! Faça login com a nova senha.",ok:true});
+    setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});
+    setTimeout(()=>{setShowAlterarSenha(false);setAlterarMsg({txt:"",ok:true});},2000);
+  };
+  // Depois de clicar no link do e-mail "criar nova senha"
+  const doSalvarSenhaRecuperada=async()=>{
+    const{a,b}=novaSenhaRec;
+    if(a.length<8){setNovaSenhaRec(x=>({...x,msg:"A senha precisa ter pelo menos 8 caracteres."}));return;}
+    if(a!==b){setNovaSenhaRec(x=>({...x,msg:"As duas senhas não são iguais."}));return;}
+    const {error}=await sb.auth.updateUser({password:a});
+    if(error){setNovaSenhaRec(x=>({...x,msg:"Erro: "+error.message}));return;}
+    await sb.auth.signOut();history.replaceState(null,"",location.pathname);
+    setRecuperando(false);setNovaSenhaRec({a:"",b:"",msg:""});setLoginErr("");
+    setAlterarMsg({txt:"",ok:true});toast_("Senha criada! Agora é só entrar. ✅");
   };
   const doAdminAlterarSenha=async()=>{
-    if(!adminNovaSenha||adminNovaSenha.length<4){toast_("Mínimo 4 caracteres.",false);return;}
-    try{
-      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=minimal"};
-      const r=await fetch(SUPA_URL+"/rest/v1/usuarios?email=eq."+encodeURIComponent(adminSenhaModal.email),{method:"PATCH",headers:h,body:JSON.stringify({senha:adminNovaSenha})});
-      if(!r.ok){const errTxt=await r.text();toast_("Erro ao salvar no servidor: "+errTxt.substring(0,120),false);return;}
-      setUsers(prev=>prev.map(x=>x.email===adminSenhaModal.email?{...x,pass:adminNovaSenha}:x));
-      toast_("Senha de "+adminSenhaModal.nome+" alterada! ✅");
-      setAdminSenhaModal(null);setAdminNovaSenha("");
-    }catch(e){toast_("Erro ao alterar senha.",false);}
+    const {error}=await sb.auth.resetPasswordForEmail(adminSenhaModal.email,{redirectTo:location.origin+"/descontos"});
+    if(error){toast_("Erro ao enviar: "+error.message,false);return;}
+    toast_("E-mail enviado para "+adminSenhaModal.nome+" criar a nova senha ✅");
+    setAdminSenhaModal(null);
   };
   const saveVendedores=async(lista)=>{
     try{
-      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
+      const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"};
       await fetch(SUPA_URL+"/rest/v1/configuracoes",{method:"POST",headers:h,body:JSON.stringify({chave:"vendedores",valor:lista})});
       setVendedores(lista);toast_("Vendedores atualizados! ✅");
     }catch(e){toast_("Erro ao salvar.",false);}
@@ -642,7 +658,7 @@ export default function App(){
       setResult(q);setNotFound(false);
       if(q.anexoNome&&!q.anexoBase64){
         try{
-          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+          const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
           const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
           const d=await r.json();
           if(d&&d[0]&&d[0].anexo_base64){
@@ -673,25 +689,31 @@ export default function App(){
     }catch(e){toast_("Erro.",false);}
   };
   const doAddUser=async()=>{
-    const em=newUser.email.trim().toLowerCase();
-    if(!newUser.nome.trim()||!em||!newUser.pass){toast_("Preencha todos os campos.",false);return;}
-    if(em===ADMIN_USER){toast_("E-mail reservado.",false);return;}
+    const em=newUser.email.trim().toLowerCase(),nome=newUser.nome.trim();
+    if(!nome||!em||!newUser.pass){toast_("Preencha nome, e-mail e senha.",false);return;}
+    if(newUser.pass.length<8){toast_("A senha precisa ter pelo menos 8 caracteres.",false);return;}
+    if(!newUser.roles.length){toast_("Escolha pelo menos um nível de acesso.",false);return;}
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
     try{
-      const db = await supa.from("usuarios");
-      const rolesStr=newUser.roles.join(",");const {error} = await db.insert({nome:newUser.nome.trim(),email:em,senha:newUser.pass,role:rolesStr,foto:newUser.foto||null});
-      if(error){toast_("Erro ao criar usuário.",false);return;}
-      setUsers(prev=>[...prev,{nome:newUser.nome.trim(),email:em,pass:newUser.pass,role:newUser.roles.join(","),foto:newUser.foto||null}]);
-      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});toast_("Usuário criado!");
-    }catch(e){toast_("Erro.",false);}
+      const {data,error}=await clienteAvulso().auth.signUp({email:em,password:newUser.pass,options:{data:{nome},emailRedirectTo:location.origin+"/descontos"}});
+      if(error){toast_("Erro ao criar: "+error.message,false);return;}
+      const uid=data.user&&data.user.id;
+      if(!uid||(data.user.identities&&data.user.identities.length===0)){toast_("Esse e-mail já tem cadastro. Use \"Ativar\" ou mude o nível na lista.",false);return;}
+      const {error:e2}=await sb.from("perfis").upsert({id:uid,nome,email:em,funcoes:newUser.roles,ativo:true});
+      if(e2){toast_("Login criado, mas houve erro ao gravar o nível: "+e2.message,false);return;}
+      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
+      toast_("Acesso criado! "+nome+" recebe um e-mail para confirmar o cadastro.");
+      carregarUsuarios();
+    }catch(e){toast_("Erro ao criar o acesso.",false);}
   };
   const doDelUser=async em=>{
-    try{
-      const db = await supa.from("usuarios");
-      await db.delete({email:em});
-      setUsers(prev=>prev.filter(x=>x.email!==em));
-      toast_("Usuário removido.");
-    }catch(e){toast_("Erro.",false);}
+    const u=users.find(x=>x.email===em);if(!u)return;
+    if(u.email===session.email){toast_("Você não pode desativar a sua própria conta.",false);return;}
+    const ativo=!u.ativo;
+    const {error}=await sb.from("perfis").update({ativo}).eq("id",u.id);
+    if(error){toast_("Erro: "+error.message,false);return;}
+    setUsers(prev=>prev.map(x=>x.id===u.id?{...x,ativo}:x));
+    toast_(ativo?"Acesso reativado.":"Acesso desativado. A pessoa não consegue mais entrar.");
   };
   const filtered=useMemo(()=>quotes.filter(q=>{
     if(q.erroInterno)return false;
@@ -708,6 +730,14 @@ export default function App(){
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const totVal=useMemo(()=>filtered.reduce((s,q)=>s+(parseFloat(q.valor)||0),0),[filtered]);
   const chartColors=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
+  if(!session&&recuperando)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
+    <h1 className="login-t" style={{marginBottom:6}}>Criar nova senha</h1>
+    <p style={{fontSize:12,color:MUTED,marginBottom:18,textAlign:"center"}}>Escolha uma senha com pelo menos 8 caracteres.</p>
+    {novaSenhaRec.msg&&<div className="login-err">{novaSenhaRec.msg}</div>}
+    <div className="login-f"><label>Nova senha</label><input type="password" value={novaSenhaRec.a} onChange={e=>setNovaSenhaRec(x=>({...x,a:e.target.value}))} autoFocus/></div>
+    <div className="login-f"><label>Repita a nova senha</label><input type="password" value={novaSenhaRec.b} onChange={e=>setNovaSenhaRec(x=>({...x,b:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doSalvarSenhaRecuperada()}/></div>
+    <button className="btn-login" onClick={doSalvarSenhaRecuperada}>Salvar senha</button>
+  </div></div>{toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}</>);
   if(!session)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
     <div className="login-logo"><img src="/logo-fox.png" alt="Fox Pneus" style={{width:76,height:76,objectFit:"contain"}}/></div>
     <div className="login-t">Sistema de Descontos</div>
@@ -730,7 +760,7 @@ export default function App(){
       <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
       <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
     </>}
-  </div></div></>);
+  </div></div>{toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}</>);
   return(<><style>{css}</style><div className="wrap">
     {/* ── SIDEBAR ── */}
     <div className="sidebar">
@@ -743,10 +773,10 @@ export default function App(){
         {(hasRole(session,"admin")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="dashboard"?"active":""}`} onClick={()=>{setTab("dashboard");setDashKey(k=>k+1);}}><span className="tab-dot"/>Dashboard</div>}
         {hasRole(session,"cadastrar1")&&!hasRole(session,"admin")&&<div className={`tab ${tab==="inteldash"?"active":""}`} onClick={()=>setTab("inteldash")}><span className="tab-dot"/>Inteligência</div>}
         {(hasRole(session,"televendas")||hasRole(session,"cadastrar1")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="cadastrar"?"active":""}`} onClick={()=>setTab("cadastrar")}><span className="tab-dot"/>Cadastrar</div>}
-        {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2")||hasRole(session,"gerente"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
+        {(hasRole(session,"comercial")||hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&<div className={`tab ${tab==="consultar"?"active":""}`} onClick={()=>{setTab("consultar");setResult(null);setNotFound(false);}}><span className="tab-dot"/>Consultar</div>}
         {hasRole(session,"admin")&&<div className={`tab ${tab==="users"?"active":""}`} onClick={()=>setTab("users")}><span className="tab-dot"/>Usuários</div>}
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
-        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};const [r1,r2]=await Promise.all([fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h}),fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=500",{headers:h})]);const [d1,d2]=await Promise.all([r1.json(),r2.json()]);if(Array.isArray(d1))setLogsUsuarios(d1);if(Array.isArray(d2))setLogs(d2);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="logs"?"active":""}`} onClick={async()=>{setTab("logs");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};const r=await fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=200",{headers:h});const d=await r.json();if(Array.isArray(d))setLogs(d);}catch(e){}}}><span className="tab-dot"/>Logs</div>}
+        {hasRole(session,"admin")&&<div className={`tab ${tab==="atividade"?"active":""}`} onClick={async()=>{setTab("atividade");try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};const [r1,r2]=await Promise.all([fetch(SUPA_URL+"/rest/v1/logs_usuarios?order=created_at.desc&limit=500",{headers:h}),fetch(SUPA_URL+"/rest/v1/logs_consulta?order=created_at.desc&limit=500",{headers:h})]);const [d1,d2]=await Promise.all([r1.json(),r2.json()]);if(Array.isArray(d1))setLogsUsuarios(d1);if(Array.isArray(d2))setLogs(d2);}catch(e){}}}><span className="tab-dot"/>Atividade</div>}
       </nav>
       <div className="sb-footer">
         <div className="chip">
@@ -796,9 +826,9 @@ export default function App(){
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
-            <div className="stat-lbl">Pendentes</div>
+            <div className="stat-lbl">Válidos</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
-            <div className="stat-sub">aguardando aprovação</div>
+            <div className="stat-sub">no prazo, aguardando liberação</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
@@ -835,7 +865,7 @@ export default function App(){
   const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
   if(imgs.length>0)return(<button onClick={async()=>{
     setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
-    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
     const loaded=await Promise.all(imgs.map(async q=>{
       if(q.anexoBase64)return q;
       try{
@@ -883,7 +913,7 @@ export default function App(){
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              {["#","Loja","Total","Fechou","Válidos","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
             <tbody>{lChart.map((l,i)=>{
               const items=filtered.filter(q=>q.loja===l.name);
@@ -1215,7 +1245,7 @@ export default function App(){
                     <span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.concs.length} reg.</span>
                     {m.imgs.length>0&&<button onClick={async()=>{
                       setGaleriaModal({medida:m.medida,imagens:m.imgs,semFoto:[]});
-                      const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY};
+                      const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
                       const loaded=await Promise.all(m.imgs.map(async q=>{
                         if(q.anexoBase64)return q;
                         try{const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});const d=await r.json();const b64=d&&d[0]?d[0].anexo_base64:null;if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}return{...q,anexoBase64:b64};}catch(e){return q;}
@@ -1542,7 +1572,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1661,15 +1691,13 @@ export default function App(){
           {[
             ["todos","Todos","#555"],
             ["validos","Válidos",GREEN],
-            ["pendente","Pendentes",AMBER],
             ["liberado","Liberados",GREEN],
             ["vencido","Vencidas","#CC1F1F"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
-              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.perdida).length
-              :v==="pendente"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
-              :v==="liberado"?quotes.filter(q=>!!q.liberado&&!q.perdida).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
+              :v==="liberado"?quotes.filter(q=>!!q.liberado).length
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
@@ -1679,10 +1707,9 @@ export default function App(){
       {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
         <div className="card-np">{quotes.filter(q=>{
             if(filtroStatus==="todos")return true;
-            if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
-            if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
-            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="liberado")return !!q.liberado;
+            if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
@@ -1708,18 +1735,18 @@ export default function App(){
     </>)}
     {/* USERS */}
     {tab==="users"&&session.role==="admin"&&(<>
-      <div style={{marginBottom:20}}><p className="sec-t">Gerenciar Usuários</p><p className="sec-s">Somente o administrador pode criar ou remover acessos.</p></div>
+      <div style={{marginBottom:20}}><p className="sec-t">Gerenciar Usuários</p><p className="sec-s">Somente o administrador cria acessos e define o nível. As senhas ficam criptografadas: ninguém, nem o admin, consegue vê-las.</p></div>
       <div className="card">
         <p style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:14}}>Criar novo acesso</p>
         <div className="fg2">
           <div className="field"><label>Nome completo</label><input placeholder="Nome do colaborador" value={newUser.nome} onChange={e=>setNewUser(f=>({...f,nome:e.target.value}))}/></div>
-          <div className="field"><label>E-mail</label><input type="email" placeholder="email@foxpneus.com.br" value={newUser.email} onChange={e=>setNewUser(f=>({...f,email:e.target.value}))}/></div>
+          <div className="field"><label>E-mail</label><input type="email" placeholder="nome@redefox.com.br" value={newUser.email} onChange={e=>setNewUser(f=>({...f,email:e.target.value}))}/></div>
         </div>
         <div className="fg2">
-          <div className="field"><label>Senha</label><input type="password" placeholder="Senha de acesso" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
+          <div className="field"><label>Senha inicial (mín. 8)</label><input type="password" placeholder="A pessoa pode trocar depois" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-                {[["televendas","📞 Cadastrar — cadastra OS/cotação + concorrência"],["comercial","🤝 Consultar — consulta orçamentos/OS"],["cadastrar1","🔍 Inteligência — só lança concorrência"],["cadastrar2","✏️ Cad.+Cons. — cadastra E consulta"],["gerente","📊 Gerente — acesso ao Dashboard"]].map(([val,lbl])=>(
+                {NIVEIS.map(([v,ic,nm])=>[v,ic+" "+nm]).map(([val,lbl])=>(
                   <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
@@ -1734,18 +1761,17 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 96px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
-          {[["📞","Cadastrar"],["🤝","Consultar"],["🔍","Inteligência"],["✏️","Cad.+Cons."],["📊","Gerente"]].map(([icon,lbl])=>(
+          {NIVEIS.map(([,icon,lbl])=>[icon,lbl]).map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
         </div>
         <div className="card-np" style={{borderRadius:"0 0 10px 10px",border:"1px solid #2E2E2E"}}>{users.map(u=>{
-          const roles=(u.role||"").split(",").filter(Boolean);
-          const has=r=>roles.includes(r);
+          const has=r=>(u.funcoes||[]).includes(r);
           return(
-          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(5,80px) 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center"}}>
+          <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 96px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center",opacity:u.ativo===false?.45:1}}>
             {/* User info */}
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
@@ -1759,9 +1785,9 @@ export default function App(){
                   const reader=new FileReader();
                   reader.onload=async ev=>{
                     const b64=ev.target.result;
-                    const db=await supa.from("usuarios");
-                    await db.update({foto:b64},{email:u.email});
-                    setUsers(prev=>prev.map(x=>x.email===u.email?{...x,foto:b64}:x));
+                    const {error}=await sb.from("perfis").update({foto:b64}).eq("id",u.id);
+                    if(error){toast_("Erro ao salvar a foto.",false);return;}
+                    setUsers(prev=>prev.map(x=>x.id===u.id?{...x,foto:b64}:x));
                     toast_("Foto atualizada!");
                   };
                   reader.readAsDataURL(file);
@@ -1769,11 +1795,11 @@ export default function App(){
               </label>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{u.nome}</div>
-                <div style={{fontSize:10,color:MUTED}}>{u.email}</div>
+                <div style={{fontSize:10,color:MUTED}}>{u.email}{u.ativo===false?" · desativado":""}</div>
               </div>
             </div>
             {/* Permission toggles */}
-            {[["televendas","#3498DB"],["comercial","#F39C12"],["cadastrar1","#9B59B6"],["cadastrar2","#1ABC9C"],["gerente","#E67E22"]].map(([role,cor])=>(
+            {[["admin",RED],["comercial","#F39C12"],["gerente","#E67E22"],["televendas","#3498DB"]].map(([role,cor])=>(
               <div key={role} style={{display:"flex",justifyContent:"center"}}>
                 <div onClick={()=>doToggleRole(u,role)} title={has(role)?"Remover acesso":"Dar acesso"} style={{
                   width:28,height:28,borderRadius:"50%",cursor:"pointer",
@@ -1791,14 +1817,14 @@ export default function App(){
             <div style={{display:"flex",justifyContent:"center"}}>
               <div style={{display:"flex",gap:6,flexDirection:"column"}}>
                 <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
-                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>Remover</button>
+                <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>{u.ativo===false?"Ativar":"Desativar"}</button>
               </div>
             </div>
           </div>
           );
         })}</div>
       </>)}
-      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Conta admin:</strong> Usuário <strong style={{color:RED}}>admin@foxpneus.com.br</strong> é fixo e só você conhece a senha.</div>
+      <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Senhas:</strong> ninguém vê a senha de ninguém. Se alguém esquecer, clique em <strong style={{color:BLUE}}>🔑 Senha</strong>: a pessoa recebe um e-mail para criar uma nova. Para tirar o acesso, use <strong style={{color:RED}}>Desativar</strong>.</div>
       <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginTop:20}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff",marginBottom:4}}>👤 Gerenciar Vendedores</div>
         <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores sem precisar mexer no código</div>
@@ -2116,15 +2142,12 @@ export default function App(){
     {/* Modal alterar senha pelo admin */}
     {adminSenhaModal&&<div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Alterar Senha</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Nova senha por e-mail</div>
         <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} — {adminSenhaModal.email}</div>
-        <div className="field" style={{marginBottom:16}}>
-          <label>Nova Senha</label>
-          <input type="password" placeholder="Digite a nova senha" value={adminNovaSenha} onChange={e=>setAdminNovaSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doAdminAlterarSenha()} autoFocus style={{width:"100%",boxSizing:"border-box"}}/>
-        </div>
+        <div style={{fontSize:13,color:"#ccc",lineHeight:1.6,marginBottom:20}}>Vamos enviar um e-mail para <strong style={{color:"#fff"}}>{adminSenhaModal.email}</strong> com um link para a pessoa criar uma senha nova. Por segurança, o admin não define nem vê a senha de ninguém.</div>
         <div style={{display:"flex",gap:10}}>
           <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-          <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar Nova Senha</button>
+          <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Enviar e-mail</button>
         </div>
       </div>
     </div>}
@@ -2134,7 +2157,7 @@ export default function App(){
         <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Acessos e Consultas</div>
         <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
         <div style={{display:"flex",gap:10}}>
-          {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
+          {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
           <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
         </div>
       </div>

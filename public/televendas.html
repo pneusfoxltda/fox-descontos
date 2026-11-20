@@ -7,6 +7,7 @@
 <title>Televendas — Fox Pneus</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#f4f6f9;color:#1a2332;font-family:'Inter',sans-serif;min-height:100vh;}
@@ -347,9 +348,9 @@ td.meta-col{color:#6b7280;}
       <h3 style="margin:0;font-size:15px;color:#0f1f3d;">🔒 Acesso restrito</h3>
       <button class="cli-modal-close" onclick="fecharLogin()">✕</button>
     </div>
-    <p style="font-size:12px;color:#9aabb8;margin:0 0 18px;">Área de clientes protegida. Informe suas credenciais.</p>
+    <p style="font-size:12px;color:#9aabb8;margin:0 0 18px;">Área de clientes protegida. Entre com o mesmo e-mail e senha do App de descontos.</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <input id="login-user" type="text" class="login-input" placeholder="Usuário" autocomplete="username">
+      <input id="login-user" type="email" class="login-input" placeholder="E-mail do FOXNET (ex.: nome@redefox.com.br)" autocomplete="username">
       <input id="login-pass" type="password" class="login-input" placeholder="Senha" autocomplete="current-password"
              onkeydown="if(event.key==='Enter')tentarLogin()">
       <p id="login-erro" class="login-erro"></p>
@@ -550,6 +551,13 @@ function atualizarBotaoFiltro() {
 /* ── Supabase ── */
 const SB_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+/* Login seguro (Supabase Auth): mesma sessão do App de descontos e do Cadastrar */
+const sbAuth = supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'foxnet-auth', persistSession: true, autoRefreshToken: true } });
+let SB_TOKEN = null;
+sbAuth.auth.onAuthStateChange((_e, sessao) => { SB_TOKEN = sessao ? sessao.access_token : null; });
+const tokTV = () => SB_TOKEN || SB_KEY;
+const NIVEIS_TV = ['admin', 'televendas', 'gerente'];   // quem pode ver clientes, exportar e o setor
+localStorage.removeItem('fox_tv_usuarios');             // apaga a cópia antiga das senhas guardada nos navegadores
 
 const OPERADORES = [
   {codigo:"294862", nome:"Graziele Garcia"},
@@ -615,7 +623,7 @@ function savePrefs() {
 async function carregarMetasSupabase() {
   try {
     const r = await fetch(`${SB_URL}/rest/v1/metas_televendas?select=*`, {
-      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${tokTV()}` }
     });
     if (!r.ok) return;
     const rows = await r.json();
@@ -650,7 +658,7 @@ async function salvarFeriadosSupabase(chave, ferDias) {
     const filtro = encodeURIComponent('like.feriado_%');
     await fetch(
       `${SB_URL}/rest/v1/metas_televendas?mes=eq.${chave}&operador_codigo=${filtro}`,
-      { method: 'DELETE', headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+      { method: 'DELETE', headers: { apikey: SB_KEY, Authorization: `Bearer ${tokTV()}` } }
     );
     // 2. Insere os novos feriados (se houver)
     if (ferDias && ferDias.length > 0) {
@@ -662,7 +670,7 @@ async function salvarFeriadosSupabase(chave, ferDias) {
       await fetch(`${SB_URL}/rest/v1/metas_televendas`, {
         method: 'POST',
         headers: {
-          apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
+          apikey: SB_KEY, Authorization: `Bearer ${tokTV()}`,
           'Content-Type': 'application/json',
           Prefer: 'resolution=merge-duplicates'
         },
@@ -683,7 +691,7 @@ async function salvarMetasSupabase(chave, metasSalvas) {
       method: 'POST',
       headers: {
         apikey: SB_KEY,
-        Authorization: `Bearer ${SB_KEY}`,
+        Authorization: `Bearer ${tokTV()}`,
         'Content-Type': 'application/json',
         Prefer: 'resolution=merge-duplicates'
       },
@@ -750,7 +758,7 @@ async function buscarMes() {
   let all = [], offset = 0;
   while (true) {
     const url = `${SB_URL}/rest/v1/vendas_televendas?select=*&data_ref=gte.${ini}&data_ref=lte.${fim}&nome_cliente=is.null&order=data_ref.asc&limit=1000&offset=${offset}`;
-    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, Prefer:'count=none'}});
+    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${tokTV()}`, Prefer:'count=none'}});
     if(!r.ok) throw new Error(`Supabase ${r.status}`);
     const rows = await r.json();
     all = all.concat(rows);
@@ -1389,28 +1397,16 @@ function saveUsuarios(u) { localStorage.setItem('fox_tv_usuarios', JSON.stringif
 function isAutenticado() { return sessionStorage.getItem('fox_tv_auth') === '1'; }
 
 /* Sincronização de usuários com Supabase */
-async function carregarUsuariosSupabase() {
-  try {
-    const r = await fetch(`${SB_URL}/rest/v1/usuarios_televendas?select=username,password,is_admin&order=id`, {
-      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
-    });
-    if(!r.ok) return;
-    const rows = await r.json();
-    if(Array.isArray(rows) && rows.length > 0) {
-      saveUsuarios(rows.map(u => ({ user: u.username, pass: u.password, admin: !!u.is_admin })));
-    }
-  } catch(e) { console.warn('Erro ao carregar usuários:', e); }
-}
+async function carregarUsuariosSupabase() { /* login novo: as senhas não ficam mais no navegador */ }
 function isAdmin() { return sessionStorage.getItem('fox_tv_auth_admin') === '1'; }
 function mostrarBotoesAdmin() {
   document.getElementById('btn-admin').style.display = '';
-  document.getElementById('btn-usuarios').style.display = '';
 }
 async function salvarUsuarioSupabase(username, password) {
   try {
     await fetch(`${SB_URL}/rest/v1/usuarios_televendas`, {
       method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`,
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${tokTV()}`,
                  'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
       body: JSON.stringify({ username, password })
     });
@@ -1420,7 +1416,7 @@ async function excluirUsuarioSupabase(username) {
   try {
     await fetch(`${SB_URL}/rest/v1/usuarios_televendas?username=eq.${encodeURIComponent(username)}`, {
       method: 'DELETE',
-      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${tokTV()}` }
     });
   } catch(e) { console.warn('Erro ao excluir usuário:', e); }
 }
@@ -1439,35 +1435,46 @@ function fecharLogin() {
   document.getElementById('modal-login').classList.remove('open');
   window._loginCallback = null;
 }
-function tentarLogin() {
-  const user = document.getElementById('login-user').value.trim();
+async function entrarTV(sessao) {
+  if(!sessao) return false;
+  const { data: p } = await sbAuth.from('perfis').select('nome,email,funcoes,ativo').eq('id', sessao.user.id).maybeSingle();
+  const funcoes = (p && p.funcoes) || [];
+  if(!p || !p.ativo || !funcoes.some(f => NIVEIS_TV.includes(f))) { await sbAuth.auth.signOut(); return null; }
+  sessionStorage.setItem('fox_tv_auth', '1');
+  sessionStorage.setItem('fox_tv_auth_user', p.nome || p.email);
+  if(funcoes.includes('admin')) { sessionStorage.setItem('fox_tv_auth_admin', '1'); mostrarBotoesAdmin(); }
+  else sessionStorage.removeItem('fox_tv_auth_admin');
+  return true;
+}
+async function tentarLogin() {
+  const email = document.getElementById('login-user').value.trim().toLowerCase();
   const pass = document.getElementById('login-pass').value;
   const erroEl = document.getElementById('login-erro');
-  const usuarios = getUsuarios();
-  if(!usuarios.length) {
-    erroEl.textContent = 'Nenhum usuário cadastrado. Contate o administrador.';
-    erroEl.style.display = 'block'; return;
-  }
-  const found = usuarios.find(u => u.user === user && u.pass === pass);
-  if(found) {
-    sessionStorage.setItem('fox_tv_auth', '1');
-    sessionStorage.setItem('fox_tv_auth_user', user);
-    if(found.admin) {
-      sessionStorage.setItem('fox_tv_auth_admin', '1');
-      mostrarBotoesAdmin();
-    }
+  erroEl.style.display = 'none';
+  if(!email || !pass) { erroEl.textContent = 'Informe e-mail e senha.'; erroEl.style.display = 'block'; return; }
+  const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+  const ok = !error && await entrarTV(data.session);
+  if(ok) {
+    const depois = window._loginCallback;   // fecharLogin() limpa o callback; guarda antes
     fecharLogin();
-    if(window._loginCallback) { window._loginCallback(); window._loginCallback = null; }
+    if(depois) depois();
   } else {
-    erroEl.textContent = 'Usuário ou senha incorretos.';
+    erroEl.textContent = error ? 'E-mail ou senha incorretos.' : 'Seu usuário não tem acesso a esta área. Fale com o TI.';
     erroEl.style.display = 'block';
     document.getElementById('login-pass').value = '';
     document.getElementById('login-pass').focus();
   }
 }
+// Já entrou no FOXNET (App de descontos ou Cadastrar)? Aproveita a mesma sessão.
+sbAuth.auth.getSession().then(({ data }) => {
+  SB_TOKEN = data.session ? data.session.access_token : null;
+  if(data.session) entrarTV(data.session);
+  else { sessionStorage.removeItem('fox_tv_auth'); sessionStorage.removeItem('fox_tv_auth_admin'); }
+});
 
 /* ── Gerenciamento de usuários (admin) ── */
 function abrirUsuarios() {
+  location.href = '/descontos'; return;   // usuários e níveis: App de descontos → aba Usuários
   renderListaUsuarios();
   document.getElementById('user-msg').style.display = 'none';
   document.getElementById('novo-user').value = '';
@@ -1733,7 +1740,7 @@ async function buscarDetalheDia(iso, opCodigo = null) {
     const url = `${SB_URL}/rest/v1/vendas_televendas_clientes?select=*` +
       `&data_ref=eq.${iso}${filtroOp}` +
       `&order=operador_codigo.asc,nome_cliente.asc,codigo_item.asc&limit=1000&offset=${offset}`;
-    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, Prefer:'count=none'}});
+    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${tokTV()}`, Prefer:'count=none'}});
     if(!r.ok) throw new Error(`Supabase ${r.status}`);
     const rows = await r.json();
     all = all.concat(rows);
