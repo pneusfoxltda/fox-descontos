@@ -104,7 +104,7 @@ body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
 .wrap{height:100vh;width:100vw;background:#0A0A0A;display:flex;overflow:hidden;position:fixed;top:0;left:0;}
 .sidebar{width:180px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
 .sb-brand{padding:14px 14px 12px;border-bottom:1px solid #1E1E1E;}
-.brand-icon{width:40px;height:40px;background:#CC1F1F;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.brand-icon{width:40px;height:40px;background:transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;}
 .brand-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;margin-top:8px;}
 .brand-sub{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;}
 .sb-nav{flex:1;padding:12px 0;}
@@ -242,7 +242,7 @@ export default function App(){
     document.title="Descontos Fox Pneus";
     let lk=document.querySelector("link[rel~='icon']");
     if(!lk){lk=document.createElement("link");lk.rel="icon";document.head.appendChild(lk);}
-    lk.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦊</text></svg>";
+    lk.href="/favicon.png";
   },[]);
   const[session,setSession]=useState(null);
   const[loginForm,setLoginForm]=useState({email:"",pass:""});
@@ -740,7 +740,7 @@ export default function App(){
     <button className="btn-login" onClick={doSalvarSenhaRecuperada}>Salvar senha</button>
   </div></div>{toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}</>);
   if(!session)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
-    <div className="login-logo"><div style={{width:64,height:64,background:RED,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>🦊</div></div>
+    <div className="login-logo"><img src="/logo-fox.png" alt="Fox Pneus" style={{width:76,height:76,objectFit:"contain"}}/></div>
     <div className="login-t">Sistema de Descontos</div>
     <div className="login-s">Acesso restrito — Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
@@ -766,7 +766,7 @@ export default function App(){
     {/* ── SIDEBAR ── */}
     <div className="sidebar">
       <div className="sb-brand">
-        <div className="brand-icon"><span style={{fontSize:22}}>🦊</span></div>
+        <div className="brand-icon"><img src="/logo-fox.png" alt="Fox Pneus" style={{width:40,height:40,objectFit:"contain"}}/></div>
         <div className="brand-name">Fox Pneus</div>
         <div className="brand-sub">Sistema de Descontos</div>
       </div>
@@ -1584,7 +1584,7 @@ export default function App(){
       {result&&(<div className="rc">
         <div className="rh">
           <div>
-            {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}>🦊
+            {result.negociadorNome&&<div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(0,0,0,.25)",borderRadius:6,padding:"4px 10px",marginBottom:8,width:"fit-content"}}><img src="/logo-fox.png" alt="" style={{width:16,height:16,objectFit:"contain"}}/>
               <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)",letterSpacing:".5px"}}>{result.negociadorNome}</span>
               {result.negociadorEmail&&<span style={{fontSize:10,color:"rgba(255,255,255,.55)"}}>· {result.negociadorEmail}</span>}
             </div>}
