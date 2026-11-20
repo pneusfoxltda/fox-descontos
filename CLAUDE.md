@@ -84,11 +84,16 @@ vendas para o televendas; `apps-script/` tem o do painel).
 
 ## Próximos passos (em ordem)
 
-1. **Trancar o banco (RLS)**: hoje `descontos`, `usuarios`, `usuarios_televendas`,
-   `logs_*` têm políticas "acesso total" para `anon`/`public`. Trocar por regras por
-   nível (`public.tem_funcao()`, `public.eh_admin()` já existem). A Consulta pública deve
-   ler só por uma view/RPC com as colunas necessárias. O robô do GitHub Actions e os
-   Apps Scripts que gravam no banco precisam continuar funcionando (verificar a chave que usam).
+1. **Trancar o banco (RLS)** — EM ANDAMENTO (branch `seguranca-rls`). Ordem combinada:
+   `06_consulta_publica.sql` (cria a função da Consulta, não muda nada) → publicar o site
+   (consulta.html busca pela RPC `consulta_publica`) → `07_trancar_banco.sql` (apaga as
+   regras "acesso total" e cria regras por nível; `update_desconto` vira `security invoker`;
+   `fox_login`, `fox_criar_usuario`, `update_usuario` desligadas) → TI cria o segredo
+   `SUPABASE_SERVICE_KEY` no GitHub (chave **service_role** da aba *Legacy API Keys*) e roda
+   o robô → `08_trancar_robo.sql` (tira a gravação pública de `vendas_televendas`).
+   Painel do televendas: resumo e metas continuam sem login (aguardando decisão do TI).
+   Diagnóstico (`05_diagnostico.sql`) mostrou que `vendas_televendas_clientes` não tinha
+   regra de gravação para a chave pública (o robô pode estar falhando nessa tabela).
 2. **Apagar as senhas legíveis** das tabelas `usuarios` e `usuarios_televendas`.
 3. Remontar **liberação, consultas e relatórios** com as ideias do TI (ele vai trazer).
    Ideias já sugeridas: recusar com motivo, histórico de quem liberou, aviso ao vendedor,

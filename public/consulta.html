@@ -257,7 +257,18 @@ function renderCards(list, showConc60 = false) {
   return h;
 }
 
-const SEL = "numero,tipo,cba,medida,loja,valor,pgto,validade,obs,liberado,vendedor,criado_em,telefone_cliente";
+/* Busca pela função "consulta_publica" do banco: a página não lê a tabela
+   direto, só recebe as colunas que mostra (máx. 200 resultados). */
+async function consultaPublica(modo, termo, loja) {
+  const r = await fetch(URL_BASE + "/rest/v1/rpc/consulta_publica", {
+    method: "POST",
+    headers: {...H, "Content-Type": "application/json"},
+    body: JSON.stringify({p_modo: modo, p_termo: termo, p_loja: loja || null})
+  });
+  if (!r.ok) throw new Error(r.status);
+  const data = await r.json();
+  return Array.isArray(data) ? data : [];
+}
 
 /* ── Sistema de Logs ── */
 let _cachedIp = null;
@@ -283,7 +294,6 @@ async function registrarLog(acao, busca, loja, sucesso, motivo) {
 }
 
 async function buscar() {
-  let apiUrl = "";
   let showConc60 = false;
 
   if (tab === "med") {
@@ -293,11 +303,7 @@ async function buscar() {
       document.getElementById("med-input").focus();
       return;
     }
-    const d60 = new Date(); d60.setDate(d60.getDate() - 60);
-    const since = d60.toISOString().slice(0, 10);
 
-    apiUrl = `${URL_BASE}/rest/v1/descontos?medida=ilike.*${encodeURIComponent(medida)}*&obs=ilike.*CONCORRENTES*&criado_em=gte.${since}&select=${SEL}&order=criado_em.desc`;
-    if (loja) apiUrl += `&loja=eq.${encodeURIComponent(loja)}`;
     showConc60 = true;
 
     const btn = document.getElementById("sbtn-med");
@@ -305,9 +311,7 @@ async function buscar() {
     document.getElementById("resultado").innerHTML = '<div class="loading">🔄 Aguarde...</div>';
 
     try {
-      const r = await fetch(apiUrl, {headers: H});
-      if (!r.ok) throw new Error(r.status);
-      const data = await r.json();
+      const data = await consultaPublica("med", medida, loja);
       document.getElementById("resultado").innerHTML = renderCards(data, true);
       registrarLog("🔍 Busca por Medida", medida, loja||"Todas", data.length>0, data.length===0?"Sem resultados":null);
     } catch(e) {
@@ -325,20 +329,13 @@ async function buscar() {
   btn.disabled = true; btn.textContent = "Buscando...";
   document.getElementById("resultado").innerHTML = '<div class="loading">🔄 Aguarde...</div>';
 
-  if (tab === "tel") {
-    const digits = digitsOnly(raw);
-    apiUrl = `${URL_BASE}/rest/v1/descontos?or=(telefone_cliente.ilike.*${encodeURIComponent(digits)}*,telefone_cliente.ilike.*${encodeURIComponent(raw)}*)&select=${SEL}&order=criado_em.desc`;
-  } else {
-    const term = raw.replace(/^#/,"").trim();
-    apiUrl = `${URL_BASE}/rest/v1/descontos?numero=ilike.*${encodeURIComponent(term)}*&select=${SEL}&order=criado_em.desc`;
-  }
+  const modo = tab === "tel" ? "tel" : "num";
+  const termo = tab === "tel" ? raw : raw.replace(/^#/,"").trim();
 
   const tipoAcao = tab==="tel" ? "🔍 Busca por Telefone" : "🔍 Busca por Nº O.S.";
 
   try {
-    const r = await fetch(apiUrl, {headers: H});
-    if (!r.ok) throw new Error(r.status);
-    const data = await r.json();
+    const data = await consultaPublica(modo, termo, null);
     document.getElementById("resultado").innerHTML = renderCards(data, false);
     registrarLog(tipoAcao, raw, null, data.length>0, data.length===0?"Sem resultados":null);
   } catch(e) {

@@ -68,7 +68,9 @@ MOVERE_USER = os.environ.get("MOVERE_USER", "")
 MOVERE_PASS = os.environ.get("MOVERE_PASS", "")
 
 SUPABASE_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co"
-SUPABASE_KEY = (
+# Chave secreta do robô (GitHub → Settings → Secrets → SUPABASE_SERVICE_KEY).
+# Sem ela, usa a chave pública (só funciona enquanto o passo 7 do banco não rodou).
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip() or (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
     ".eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6"
     "ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30"
