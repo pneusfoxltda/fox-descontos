@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/favicon.png">
 <title>Fox Pneus — Cadastrar Desconto</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -29,7 +29,7 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
 #main-screen{display:none;}
 .top-bar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
 .top-brand{display:flex;align-items:center;gap:10px;}
-.top-logo{width:36px;height:36px;background:#CC1F1F;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;}
+.top-logo{width:38px;height:38px;object-fit:contain;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;}
 .top-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;}
 .top-sub{font-size:11px;color:#666;}
 .top-user{display:flex;align-items:center;gap:10px;}
@@ -79,7 +79,7 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
 <!-- ═══ LOGIN ═══ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo"><div class="logo-circle">🦊</div></div>
+    <div class="login-logo"><img src="/logo-fox.png" alt="Fox Pneus" style="width:76px;height:76px;object-fit:contain"></div>
     <h1 class="login-t">FOX PNEUS</h1>
     <p class="login-s">Cadastro de Desconto Autorizado</p>
     <div class="login-err" id="login-err"></div>
@@ -93,7 +93,7 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
 <div id="main-screen">
   <div class="top-bar">
     <div class="top-brand">
-      <div class="top-logo">🦊</div>
+      <img class="top-logo" src="/logo-fox.png" alt="Fox Pneus">
       <div>
         <div class="top-title">FOX PNEUS</div>
         <div class="top-sub">Cadastrar Desconto</div>
