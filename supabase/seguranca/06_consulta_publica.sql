@@ -19,14 +19,14 @@ as $$
     select d.numero, d.tipo, d.cba, d.medida, d.loja, d.valor, d.pgto, d.validade,
            d.obs, d.liberado, d.vendedor, d.criado_em, d.telefone_cliente
     from public.descontos d
-    where length(trim(coalesce(p_termo, ''))) >= 2
+    where trim(coalesce(p_termo, '')) <> ''
       and case p_modo
         when 'med' then d.medida ilike '%' || trim(p_termo) || '%'
                     and d.obs ilike '%CONCORRENTES%'
                     and d.criado_em >= current_date - 60
                     and (coalesce(p_loja, '') = '' or d.loja = p_loja)
         when 'tel' then d.telefone_cliente ilike '%' || trim(p_termo) || '%'
-                    or (length(regexp_replace(p_termo, '\D', '', 'g')) >= 2
+                    or (regexp_replace(p_termo, '\D', '', 'g') <> ''
                         and d.telefone_cliente ilike '%' || regexp_replace(p_termo, '\D', '', 'g') || '%')
         when 'num' then d.numero ilike '%' || trim(p_termo) || '%'
         else false
