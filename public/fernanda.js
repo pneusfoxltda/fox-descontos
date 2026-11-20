@@ -49,8 +49,8 @@ const feNorm = s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLo
 const feEsc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const feLojaNr = nr=>FE_LOJAS.find(l=>l.nr===nr);
 
-const FE_REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/", televendas:"/televendas.html"};
-const FE_NO_FOXNET = location.pathname.replace(/index\.html$/,"").replace(/\/+$/,"/") === "/foxnet/";
+const FE_REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/descontos", televendas:"/televendas.html"};
+const FE_NO_FOXNET = !!document.getElementById("tiles") || location.pathname.replace(/index\.html$/,"").replace(/\/+$/,"/") === "/foxnet/";
 function feGo(h){
   const id=h.replace("#/","");
   if(FE_REAL[id]) { location.href=FE_REAL[id]; return; }
