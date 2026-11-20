@@ -21,7 +21,11 @@ a{color:inherit;text-decoration:none} button{font-family:inherit;cursor:pointer}
 .sb:hover .i{background:#E9E2F8}
 .sb.on{color:var(--brand)}.sb.on .i{background:#E3D7FA}
 .sb.plus .i{background:var(--brand);color:#fff;border-radius:50%;font-size:22px}
-.side .sp{flex:1}
+.sfav{display:flex;flex-direction:column;align-items:center;gap:2px;overflow-y:auto;width:100%;padding-bottom:10px}
+.side.vazia{display:none}
+.side.vazia + .main{margin-left:0}
+.sb.add{color:#9A94B3;font-weight:500;font-size:10.5px}
+.sb.add .i{border:1.5px dashed #CFC6E6;font-size:16px;color:#9A94B3}
 
 /* ── CONTEÚDO ── */
 .main{margin-left:84px;padding:14px 14px 40px}
@@ -92,31 +96,23 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
 
 @media(max-width:760px){
   .side{top:auto;width:100%;height:68px;flex-direction:row;justify-content:space-around;padding:0 4px;border-right:none;border-top:1px solid #ECE7F7}
-  .side .logo,.side .sp,.sb.hide-m{display:none}
+  .side .logo{display:none}
+  .sfav{flex-direction:row;justify-content:space-around;overflow-x:auto;padding:0}
   .sb{width:auto;flex:1;font-size:10px}.sb .i{width:34px;height:34px;font-size:17px}
   .main{margin-left:0;padding-bottom:90px}
+  .side.vazia + .main{padding-bottom:20px}
   .hero{padding:22px 16px}.brandline small{display:none}
   .search{padding-left:14px}.search button{padding:11px 12px}
-  .fe-launch,.fe-panel{bottom:84px!important}
+  .side:not(.vazia) ~ .fe-launch,.side:not(.vazia) ~ .fe-panel{bottom:84px!important}
 }
 @media(hover:none){.tile .star{opacity:.85}}
 </style>
 </head>
 <body>
 
-<nav class="side" aria-label="Menu">
-  <a href="#/" class="fox logo" title="FOXNET"></a>
-  <button class="sb plus" onclick="go('#/cadastrar')"><span class="i">＋</span>Cadastrar</button>
-  <button class="sb" data-r="home" onclick="go('#/')"><span class="i">⌂</span>Início</button>
-  <button class="sb" onclick="irPara('favoritos')"><span class="i">☆</span>Favoritos</button>
-  <button class="sb" onclick="go('#/consulta')"><span class="i">🔍</span>Consulta</button>
-  <button class="sb" onclick="go('#/descontos')"><span class="i">🏷️</span>Descontos</button>
-  <button class="sb hide-m" onclick="go('#/televendas')"><span class="i">💰</span>Televendas</button>
-  <button class="sb" data-r="info" onclick="go('#/info')"><span class="i">⚡</span>Info rápida</button>
-  <button class="sb hide-m" onclick="irPara('explorar')"><span class="i">▦</span>Sistemas</button>
-  <button class="sb hide-m" onclick="toastMsg('Resultados: em construção 🚧')"><span class="i">📊</span>Resultados</button>
-  <span class="sp"></span>
-  <button class="sb hide-m" onclick="location.href='/'"><span class="i">👤</span>Entrar</button>
+<nav class="side" id="side" aria-label="Meus favoritos">
+  <a href="#/" class="fox logo" title="FOXNET — Início" onclick="filtrar('')"></a>
+  <div class="sfav" id="sfav"></div>
 </nav>
 
 <main class="main">
@@ -130,16 +126,11 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
     </div>
     <div class="dia" id="dia"></div>
     <h1 class="frase" id="frase"></h1>
-    <div class="tabs"><button class="tab on" onclick="filtrar('')">⌂ Início</button><button class="tab" onclick="irPara('favoritos')">☆ Favoritos</button></div>
+    <div class="tabs" id="tabs"><button class="tab" data-f="" onclick="filtrar('')">⌂ Início</button><button class="tab" data-f="fav" onclick="filtrar('fav')">☆ Favoritos</button></div>
     <form class="search" onsubmit="event.preventDefault();buscar()">
       <span>🔎</span><input id="q" placeholder="Busque sistemas, lojas, cidades, carros…" autocomplete="off"><button type="submit">Buscar</button>
     </form>
     <div class="cats" id="cats"></div>
-  </div>
-
-  <div class="sec" id="favoritos">
-    <div class="sec-h"><h2>⭐ Meus favoritos</h2><span class="hint">Clique na estrela de qualquer sistema para fixar aqui</span></div>
-    <div id="favs"></div>
   </div>
 
   <div class="sec" id="explorar">
@@ -211,22 +202,22 @@ const INFO_VEIC = ["Jeep Renegade","Ford EcoSport","Hyundai Santa Fé","Kia Spor
 
 /* ── Sistemas (blocos coloridos). cat = categoria para os filtros ── */
 const SIS = [
-  {id:"consulta",  t:"Consulta de descontos",   ic:"🔍", cat:"descontos",  bg:["#FFE1CC","#FFB38A"], go:"#/consulta"},
-  {id:"cadastrar", t:"Cadastrar desconto",      ic:"💾", cat:"descontos",  bg:["#E7DBFF","#C3A6FF"], go:"#/cadastrar"},
-  {id:"descontos", t:"App de descontos",        ic:"🏷️", cat:"descontos",  bg:["#FFE0EC","#FFA9C6"], go:"#/descontos"},
-  {id:"movcot",    t:"Movere — Cotação e O.S.", ic:"🧾", cat:"sistemas",   bg:["#D8F5EC","#8EE0C4"], url:EXT.movereCot},
-  {id:"movere",    t:"Movere completo",       ic:"🗂️",cat:"sistemas",   bg:["#DDEBFF","#9EC2FF"], url:EXT.movere},
-  {id:"bi",        t:"BI Movere",               ic:"📊", cat:"sistemas",   bg:["#FFF1C7","#FFD65E"], url:EXT.bi},
-  {id:"televendas",t:"Painel do televendas",    ic:"💰", cat:"televendas", bg:["#E2F7D3","#AEE37F"], go:"#/televendas"},
-  {id:"info",      t:"Informações rápidas",     ic:"⚡", cat:"televendas", bg:["#FFF6D6","#FFE07A"], go:"#/info"},
-  {id:"gmail",     t:"Gmail",                   ic:"📧", cat:"sistemas",   bg:["#FDE2E2","#F9A8A8"], url:EXT.gmail},
-  {id:"oleo",      t:"Busca de Óleo",           ic:"🛢️", cat:"lojas",      bg:["#E0F2FE","#93C5FD"], url:EXT.oleo},
-  {id:"calc",      t:"Calculadora de Medidas",  ic:"📐", cat:"lojas",      bg:["#EDE9FE","#C4B5FD"], url:EXT.calc},
-  {id:"ligacoes",  t:"Ligações das lojas",      ic:"📞", cat:"lojas",      bg:["#F1F1F4","#D4D4DC"], soon:true},
-  {id:"appfox",    t:"App Fox",                 ic:"🚀", cat:"sistemas",   bg:["#FCE7F3","#F9A8D4"], url:EXT.appfox},
-  {id:"chatgpt",   t:"ChatGPT",                 ic:"🤖", cat:"ia",         bg:["#D1FAE5","#6EE7B7"], url:EXT.gpt},
-  {id:"gemini",    t:"Gemini",                  ic:"✨", cat:"ia",         bg:["#DBEAFE","#A5B4FC"], url:EXT.gemini},
-  {id:"claude",    t:"Claude",                  ic:"🧠", cat:"ia",         bg:["#FFEDD5","#FDBA74"], url:EXT.claude},
+  {id:"consulta",  t:"Consulta de descontos", c:"Consulta",   ic:"🔍", cat:"descontos",  bg:["#FFE1CC","#FFB38A"], go:"#/consulta"},
+  {id:"cadastrar", t:"Cadastrar desconto", c:"Cadastrar",      ic:"💾", cat:"descontos",  bg:["#E7DBFF","#C3A6FF"], go:"#/cadastrar"},
+  {id:"descontos", t:"App de descontos", c:"Descontos",        ic:"🏷️", cat:"descontos",  bg:["#FFE0EC","#FFA9C6"], go:"#/descontos"},
+  {id:"movcot",    t:"Movere — Cotação e O.S.", c:"Cotação", ic:"🧾", cat:"sistemas",   bg:["#D8F5EC","#8EE0C4"], url:EXT.movereCot},
+  {id:"movere",    t:"Movere completo", c:"Movere",       ic:"🗂️",cat:"sistemas",   bg:["#DDEBFF","#9EC2FF"], url:EXT.movere},
+  {id:"bi",        t:"BI Movere", c:"BI",               ic:"📊", cat:"sistemas",   bg:["#FFF1C7","#FFD65E"], url:EXT.bi},
+  {id:"televendas",t:"Painel do televendas", c:"Televendas",    ic:"💰", cat:"televendas", bg:["#E2F7D3","#AEE37F"], go:"#/televendas"},
+  {id:"info",      t:"Informações rápidas", c:"Info rápida",     ic:"⚡", cat:"televendas", bg:["#FFF6D6","#FFE07A"], go:"#/info"},
+  {id:"gmail",     t:"Gmail", c:"Gmail",                   ic:"📧", cat:"sistemas",   bg:["#FDE2E2","#F9A8A8"], url:EXT.gmail},
+  {id:"oleo",      t:"Busca de Óleo", c:"Óleo",           ic:"🛢️", cat:"lojas",      bg:["#E0F2FE","#93C5FD"], url:EXT.oleo},
+  {id:"calc",      t:"Calculadora de Medidas", c:"Medidas",  ic:"📐", cat:"lojas",      bg:["#EDE9FE","#C4B5FD"], url:EXT.calc},
+  {id:"ligacoes",  t:"Ligações das lojas", c:"Ligações",      ic:"📞", cat:"lojas",      bg:["#F1F1F4","#D4D4DC"], soon:true},
+  {id:"appfox",    t:"App Fox", c:"App Fox",                 ic:"🚀", cat:"sistemas",   bg:["#FCE7F3","#F9A8D4"], url:EXT.appfox},
+  {id:"chatgpt",   t:"ChatGPT", c:"ChatGPT",                 ic:"🤖", cat:"ia",         bg:["#D1FAE5","#6EE7B7"], url:EXT.gpt},
+  {id:"gemini",    t:"Gemini", c:"Gemini",                  ic:"✨", cat:"ia",         bg:["#DBEAFE","#A5B4FC"], url:EXT.gemini},
+  {id:"claude",    t:"Claude", c:"Claude",                  ic:"🧠", cat:"ia",         bg:["#FFEDD5","#FDBA74"], url:EXT.claude},
 ];
 const CATS = [["","✦ Todos"],["descontos","🏷️ Descontos"],["televendas","📞 Televendas"],["lojas","🏪 Lojas"],["sistemas","🗂️ Sistemas"],["ia","🤖 Inteligência Artificial"]];
 
@@ -256,16 +247,27 @@ function tile(s){
     <button class="star ${fav?"on":""}" onclick="toggleFav('${s.id}',event)" title="${fav?"Remover dos favoritos":"Adicionar aos favoritos"}" aria-label="Favorito">${fav?"★":"☆"}</button></div>`;
 }
 let filtro="";
+function renderSide(){
+  const f=getFav(), lista=SIS.filter(x=>f.includes(x.id));
+  sfav.innerHTML = lista.length
+    ? lista.map(x=>`<button class="sb" onclick="abrir('${x.id}')" title="${esc(x.t)}"><span class="i" style="background:${x.bg[0]}">${x.ic}</span>${esc(x.c||x.t)}</button>`).join("")
+    : `<button class="sb add" onclick="filtrar('');toastMsg('Clique na ☆ de um sistema para fixar aqui')"><span class="i">☆</span>Fixe seus favoritos</button>`;
+  side.classList.toggle("vazia", !lista.length);
+}
 function renderTiles(){
-  const f=getFav(), lista=SIS.filter(s=>!filtro||s.cat===filtro);
-  tiles.innerHTML=lista.map(tile).join("");
-  const c=CATS.find(x=>x[0]===filtro); exp_t.textContent=filtro?c[1].replace(/^\S+\s/,""):"Explorar sistemas"; exp_h.textContent=lista.length+" sistema(s)";
-  favs.innerHTML=f.length?`<div class="tiles">${SIS.filter(s=>f.includes(s.id)).map(tile).join("")}</div>`:`<div class="empty-fav">Você ainda não tem favoritos. Passe o mouse num sistema e clique na ☆ para fixar aqui.</div>`;
+  const f=getFav();
+  const lista = filtro==="fav" ? SIS.filter(x=>f.includes(x.id)) : SIS.filter(x=>!filtro||x.cat===filtro);
+  tiles.innerHTML = lista.length ? lista.map(tile).join("")
+    : `<div class="empty-fav" style="grid-column:1/-1">Você ainda não tem favoritos. Clique em ⌂ Início, passe o mouse num sistema e clique na ☆.</div>`;
+  const c=CATS.find(x=>x[0]===filtro);
+  exp_t.textContent = filtro==="fav" ? "⭐ Meus favoritos" : filtro ? c[1].replace(/^\S+\s/,"") : "Explorar sistemas";
+  exp_h.textContent = filtro==="fav" ? lista.length+" favorito(s) · salvos neste navegador" : lista.length+" sistema(s)";
   cats.innerHTML=CATS.map(([k,l])=>`<button class="cat ${k===filtro?"on":""}" onclick="filtrar('${k}')">${l}</button>`).join("");
+  document.querySelectorAll("#tabs .tab").forEach(b=>b.classList.toggle("on", b.dataset.f===(filtro==="fav"?"fav":"")));
+  renderSide();
 }
 const exp_t=document.getElementById("exp-t"), exp_h=document.getElementById("exp-h");
-function filtrar(k){ filtro=k; renderTiles(); if(k) irPara('explorar'); }
-function irPara(id){ if((location.hash||"#/")!=="#/") { location.hash="#/"; setTimeout(()=>irPara(id),50); return; } document.getElementById(id).scrollIntoView({behavior:"smooth",block:"start"}); }
+function filtrar(k){ filtro=k; if((location.hash||"#/")!=="#/") location.hash="#/"; renderTiles(); if(k) setTimeout(()=>document.getElementById("explorar").scrollIntoView({behavior:"smooth",block:"start"}),60); }
 function abrir(id){
   const s=SIS.find(x=>x.id===id); if(!s) return;
   if(s.soon) return toastMsg(s.t+": em construção 🚧");
