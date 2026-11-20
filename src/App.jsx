@@ -273,7 +273,6 @@ export default function App(){
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
     if(filtroStatus==="todos")return true;
     if(filtroStatus==="liberado")return !!q.liberado;
-    if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
     if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
     if(filtroStatus==="perdida")return !!q.perdida;
@@ -827,9 +826,9 @@ export default function App(){
             <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
-            <div className="stat-lbl">Pendentes</div>
+            <div className="stat-lbl">Válidos</div>
             <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
-            <div className="stat-sub">aguardando aprovação</div>
+            <div className="stat-sub">no prazo, aguardando liberação</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
@@ -914,7 +913,7 @@ export default function App(){
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
-              {["#","Loja","Total","Fechou","Pendentes","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              {["#","Loja","Total","Fechou","Válidos","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
             <tbody>{lChart.map((l,i)=>{
               const items=filtered.filter(q=>q.loja===l.name);
@@ -1573,7 +1572,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="pendente"?"Pendentes":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1692,13 +1691,11 @@ export default function App(){
           {[
             ["todos","Todos","#555"],
             ["validos","Válidos",GREEN],
-            ["pendente","Pendentes",AMBER],
             ["liberado","Liberados",GREEN],
             ["vencido","Vencidas","#CC1F1F"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
               :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
-              :v==="pendente"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
               :v==="liberado"?quotes.filter(q=>!!q.liberado).length
               :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
@@ -1711,7 +1708,6 @@ export default function App(){
         <div className="card-np">{quotes.filter(q=>{
             if(filtroStatus==="todos")return true;
             if(filtroStatus==="liberado")return !!q.liberado;
-            if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
             if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
             if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
             return true;
