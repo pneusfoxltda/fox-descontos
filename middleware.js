@@ -15,8 +15,14 @@
  *
  * /meu-ip sempre responde (mesmo bloqueado) e mostra o IP público de quem
  * abriu, para descobrir o IP de cada loja.
+ *
+ * Endereços:
+ *   foxnet.vercel.app/   (ou qualquer domínio que comece com "foxnet")
+ *                        → abre direto o FOXNET (a página de /foxnet/)
+ *   /descontos           → App de descontos, em qualquer domínio
+ *   fox-descontos.vercel.app/ continua abrindo o App de descontos, como antes.
  */
-import { ipAddress, next } from '@vercel/functions';
+import { ipAddress, next, rewrite } from '@vercel/functions';
 
 export const config = {
   // Vale para todas as páginas e arquivos do site.
@@ -67,9 +73,23 @@ export default function middleware(request) {
   }
 
   const lista = lerLista(process.env.FOXNET_IPS_LIBERADOS);
-  if (!lista.length || ipLiberado(ip, lista)) return next();
+  if (lista.length && !ipLiberado(ip, lista)) {
+    return pagina('Acesso não liberado nesta internet',
+      'O FOXNET só abre nas internets das lojas Fox Pneus. Se você precisa acessar daqui, envie o número abaixo para o TI.',
+      ip, 403);
+  }
+  return encaminhar(url, request);
+}
 
-  return pagina('Acesso não liberado nesta internet',
-    'O FOXNET só abre nas internets das lojas Fox Pneus. Se você precisa acessar daqui, envie o número abaixo para o TI.',
-    ip, 403);
+export function ehDominioFoxnet(hostname) {
+  return /^foxnet[.-]/i.test(String(hostname || ''));
+}
+
+function encaminhar(url, request) {
+  const caminho = url.pathname.replace(/\/+$/, '') || '/';
+  // App de descontos com endereço próprio, em qualquer domínio
+  if (caminho === '/descontos') return rewrite(new URL('/index.html', request.url));
+  // Domínio do FOXNET: a raiz abre direto a intranet
+  if (ehDominioFoxnet(url.hostname) && caminho === '/') return rewrite(new URL('/foxnet/', request.url));
+  return next();
 }
