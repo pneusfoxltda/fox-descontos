@@ -166,6 +166,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape" && fePanel.classLis
   st.textContent = `
 .fe-launch{z-index:9000;touch-action:none}
 .fe-panel{z-index:9001}
+.fe-btn i{display:none}
 .fe-launch.fe-arrastando,.fe-launch.fe-arrastando *{cursor:grabbing!important;user-select:none}
 .fe-min{position:absolute;bottom:-4px;right:-2px;width:24px;height:24px;border-radius:50%;border:2px solid #0B1A29;background:#1d2b38;color:#fff;font-size:16px;line-height:18px;padding:0;font-weight:700;z-index:2}
 .fe-min:hover{background:#F0368F}
