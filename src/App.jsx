@@ -275,7 +275,7 @@ export default function App(){
     if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
     if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
-    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
     if(filtroStatus==="perdida")return !!q.perdida;
     return true;
   }),[quotes,filtroStatus]);
@@ -1700,7 +1700,7 @@ export default function App(){
               :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.perdida).length
               :v==="pendente"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.perdida).length
               :v==="liberado"?quotes.filter(q=>!!q.liberado&&!q.perdida).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.perdida).length;
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
@@ -1713,7 +1713,7 @@ export default function App(){
             if(filtroStatus==="liberado")return !!q.liberado&&!q.perdida;
             if(filtroStatus==="pendente")return !isExp(q.validade)&&!q.liberado&&!q.perdida;
             if(filtroStatus==="validos")return !isExp(q.validade)&&!q.perdida;
-            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.perdida;
+            if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
             return true;
           }).map((q,i)=>(
           <div className="list-row cl" key={i} onClick={()=>clickRow(q)}>
