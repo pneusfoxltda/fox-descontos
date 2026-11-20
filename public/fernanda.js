@@ -152,3 +152,123 @@ function feAnswer(q){
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && fePanel.classList.contains("on")) feClose(); });
 
+
+/* ══════════ FERNANDA: arrastar, minimizar e nunca sumir ══════════
+   · Arraste a Fernanda para qualquer canto (o lugar fica guardado neste navegador).
+   · O botão "–" minimiza: ela vira uma abinha na lateral; um clique traz de volta.
+   · Se ela sumir sem a conversa estar aberta, volta sozinha. */
+(function(){
+  const CHAVE_POS = "fe_pos", CHAVE_MIN = "fe_min";
+  const ler = k => { try { return localStorage.getItem(k); } catch(e) { return null; } };
+  const gravar = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch(e) {} };
+
+  const st = document.createElement("style");
+  st.textContent = `
+.fe-launch{z-index:9000;touch-action:none}
+.fe-panel{z-index:9001}
+.fe-btn i{display:none}
+.fe-launch.fe-arrastando,.fe-launch.fe-arrastando *{cursor:grabbing!important;user-select:none}
+.fe-min{position:absolute;bottom:-4px;right:-2px;width:24px;height:24px;border-radius:50%;border:2px solid #0B1A29;background:#1d2b38;color:#fff;font-size:16px;line-height:18px;padding:0;font-weight:700;z-index:2}
+.fe-min:hover{background:#F0368F}
+.fe-aba{position:fixed;right:0;bottom:90px;z-index:9000;display:none;align-items:center;gap:6px;padding:8px 10px 8px 8px;border:none;border-radius:14px 0 0 14px;background:conic-gradient(from 200deg,#F0368F,#8B3CF0,#D9C8FF,#F0368F);color:#1d2b38;font:700 12px 'Inter',system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 20px #0007}
+.fe-aba span{display:block;width:30px;height:30px;border-radius:50%;background:#E6F77A}
+.fe-aba b{background:#E6F77A;border-radius:8px;padding:3px 6px}
+@media(max-width:600px){.fe-aba b{display:none}}
+`;
+  document.head.appendChild(st);
+
+  function iniciar(){
+    const launch = document.getElementById("feLaunch");
+    const btn = launch && launch.querySelector(".fe-btn");
+    const panel = document.getElementById("fePanel");
+    if (!launch || !btn || !panel) return;
+
+    // Abinha que aparece quando a Fernanda está minimizada (usa a mesma raposa do botão)
+    const aba = document.createElement("button");
+    aba.className = "fe-aba"; aba.type = "button";
+    aba.title = "Mostrar a Fernanda"; aba.setAttribute("aria-label", "Mostrar a Fernanda");
+    aba.innerHTML = "<span></span><b>Fernanda</b>";
+    const fundo = getComputedStyle(btn.querySelector("span")).backgroundImage;
+    if (fundo && fundo !== "none") aba.querySelector("span").style.cssText = `background:#E6F77A ${fundo} center/70% no-repeat`;
+    document.body.appendChild(aba);
+
+    // Botão "–" (minimizar) ao lado do botão da Fernanda
+    const min = document.createElement("button");
+    min.className = "fe-min"; min.type = "button";
+    min.title = "Minimizar a Fernanda"; min.setAttribute("aria-label", "Minimizar a Fernanda");
+    min.textContent = "–";
+    launch.appendChild(min);
+
+    let minimizada = ler(CHAVE_MIN) === "1";
+    const conversaAberta = () => panel.classList.contains("on");
+
+    function mostrar(){
+      if (conversaAberta()) { launch.style.display = "none"; aba.style.display = "none"; return; }
+      launch.style.display = minimizada ? "none" : "flex";
+      aba.style.display = minimizada ? "flex" : "none";
+      if (!minimizada) restaurarPos();
+    }
+    min.addEventListener("click", e => { e.stopPropagation(); e.preventDefault(); minimizada = true; gravar(CHAVE_MIN, "1"); mostrar(); });
+    aba.addEventListener("click", () => { minimizada = false; gravar(CHAVE_MIN, null); mostrar(); });
+
+    // Posição guardada
+    function aplicarPos(x, y){
+      const r = launch.getBoundingClientRect();
+      x = Math.max(4, Math.min(window.innerWidth - r.width - 4, x));
+      y = Math.max(4, Math.min(window.innerHeight - r.height - 4, y));
+      launch.style.left = x + "px"; launch.style.top = y + "px";
+      launch.style.right = "auto"; launch.style.bottom = "auto";
+      return {x, y};
+    }
+    function restaurarPos(){
+      const p = ler(CHAVE_POS); if (!p) return;
+      try { const {x, y} = JSON.parse(p); if (launch.style.display !== "none") aplicarPos(x, y); } catch(e) {}
+    }
+
+    // Arrastar (mouse e toque). Um clique sem arrastar continua abrindo a conversa.
+    let ini = null, arrastou = false;
+    launch.addEventListener("pointerdown", e => {
+      if (e.button !== 0 || e.target.closest(".fx") || e.target === min) return;
+      const r = launch.getBoundingClientRect();
+      ini = {px: e.clientX, py: e.clientY, x: r.left, y: r.top, id: e.pointerId};
+      arrastou = false;
+    });
+    window.addEventListener("pointermove", e => {
+      if (!ini || e.pointerId !== ini.id) return;
+      const dx = e.clientX - ini.px, dy = e.clientY - ini.py;
+      if (!arrastou && Math.hypot(dx, dy) < 6) return;
+      if (!arrastou) { arrastou = true; launch.classList.add("fe-arrastando"); try { launch.setPointerCapture(e.pointerId); } catch(_) {} }
+      aplicarPos(ini.x + dx, ini.y + dy);
+    });
+    const soltar = () => {
+      if (!ini) return;
+      if (arrastou) {
+        const r = launch.getBoundingClientRect();
+        gravar(CHAVE_POS, JSON.stringify({x: r.left, y: r.top}));
+        launch.classList.remove("fe-arrastando");
+      }
+      ini = null;
+    };
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", soltar);
+    // Depois de arrastar, o "clique" de soltar não abre a conversa
+    launch.addEventListener("click", e => { if (arrastou) { e.stopPropagation(); e.preventDefault(); arrastou = false; } }, true);
+
+    // Se a tela mudar de tamanho, mantém a Fernanda dentro dela
+    window.addEventListener("resize", () => {
+      if (launch.style.left) { const r = launch.getBoundingClientRect(); aplicarPos(r.left, r.top); }
+    });
+
+    // Fechar a conversa → volta para o lugar certo (botão ou abinha)
+    const fecharOriginal = window.feClose;
+    window.feClose = function(){ fecharOriginal(); mostrar(); };
+
+    // Proteção: nunca deixa a Fernanda sumir sem a conversa estar aberta
+    setInterval(() => {
+      if (!conversaAberta() && launch.style.display === "none" && aba.style.display === "none") mostrar();
+    }, 1000);
+
+    mostrar();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar); else iniciar();
+})();
