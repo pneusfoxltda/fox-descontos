@@ -63,6 +63,20 @@ a{color:inherit;text-decoration:none} button{font-family:inherit;cursor:pointer}
 .tile.soon{cursor:default;opacity:.6}
 .empty-fav{border:2px dashed #DCD5EE;border-radius:14px;padding:18px;color:var(--mut);font-size:14px;text-align:center}
 
+
+/* ── Fundo do topo: pneus em movimento ── */
+.hero{background:#0B1520 url("/foxnet/fundo-pneus.jpg") center/cover no-repeat}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.hero-veu{position:absolute;inset:0;z-index:0;background:
+  radial-gradient(ellipse 60% 75% at center, rgba(8,14,24,.58) 0%, rgba(8,14,24,.30) 65%, rgba(8,14,24,.12) 100%),
+  linear-gradient(115deg, rgba(64,200,190,.08), rgba(125,42,232,.10))}
+.hero > *:not(.hero-video):not(.hero-veu){position:relative;z-index:1}
+.hero .brandline{color:#fff}.hero .brandline small{color:#D7DEE8}
+.hero .dia{color:#CFE7FF}
+.hero .frase{background:linear-gradient(90deg,#FFFFFF,#D9F0FF 45%,#E9DCFF);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 10px rgba(0,0,0,.45))}
+.hero .tab{background:rgba(255,255,255,.88)}
+@media(prefers-reduced-motion:reduce){.hero-video{display:none}}
+
 /* ── INFO RÁPIDA ── */
 .page{display:none}.page.on{display:block}
 .ph{margin:24px 10px 0}.ph .crumb{font-size:12px;color:var(--mut);margin-bottom:6px}
@@ -120,6 +134,11 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
 <!-- ═════════ INÍCIO ═════════ -->
 <section class="page" id="p-home">
   <div class="hero">
+    <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="/foxnet/fundo-pneus.jpg" aria-hidden="true">
+      <source src="/foxnet/fundo-pneus.webm" type="video/webm">
+      <source src="/foxnet/fundo-pneus.mp4" type="video/mp4">
+    </video>
+    <div class="hero-veu" aria-hidden="true"></div>
     <div class="hero-top">
       <div class="brandline"><span class="fox"></span><span>FOXNET <small>| Sistema Integrado Rede Fox Pneus</small></span></div>
     </div>
