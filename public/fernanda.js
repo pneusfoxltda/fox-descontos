@@ -56,7 +56,7 @@ function feGo(h){
   if(id==="ligacoes") { feOpen(); feBot("As Ligações das lojas ainda estão em construção. Chegam na próxima fase! 🚧"); return; }
   if(FE_NO_FOXNET) location.hash=h; else location.href="/foxnet/"+h;
 }
-function feMenu(i){ if(FE_NO_FOXNET && typeof megaOpen==="function"){ window.megaCat=i; megaOpen(); } else location.href="/foxnet/"; }
+function feMenu(i){ if(FE_NO_FOXNET && typeof filtrar==="function"){ filtrar("ia"); return; } location.href="/foxnet/"; }
 
 /* ══════════ FERNANDA: assistente que encontra as coisas dentro do site ══════════
    Funciona 100% no navegador, sem IA externa: entende palavras-chave e procura nos
