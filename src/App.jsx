@@ -262,7 +262,7 @@ export default function App(){
   const[tab,setTab]=useState("main");
   const[dashKey,setDashKey]=useState(0);
     const[quotes,setQuotes]=useState([]);
-  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+  const[form,setForm]=useState({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",telefone:"",erroInterno:false});
   const[search,setSearch]=useState("");
   const[result,setResult]=useState(null);
   const[notFound,setNotFound]=useState(false);
@@ -633,15 +633,16 @@ export default function App(){
         segmento:form.segmento, loja:form.loja, valor:form.valor, pgto:form.pgto,
         validade:form.validade, obs:form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):""), liberado:false,
         negociador_nome:session.username, negociador_email:session.email, vendedor:form.vendedor||null,
+        telefone_cliente:(form.telefone||"").trim()||null,
         anexo_base64:anexo?anexo.base64:null,
         anexo_tipo:anexo?anexo.tipo:null,
         anexo_nome:anexo?anexo.nome:null
       });
       if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
       const obsCompleto=form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
-      form.medida=form.medida.toUpperCase();const novo={...form,numero:form.numero.trim(),criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
+      form.medida=form.medida.toUpperCase();const novo={...form,numero:form.numero.trim(),telefoneCliente:(form.telefone||"").trim()||null,criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
       setQuotes(prev=>[novo,...prev]);
-      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
+      setForm({tipo:"orcamento",numero:"",cba:"",medida:"",segmento:"",loja:"",vendedor:"",valor:"",pgto:"",validade:"",obs:"",telefone:"",erroInterno:false});
       setAnexo(null);
       setConcAdicionados([]);setConcQuery("");setConcValor("");setConcPgto("");
       toast_("Desconto cadastrado!");
@@ -1502,6 +1503,7 @@ export default function App(){
           <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
           <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
           <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Telefone do cliente</label><input type="tel" maxLength={20} placeholder="(00) 00000-0000" value={form.telefone||""} onChange={e=>setForm(f=>({...f,telefone:e.target.value}))}/></div>
         </div>
         <div className="fg3">
           <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
