@@ -1756,7 +1756,7 @@ export default function App(){
             ?"⚠️ Última rodada do robô falhou ("+fmt(u.inicio)+"): "+(u.mensagem||"erro")+(c?" · última certa: "+fmt(c.inicio):"")
             :parado
               ?"⚠️ Robô sem rodar desde "+fmt(u.inicio)+" — confira no GitHub"
-              :"🤖 Última conferência do robô: "+fmt(u.inicio)+" ✅ · "+(u.conferidos??0)+" pendentes conferidos · "+(u.encontrados??0)+" vendas novas"+(u.teste?" · (teste, sem gravar)":"");
+              :"Última conferência do robô: "+fmt(u.inicio)+" ✅ · "+(u.conferidos??0)+" pendentes conferidos · "+(u.encontrados??0)+" vendas novas"+(u.teste?" · (teste, sem gravar)":"");
           return(<div style={{fontSize:12,color:cor,margin:"-4px 0 14px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
             <span>{texto}</span>
             <a href="https://github.com/pneusfoxltda/fox-descontos/actions/workflows/conferir-vendas-movere.yml" target="_blank" rel="noreferrer" style={{color:MUTED,textDecoration:"underline"}}>ver detalhes ↗</a>
