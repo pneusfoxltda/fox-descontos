@@ -135,6 +135,44 @@ a{color:inherit;}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1A2E1A;border:1px solid #27AE60;color:#E8F5E9;border-radius:9px;padding:12px 18px;font-size:13px;font-weight:600;display:none;z-index:200;max-width:92vw;}
 .toast.err{background:#2E1A1A;border-color:#CC1F1F;color:#FFCDD2;}
 @media(max-width:600px){.top .user{display:none;}.wrap{padding:12px;}.kpi .k-v{font-size:20px;}}
+/* ── TABELA (computador) ── */
+.tabwrap{overflow:auto;max-height:calc(100vh - 250px);border:1px solid #3a1a1f;border-radius:10px;}
+.tl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+.tl th{position:sticky;top:0;z-index:3;background:#8E1F2C;color:#fff;font-weight:700;font-size:12px;text-align:left;padding:10px;border-right:1px solid #a33443;white-space:nowrap;}
+.tl td{padding:7px 10px;border-bottom:1px solid #262626;border-right:1px solid #1f1f1f;background:#151515;white-space:nowrap;vertical-align:middle;}
+.tl tr:nth-child(even) td{background:#121212;}
+.tl tr.atr td{background:#211414;}
+.tl .fx1,.tl .fx2{position:sticky;z-index:2;}
+.tl .fx1{left:0;min-width:84px;} .tl .fx2{left:84px;min-width:170px;border-right:2px solid #3a1a1f;}
+.tl th.fx1,.tl th.fx2{z-index:4;}
+.tl .r{text-align:right;font-variant-numeric:tabular-nums;}
+.tl .tnum{color:#7DB8F0;font-weight:600;}
+body.modo-tabela #v-lista{max-width:none;}
+.mini{display:inline-block;margin-left:6px;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none;}
+.mini.lig{background:#1E3A5F;color:#BFDBFE;} .mini.wa{background:#0F3D24;color:#86EFAC;}
+.mini.wa.forte,.bt-wa.forte{background:#16A34A;color:#fff;box-shadow:0 0 0 2px #22C55E55;animation:pulsa 1.6s infinite;}
+@keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
+.stsel{border:none;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;color-scheme:dark;}
+.stsel:disabled{cursor:default;opacity:.95;}
+.c-pendente{background:#3A2A00;color:#FCD34D;} .c-nao_atende{background:#4A1414;color:#FCA5A5;} .c-retornar{background:#12304A;color:#93C5FD;}
+.c-sem_interesse{background:#2A2A2A;color:#bbb;} .c-agendou{background:#2A1F45;color:#C4B5FD;} .c-venda_ganha{background:#0E3A22;color:#86EFAC;}
+.c-venda_perdida{background:#3A0F0F;color:#F87171;} .c-venda_televendas,.c-comprou{background:#06292A;color:#5EEAD4;}
+.quem{font-size:10px;color:#777;margin-top:3px;}
+.cel{background:#0D0D0D;border:1px solid #2E2E2E;border-radius:6px;padding:5px 8px;color:#eee;font-size:12px;outline:none;color-scheme:dark;}
+.cel:focus{border-color:#CC1F1F;} .cel:disabled{opacity:.6;}
+.cel.os{width:110px;} .cel.os.ok{border-color:#22C55E;color:#86EFAC;}
+.cel.dt{width:140px;} .cel.dt.ok{border-color:#8B5CF6;} .cel.dt.atr{border-color:#EF4444;color:#FCA5A5;}
+.cel.mt{max-width:190px;} .cel.mt.ok{border-color:#EF4444;color:#FCA5A5;}
+.cel.an{width:200px;} .cel.an.falta{border-color:#F59E0B;}
+.txt-fixo{font-size:12px;color:#ddd;}
+.hbt{background:none;border:1px solid #333;color:#bbb;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;}
+.hbt.on{border-color:#CC1F1F;color:#fff;background:#2A0E0E;}
+.tl tr.det td{background:#0F0F0F;white-space:normal;color:#aaa;font-size:12px;padding:10px 14px 12px 40px;}
+.tl tr.det div{margin:3px 0;} .tl tr.det b{color:#fff;}
+.salvo{color:#4ADE80;font-size:11px;margin-left:6px;}
+.topo-lista{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.total-aberto{font-size:13px;color:#ddd;} .total-aberto b{color:#4ADE80;}
+.toast .desf{margin-left:12px;background:#fff;color:#111;border:none;border-radius:6px;padding:5px 10px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -380,6 +418,7 @@ async function carregar() {
   }
   escolherDiaInicial();
   modo === "dash" ? renderDash() : render();
+  garantirHistorico().then(() => { montarMapaHist(); if (modo === "lista") render(); }).catch(() => {});
 }
 
 function escolherDiaInicial() {
@@ -434,7 +473,7 @@ function render() {
   const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
   $("datas").innerHTML = dias.length ? dias.map(d =>
     `<button class="chip ${d === filtro.data ? "on" : ""}" data-d="${d}"><b>${fmtData(d)}</b> ${diaSemana(d)}<span class="n" title="pendentes">${pend(d)}</span></button>`
-  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Os ${dias.length} dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
+  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">${dias.length > 1 ? "Os " + dias.length + " dias" : "Todos"}<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
     : '<span class="resumo">Nenhuma cotação na lista ainda.</span>';
   document.querySelectorAll(".chip[data-d]").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
   renderAbasELista(daLoja);
@@ -454,18 +493,23 @@ function renderAbasELista(daLoja) {
   $("sel-operador").innerHTML = '<option value="">Todos os vendedores</option>' + ops.map(o => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("");
 
   const lista = visiveis();
+  if (filtro.aba === "pendentes") lista.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0));   // maiores valores primeiro
   const quando = filtro.aba === "agendou" ? "agendado(s)" + (filtro.agenda.length === 10 ? " para " + fmtDataLonga(filtro.agenda) : "")
     : filtro.busca.trim() || !filtro.data ? `nos últimos ${DIAS_NA_LISTA} dias` : "em " + fmtDataLonga(filtro.data);
-  $("resumo").textContent = `${lista.length} cliente(s) ${quando}` + (filtro.loja ? " · " + filtro.loja : "");
+  const aberto = lista.filter(l => !FECHADOS.includes(l.status));
+  $("resumo").innerHTML = `<div class="topo-lista"><span>${lista.length} cliente(s) ${esc(quando)}${filtro.loja ? " · " + esc(filtro.loja) : ""}</span>` +
+    (aberto.length ? `<span class="total-aberto">${aberto.length} em aberto · <b>${fmtR0(aberto.reduce((t, l) => t + Number(l.valor || 0), 0))}</b></span>` : "") + `</div>`;
+  const pagina = lista.slice(0, limite);
+  document.body.classList.toggle("modo-tabela", ehTabela());
   $("lista").innerHTML = lista.length
-    ? lista.slice(0, limite).map(cartao).join("") + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
+    ? (ehTabela() ? tabela(pagina) : pagina.map(cartao).join("")) + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
     : '<div class="vazio">Nenhum cliente aqui. 🎉</div>';
   const mais = $("btn-mais"); if (mais) mais.onclick = () => { limite += POR_PAGINA; render(); };
 }
 
 function cartao(l) {
   const d = dig(l.telefone);
-  const wa = d.length >= 10 ? "https://wa.me/55" + (d.length > 11 && d.startsWith("55") ? d.slice(2) : d) : "";
+  const wa = linkWa(l), forte = tentativas(l.id) >= 2 && !FECHADOS.includes(l.status);
   const st = STATUS[l.status] || STATUS.pendente;
   let linhaStatus;
   if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
@@ -473,7 +517,7 @@ function cartao(l) {
   else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
   else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
-  else linhaStatus = l.status_em ? `<b>${esc(st.nome)}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(st.nome)}</b>`;
+  else linhaStatus = (l.status_em ? `<b>${esc(nomeStatus(l))}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(nomeStatus(l))}</b>`);
   const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
@@ -483,7 +527,7 @@ function cartao(l) {
     </div>
     ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
       <a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>
-      ${wa ? `<a class="bt bt-wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>` : ""}
+      ${wa ? `<a class="bt bt-wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp${forte ? " (tente aqui)" : ""}</a>` : ""}</div>` : ""}
     <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
     ${editavel ? `<div class="acao">
       <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${
@@ -514,22 +558,8 @@ async function salvar(id) {
   if (status === "agendou" && !dt) { toast("Informe a data do agendamento.", false); $("dt-" + id).style.display = ""; $("dt-" + id).focus(); return; }
   if (status === "venda_perdida" && !motivo) { toast("Escolha o motivo da venda perdida.", false); $("mp-" + id).style.display = ""; $("mp-" + id).focus(); return; }
   if (status === "venda_perdida" && motivo === "Outro motivo" && !obs) { toast("Escreva qual foi o motivo na observação.", false); $("o-" + id).focus(); return; }
-  const { error } = await sb.rpc("marcar_ligacao", { p_id: id, p_status: status, p_obs: obs || null, p_os: status === "venda_ganha" ? os : null,
-    p_data: status === "agendou" ? dt : null, p_motivo: status === "venda_perdida" ? motivo : null });
-  if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); return; }
   const l = todas.find(x => x.id === id);
-  if (l) {
-    l.status = status; l.status_em = new Date().toISOString(); l.status_por = perfil.nome || perfil.email;
-    if (obs) l.obs = obs;
-    if (status === "venda_ganha") l.os_venda = os;
-    if (status === "agendou") l.agendado_para = dt;
-    if (status === "venda_perdida") l.motivo_perda = motivo;
-  }
-  historicoTodo = null;
-  toast(status === "venda_ganha" ? "Venda ganha registrada com a O.S. " + os + " 🎉"
-      : status === "agendou" ? "Agendado para " + fmtDataLonga(dt) + " 📅"
-      : status === "venda_perdida" ? "Venda perdida registrada: " + motivo : "Salvo: " + STATUS[status].nome);
-  render();
+  if (l) await gravar(l, { status, os, data: dt, motivo, obs });
 }
 
 async function historico(id) {
@@ -542,6 +572,134 @@ async function historico(id) {
   box.innerHTML = `<div>📥 Entrou na lista (cotação de ${fmtDataLonga(l.data_cotacao)})</div>` +
     (data.length ? data.map(h => `<div>${fmtQuando(h.quando)} · <b>${esc((STATUS[h.status] || {}).nome || h.status)}</b> · ${esc(h.quem)}${h.obs ? " · " + esc(h.obs) : ""}</div>`).join("")
                  : "<div>Ninguém registrou nada ainda.</div>");
+}
+
+// ── TABELA, GRAVAÇÃO AUTOMÁTICA, DESFAZER, TENTATIVAS, WHATSAPP ──
+const ehTabela = () => window.innerWidth >= 900;
+const CURTO = {pendente: "Pendente ligação", retornar: "Retornar depois", sem_interesse: "Sem interesse", agendou: "Agendou",
+  venda_ganha: "Venda ganha", venda_perdida: "Venda perdida", venda_televendas: "Venda televendas", comprou: "Venda televendas"};
+let mapaHist = new Map(), abertos = new Set(), salvoId = null, desfazer = null;
+function montarMapaHist() {
+  mapaHist = new Map();
+  (historicoTodo || []).forEach(h => (mapaHist.get(h.ligacao_id) || mapaHist.set(h.ligacao_id, []).get(h.ligacao_id)).push(h));
+}
+const histDe = id => mapaHist.get(id) || [];
+const tentativas = id => histDe(id).filter(h => h.status === "nao_atende" && !ehRobo(h.quem)).length;
+function nomeStatus(l) {
+  const n = (STATUS[l.status] || STATUS.pendente).nome.replace("Liguei, não atende", "Não atendeu");
+  const t = tentativas(l.id);
+  return l.status === "nao_atende" && t > 1 ? `${n} (${t}x)` : n;
+}
+const primeiro = s => { const p = String(s || "").trim().split(/\s+/)[0] || ""; return p ? p[0].toUpperCase() + p.slice(1).toLowerCase() : ""; };
+const NOME_LOJA = {"MATRIZ": "Matriz Porto Velho", "C.AUTO PVH": "Centro Automotivo Porto Velho", "ARIQUEMES": "Ariquemes", "JI-PARANA": "Ji-Paraná",
+  "CACOAL": "Cacoal", "C.AUTO VLH": "Centro Automotivo Vilhena", "PARINTINS": "Manaus", "XAPURI": "Rio Branco"};
+function linkWa(l) {
+  const d = dig(l.telefone); if (d.length < 10) return "";
+  const num = d.length > 11 && d.startsWith("55") ? d.slice(2) : d;
+  const quem = primeiro(perfil && perfil.nome), loja = NOME_LOJA[l.loja] || l.loja || "";
+  const msg = `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. ` +
+    `Vi que você fez uma cotação com a gente (nº ${l.cotacao}${l.valor ? ", " + fmtR(l.valor) : ""}). Posso te ajudar a fechar? 😊`;
+  return "https://wa.me/55" + num + "?text=" + encodeURIComponent(msg);
+}
+
+// Grava o status (e o que ele exige). Mostra "Desfazer" por alguns segundos.
+async function gravar(l, novo, ehDesfazer = false) {
+  const st = novo.status;
+  const antes = {status: l.status, os: l.os_venda, data: l.agendado_para, motivo: l.motivo_perda, obs: l.obs, status_em: l.status_em, status_por: l.status_por};
+  const os = st === "venda_ganha" ? (novo.os || l.os_venda) : null;
+  const data = st === "agendou" ? (novo.data || l.agendado_para) : null;
+  const motivo = st === "venda_perdida" ? (novo.motivo || l.motivo_perda) : null;
+  const obs = (novo.obs || "").trim();
+  const { error } = await sb.rpc("marcar_ligacao", { p_id: l.id, p_status: st, p_obs: obs || null, p_os: os, p_data: data, p_motivo: motivo });
+  if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); render(); return false; }
+  const quem = perfil.nome || perfil.email, agora = new Date().toISOString();
+  Object.assign(l, {status: st, status_em: agora, status_por: quem});
+  if (obs) l.obs = obs;
+  if (os) l.os_venda = os; if (data) l.agendado_para = data; if (motivo) l.motivo_perda = motivo;
+  const h = {ligacao_id: l.id, quando: agora, quem, status: st,
+    obs: [data && st === "agendou" ? "Agendado para " + fmtDataLonga(data) : "", os ? "O.S. " + os : "", motivo ? "Motivo: " + motivo : "", obs].filter(Boolean).join(" · ") || null};
+  if (historicoTodo) historicoTodo.push(h);
+  (mapaHist.get(l.id) || mapaHist.set(l.id, []).get(l.id)).push(h);
+  salvoId = l.id; setTimeout(() => { if (salvoId === l.id) { salvoId = null; } }, 4000);
+  const msg = ehDesfazer ? "Desfeito ↶" : st === "venda_ganha" ? "Venda ganha com a O.S. " + os + " 🎉" : st === "agendou" ? "Agendado para " + fmtDataLonga(data) + " 📅"
+            : st === "venda_perdida" ? "Venda perdida: " + motivo : "Salvo: " + (STATUS[st] || {}).nome;
+  if (!ehDesfazer && MANUAIS.includes(antes.status)) { desfazer = {l, antes}; toastDesfazer(msg); }
+  else { desfazer = null; toast(msg); }
+  render();
+  return true;
+}
+function toastDesfazer(msg) {
+  const t = $("toast");
+  t.innerHTML = esc(msg) + ' <button class="desf" id="btn-desf">↶ Desfazer</button>';
+  t.className = "toast"; t.style.display = "block";
+  $("btn-desf").onclick = async () => {
+    const d = desfazer; desfazer = null; t.style.display = "none";
+    if (!d) return;
+    const ok = await gravar(d.l, {status: d.antes.status, os: d.antes.os, data: d.antes.data, motivo: d.antes.motivo}, true);
+    if (ok) { Object.assign(d.l, {os_venda: d.antes.os || null, agendado_para: d.antes.data || null, motivo_perda: d.antes.motivo || null}); render(); }
+  };
+  clearTimeout(t._t); t._t = setTimeout(() => { t.style.display = "none"; desfazer = null; }, 8000);
+}
+
+// Regras automáticas da tabela
+async function mudouStatus(id, v) {
+  const l = todas.find(x => x.id === id);
+  if (v === "venda_ganha") { toast("Digite o nº da O.S. na coluna Nº O.S. para virar Venda ganha."); $("tos-" + id).focus(); render0(id, v); return; }
+  if (v === "agendou") { toast("Escolha a data na coluna Data agendamento."); $("tdt-" + id).focus(); render0(id, v); return; }
+  if (v === "venda_perdida") { toast("Escolha o motivo na coluna Motivo da perda."); $("tmp-" + id).focus(); render0(id, v); return; }
+  await gravar(l, {status: v});
+}
+function render0(id, v) { const sel = $("tst-" + id); sel.className = "stsel c-" + v; }
+async function mudouOS(id, v) { v = v.trim(); if (!v) return; await gravar(todas.find(x => x.id === id), {status: "venda_ganha", os: v}); }
+async function mudouData(id, v) { if (!v) return; await gravar(todas.find(x => x.id === id), {status: "agendou", data: v}); }
+async function mudouMotivo(id, v) {
+  if (!v) return;
+  const an = $("tan-" + id);
+  if (v === "Outro motivo" && !an.value.trim()) { an.classList.add("falta"); an.placeholder = "Escreva o motivo aqui"; an.focus(); toast("Escreva qual foi o motivo na Anotação.", false); return; }
+  await gravar(todas.find(x => x.id === id), {status: "venda_perdida", motivo: v, obs: an.value});
+}
+async function mudouAnotacao(id, v) {
+  const l = todas.find(x => x.id === id), mt = $("tmp-" + id);
+  if (mt && mt.value === "Outro motivo" && l.status !== "venda_perdida") {
+    if (!v.trim()) return;
+    return gravar(l, {status: "venda_perdida", motivo: "Outro motivo", obs: v});
+  }
+  if (!v.trim() || v.trim() === (l.obs || "")) return;
+  if (!MANUAIS.includes(l.status)) return;
+  await gravar(l, {status: l.status, obs: v});
+}
+function abrirHist(id) { abertos.has(id) ? abertos.delete(id) : abertos.add(id); render(); }
+
+function tabela(lista) {
+  const cab = `<tr><th class="fx1">Cotação</th><th class="fx2">Nome cliente</th><th>Contato telefônico</th><th>Vendedor</th><th class="r">Valor da cotação</th><th>Data</th>` +
+    `<th>Status</th><th>Nº O.S.</th><th>Data agendamento</th><th>Motivo da perda</th><th>Anotação</th><th>Histórico</th>${!filtro.loja ? "<th>Loja</th>" : ""}</tr>`;
+  return `<div class="tabwrap"><table class="tl">${cab}${lista.map(linhaTabela).join("")}</table></div>`;
+}
+function linhaTabela(l) {
+  const id = l.id, ed = podeEditar(l), fechado = FECHADOS.includes(l.status), dis = (!ed || fechado) ? "disabled" : "";
+  const d = dig(l.telefone), wa = linkWa(l), t = tentativas(id), forte = t >= 2 && !fechado;
+  const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("");
+  const hs = histDe(id), dias = Math.max(0, Math.round((new Date(hojeISO() + "T12:00:00") - new Date(l.data_cotacao + "T12:00:00")) / 864e5));
+  const quem = l.status_em ? `<div class="quem">${esc(primeiro(l.status_por) || l.status_por || "")} · ${fmtQuando(l.status_em)}</div>` : "";
+  const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
+    <td class="fx1">${esc(l.cotacao)}</td>
+    <td class="fx2">${esc(l.cliente || "")}</td>
+    <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span><a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="WhatsApp com mensagem pronta">WA</a>` : ""}` : ""}</td>
+    <td>${esc(l.operador || "")}</td>
+    <td class="r">${fmtR(l.valor)}</td>
+    <td>${fmtDataLonga(l.data_cotacao)}<div class="quem">${dias ? "há " + dias + " dia" + (dias > 1 ? "s" : "") : "hoje"}</div></td>
+    <td><select id="tst-${id}" class="stsel c-${esc(l.status)}" ${dis} onchange="mudouStatus(${id}, this.value)">${opcoes}</select>${quem}</td>
+    <td>${fechado || !ed ? `<span class="txt-fixo">${esc(l.os_venda || "")}</span>` : `<input id="tos-${id}" class="cel os ${l.os_venda ? "ok" : ""}" value="${esc(l.os_venda || "")}" placeholder="Nº O.S." maxlength="30" onchange="mudouOS(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}</td>
+    <td>${fechado || !ed ? `<span class="txt-fixo">${l.agendado_para ? fmtDataLonga(l.agendado_para) : ""}</span>` : `<input id="tdt-${id}" type="date" class="cel dt ${l.agendado_para ? (atrasado(l) ? "atr" : "ok") : ""}" value="${l.agendado_para || ""}" onchange="mudouData(${id}, this.value)" title="${atrasado(l) ? "Agendamento atrasado: dê o resultado" : "Data do agendamento"}">${atrasado(l) ? '<div class="quem" style="color:#F87171">⚠️ atrasado</div>' : ""}`}</td>
+    <td>${fechado || !ed ? `<span class="txt-fixo">${esc(l.motivo_perda || "")}</span>` : `<select id="tmp-${id}" class="cel mt" onchange="mudouMotivo(${id}, this.value)"><option value=""></option>${MOTIVOS_PERDA.map(m => `<option>${m}</option>`).join("")}</select>`}</td>
+    <td>${!ed || ehTv(l.status) ? `<span class="txt-fixo">${esc(l.obs || (ehTv(l.status) && l.comprou_em ? "comprou em " + fmtDataLonga(l.comprou_em) + " (robô)" : ""))}</span>` : `<input id="tan-${id}" class="cel an" value="${esc(l.obs || "")}" placeholder="Anotação" maxlength="300" onchange="mudouAnotacao(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}${salvoId === id ? '<span class="salvo">✓ salvo</span>' : ""}</td>
+    <td><button class="hbt ${abertos.has(id) ? "on" : ""}" onclick="abrirHist(${id})" title="Ver histórico">🕘 ${hs.length}</button></td>
+    ${!filtro.loja ? `<td>${esc(l.loja)}</td>` : ""}
+  </tr>`;
+  if (!abertos.has(id)) return linha;
+  const det = `<div>📥 <b>Entrou na lista</b> · cotação de ${fmtDataLonga(l.data_cotacao)}</div>` +
+    (hs.length ? hs.map(h => `<div>${fmtQuando(h.quando)} · <b>${esc((STATUS[h.status] || {}).nome || h.status)}</b> · ${esc(h.quem)}${h.obs ? " · " + esc(h.obs) : ""}</div>`).join("") : "<div>Ninguém registrou nada ainda.</div>");
+  return linha + `<tr class="det"><td colspan="${!filtro.loja ? 13 : 12}">${det}</td></tr>`;
 }
 
 // ── DASHBOARD ──
@@ -663,6 +821,10 @@ function trocarModo(m) {
   $("v-dash").style.display = m === "dash" ? "" : "none";
   m === "dash" ? renderDash() : render();
 }
+
+// Troca tabela ↔ cartões quando a largura da tela passa do limite
+let eraTabela = ehTabela();
+window.addEventListener("resize", () => { if (ehTabela() !== eraTabela) { eraTabela = ehTabela(); if (modo === "lista" && perfil) render(); } });
 
 // ── EVENTOS ──
 $("btn-login").onclick = doLogin;

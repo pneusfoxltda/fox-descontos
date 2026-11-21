@@ -151,6 +151,14 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Amanhã / Próximos 7 dias / Sem data / Todos + calendário), não pelo dia da cotação.
   **Venda perdida** exige **motivo** (`motivo_perda`, lista fixa + "Outro motivo" com obs).
   Perdida que depois compra → "Venda ganha televendas". SQL: `13_ligacoes_agenda_perda.sql`.
+- **Formato planilha** (computador ≥ 900 px): tabela com as colunas da planilha do TI (Cotação,
+  Nome, Contato, Vendedor, Valor, Data, Status, Nº O.S., Data agendamento, Motivo da perda,
+  Anotação, Histórico 🕘). Salva sozinho ao mudar a célula, com "↶ Desfazer" por 8 s.
+  **Regras automáticas**: digitou a O.S. → Venda ganha; escolheu a data → Agendou; escolheu o
+  motivo → Venda perdida; "Outro motivo" exige a Anotação. Tentativas "Não atendeu (2x)" pelo
+  histórico; da 2ª em diante o WhatsApp fica em destaque; WhatsApp abre com mensagem pronta.
+  Pendentes ordenados pelo maior valor + total em aberto. Cabeçalho e Cotação/Nome fixos.
+  Celular (< 900 px): cartões, com as mesmas regras.
 - **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`); os mais antigos
   somem, menos os **agendados** (ficam até ter resultado). O **Dashboard usa tudo** (decisão do TI).
 - **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor
