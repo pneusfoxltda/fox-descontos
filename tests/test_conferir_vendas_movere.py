@@ -64,6 +64,9 @@ def test_fluxo_completo_com_rede_imitada(capsys=None):
                 {"id": "z", "numero": "888", "tipo": "orcamento", "telefone_cliente": "sem número",
                  "criado_em": "2026-11-19T15:00:00+00:00"},
             ])
+        if "/rest/v1/robo_execucoes" in u:
+            chamadas.setdefault("rodadas", []).append((req.method, json.loads(req.content) if req.content else None))
+            return httpx.Response(201 if req.method == "POST" else 204)
         if u.startswith(cv.SUPABASE_URL) and req.method == "PATCH":
             chamadas["patch"].append((u, json.loads(req.content)))
             return httpx.Response(204)
@@ -120,12 +123,45 @@ def test_fluxo_completo_com_rede_imitada(capsys=None):
     assert url.endswith("id=eq.a")
     assert corpo["venda_movere"] is True and corpo["venda_movere_em"] == "2026-11-19"
     assert corpo["venda_movere_por"] == "telefone"
+    # resumo da rodada gravado (sem dados de cliente) e limpeza dos antigos
+    metodos = [m for m, _ in chamadas["rodadas"]]
+    assert metodos == ["POST", "DELETE"]
+    r = chamadas["rodadas"][0][1]
+    assert r["ok"] is True and r["conferidos"] == 1 and r["encontrados"] == 1 and r["teste"] is False
+    assert "telefone" not in json.dumps(r) and "9999" not in json.dumps(r)
+
+
+def test_rodada_com_erro_fica_registrada():
+    rodadas = []
+
+    def responder(req: httpx.Request):
+        u = str(req.url)
+        if "/rest/v1/robo_execucoes" in u:
+            rodadas.append((req.method, json.loads(req.content) if req.content else None))
+            return httpx.Response(201)
+        if u.startswith(cv.SUPABASE_URL):
+            return httpx.Response(200, json=[{"id": "a", "numero": "1", "telefone_cliente": "69 99999-1234",
+                                              "criado_em": "2026-11-19T15:00:00+00:00"}])
+        if u.endswith("/gdc/account/login"):
+            return httpx.Response(401, json={})
+        raise AssertionError("chamada inesperada: " + u)
+
+    original = httpx.Client
+    cv.httpx.Client = lambda **kw: original(transport=httpx.MockTransport(responder))
+    os.environ.update(SUPABASE_SERVICE_KEY="k", ANALYTICS_LOGIN="l", ANALYTICS_SENHA="s")
+    try:
+        assert cv.rodar() == 1
+    finally:
+        cv.httpx.Client = original
+    post = [c for m, c in rodadas if m == "POST"][0]
+    assert post["ok"] is False and "login no Analytics recusado" in post["mensagem"]
+    assert post["conferidos"] == 1
 
 
 def test_sem_segredos_nao_roda():
     for n in ("SUPABASE_SERVICE_KEY", "ANALYTICS_LOGIN", "ANALYTICS_SENHA"):
         os.environ.pop(n, None)
-    assert cv.main() == 1
+    assert cv.rodar() == 1
 
 
 if __name__ == "__main__":
