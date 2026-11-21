@@ -279,6 +279,7 @@ export default function App(){
     if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
     if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
     if(filtroStatus==="perdida")return !!q.perdida;
+    if(filtroStatus==="venda")return !!q.vendaMovere;
     return true;
   }),[quotes,filtroStatus]);
   const[showExport,setShowExport]=useState(false);
@@ -354,7 +355,7 @@ export default function App(){
   };
   useEffect(()=>{if(!session)return;(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente");
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente,venda_movere,venda_movere_em,venda_movere_valor,venda_movere_conferido_em");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
@@ -362,7 +363,8 @@ export default function App(){
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
       anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0,
-      telefoneCliente:q.telefone_cliente||null
+      telefoneCliente:q.telefone_cliente||null,
+      vendaMovere:!!q.venda_movere,vendaMovereEm:q.venda_movere_em||null,vendaMovereValor:q.venda_movere_valor,vendaMovereRegistro:q.venda_movere_conferido_em||null
     })));}
     // Auto-marcar expiradas como perdidas
     const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
@@ -747,7 +749,7 @@ export default function App(){
             </div>
             <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
             <span className="list-val">{fmtVal(q.valor)}</span>
-            <span className={`badge ${q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}}>{q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
+            <span className={`badge ${q.vendaMovere?"b-lib":q.perdida?"b-exp":q.liberado?"b-lib":isExp(q.validade)?"b-exp":"b-valid"}`} style={{marginLeft:8}} title={q.vendaMovere?"Cliente comprou (conferido no Movere pelo telefone)":undefined}>{q.vendaMovere?"✅ Vendeu":q.perdida?"Perdida":q.liberado?"Liberado":isExp(q.validade)?"Expirado":"Válido"}</span>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2,marginLeft:8,flexShrink:0}}>
               <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
               {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
@@ -1601,7 +1603,7 @@ export default function App(){
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
           <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda_Movere":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda concluída":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1621,12 +1623,13 @@ export default function App(){
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
             <span className="rt">{isExp(result.validade)?"⚠ EXPIRADO":"✓ VÁLIDO"}</span>
+            {result.vendaMovere&&<span style={{background:"#0E2A1F",color:"#4ADE80",border:"1px solid #22C55E",borderRadius:6,padding:"5px 12px",fontSize:12,fontWeight:800,letterSpacing:.5}}>✅ VENDA CONCLUÍDA (MOVERE){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}</span>}
             <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
               {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
               {session.role==="admin"&&!result.perdida&&(
                 <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}><svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>Perdida</button>
               )}
-              {result.perdida&&(
+              {result.perdida&&!result.vendaMovere&&(
                 <div style={{background:"#1A0000",border:"1px solid #8B0000",borderRadius:7,padding:"6px 12px",marginTop:4}}>
                   <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}><svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Negociação Perdida</div>
                   <div style={{fontSize:12,color:"#F0F0F0",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
@@ -1653,6 +1656,7 @@ export default function App(){
           {result.telefoneCliente&&<div className="rcell"><div className="rl">📱 Telefone do Cliente</div><div className="rv" style={{color:"#3498DB"}}>{result.telefoneCliente}</div></div>}
           <div className="rcell"><div className="rl">Validade</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
           <div className="rcell"><div className="rl">Status</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{result.liberado?"Venda liberada":isExp(result.validade)?"Fora da validade":"Pendente de liberação"}</div></div>
+          {result.vendaMovere&&<div className="rcell full"><div className="rl">Movere</div><div className="rv-ok">✅ Venda concluída (Movere){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}{result.vendaMovereValor?" · "+fmtVal(result.vendaMovereValor):""}<div style={{fontSize:11,color:MUTED,fontWeight:400,marginTop:4}}>🤖 Registrado pelo robô{result.vendaMovereRegistro?" em "+new Date(result.vendaMovereRegistro).toLocaleString("pt-BR",{timeZone:"America/Porto_Velho",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):""} · conferido pelo telefone do cliente no relatório de vendas do Analytics.</div></div></div>}
           
           {result.obs&&<div className="rcell full"><div className="rl">Obs</div><div className="rv">{result.obs}</div></div>}
         </div>
@@ -1721,11 +1725,13 @@ export default function App(){
             ["todos","Todos","#555"],
             ["validos","Válidos",GREEN],
             ["liberado","Liberados",GREEN],
-            ["vencido","Vencidas","#CC1F1F"]
+            ["vencido","Vencidas","#CC1F1F"],
+            ["venda","✅ Venda concluída (Movere)","#22C55E"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
               :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
               :v==="liberado"?quotes.filter(q=>!!q.liberado).length
+              :v==="venda"?quotes.filter(q=>!!q.vendaMovere).length
               :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})

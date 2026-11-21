@@ -1,0 +1,41 @@
+name: Conferir vendas Movere (descontos)
+
+# Marca "Venda concluída (Movere)" nos descontos cujo cliente comprou,
+# comparando o telefone com o relatório de vendas do Analytics Movere.
+on:
+  schedule:
+    # Seg–Sáb às 7h50, 12h50 e 17h50 de Porto Velho (UTC−4).
+    # O Analytics atualiza as vendas uma vez por dia, de madrugada.
+    - cron: '50 11,16,21 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: 'Só mostrar o que faria, sem gravar nada'
+        type: boolean
+        default: false
+
+concurrency:
+  group: conferir-vendas-movere
+  cancel-in-progress: false
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install httpx
+
+      - name: Conferir vendas
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          DRY_RUN: ${{ inputs.teste && '1' || '' }}
+        run: python conferir_vendas_movere.py

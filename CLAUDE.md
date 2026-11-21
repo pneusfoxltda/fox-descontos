@@ -82,18 +82,29 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Válidos + Liberados + Vencidas = Todos. A aba "Pendentes" foi removida (igual a Válidos).
 - A lista mostra 60 por vez ("Mostrar mais") e é memorizada para não travar ao digitar.
 
+## Venda concluída (Movere) — branch `venda-movere`
+
+- Robô `conferir_vendas_movere.py` (workflow `conferir-vendas-movere.yml`, seg–sáb 7h50,
+  12h50 e 17h50 de Porto Velho): baixa o relatório de vendas do **Analytics Movere**
+  (relatório 742591, mesmo login do Apps Script das planilhas) e compara os **últimos 8
+  dígitos do telefone** com `descontos.telefone_cliente`. Venda no dia do cadastro ou
+  depois → `venda_movere = true` (vale mesmo vencido). Só pelo telefone (decisão do TI).
+- Segredos no GitHub: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`.
+  Rodar à mão com "teste" marcado mostra o que faria sem gravar.
+- O registro do GitHub Actions é **público**: o robô nunca imprime telefone nem nome.
+- `09_venda_movere.sql`: colunas novas + gatilho `proteger_venda_movere` (só o robô
+  grava essas colunas) + `consulta_publica` devolve `venda_movere`. Rodar ANTES de publicar.
+- Filtros do dashboard 744813 (só operadoras do televendas) ficam **desligados** para
+  conferir vendas de todas as lojas (`USAR_FILTRO_DASH=1` liga).
+  O TI confirmou que o relatório 742591 traz vendas de **todas as lojas**.
+- Testes: `python tests/test_conferir_vendas_movere.py` (rede imitada).
+
 ## Próximos passos (em ordem)
 
-1. **Trancar o banco (RLS)** — EM ANDAMENTO (branch `seguranca-rls`). Ordem combinada:
-   `06_consulta_publica.sql` (cria a função da Consulta, não muda nada) → publicar o site
-   (consulta.html busca pela RPC `consulta_publica`) → `07_trancar_banco.sql` (apaga as
-   regras "acesso total" e cria regras por nível; `update_desconto` vira `security invoker`;
-   `fox_login`, `fox_criar_usuario`, `update_usuario` desligadas) → TI cria o segredo
-   `SUPABASE_SERVICE_KEY` no GitHub (chave **service_role** da aba *Legacy API Keys*) e roda
-   o robô → `08_trancar_robo.sql` (tira a gravação pública de `vendas_televendas`).
+1. ✅ **Trancar o banco (RLS)** — CONCLUÍDO em 21/11/2026. Passos 06, 07 e 08 rodados no
+   Supabase; segredo `SUPABASE_SERVICE_KEY` no GitHub (o robô do televendas voltou a gravar
+   `vendas_televendas_clientes`, que antes dava 401). Regras: ver `07_trancar_banco.sql`.
    Painel do televendas: resumo e metas continuam sem login (aguardando decisão do TI).
-   Diagnóstico (`05_diagnostico.sql`) mostrou que `vendas_televendas_clientes` não tinha
-   regra de gravação para a chave pública (o robô pode estar falhando nessa tabela).
 2. **Apagar as senhas legíveis** das tabelas `usuarios` e `usuarios_televendas`.
 3. Remontar **liberação, consultas e relatórios** com as ideias do TI (ele vai trazer).
    Ideias já sugeridas: recusar com motivo, histórico de quem liberou, aviso ao vendedor,
