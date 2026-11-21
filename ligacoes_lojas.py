@@ -401,6 +401,13 @@ def main() -> int:
         RESUMO["inseridas"] = len(novas)
 
         # 2) Reconferir a lista aberta
+        bate = [l for l in abertas if cv.chaves_tel(l.get("telefone")) & agendados]
+        por_st = {}
+        for l in bate:
+            por_st[l["status"]] = por_st.get(l["status"], 0) + 1
+        print(f"🔎 Na lista e agendados no Kommo: {len(bate)}"
+              + (" (" + ", ".join(f"{k} {v}" for k, v in sorted(por_st.items())) + ")" if por_st else "")
+              + f" · com Data da visita: {sum(1 for l in bate if data_kommo(l.get('telefone'), datas_kommo))}")
         mudancas = reconferir(abertas, vendas, agendados, datas_kommo)
         RESUMO["comprou"] = sum(1 for m in mudancas if m["status"] == STATUS_COMPROU)
         RESUMO["agendou"] = sum(1 for m in mudancas if m["status"] == "agendou" and not m.get("so_data"))
