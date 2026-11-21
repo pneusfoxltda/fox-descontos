@@ -271,6 +271,7 @@ export default function App(){
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
+  const[roboStatus,setRoboStatus]=useState(null); // última rodada do robô "Conferir vendas Movere" (só admin)
   // Lista do Consultar: mostra aos poucos (60 por vez) para a tela não travar
   const[limiteLista,setLimiteLista]=useState(60);
   useEffect(()=>{setLimiteLista(60);},[filtroStatus]);
@@ -373,6 +374,12 @@ export default function App(){
       setQuotes(prev=>prev.map(q=>(!q.liberado&&!q.perdida&&q.validade&&new Date(q.validade.split("T")[0]+"T23:59:59")<new Date())?{...q,perdida:true,motivoPerda:"Validade expirada automaticamente"}:q));
     }).catch(()=>{});
     if(hasRole(session,"admin")) await carregarUsuarios();
+    if(hasRole(session,"admin")){try{
+      const hr={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
+      const base=SUPA_URL+"/rest/v1/robo_execucoes?robo=eq.conferir_vendas_movere&order=inicio.desc&limit=1&select=inicio,ok,teste,conferidos,encontrados,mensagem";
+      const [r1,r2]=await Promise.all([fetch(base,{headers:hr}),fetch(base+"&ok=is.true&teste=is.false",{headers:hr})]);
+      if(r1.ok&&r2.ok){const [a,b]=await Promise.all([r1.json(),r2.json()]);if(a&&a[0])setRoboStatus({ultima:a[0],ultimaCerta:b&&b[0]||null});}
+    }catch(e){}}
     // Carrega vendedores do Supabase
     try{
       const hc={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
@@ -1739,6 +1746,22 @@ export default function App(){
             </button>);
           })}
         </div>
+        {ehAdmin&&roboStatus&&(()=>{
+          const fmt=iso=>new Date(iso).toLocaleString("pt-BR",{timeZone:"America/Porto_Velho",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}).replace(","," às");
+          const u=roboStatus.ultima,c=roboStatus.ultimaCerta;
+          const horas=(Date.now()-new Date(u.inicio).getTime())/36e5;
+          const parado=horas>40; // sábado 17h50 → segunda 7h50 = 38h
+          const cor=!u.ok?"#F87171":parado?"#FBBF24":"#4ADE80";
+          const texto=!u.ok
+            ?"⚠️ Última rodada do robô falhou ("+fmt(u.inicio)+"): "+(u.mensagem||"erro")+(c?" · última certa: "+fmt(c.inicio):"")
+            :parado
+              ?"⚠️ Robô sem rodar desde "+fmt(u.inicio)+" — confira no GitHub"
+              :"🤖 Última conferência do robô: "+fmt(u.inicio)+" ✅ · "+(u.conferidos??0)+" pendentes conferidos · "+(u.encontrados??0)+" vendas novas"+(u.teste?" · (teste, sem gravar)":"");
+          return(<div style={{fontSize:12,color:cor,margin:"-4px 0 14px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+            <span>{texto}</span>
+            <a href="https://github.com/pneusfoxltda/fox-descontos/actions/workflows/conferir-vendas-movere.yml" target="_blank" rel="noreferrer" style={{color:MUTED,textDecoration:"underline"}}>ver detalhes ↗</a>
+          </div>);
+        })()}
       </div>
       {quotes.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>📋</span><p>Nenhum desconto cadastrado.</p></div></div>):(
         <div className="card-np">{listaConsultar}

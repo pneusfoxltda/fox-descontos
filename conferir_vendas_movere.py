@@ -47,6 +47,11 @@ JANELA_DIAS = 45           # confere descontos cadastrados nos últimos N dias
 USAR_FILTRO_DASH = os.environ.get("USAR_FILTRO_DASH", "0") == "1"
 
 TZ_LOJA = timezone(timedelta(hours=-4))   # Porto Velho
+ROBO = "conferir_vendas_movere"
+GUARDAR_DIAS = 90          # rodadas mais antigas que isso são apagadas
+
+# Resumo da rodada (vai para a tabela robo_execucoes; nunca tem dados de cliente)
+RESUMO = {"conferidos": None, "encontrados": None, "inicio": None}
 
 
 # ── Utilidades ────────────────────────────────────────────────────────────────
@@ -158,6 +163,29 @@ def _sb_headers(chave: str, extras: dict = None) -> dict:
     h = {"apikey": chave, "Authorization": f"Bearer {chave}", "Content-Type": "application/json"}
     h.update(extras or {})
     return h
+
+
+def registrar_rodada(ok: bool, mensagem: str = None, teste: bool = False):
+    """Grava o resumo da rodada no Supabase. Nunca derruba o robô se falhar."""
+    chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+    if not chave:
+        return
+    agora = datetime.now(timezone.utc)
+    corpo = {
+        "robo": ROBO, "ok": ok, "teste": teste,
+        "inicio": (RESUMO["inicio"] or agora).isoformat(), "fim": agora.isoformat(),
+        "conferidos": RESUMO["conferidos"], "encontrados": RESUMO["encontrados"],
+        "mensagem": (mensagem or "")[:300] or None,
+    }
+    try:
+        with httpx.Client(timeout=20) as cli:
+            cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes",
+                     headers=_sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            limite = (agora - timedelta(days=GUARDAR_DIAS)).isoformat()
+            cli.delete(f"{SUPABASE_URL}/rest/v1/robo_execucoes?robo=eq.{ROBO}&inicio=lt.{limite}",
+                       headers=_sb_headers(chave))
+    except Exception as e:  # o registro é só informativo
+        print(f"⚠️ Não consegui registrar a rodada: {type(e).__name__}")
 
 
 def buscar_pendentes(cli: httpx.Client, chave: str, desde: date) -> list:
@@ -284,12 +312,16 @@ def main() -> int:
 
     hoje = datetime.now(TZ_LOJA).date()
     desde = hoje - timedelta(days=JANELA_DIAS)
+    RESUMO["inicio"] = datetime.now(timezone.utc)
 
     with httpx.Client(timeout=60) as cli:
         pendentes = buscar_pendentes(cli, chave, desde)
         print(f"🔎 Descontos pendentes de liberação, com telefone e sem venda (últimos {JANELA_DIAS} dias): {len(pendentes)}")
+        RESUMO["conferidos"] = len(pendentes)
         if not pendentes:
+            RESUMO["encontrados"] = 0
             print("✅ Nada para conferir.")
+            registrar_rodada(True, teste=dry)
             return 0
 
         inicio = min(data_local(d["criado_em"]) for d in pendentes)
@@ -301,7 +333,9 @@ def main() -> int:
         print(f"📅 Dias com dados no Analytics: {len(els)} de {len(dias)} "
               f"({inicio.strftime('%d/%m')} a {hoje.strftime('%d/%m')})")
         if not els:
+            RESUMO["encontrados"] = 0
             print("⚠️ O Analytics ainda não tem vendas nesse período.")
+            registrar_rodada(True, "o Analytics ainda não tem vendas nesse período", teste=dry)
             return 0
         filtro = f"[{_md()}/obj/{ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in els)})"
         linhas = relatorio(cli, tt, REL_VENDAS, DASH_VENDAS if USAR_FILTRO_DASH else None, filtro)
@@ -310,19 +344,29 @@ def main() -> int:
 
         marcar = cruzar(pendentes, vendas)
         print(f"🎯 Descontos que viraram venda: {len(marcar)}")
+        RESUMO["encontrados"] = len(marcar)
         agora = datetime.now(timezone.utc).isoformat()
         for m in marcar:
             print(f"   • #{m['numero']} → venda em {date.fromisoformat(m['venda_movere_em']).strftime('%d/%m/%Y')}"
                   + (" (teste, não gravado)" if dry else ""))
             if not dry:
                 gravar(cli, chave, m, agora)
+    registrar_rodada(True, teste=dry)
     print("✅ Fim.")
     return 0
 
 
-if __name__ == "__main__":
+def rodar() -> int:
     try:
-        sys.exit(main())
+        codigo = main()
+        if codigo != 0:
+            registrar_rodada(False, "faltam segredos no GitHub (ANALYTICS_LOGIN / ANALYTICS_SENHA)")
+        return codigo
     except Exception as e:  # mensagem curta e sem dados de clientes
         print(f"❌ Erro: {e}")
-        sys.exit(1)
+        registrar_rodada(False, str(e), teste=os.environ.get("DRY_RUN", "") == "1")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(rodar())
