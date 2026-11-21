@@ -261,9 +261,9 @@
       const el = tela.el(c); if (!el) continue;
       let v = d[c];
       if (el.tagName === "SELECT") {
-        if (c === "vendedor" && N(v) === "fernanda") { avisos.push("No orçamento o vendedor aparece como “Fernanda” — escolha o vendedor responsável na lista (ou me diga, ex.: “vendedor Kessya”)."); continue; }
+        if (c === "vendedor" && N(v) === "fernanda") { avisos.push("No orçamento o vendedor aparece como “Fernanda”. Escolha o vendedor responsável na lista (ou me diga, ex.: “vendedor Kessya”)."); continue; }
         const op = escolherOpcao(el, v, c);
-        if (!op) { avisos.push(`Não achei “${v}” na lista de ${CAMPOS[c]} — escolha na tela.`); continue; }
+        if (!op) { avisos.push(`Não achei “${v}” na lista de ${CAMPOS[c]}. Escolha na tela.`); continue; }
         v = op;
       }
       if (c === "valor") v = String(Math.round(Number(v) * 100) / 100);
@@ -301,7 +301,7 @@
       medida: "medida 255/50R20", segmento: "segmento liso", valor: "valor 7.200", pgto: "pagamento à vista ou 3x",
       validade: "validade 30/11 (ou “7 dias”)",
     };
-    bot("Para salvar, ainda falta:\n" + f.map(c => `• ${CAMPOS[c]} — ex.: “${ex[c]}”`).join("\n") +
+    bot("Para salvar, ainda falta:\n" + f.map(c => `• ${CAMPOS[c]}, ex.: “${ex[c]}”`).join("\n") +
       "\n\nPode mandar tudo numa mensagem só, separado por vírgula. 😉" +
       "\nSe quiser, inclua também a observação (“motivo: cliente achou mais barato”)" + (tela.temConc ? " e a concorrência." : "."));
   }
@@ -436,7 +436,7 @@
       const toast = document.querySelector(".toast,#toast");
       const msg = toast && getComputedStyle(toast).display !== "none" ? toast.textContent.trim() : "";
       if (document.querySelector(".modal-bg, [class*=modal]") && /concorr/i.test(document.body.innerText) && !msg)
-        bot("A tela perguntou sobre a concorrência — é só responder lá. 😉");
+        bot("A tela perguntou sobre a concorrência, é só responder lá. 😉");
       else bot(msg ? "Pronto! A tela respondeu: “" + msg + "”" : "Mandei salvar! Confira a mensagem na tela. ✅");
       return true;
     }
@@ -451,7 +451,7 @@
                                          : `Anotei a concorrência na observação: ${d.conc.nome} ${brl(d.conc.valor)}.`);
         if (!okc) {
           const obs = tela.el("obs");
-          if (obs) setValor(obs, (obs.value ? obs.value + "\n\n" : "") + `📊 CONCORRENTES:\n• ${d.conc.nome}: ${brl(d.conc.valor)} (${d.conc.pgto || "—"})`);
+          if (obs) setValor(obs, (obs.value ? obs.value + "\n\n" : "") + `📊 CONCORRENTES:\n• ${d.conc.nome}: ${brl(d.conc.valor)}${d.conc.pgto ? " (" + d.conc.pgto + ")" : ""}`);
         }
       }
       if (txt) bot(txt);
@@ -602,7 +602,7 @@
   window.feAjuda = function (q) {
     const n = N(q);
     if (/quem (e|eh) (voce|vc)|qual (e )?(o )?seu nome|voce e (uma )?(ia|robo)/.test(n)) {
-      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador — nada do que você me manda sai do computador. 🔒");
+      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
       return true;
     }
     if (respostaConta(q)) return true;
@@ -622,7 +622,7 @@
     // Perguntou dos números do televendas fora do painel → leva até lá
     if (!/televendas/.test(location.pathname) &&
         (/\b(sou a|eu sou)\s+(graziele|kessya|sabrina|ana)\b/.test(n) || /(quanto (eu )?(preciso )?vend|minha meta|como estou na meta)/.test(n))) {
-      bot("Os seus números de vendas ficam no Painel do televendas. Abra por aqui e me pergunte lá — eu te mostro só os seus! 😊");
+      bot("Os seus números de vendas ficam no Painel do televendas. Abra por aqui e me pergunte lá, eu te mostro só os seus! 😊");
       if (typeof window.feHtml === "function" && typeof window.feAct === "function")
         window.feHtml(window.feAct({ t: "Painel do televendas", d: "Faturamento e metas de cada vendedora", go: "#/televendas" }));
       return true;

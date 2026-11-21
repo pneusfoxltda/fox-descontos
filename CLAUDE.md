@@ -56,6 +56,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   `FOXNET_IPS_LIBERADOS` (Vercel → Settings → Environments → Production). Lista vazia =
   nada bloqueado. `/meu-ip` sempre mostra o IP público. Após mudar a lista, é preciso
   publicar de novo (um commit vazio em `main` serve).
+- **Sem travessão (—) em nenhum texto da tela** (decisão do TI): usar vírgula, dois-pontos
+  ou "·". Campo vazio fica em branco (sem "—"). Registros antigos de concorrência gravados
+  com "—" (cba, loja, pgto) aparecem em branco no App e na Consulta.
 - **Logo oficial**: raposa vermelha de traços (`public/logo-fox.png`, `public/favicon.png`).
   A Fernanda usa a mesma raposa em preto, de propósito.
 - **Fernanda**: assistente sem IA externa (palavras-chave), não envia dados para fora.

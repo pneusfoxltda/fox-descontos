@@ -361,8 +361,8 @@ export default function App(){
     const db = await supa.from("descontos");
     const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente,venda_movere,venda_movere_em,venda_movere_valor,venda_movere_conferido_em");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
-      tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
-      loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
+      tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba==="—"?"":q.cba,medida:q.medida,segmento:q.segmento,
+      loja:q.loja==="—"?"":q.loja,valor:q.valor,pgto:q.pgto==="—"?"":q.pgto,validade:q.validade,obs:q.obs,
       liberado:q.liberado,negociadorNome:q.negociador_nome,negociadorEmail:q.negociador_email,erroInterno:q.erro_interno||false,
       liberadorNome:q.liberador_nome,liberadorEmail:q.liberador_email,
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
@@ -417,11 +417,11 @@ export default function App(){
     if(!concForm1.medida||!concForm1.empresa||!concForm1.segmento){toast_("Preencha medida, segmento e concorrente.",false);return;}
     try{
       const auto="#CONC"+Date.now().toString().slice(-6);
-      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—")+" ("+(concForm1.pgto||"—")+")";
+      const obsVal="📊 CONCORRENTES:\n• "+concForm1.empresa+": "+(concForm1.valor?parseFloat(concForm1.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"")+(concForm1.pgto?" ("+concForm1.pgto+")":"");
       const db=await supa.from("descontos");
       const {error}=await db.insert({
-        tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+        tipo:"conc",numero:auto,cba:"",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"",valor:concForm1.valor||"0",pgto:concForm1.pgto||"",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,
         negociador_nome:session.username,negociador_email:session.email,
@@ -431,8 +431,8 @@ export default function App(){
         anexo_nome:concForm1.anexo?concForm1.anexo.nome:null,
       });
       if(error){toast_("Erro ao salvar.",false);return;}
-      const novo={tipo:"conc",numero:auto,cba:"—",medida:concForm1.medida,segmento:concForm1.segmento,
-        loja:"—",valor:concForm1.valor||"0",pgto:concForm1.pgto||"—",
+      const novo={tipo:"conc",numero:auto,cba:"",medida:concForm1.medida,segmento:concForm1.segmento,
+        loja:"",valor:concForm1.valor||"0",pgto:concForm1.pgto||"",
         validade:new Date(Date.now()+30*864e5).toISOString().slice(0,10),
         obs:obsVal,liberado:false,negociadorNome:session.username,negociadorEmail:session.email,
         criadoEm:new Date().toISOString(),erroInterno:false,perdida:false,motivoPerda:"",
@@ -543,14 +543,14 @@ export default function App(){
     if(ate)dadosFiltrados=dadosFiltrados.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)<=ate);
     const fmtValorXLS=v=>{const n=parseFloat(v)||0;return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});};
     const fmtValidadeXLS=d=>d?d.split("-").reverse().join("/"):"";
-    const fmtDataReg=d=>{if(!d)return"—";try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");}};
+    const fmtDataReg=d=>{if(!d)return"";try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");}};
     const escXLS=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g," ").replace(/\r/g,"");
     const headersXLS=["Nº do Orçamento","CBA","Valor com Desconto","Forma de Pagamento","Validade","Observações","Concorrência","Valor Concorrência","Pgto Concorrência","Loja","Vendedor Responsável","Data de Registro"];
     const rowsHtmlXLS=dadosFiltrados.map(q=>{
       const concs=parseConcObs(q.obs||"");
-      const concNome=concs.length>0?concs.map(c=>c.empresa).join(" | "):"—";
-      const concValorStr=concs.length>0?concs.map(c=>c.valor?fmtValorXLS(c.valor):"—").join(" | "):"—";
-      const concPgtoStr=concs.length>0?concs.map(c=>c.pgto||"—").join(" | "):"—";
+      const concNome=concs.length>0?concs.map(c=>c.empresa).join(" | "):"";
+      const concValorStr=concs.length>0?concs.map(c=>c.valor?fmtValorXLS(c.valor):"").join(" | "):"";
+      const concPgtoStr=concs.length>0?concs.map(c=>c.pgto||"").join(" | "):"";
       const obsLimpa=(q.obs||"").split("\n\n📊 CONCORRENTES:")[0].split("CONCORRENTES:")[0].trim();
       return"<tr>"+
         "<td>"+escXLS(q.numero)+"</td>"+
@@ -563,7 +563,7 @@ export default function App(){
         "<td>"+escXLS(concValorStr)+"</td>"+
         "<td>"+escXLS(concPgtoStr)+"</td>"+
         "<td>"+escXLS(q.loja)+"</td>"+
-        "<td>"+escXLS(q.vendedor||"—")+"</td>"+
+        "<td>"+escXLS(q.vendedor||"")+"</td>"+
         "<td>"+escXLS(fmtDataReg(q.criadoEm))+"</td>"+
         "</tr>";
     }).join("");
@@ -587,7 +587,7 @@ export default function App(){
   };
   const registrarLogin=async(email,nome)=>{
     try{
-      const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+      const ip=await fetch("https://api.ipify.org?format=json").then(r=>r.json()).then(d=>d.ip).catch(()=>"");
       const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
       await fetch(SUPA_URL+"/rest/v1/logs_usuarios",{method:"POST",headers:h,body:JSON.stringify({email,nome,ip,acao:"login"})});
     }catch(e){}
@@ -760,7 +760,7 @@ export default function App(){
           <div className="list-row cl" key={q._id||q.tipo+q.numero} onClick={()=>acoes.current.clickRow(q)}>
             <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
             <div style={{flex:1}}>
-              <div className="list-d">{q.medida} — {q.segmento}</div>
+              <div className="list-d">{q.medida} · {q.segmento}</div>
               <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
             </div>
             <span className={`badge ${q.tipo==="os"?"b-os":"b-orc"}`} style={{marginLeft:6}}>{q.tipo==="os"?"O.S.":"ORC."}</span>
@@ -787,7 +787,7 @@ export default function App(){
   if(!session)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
     <div className="login-logo"><img src="/logo-fox.png" alt="Fox Pneus" style={{width:76,height:76,objectFit:"contain"}}/></div>
     <div className="login-t">Sistema de Descontos</div>
-    <div className="login-s">Acesso restrito — Fox Pneus</div>
+    <div className="login-s">Acesso restrito · Fox Pneus</div>
     {loginErr&&<div className="login-err">{loginErr}</div>}
     {!showAlterarSenha&&<>
       <div className="login-f"><label>E-mail</label><input type="email" placeholder="seu@email.com" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></div>
@@ -842,7 +842,7 @@ export default function App(){
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
             <div>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA COMERCIAL</div>
-              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>FOX PNEUS — SISTEMA DE DESCONTOS</div>
+              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>FOX PNEUS · SISTEMA DE DESCONTOS</div>
             </div>
           </div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar ({(filtered.length>0?filtered:quotes).length})</button>
@@ -925,7 +925,7 @@ export default function App(){
     setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
   }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
-  return(<span style={{color:MUTED,fontSize:11}}>—</span>);
+  return(<span style={{color:MUTED,fontSize:11}}></span>);
 })()}</td>
                 </tr>);})}
               </tbody>
@@ -997,7 +997,7 @@ export default function App(){
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
           if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
           return(<div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
-            <div className="chart-t">👤 Ranking de Vendedores — Negociações e Fechamentos</div>
+            <div className="chart-t">👤 Ranking de Vendedores · Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
                 {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
@@ -1056,7 +1056,7 @@ export default function App(){
           const ranked=Object.values(empMap).sort((a,b)=>b.count-a.count);
           const selEmp=concIntelSel||ranked[0]?.empresa;
           const selData=empMap[selEmp];
-          // group medidas for selected competitor — best (lowest) price per medida
+          // group medidas for selected competitor · best (lowest) price per medida
           const medMap={};
           (selData?.medidas||[]).forEach(m=>{
             if(!medMap[m.medida])medMap[m.medida]={medida:m.medida,count:0,melhor:null,pgto:"",criadoEm:"",loja:"",valorFox:m.valorFox};
@@ -1074,7 +1074,7 @@ export default function App(){
             <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
-                {/* LEFT — ranking */}
+                {/* LEFT · ranking */}
                 <div>
                   <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Empresas que mais negociamos</div>
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -1098,7 +1098,7 @@ export default function App(){
                     })}
                   </div>
                 </div>
-                {/* RIGHT — medidas do selecionado */}
+                {/* RIGHT · medidas do selecionado */}
                 <div>
                   <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>
                     Melhores preços de <span style={{color:BLUE}}>{selEmp}</span> por medida
@@ -1115,14 +1115,14 @@ export default function App(){
                                 <div style={{fontSize:10,color:MUTED,marginTop:1}}>{m.loja} · {m.criadoEm?new Date(m.criadoEm).toLocaleDateString("pt-BR"):""}</div>
                               </div>
                               <div style={{textAlign:"right"}}>
-                                <div style={{fontSize:15,fontWeight:800,color:RED}}>{m.melhor?fmtVal(m.melhor):"—"}</div>
+                                <div style={{fontSize:15,fontWeight:800,color:RED}}>{m.melhor?fmtVal(m.melhor):""}</div>
                                 {m.pgto&&<div style={{fontSize:10,color:MUTED}}>{m.pgto}</div>}
                               </div>
                             </div>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,flexWrap:"wrap",gap:6}}>
                               <div style={{display:"flex",gap:10,alignItems:"center"}}>
                                 <span style={{fontSize:10,color:MUTED}}>Nosso preço:</span>
-                                <span style={{fontSize:12,fontWeight:700,color:GREEN}}>{m.valorFox?fmtVal(m.valorFox):"—"}</span>
+                                <span style={{fontSize:12,fontWeight:700,color:GREEN}}>{m.valorFox?fmtVal(m.valorFox):""}</span>
                                 {diff!==null&&<span style={{fontSize:11,fontWeight:700,color:diff<0?GREEN:diff>0?RED:MUTED,background:(diff<0?GREEN:diff>0?RED:MUTED)+"22",borderRadius:4,padding:"1px 7px"}}>{diff<0?"▼ "+fmtVal(Math.abs(diff))+" mais barato":diff>0?"▲ "+fmtVal(diff)+" mais caro":"= Mesmo preço"}</span>}
                               </div>
                               <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700}}>Negociado {m.count}x</span>
@@ -1381,7 +1381,7 @@ export default function App(){
               <span style={{fontSize:18}}>{concForm1.anexo?"✅":"📎"}</span>
               <div>
                 <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar arquivo"}</div>
-                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Arquivo selecionado":"Obrigatório — print ou foto"}</div>
+                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Arquivo selecionado":"Obrigatório: print ou foto"}</div>
               </div>
               <input type="file" accept="image/*,audio/*" style={{display:"none"}} onChange={e=>{
                 const file=e.target.files[0];if(!file)return;
@@ -1401,7 +1401,7 @@ export default function App(){
         }} style={{width:"100%",marginTop:4}}>✅ Salvar Registro de Concorrência</button>
       </div>
       </>)}
-      {/* ── FORM SIMPLES — Cadastrar (televendas) ── */}
+      {/* ── FORM SIMPLES · Cadastrar (televendas) ── */}
       {tab==="cadastrar"&&hasRole(session,"televendas")&&!hasRole(session,"admin")&&!hasRole(session,"cadastrar2")&&(<>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
         <div style={{width:4,height:28,background:BLUE,borderRadius:2}}/>
@@ -1477,7 +1477,7 @@ export default function App(){
               <span style={{fontSize:20}}>{concForm1.anexo?"✅":"📎"}</span>
               <div>
                 <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar imagem"}</div>
-                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Clique para trocar":"Obrigatório — print ou foto do concorrente"}</div>
+                <div style={{fontSize:11,opacity:.7}}>{concForm1.anexo?"Clique para trocar":"Obrigatório: print ou foto do concorrente"}</div>
               </div>
               <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
                 const file=e.target.files[0];if(!file)return;
@@ -1508,7 +1508,7 @@ export default function App(){
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
-          <div><div className="ph-t">Descontos — Cadastrar</div><div className="ph-s">Cadastre o produto aqui — informe o orçamento ou ordem de serviço.<br/>O Comercial consultará pelo número no balcão.</div></div>
+          <div><div className="ph-t">Descontos · Cadastrar</div><div className="ph-s">Cadastre o produto aqui: informe o orçamento ou ordem de serviço.<br/>O Comercial consultará pelo número no balcão.</div></div>
         </div>
       </div>
       <div className="card">
@@ -1588,7 +1588,7 @@ export default function App(){
         </div>
         {/* Anexo opcional */}
         <div className="field mb" style={{marginTop:6}}>
-          <label>Anexo — imagem ou áudio (opcional)</label>
+          <label>Anexo: imagem ou áudio (opcional)</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:4}}>
             <label style={{background:"#161616",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
               📎 Selecionar arquivo
@@ -1606,7 +1606,7 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,marginTop:4}}>
           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",padding:"8px 14px",background:form.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(form.erroInterno?"#CC1F1F":"#2E2E2E"),borderRadius:8,transition:"all .2s"}}>
             <input type="checkbox" checked={form.erroInterno} onChange={e=>setForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:"#CC1F1F",cursor:"pointer"}}/>
-            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"#CC1F1F":"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"#CC1F1F":"#888"}}>⚠️ Erro interno: não contabilizar no Dashboard</span>
           </label>
           {form.erroInterno&&<span style={{fontSize:11,color:"#888",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
         </div>
@@ -1618,9 +1618,9 @@ export default function App(){
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
           <div className="ph-icon" style={{background:"#2E2A1A",border:"2px solid "+AMBER}}><span style={{fontSize:24}}>🤝</span></div>
-          <div><div className="ph-t">Comercial — Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S. — ou clique em uma linha da lista.</div></div>
+          <div><div className="ph-t">Comercial · Consultar</div><div className="ph-s">Busque pelo Orçamento ou O.S., ou clique em uma linha da lista.</div></div>
         </div>
-{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda_Movere":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha — {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda concluída":"Vencidas"} ({quotesPorStatus.length})</button>}
+{session.role==="admin"&&<button className="btn-out" onClick={()=>{const sl=filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Validos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda_Movere":"Vencidas";setExportDataPendente({data:quotesPorStatus,statusLabel:sl});setExportDateFiltro({de:"",ate:""});setShowExportDateModal(true);}}>🗓️ Gerar Planilha · {filtroStatus==="todos"?"Todos":filtroStatus==="validos"?"Válidos":filtroStatus==="liberado"?"Liberados":filtroStatus==="venda"?"Venda concluída":"Vencidas"} ({quotesPorStatus.length})</button>}
       </div>
       <div className="card">
         <div className="s-wrap">
@@ -1635,7 +1635,7 @@ export default function App(){
               <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.9)",letterSpacing:".5px"}}>{result.negociadorNome}</span>
               {result.negociadorEmail&&<span style={{fontSize:10,color:"rgba(255,255,255,.55)"}}>· {result.negociadorEmail}</span>}
             </div>}
-            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.6)",letterSpacing:"1.5px",marginBottom:3}}>{result.tipo==="os"?"ORDEM DE SERVIÇO":"ORÇAMENTO"} — {result.loja}</div>
+            <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.6)",letterSpacing:"1.5px",marginBottom:3}}>{result.tipo==="os"?"ORDEM DE SERVIÇO":"ORÇAMENTO"} · {result.loja}</div>
             <div className="rn">#{result.numero}</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
@@ -1655,7 +1655,7 @@ export default function App(){
               {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
               {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
             {(!result.liberado||(result.liberado&&session.role==="admin"))&&<button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
-              {result.liberado?"✓ LIBERADO — Remover":"Liberar Desconto"}
+              {result.liberado?"✓ LIBERADO · Remover":"Liberar Desconto"}
             </button>}
             {result.liberado&&result.liberadorNome&&<div style={{background:"rgba(0,0,0,.3)",borderRadius:5,padding:"4px 10px",display:"flex",alignItems:"center",gap:5}}>
               ✓<span style={{fontSize:10,color:"rgba(255,255,255,.7)",fontWeight:600}}>{result.liberadorNome}</span>
@@ -1677,12 +1677,12 @@ export default function App(){
           
           {result.obs&&<div className="rcell full"><div className="rl">Obs</div><div className="rv">{result.obs}</div></div>}
         </div>
-        {/* ANEXO — somente admin */}
+        {/* ANEXO · somente admin */}
         {result.anexoBase64&&session.role==="admin"&&(
           <div style={{background:"#0D1117",borderTop:"2px solid #1A1E3A",padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
               <span style={{fontSize:14}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"}</span>
-              <span style={{fontSize:11,fontWeight:700,color:BLUE,letterSpacing:1,textTransform:"uppercase"}}>Anexo — somente você (admin) vê isso</span>
+              <span style={{fontSize:11,fontWeight:700,color:BLUE,letterSpacing:1,textTransform:"uppercase"}}>Anexo: somente você (admin) vê isso</span>
             </div>
             {result.anexoTipo&&result.anexoTipo.startsWith("image")
               ?<div>
@@ -1764,7 +1764,7 @@ export default function App(){
           const texto=!u.ok
             ?"⚠️ Última rodada do robô falhou ("+fmt(u.inicio)+"): "+(u.mensagem||"erro")+(c?" · última certa: "+fmt(c.inicio):"")
             :parado
-              ?"⚠️ Robô sem rodar desde "+fmt(u.inicio)+" — confira no GitHub"
+              ?"⚠️ Robô sem rodar desde "+fmt(u.inicio)+", confira no GitHub"
               :"Última conferência do robô: "+fmt(u.inicio)+" ✅ · "+(u.conferidos??0)+" pendentes conferidos · "+(u.encontrados??0)+" vendas novas"+(u.teste?" · (teste, sem gravar)":"");
           return(<div style={{fontSize:12,color:cor,margin:"-4px 0 14px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
             <span>{texto}</span>
@@ -1917,7 +1917,7 @@ export default function App(){
     {editModal&&(
       <div className="edit-overlay" onClick={()=>setEditModal(null)}>
         <div className="edit-modal" onClick={e=>e.stopPropagation()} style={{maxWidth:560,width:"100%"}}>
-          <div className="edit-title">✏ Editar — #{editModal.numero}</div>
+          <div className="edit-title">✏ Editar · #{editModal.numero}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
             <div className="field"><label>CBA</label><input placeholder="CBA" value={editForm.cba} onChange={e=>setEditForm(f=>({...f,cba:e.target.value}))}/></div>
             <div className="field"><label>Medida *</label><input placeholder="Ex: 175/65R17" value={editForm.medida} onChange={e=>setEditForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
@@ -1963,7 +1963,7 @@ export default function App(){
           {/* Erro interno */}
           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"8px 12px",background:editForm.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(editForm.erroInterno?RED:"#2E2E2E"),borderRadius:8,marginBottom:12,transition:"all .2s"}}>
             <input type="checkbox" checked={editForm.erroInterno} onChange={e=>setEditForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:RED,cursor:"pointer"}}/>
-            <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno — não contabilizar no Dashboard</span>
+            <span style={{fontSize:12,fontWeight:700,color:editForm.erroInterno?RED:"#888"}}>⚠️ Erro interno: não contabilizar no Dashboard</span>
           </label>
           <div style={{display:"flex",gap:10}}>
             <button className="btn-sm" style={{flex:1,padding:"10px"}} onClick={()=>setEditModal(null)}>Cancelar</button>
@@ -1976,7 +1976,7 @@ export default function App(){
       <div className="overlay" onClick={()=>setShowExport(false)}>
         <div className="modal" onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div className="modal-t">Dados Exportados — {exportRows.length} registro(s)</div>
+            <div className="modal-t">Dados Exportados · {exportRows.length} registro(s)</div>
             <button className="btn-red" style={{width:"auto",padding:"7px 18px"}} onClick={()=>setShowExport(false)}>Fechar</button>
           </div>
           <div style={{fontSize:11,color:MUTED,background:"#161616",borderRadius:6,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
@@ -1987,7 +1987,7 @@ export default function App(){
               <thead><tr>{Object.keys(exportRows[0]).map(h=><th key={h}>{h}</th>)}</tr></thead>
               <tbody>{exportRows.map((row,i)=>(
                 <tr key={i}>{Object.entries(row).map(([k,v],j)=>(
-                  <td key={j} style={{color:k==="Status"?(v==="Liberado"?GREEN:AMBER):TEXT,fontWeight:k==="Status"||k==="Medida"?700:400}}>{v||"—"}</td>
+                  <td key={j} style={{color:k==="Status"?(v==="Liberado"?GREEN:AMBER):TEXT,fontWeight:k==="Status"||k==="Medida"?700:400}}>{v||""}</td>
                 ))}</tr>
               ))}</tbody>
             </table>
@@ -2000,7 +2000,7 @@ export default function App(){
         <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1100}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes — {galeriaModal.medida}</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes · {galeriaModal.medida}</div>
               <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} · {(galeriaModal.semFoto||[]).length} sem foto com concorrentes</div>
             </div>
             <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
@@ -2044,7 +2044,7 @@ export default function App(){
                         <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span>
                       </div>
                     </div>
-                    :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                    :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div>
                   }
                   {/* Nosso preço - só para não-conc */}
                   {!isConc&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:conc.length>0?8:0}}>
@@ -2074,7 +2074,7 @@ export default function App(){
           {/* Cards sem foto mas com concorrentes */}
           {(galeriaModal.semFoto||[]).length>0&&(
             <div style={{marginTop:20}}>
-              <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Negociações sem foto — dados de concorrência</div>
+              <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Negociações sem foto: dados de concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
                 {(galeriaModal.semFoto||[]).map((q,i)=>{
                   const conc=parseConcObs(q.obs);
@@ -2091,7 +2091,7 @@ export default function App(){
                         </button>
                       </div>
                       <div style={{padding:"10px 12px"}}>
-                        <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):"—"}</div>
+                        <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div>
                         {conc.length>0&&(
                           <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
                             <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
@@ -2099,7 +2099,7 @@ export default function App(){
                               <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
                                 <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
                                 <div style={{textAlign:"right"}}>
-                                  <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):"—"}</div>
+                                  <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):""}</div>
                                   {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
                                 </div>
                               </div>
@@ -2124,7 +2124,7 @@ export default function App(){
       <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Marcar como Perdida</div>
-          <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> — {perdidaModal.medida}</div>
+          <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> · {perdidaModal.medida}</div>
           <div style={{marginBottom:16}}>
             <label style={{fontSize:11,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
             <input
@@ -2160,7 +2160,7 @@ export default function App(){
     {showExportDateModal&&exportDataPendente&&(
       <div onClick={()=>setShowExportDateModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #CC1F1F",borderRadius:14,padding:"28px 32px",maxWidth:460,width:"100%",boxShadow:"0 8px 40px #000"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:1,marginBottom:4}}>📊 Gerar Planilha — {exportDataPendente.statusLabel}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:1,marginBottom:4}}>📊 Gerar Planilha · {exportDataPendente.statusLabel}</div>
           <div style={{fontSize:13,color:"#888",marginBottom:20,lineHeight:1.5}}>
             Filtre por <strong style={{color:"#fff"}}>data de registro</strong> da negociação.<br/>
             <span style={{fontSize:11}}>Deixe em branco para exportar todos os {exportDataPendente.data.length} registros.</span>
@@ -2199,7 +2199,7 @@ export default function App(){
     {adminSenhaModal&&<div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Nova senha por e-mail</div>
-        <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} — {adminSenhaModal.email}</div>
+        <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} · {adminSenhaModal.email}</div>
         <div style={{fontSize:13,color:"#ccc",lineHeight:1.6,marginBottom:20}}>Vamos enviar um e-mail para <strong style={{color:"#fff"}}>{adminSenhaModal.email}</strong> com um link para a pessoa criar uma senha nova. Por segurança, o admin não define nem vê a senha de ninguém.</div>
         <div style={{display:"flex",gap:10}}>
           <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
@@ -2210,7 +2210,7 @@ export default function App(){
     {/* Logs tab view */}
     {tab==="logs"&&session.role==="admin"&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs — Acessos e Consultas</div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs · Acessos e Consultas</div>
         <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
         <div style={{display:"flex",gap:10}}>
           {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
@@ -2223,14 +2223,14 @@ export default function App(){
           <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","Ação","Termo Buscado","Loja","IP","Dispositivo / Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>{logs.map((l,i)=>{
             const isAcesso=l.email&&l.email.includes("Acesso");
-            const dispositivo=l.motivo&&l.motivo.includes("Mobile")?"📱 Mobile":l.motivo&&l.motivo.includes("Desktop")?"🖥️ Desktop":"—";
+            const dispositivo=l.motivo&&l.motivo.includes("Mobile")?"📱 Mobile":l.motivo&&l.motivo.includes("Desktop")?"🖥️ Desktop":"";
             const motivoSemDisp=l.motivo?l.motivo.replace(/ \| (📱 Mobile|🖥️ Desktop)/,"").trim():null;
             return(<tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:isAcesso?"#0D0D1A":l.sucesso?"transparent":"#1A0000"}}>
             <td style={{padding:"10px 12px",color:"#888",fontSize:11,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
-            <td style={{padding:"10px 12px",fontWeight:600,color:isAcesso?"#7B68EE":l.sucesso?TEXT:RED,whiteSpace:"nowrap"}}>{l.email||"—"}</td>
-            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||<span style={{color:MUTED}}>—</span>}</td>
-            <td style={{padding:"10px 12px",color:MUTED,fontSize:12}}>{l.loja||"—"}</td>
-            <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||"—"}</td>
+            <td style={{padding:"10px 12px",fontWeight:600,color:isAcesso?"#7B68EE":l.sucesso?TEXT:RED,whiteSpace:"nowrap"}}>{l.email||""}</td>
+            <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||<span style={{color:MUTED}}></span>}</td>
+            <td style={{padding:"10px 12px",color:MUTED,fontSize:12}}>{l.loja||""}</td>
+            <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||""}</td>
             <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
               <span style={{marginRight:6,fontSize:12}}>{dispositivo}</span>
               {l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>✅</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>❌ {motivoSemDisp||"Sem resultado"}</span>}
@@ -2266,7 +2266,7 @@ export default function App(){
                   <td style={{padding:"10px 12px",textAlign:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:online?"#4CAF50":"#444",display:"inline-block",boxShadow:online?"0 0 8px #4CAF50":"none"}}/></td>
                   <td style={{padding:"10px 12px"}}><div style={{fontWeight:700,color:TEXT,fontSize:13}}>{u.nome}</div><div style={{fontSize:10,color:MUTED}}>{u.email}</div>{online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700}}>● Online</div>}</td>
                   <td style={{padding:"10px 12px"}}><span style={{background:u.tipo==="publico"?"#1A1A2E":roleColor(u.role)+"22",color:u.tipo==="publico"?"#7B68EE":roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{u.tipo==="publico"?"🔗 Consulta Pública":roleName(u.role)}</span></td>
-                  <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"—":u.negociacoes}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"":u.negociacoes}</span></td>
                   <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
                   <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>{ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}</td>
                 </tr>);})}</tbody>
