@@ -125,7 +125,7 @@
 
   function telefoneDoTexto(t, rotulado) {
     const re = rotulado
-      ? /(?:tel(?:efone)?|cel(?:ular)?|fone|whats(?:app)?|contato)\s*(?:do cliente)?\s*[:=]?\s*(\+?[\d()\s.-]{8,20})/i
+      ? /(?:tel(?:efone)?|cel(?:ular)?|fone|whats(?:app)?|contato)\s*(?:do cliente)?\s*[:=]?\s*(\+?[\d() \t.-]{8,20})/i
       : /(\(?\d{2}\)?\s*9?\d{4}[\s.-]?\d{4})/;
     const m = String(t || "").match(re);
     if (!m) return null;
@@ -182,7 +182,7 @@
       const cli = abaixoDe(L, /^cliente\s*:?/i);
       if (cli) d.cliente = cli.replace(/^\d+\s*-\s*/, "").trim();
       const tel = abaixoDe(L, /^telefone\s*:?/i) || abaixoDe(L, /^celular\s*:?/i);
-      if (tel && tel.replace(/\D/g, "").length >= 8) d.telefone = so(/(\+?[\d()\s.-]{8,20})/, tel).trim();
+      if (tel && tel.replace(/\D/g, "").length >= 8) d.telefone = so(/(\+?[\d() \t.-]{8,20})/, tel).trim();
       const ven = abaixoDe(L, /^vendedor\s*:?/i);
       if (ven) d.vendedor = ven.replace(/^\d+\s*-\s*/, "").trim().split(/\s+/)[0];
       const pg = abaixoDe(L, /^condi[cç][aã]o(\s*de)?\s*pagamento\s*:?/i);
@@ -196,7 +196,7 @@
     const ini = t.search(/Cliente\s*:/i);
     d.loja = lojaDoTexto(ini > 0 ? t.slice(0, ini) : t.slice(0, 600));
     if (!d.cliente) { m = t.match(/Cliente\s*:\s*(?:\d+\s*-\s*)?([^\n]+)/i); if (m && !/telefone|vendedor/i.test(m[1])) d.cliente = m[1].trim(); }
-    if (!d.telefone) { m = t.match(/(?:Telefone|Celular)\s*:\s*(\+?[\d()\s.-]{8,20})/i); if (m && m[1].replace(/\D/g, "").length >= 8) d.telefone = m[1].trim(); }
+    if (!d.telefone) { m = t.match(/(?:Telefone|Celular)\s*:\s*(\+?[\d() \t.-]{8,20})/i); if (m && m[1].replace(/\D/g, "").length >= 8) d.telefone = m[1].trim(); }
     if (!d.vendedor) { m = t.match(/Vendedor\s*:\s*(?:\d+\s*-\s*)?([A-Za-zÀ-ú]+)/i); if (m) d.vendedor = m[1].trim(); }
     d.medida = medidaDoTexto(t);
     if (d.medida) {
@@ -459,7 +459,7 @@
       return true;
     }
     if (/cadastr|preench|desconto|orcamento|negociacao/.test(n)) {
-      bot("Posso preencher o desconto para você! 🦊\n\n• Mande o PDF ou um print do orçamento pelo 📎 aqui embaixo, ou\n• Escreva os dados, por exemplo:\n“orçamento 951290, loja Ariquemes, vendedor Kessya, telefone 69 98152-5711, medida 255/50R20 liso, CBA 1234, valor 7.200, pagamento à vista, validade 7 dias, motivo: cobrir a concorrência”");
+      bot("Posso preencher o desconto para você! 🦊\n\n• Mande o PDF pelo 📎, cole um print do orçamento aqui (Ctrl+V), ou\n• Escreva os dados, por exemplo:\n“orçamento 951290, loja Ariquemes, vendedor Kessya, telefone 69 98152-5711, medida 255/50R20 liso, CBA 1234, valor 7.200, pagamento à vista, validade 7 dias, motivo: cobrir a concorrência”");
       return true;
     }
     return false;
@@ -638,12 +638,32 @@
     st.textContent = ".fe-clip{background:#1B3247;border:none;color:#fff;border-radius:10px;width:42px;flex-shrink:0;font-size:18px;cursor:pointer}.fe-clip:hover{background:#2A4A66}.fe-in{gap:6px}";
     document.head.appendChild(st);
     const bt = document.createElement("button");
-    bt.type = "button"; bt.id = "fe-clip"; bt.className = "fe-clip"; bt.title = "Enviar PDF ou imagem do orçamento"; bt.textContent = "📎";
+    bt.type = "button"; bt.id = "fe-clip"; bt.className = "fe-clip"; bt.title = "Enviar PDF ou imagem do orçamento (também dá para colar um print com Ctrl+V)"; bt.textContent = "📎";
     const inp = document.createElement("input");
     inp.type = "file"; inp.accept = "application/pdf,image/*"; inp.style.display = "none";
     bt.onclick = () => inp.click();
     inp.onchange = () => { const f = inp.files[0]; inp.value = ""; if (f) receberArquivo(f); };
     form.insertBefore(bt, form.firstChild); form.appendChild(inp);
+
+    // Colar um print (Ctrl+V) ou arrastar o arquivo para a conversa
+    const painel = document.getElementById("fePanel");
+    const campo = document.getElementById("feIn");
+    if (campo) campo.placeholder = "Escreva, ou cole um print (Ctrl+V)…";
+    painel.addEventListener("paste", e => {
+      const itens = [...((e.clipboardData && e.clipboardData.items) || [])];
+      const img = itens.find(i => i.kind === "file" && /^image\//.test(i.type));
+      if (!img) return;                       // texto colado continua normal
+      e.preventDefault();
+      const f = img.getAsFile();
+      if (f) receberArquivo(new File([f], "print-colado." + ((f.type.split("/")[1] || "png").replace("jpeg", "jpg")), { type: f.type }));
+    });
+    painel.addEventListener("dragover", e => { e.preventDefault(); painel.style.outline = "2px dashed #E6F77A"; });
+    painel.addEventListener("dragleave", () => { painel.style.outline = ""; });
+    painel.addEventListener("drop", e => {
+      e.preventDefault(); painel.style.outline = "";
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) receberArquivo(f);
+    });
 
     // Sugestões da tela ao abrir a conversa
     const abrir = window.feOpen;
@@ -653,7 +673,7 @@
       if (!primeira) return;
       setTimeout(() => {
         if (telaCadastro()) {
-          bot("Estou vendo que você está no Cadastrar desconto. 📝 Posso preencher para você: mande o PDF ou o print do orçamento pelo 📎, ou escreva os dados aqui.");
+          bot("Estou vendo que você está no Cadastrar desconto. 📝 Posso preencher para você: mande o PDF pelo 📎, cole um print aqui (Ctrl+V) ou escreva os dados.");
           chips(["Como você preenche?", "O que falta?"]);
         } else if (/televendas/.test(location.pathname)) {
           const q = lerQuem();
