@@ -1013,12 +1013,13 @@ function render(rows) {
   const datasSet = new Set();
 
   OPERADORES.forEach(op => {
-    porOp[op.codigo] = {nome: op.nome, totalMes: 0, porDia: {}};
+    porOp[op.codigo] = {nome: op.nome, totalMes: 0, porDia: {}, clientesMes: 0};
   });
 
   rows.forEach(r => {
     if(!porOp[r.operador_codigo]) return;
     porOp[r.operador_codigo].totalMes += r.valor_venda || 0;
+    porOp[r.operador_codigo].clientesMes += (r.num_clientes || r.qtd_clientes || 0);
     porOp[r.operador_codigo].porDia[r.data_ref] = (porOp[r.operador_codigo].porDia[r.data_ref]||0) + (r.valor_venda||0);
     datasSet.add(r.data_ref);
   });
@@ -1049,7 +1050,7 @@ function render(rows) {
   window.FE_TV = { ano, mes, diaHoje, mesCompleto, duTotal, duPassados, duRestantes, pctDesejado,
     mult, metaIdx, metas: {...metas}, metaMult: META_MULT.slice(),
     operadores: OPERADORES.map(op => ({ codigo: op.codigo, nome: op.nome,
-      totalMes: porOp[op.codigo].totalMes, porDia: {...porOp[op.codigo].porDia} })),
+      totalMes: porOp[op.codigo].totalMes, porDia: {...porOp[op.codigo].porDia}, clientesMes: porOp[op.codigo].clientesMes })),
     feriados: (feriados[`${ano}-${String(mes).padStart(2,'0')}`] || []).slice(),
     diasUteis: diasUteis(ano, mes) };
 

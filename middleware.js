@@ -93,7 +93,7 @@ export function ehDominioFoxnet(hostname) {
 // No domínio da intranet só existem estes endereços; o resto vai para o domínio dos sistemas.
 export function ehDaIntranet(caminho) {
   return caminho === '/' || caminho === '/foxnet' || caminho.startsWith('/foxnet/') ||
-    caminho === '/fernanda.js' || caminho === '/fernanda-ajuda.js' || caminho === '/favicon.svg' ||
+    caminho === '/fernanda.js' || caminho === '/fernanda-ajuda.js' || caminho.startsWith('/vendor/') || caminho === '/favicon.svg' ||
     caminho === '/favicon.png' || caminho === '/logo-fox.png';
 }
 

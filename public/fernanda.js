@@ -106,14 +106,72 @@ function feSend(){
 function feAnswer(q){
   /* Ajuda da tela (cadastrar, televendas, contas) · fernanda-ajuda.js */
   if(typeof window.feAjuda==="function" && window.feAjuda(q)) return;
-  feAnswerBase(q);
+  /* Corrige erros de digitação (Fuse.js, no próprio navegador) antes de procurar */
+  const c=feCorrigir(q);
+  if(c){
+    feBot("Acho que você quis dizer: “"+c+"”. 😉");
+    if(typeof window.feAjuda==="function" && window.feAjuda(c)) return;
+    if(feAnswerBase(c, true)) return;
+  }
+  if(feAnswerBase(q, true)) return;
+  feNaoAchei();
 }
-function feAnswerBase(q){
+function feNaoAchei(){
+  feBot("Hmm, não encontrei isso no FOXNET. 🤔\nTente com outras palavras ou escolha uma das opções abaixo. Se for algo que ainda não existe aqui, avise o TI para incluirmos!");
+  feRenderChips(FE_CHIPS);
+}
+
+/* ══ Entende erros de digitação ("televedas", "ligaçoes", "cadstrar", "ariqumes") ══
+   Usa o Fuse.js (busca aproximada, licença Apache 2.0, cópia em /vendor, roda só no
+   navegador e não envia nada para fora). Só troca palavras que a Fernanda não conhece
+   por uma parecida que ela conhece (mesma primeira letra). */
+let feFuse=null, feVocab=null;
+const FE_PALAVRAS_EXTRA="desconto descontos cadastrar consultar liberar televendas ligacoes ligacao cotacao cotacoes orcamento alinhamento alinhamentos loja lojas cnpj endereco telefone meta metas vendas vendi faturamento porcentagem parcelas parcela salvar concorrencia anexo agendamento agendou pendentes resultado relatorio dashboard senha login usuario usuarios vendedor vendedora cliente medida pneu pneus oleo filtro treinamento curso".split(" ");
+/* Palavras comuns que a Fernanda NÃO corrige (são normais, só não são nomes de sistemas) */
+const FE_COMUNS=new Set(("atende atendem atendimento paga pagam pagar cobra cobram cobrar custa custo preco valor total quanto quantos quantas "+
+  "carro carros moto caminhonete veiculo modelo perto proxima proximo mais menos fica ficam onde quando hoje ontem amanha semana mes "+
+  "dia dias hora horas numero nome cidade estado endereco minha minhas meu meus nosso nossa sua seu dele dela pessoa gente "+
+  "posso pode podem consigo consegue sabe saber diga dizer mostra mostrar manda mandar passa passar falta faltou ainda tambem "+
+  "obrigado obrigada favor ajuda ajudar duvida certo errado bom boa melhor novo nova antigo ultima ultimo primeiro primeira "+
+  "esta estao estou fiz feito pronto agora depois antes sempre nunca todos todas cada outro outra mesmo mesma porque entao "+
+  "vender vendeu venda comprar comprou compra cliente clientes trocar troca alguem alguma algum isso este esta tudo nada").split(" "));
+function feCarregarFuse(){
+  if(window.Fuse || document.getElementById("fe-fuse")) return;
+  const s=document.createElement("script"); s.id="fe-fuse"; s.src="/vendor/fuse.basic.min.js"; s.defer=true; document.head.appendChild(s);
+}
+function feMontarVocab(){
+  if(feVocab) return feVocab;
+  const set=new Set(FE_PALAVRAS_EXTRA);
+  const add=t=>feWords(t).forEach(w=>{ if(w.length>=3 && !/^\d/.test(w)) set.add(w); });
+  FE_KB.forEach(r=>{ r.k.forEach(add); add(r.t); });
+  FE_CIDADES.forEach(g=>{ add(g.loja); g.c.forEach(([c])=>add(c)); });
+  FE_VEIC.forEach(add);
+  FE_LOJAS.forEach(l=>add(l.nome));
+  feVocab=[...set];
+  return feVocab;
+}
+function feCorrigir(q){
+  if(!window.Fuse) return null;
+  const vocab=feMontarVocab(), conhecidas=new Set(vocab);
+  FE_COMUNS.forEach(w=>conhecidas.add(w));
+  if(!feFuse) feFuse=new window.Fuse(vocab,{includeScore:true,threshold:0.4,ignoreLocation:true});
+  let mudou=false;
+  const out=feWords(q).map(w=>{
+    if(w.length<4 || /\d/.test(w) || STOP.has(w) || conhecidas.has(w)) return w;
+    const r=feFuse.search(w,{limit:5}).filter(x=>x.score<=0.34 && x.item[0]===w[0] && Math.abs(x.item.length-w.length)<=2);
+    if(!r.length) return w;
+    mudou=true; return r[0].item;
+  });
+  return mudou ? out.join(" ") : null;
+}
+feCarregarFuse();
+
+function feAnswerBase(q, calado){
   const n=" "+feWords(q).join(" ")+" ";
   const words=feWords(q).filter(w=>!STOP.has(w));
-  if(/^ (oi|ola|bom dia|boa tarde|boa noite|e ai|opa)( fernanda)? $/.test(n)){ feBot("Oi! 😊 Me conta o que você precisa encontrar."); feRenderChips(FE_CHIPS); return; }
-  if(/ (obrigad|valeu|brigad)/.test(n)){ feBot("Por nada! Se precisar de mais alguma coisa, é só chamar. 🦊"); return; }
-  if(/ (pix|conta bancaria|dados bancarios|agencia|deposito|transferencia) /.test(n)){ feBot("Os dados bancários e o Pix não ficam no FOXNET aberto, por segurança. Peça ao financeiro ou consulte a planilha interna do televendas."); return; }
+  if(/^ (oi|ola|bom dia|boa tarde|boa noite|e ai|opa)( fernanda)? $/.test(n)){ feBot("Oi! 😊 Me conta o que você precisa encontrar."); feRenderChips(FE_CHIPS); return true; }
+  if(/ (obrigad|valeu|brigad)/.test(n)){ feBot("Por nada! Se precisar de mais alguma coisa, é só chamar. 🦊"); return true; }
+  if(/ (pix|conta bancaria|dados bancarios|agencia|deposito|transferencia) /.test(n)){ feBot("Os dados bancários e o Pix não ficam no FOXNET aberto, por segurança. Peça ao financeiro ou consulte a planilha interna do televendas."); return true; }
 
   /* 1) cidade → loja mais próxima */
   const cid=[]; FE_CIDADES.forEach(g=>g.c.forEach(([c])=>{ const nc=feNorm(c); if(words.some(w=>w.length>=4 && nc.split(/[\s.-]+/).some(p=>p.startsWith(w)||w.startsWith(p)&&p.length>=4)) || n.includes(" "+nc+" ")) cid.push({c,g}); }));
@@ -149,10 +207,8 @@ function feAnswerBase(q){
     feHtml(sc.slice(0,3).map(x=>feAct(x.r)).join(""));
     disse=true;
   }
-  if(!disse){
-    feBot("Hmm, não encontrei isso no FOXNET. 🤔\nTente com outras palavras ou escolha uma das opções abaixo. Se for algo que ainda não existe aqui, avise o TI para incluirmos!");
-    feRenderChips(FE_CHIPS);
-  }
+  if(!disse && !calado) feNaoAchei();
+  return disse;
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && fePanel.classList.contains("on")) feClose(); });
 

@@ -73,6 +73,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
     responde só os números dessa pessoa (`window.FE_TV`, exposto no `render()` do mês).
     Não é segurança de verdade (qualquer um pode dizer que é a Kessya) — o painel já é aberto.
   · Contas: porcentagem, desconto, parcelas e contas simples. Botão 📎 no chat.
+  · **Plano para a meta** (televendas): "o que preciso fazer para bater a meta?" → previsão no ritmo atual,
+    quanto por dia (e % acima da média), vendas pelo ticket médio, chance (aproximação normal), dias que
+    bateram o necessário, tendência, melhor dia da semana e até 3 dicas. Só com as vendas da própria pessoa.
+  · **Erros de digitação**: Fuse.js 7.1.0 (Apache 2.0) copiado em `public/vendor/` (sem CDN, sem rede).
+    Corrige só palavras desconhecidas por uma conhecida com a mesma 1ª letra (`FE_COMUNS` = palavras que
+    nunca corrige) e avisa "Acho que você quis dizer…". O ECC (affaan-m/ECC) foi avaliado e **não** usado.
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
   com 2 alinhamentos. **Dados bancários/Pix ficam fora** (repositório público).
 

@@ -498,7 +498,7 @@
       gravarQuem(opNome.nome);
       bot(sorteia(["Oi, ", "Que bom te ver, ", "Olá, "]) + primeiroNome(opNome.nome) + "! 😊 A partir de agora, neste computador, eu te respondo sobre os seus números.");
       if (D) resumoPessoa(D, D.operadores.find(o => o.nome === opNome.nome));
-      chips(["Quanto preciso vender hoje?", "Quanto vendi ontem?", "Como estou na meta?", "Quanto falta para a meta 2?"]);
+      chips(["O que preciso fazer para bater a meta?", "Quanto preciso vender hoje?", "Como estou na meta?", "Quanto falta para a meta 2?"]);
       return true;
     }
     if (/quem (sou eu|e (que )?esta falando)|^quem sou/.test(n)) {
@@ -508,7 +508,7 @@
       return true;
     }
 
-    const sobreNumeros = /vend|meta|precis|falt|ritmo|como estou|resultado|faturamento|faturei|desempenho|media|melhor dia|quanto/.test(n);
+    const sobreNumeros = /vend|meta|precis|falt|ritmo|como estou|resultado|faturamento|faturei|desempenho|media|melhor dia|quanto|plano|dica|previs|chance|bater|chego|chegar|estrateg|objetivo|melhorar/.test(n);
     if (!sobreNumeros) return false;
 
     // Perguntou de outra pessoa?
@@ -552,6 +552,10 @@
       bot(dias.length ? `Seu melhor dia em ${nomeMes} foi ${dias[0][0].slice(8)}/${dias[0][0].slice(5, 7)}, com ${brl(dias[0][1])}. 🏆` : "Ainda não há vendas suas neste mês.");
       return true;
     }
+    if (/o que (eu )?(preciso|tenho que|devo|posso) fazer|como (eu )?(chego|chegar|bato|bater|alcanc|atinj)|vou bater|consigo bater|da pra bater|previs|projec|chance|dica|plano|estrateg|vender mais|melhorar|objetivo/.test(n)) {
+      planoMeta(D, op, idxMeta != null ? D.metaMult[idxMeta] : null, nomeMeta);
+      return true;
+    }
     if (/media/.test(n)) { bot(`Sua média é de ${brl(num.media)} por dia útil trabalhado (${D.duPassados} dias úteis até agora).`); return true; }
     if (/precis|por dia|hoje/.test(n)) {
       bot(num.falta <= 0
@@ -580,6 +584,84 @@
         `• Esperado para hoje: ${num.desejado}% (${D.duPassados} de ${D.duTotal} dias úteis)\n` +
         (num.falta > 0 ? `• Falta: ${brl(num.falta)} → ${brl(num.porDia)} por dia útil (${D.duRestantes} restantes)\n` : "• Meta batida! 🎉\n") +
         (noRitmo ? "\nVocê está no ritmo! Continue assim. 🚀" : "\nEstá um pouco abaixo do ritmo, mas dá para recuperar. Bora! 💪"));
+  }
+
+  // ══════════════════════ PLANO PARA A META (estatística simples) ══════════════════════
+  // Usa só as vendas por dia da própria pessoa (já estão no painel). Nada sai do navegador.
+  const SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+  function estatDias(D, op) {
+    const hoje = `${D.ano}-${String(D.mes).padStart(2, "0")}-${String(D.diaHoje).padStart(2, "0")}`;
+    const dias = Object.entries(op.porDia).filter(([d, v]) => v > 0 && d < hoje).sort();
+    const vals = dias.map(x => x[1]);
+    const media = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    const dp = vals.length > 1 ? Math.sqrt(vals.reduce((a, v) => a + (v - media) ** 2, 0) / (vals.length - 1)) : 0;
+    const ult = vals.slice(-5), mediaUlt = ult.length ? ult.reduce((a, b) => a + b, 0) / ult.length : 0;
+    const porSem = {};
+    dias.forEach(([d, v]) => { const [a, m, dd] = d.split("-").map(Number); const w = new Date(a, m - 1, dd).getDay(); (porSem[w] = porSem[w] || []).push(v); });
+    const semanas = Object.entries(porSem).filter(([, l]) => l.length >= 2)
+      .map(([w, l]) => ({ dia: SEMANA[w], media: l.reduce((a, b) => a + b, 0) / l.length })).sort((a, b) => b.media - a.media);
+    return { dias, vals, media, dp, mediaUlt, nUlt: ult.length, semanas };
+  }
+  // Chance de a média dos próximos n dias ficar acima do necessário (aproximação normal)
+  function chance(media, dp, precisa, n) {
+    if (precisa <= 0) return 1;
+    if (!dp || !n) return media >= precisa ? 0.9 : 0.1;
+    const z = (media - precisa) / (dp / Math.sqrt(n));
+    const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return Math.min(0.97, Math.max(0.03, z > 0 ? 1 - p : p));
+  }
+  function planoMeta(D, op, mult, nomeMeta) {
+    const num = numerosDe(D, op, mult), nome = primeiroNome(op.nome), E = estatDias(D, op);
+    nomeMeta = nomeMeta || (num.mult === 1 ? "Meta 1" : `Meta ${D.metaMult.indexOf(num.mult) + 1}`);
+    const pct = v => v.toFixed(0) + "%";
+    if (num.falta <= 0) {
+      const prox = D.metaMult.find(x => x > num.mult);
+      bot(`Você já bateu a ${nomeMeta}, ${nome}! 🎉` + (prox ? ` Quer o plano para a Meta ${D.metaMult.indexOf(prox) + 1}? É só perguntar “o que preciso fazer para a meta ${D.metaMult.indexOf(prox) + 1}”.` : ""));
+      return;
+    }
+    if (E.vals.length < 3) {
+      bot(`Ainda tenho poucos dias de venda seus neste mês para fazer as contas com segurança, ${nome}. 🙏\nPor enquanto: faltam ${brl(num.falta)}, ou seja ${brl(num.porDia)} por dia útil nos ${D.duRestantes} dia(s) que faltam.`);
+      return;
+    }
+    const previsao = num.total + E.media * D.duRestantes;
+    const pPrev = previsao / num.meta * 100;
+    const esforco = (num.porDia / E.media - 1) * 100;
+    const p = chance(E.media, E.dp, num.porDia, D.duRestantes);
+    const acertos = E.vals.filter(v => v >= num.porDia).length;
+    const tend = E.mediaUlt / E.media - 1;
+    const ticket = op.clientesMes > 0 ? num.total / op.clientesMes : 0;
+
+    let t = `🎯 Plano para a ${nomeMeta}, ${nome}:\n\n`;
+    t += `📍 Onde você está: ${brl(num.total)} de ${brl(num.meta)} (${pct(num.pct)}).\n`;
+    t += `📈 No seu ritmo (média de ${brl(E.media)} por dia), você fecha o mês em uns ${brl(previsao)}, ${pct(pPrev)} da meta.\n`;
+    t += `✅ Para bater: ${brl(num.porDia)} por dia nos ${D.duRestantes} dia(s) útil(eis) que faltam` +
+         (esforco > 3 ? `, ${pct(esforco)} acima da sua média.` : esforco < -3 ? `, abaixo da sua média: é só manter o ritmo!` : `, praticamente a sua média.`) + "\n";
+    if (ticket > 0) {
+      const vendas = Math.ceil(num.falta / ticket), porDia = Math.max(1, Math.round(vendas / D.duRestantes));
+      t += `🧾 Seu ticket médio é ${brl(ticket)}: são umas ${vendas} vendas, cerca de ${porDia} por dia.\n`;
+    }
+    const pc = Math.round(p * 20) * 5;   // de 5 em 5%
+    t += `🎲 Chance de bater no ritmo de hoje: ${p >= 0.7 ? "boa" : p >= 0.4 ? "média" : p >= 0.1 ? "difícil, mas dá para virar com o plano abaixo" : "muito difícil este mês"} (uns ${pc}%).\n`;
+    t += `📅 Você vendeu ${brl(num.porDia)} ou mais em ${acertos} de ${E.vals.length} dias.`;
+    if (E.nUlt >= 3 && Math.abs(tend) >= 0.1) t += ` Nos últimos ${E.nUlt} dias sua média ${tend > 0 ? "subiu" : "caiu"} ${pct(Math.abs(tend) * 100)}${tend > 0 ? " 🔥" : ""}.`;
+    if (E.semanas.length >= 2) t += `\n⭐ Seu melhor dia da semana é ${E.semanas[0].dia} (média de ${brl(E.semanas[0].media)}).`;
+
+    const dicas = [];
+    if (esforco > 15) dicas.push("Retome hoje as cotações em aberto de maior valor: é o caminho mais rápido para o que falta.");
+    if (ticket > 0 && esforco > 0) {
+      const cobre = Math.min(100, 0.1 * E.media / (num.porDia - E.media) * 100);
+      dicas.push(`Aumente o ticket: se cada venda tiver ${brl(ticket * 0.1)} a mais (kit completo, serviços junto), isso sozinho cobre ${pct(cobre)} da diferença, sem precisar de mais clientes.`);
+    }
+    const idxAtual = D.metaMult.indexOf(num.mult);
+    if (p < 0.1 && idxAtual > 0) dicas.unshift(`Foque primeiro na Meta ${idxAtual}: ela está bem mais perto. Pergunte “o que preciso fazer para a meta ${idxAtual}”.`);
+    if (acertos / E.vals.length < 0.5) dicas.push("Seus dias variam bastante: comece o dia pelos clientes mais quentes para garantir um piso de vendas logo cedo.");
+    if (tend < -0.1) dicas.push("O ritmo caiu nos últimos dias: vale voltar nos clientes que pediram para pensar e fazer a 2ª tentativa pelo WhatsApp.");
+    if (E.semanas.length >= 2) dicas.push(`Concentre os retornos importantes na ${E.semanas[0].dia}, seu dia mais forte.`);
+    if (!dicas.length) dicas.push("Você está no caminho: mantenha a rotina de retornos e não deixe cotação esfriar.");
+    t += "\n\n💡 O que fazer:\n" + dicas.slice(0, 3).map(d => "• " + d).join("\n");
+    t += "\n\nAs contas usam só as suas vendas deste mês. Bora! 💪";
+    bot(t);
   }
 
   // ══════════════════════ CONTAS ══════════════════════
@@ -621,7 +703,7 @@
     if (/televendas/.test(location.pathname) && respostaTv(q)) return true;
     // Perguntou dos números do televendas fora do painel → leva até lá
     if (!/televendas/.test(location.pathname) &&
-        (/\b(sou a|eu sou)\s+(graziele|kessya|sabrina|ana)\b/.test(n) || /(quanto (eu )?(preciso )?vend|minha meta|como estou na meta)/.test(n))) {
+        (/\b(sou a|eu sou)\s+(graziele|kessya|sabrina|ana)\b/.test(n) || /(quanto (eu )?(preciso )?vend|minha meta|como estou na meta|bater a meta|chegar na meta|vender mais)/.test(n))) {
       bot("Os seus números de vendas ficam no Painel do televendas. Abra por aqui e me pergunte lá, eu te mostro só os seus! 😊");
       if (typeof window.feHtml === "function" && typeof window.feAct === "function")
         window.feHtml(window.feAct({ t: "Painel do televendas", d: "Faturamento e metas de cada vendedora", go: "#/televendas" }));
