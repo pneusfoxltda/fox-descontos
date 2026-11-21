@@ -104,6 +104,11 @@ function feSend(){
   setTimeout(()=>{ t.remove(); feAnswer(q); }, 450);
 }
 function feAnswer(q){
+  /* Ajuda da tela (cadastrar, televendas, contas) — fernanda-ajuda.js */
+  if(typeof window.feAjuda==="function" && window.feAjuda(q)) return;
+  feAnswerBase(q);
+}
+function feAnswerBase(q){
   const n=" "+feWords(q).join(" ")+" ";
   const words=feWords(q).filter(w=>!STOP.has(w));
   if(/^ (oi|ola|bom dia|boa tarde|boa noite|e ai|opa)( fernanda)? $/.test(n)){ feBot("Oi! 😊 Me conta o que você precisa encontrar."); feRenderChips(FE_CHIPS); return; }
@@ -271,3 +276,6 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape" && fePanel.classLis
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar); else iniciar();
 })();
+
+/* Carrega a ajuda de cada tela (preencher cadastro, resultados do televendas, contas) */
+(function(){ const s=document.createElement("script"); s.src="/fernanda-ajuda.js"; s.defer=true; document.head.appendChild(s); })();

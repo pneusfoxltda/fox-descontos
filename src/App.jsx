@@ -1514,32 +1514,33 @@ export default function App(){
       <div className="card">
         <label style={{marginBottom:6,display:"block"}}>Tipo de documento *</label>
         <div className="tipo-row">
-          <button className={`tipo-btn ${form.tipo==="orcamento"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"orcamento"}))}>Orçamento</button>
-          <button className={`tipo-btn ${form.tipo==="os"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"os"}))}>Ordem de Serviço (O.S.)</button>
+          <button data-fe="tipo-orcamento" className={`tipo-btn ${form.tipo==="orcamento"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"orcamento"}))}>Orçamento</button>
+          <button data-fe="tipo-os" className={`tipo-btn ${form.tipo==="os"?"sel":""}`} onClick={()=>setForm(f=>({...f,tipo:"os"}))}>Ordem de Serviço (O.S.)</button>
         </div>
         <div className="fg2">
-          <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
-          <div className="field"><label>Loja *</label><select value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
-          <div className="field"><label>Vendedor responsável *</label><select value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
-          <div className="field"><label>Telefone do cliente</label><input type="tel" maxLength={20} placeholder="(00) 00000-0000" value={form.telefone||""} onChange={e=>setForm(f=>({...f,telefone:e.target.value}))}/></div>
+          <div className="field"><label>Nº {form.tipo==="os"?"da O.S.":"do Orçamento"} *</label><input data-fe="numero" placeholder={form.tipo==="os"?"Ex: OS-00123":"Ex: 000123"} value={form.numero} onChange={e=>setForm(f=>({...f,numero:e.target.value}))}/></div>
+          <div className="field"><label>Loja *</label><select data-fe="loja" value={form.loja} onChange={e=>setForm(f=>({...f,loja:e.target.value}))}><option value="">Selecione...</option>{LOJAS.map(l=><option key={l}>{l}</option>)}</select></div>
+          <div className="field"><label>Vendedor responsável *</label><select data-fe="vendedor" value={form.vendedor} onChange={e=>setForm(f=>({...f,vendedor:e.target.value}))}><option value="">Selecione o vendedor...</option>{vendedores.map(v=><option key={v}>{v}</option>)}</select></div>
+          <div className="field"><label>Telefone do cliente</label><input data-fe="telefone" type="tel" maxLength={20} placeholder="(00) 00000-0000" value={form.telefone||""} onChange={e=>setForm(f=>({...f,telefone:e.target.value}))}/></div>
         </div>
         <div className="fg3">
-          <div className="field"><label>CBA *</label><input placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
-          <div className="field"><label>Medida do Pneu *</label><input placeholder="Ex: 175/65R17" value={form.medida} onChange={e=>setForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
-          <div className="field"><label>Segmento *</label><select value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
+          <div className="field"><label>CBA *</label><input data-fe="cba" placeholder="Ex: 0000" value={form.cba} onChange={e=>setForm(f=>({...f,cba:e.target.value}))}/></div>
+          <div className="field"><label>Medida do Pneu *</label><input data-fe="medida" placeholder="Ex: 175/65R17" value={form.medida} onChange={e=>setForm(f=>({...f,medida:e.target.value.toUpperCase()}))}/></div>
+          <div className="field"><label>Segmento *</label><select data-fe="segmento" value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}><option value="">Selecione...</option>{SEGS.map(s=><option key={s}>{s}</option>)}</select></div>
         </div>
         <div className="fg3">
-          <div className="field"><label>Valor com Desconto *</label><input type="number" step="0.01" placeholder="0,00" value={form.valor} onChange={e=>setForm(f=>({...f,valor:e.target.value}))}/></div>
-          <div className="field"><label>Forma de Pagamento *</label><select value={form.pgto} onChange={e=>setForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
-          <div className="field"><label>Validade *</label><input type="date" value={form.validade} onChange={e=>setForm(f=>({...f,validade:e.target.value}))}/></div>
+          <div className="field"><label>Valor com Desconto *</label><input data-fe="valor" type="number" step="0.01" placeholder="0,00" value={form.valor} onChange={e=>setForm(f=>({...f,valor:e.target.value}))}/></div>
+          <div className="field"><label>Forma de Pagamento *</label><select data-fe="pgto" value={form.pgto} onChange={e=>setForm(f=>({...f,pgto:e.target.value}))}><option value="">Selecione...</option>{PGTO.map(o=><option key={o}>{o}</option>)}</select></div>
+          <div className="field"><label>Validade *</label><input data-fe="validade" type="date" value={form.validade} onChange={e=>setForm(f=>({...f,validade:e.target.value}))}/></div>
         </div>
-        <div className="field mb"><label>Observações</label><input placeholder="Opcional" value={form.obs} onChange={e=>setForm(f=>({...f,obs:e.target.value}))}/></div>
+        <div className="field mb"><label>Observações</label><input data-fe="obs" placeholder="Opcional" value={form.obs} onChange={e=>setForm(f=>({...f,obs:e.target.value}))}/></div>
         {/* Concorrentes */}
         <div className="field mb" style={{marginTop:6}}>
           <label>🏢 Concorrentes (opcional)</label>
           <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap",alignItems:"flex-end"}}>
             <div style={{flex:2,minWidth:180,position:"relative"}}>
               <input
+                data-fe="conc-nome"
                 placeholder="Digite para buscar concorrente..."
                 value={concQuery}
                 onChange={e=>{setConcQuery(e.target.value);setConcShowDrop(true);}}
@@ -1562,15 +1563,15 @@ export default function App(){
               })()}
             </div>
             <div style={{flex:1,minWidth:110}}>
-              <input type="number" step="0.01" placeholder="Valor deles" value={concValor} onChange={e=>setConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
+              <input data-fe="conc-valor" type="number" step="0.01" placeholder="Valor deles" value={concValor} onChange={e=>setConcValor(e.target.value)} style={{width:"100%",boxSizing:"border-box"}}/>
             </div>
             <div style={{flex:1,minWidth:130}}>
-              <select value={concPgto} onChange={e=>setConcPgto(e.target.value)} style={{width:"100%"}}>
+              <select data-fe="conc-pgto" value={concPgto} onChange={e=>setConcPgto(e.target.value)} style={{width:"100%"}}>
                 <option value="">Pagamento</option>
                 {PGTO.map(o=><option key={o}>{o}</option>)}
               </select>
             </div>
-            <button type="button" onClick={()=>{if(!concQuery.trim())return;setConcAdicionados(a=>[...a,{empresa:concQuery.trim(),valor:concValor,pgto:concPgto}]);setConcQuery("");setConcValor("");setConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 16px",height:40,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontSize:13}}>+ Adicionar</button>
+            <button data-fe="conc-add" type="button" onClick={()=>{if(!concQuery.trim())return;setConcAdicionados(a=>[...a,{empresa:concQuery.trim(),valor:concValor,pgto:concPgto}]);setConcQuery("");setConcValor("");setConcPgto("");}} style={{background:BLUE,color:"#fff",border:"none",borderRadius:7,padding:"0 16px",height:40,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontSize:13}}>+ Adicionar</button>
           </div>
           {concAdicionados.length>0&&(
             <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
@@ -1591,7 +1592,7 @@ export default function App(){
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:4}}>
             <label style={{background:"#161616",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
               📎 Selecionar arquivo
-              <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp,audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a" style={{display:"none"}} onChange={handleAnexo}/>
+              <input data-fe="anexo" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a" style={{display:"none"}} onChange={handleAnexo}/>
             </label>
             {anexo&&(
               <div style={{display:"flex",alignItems:"center",gap:8,background:"#1A2E1A",border:"1px solid #2E4A2E",borderRadius:7,padding:"6px 14px"}}>
@@ -1609,7 +1610,7 @@ export default function App(){
           </label>
           {form.erroInterno&&<span style={{fontSize:11,color:"#888",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
         </div>
-        <button className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
+        <button data-fe="salvar" className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
       </div>
     </>)}
     {/* CONSULTAR */}

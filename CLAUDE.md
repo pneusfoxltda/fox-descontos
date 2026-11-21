@@ -59,6 +59,17 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Logo oficial**: raposa vermelha de traços (`public/logo-fox.png`, `public/favicon.png`).
   A Fernanda usa a mesma raposa em preto, de propósito.
 - **Fernanda**: assistente sem IA externa (palavras-chave), não envia dados para fora.
+  `public/fernanda.js` (busca no FOXNET) + `public/fernanda-ajuda.js` (ajuda de cada tela,
+  carregado pelo fernanda.js; `feAnswer` chama `window.feAjuda` antes de `feAnswerBase`):
+  · **Cadastrar desconto** (`cadastrardescontos.html` e aba Cadastrar do App — campos com
+    `data-fe="..."`): entende os dados escritos no chat, lê o **PDF** do orçamento do Movere
+    (pdf.js, por posição: valor embaixo do rótulo) ou **imagem** (Tesseract no navegador),
+    preenche, pergunta o que falta, põe concorrência e anexo (App) e salva ao ouvir "salvar".
+    Vendedor "Fernanda" no orçamento não é preenchido (pede o vendedor responsável).
+  · **Painel do televendas**: "sou a Kessya" fica guardado no navegador (`fe_tv_quem`) e ela
+    responde só os números dessa pessoa (`window.FE_TV`, exposto no `render()` do mês).
+    Não é segurança de verdade (qualquer um pode dizer que é a Kessya) — o painel já é aberto.
+  · Contas: porcentagem, desconto, parcelas e contas simples. Botão 📎 no chat.
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
   com 2 alinhamentos. **Dados bancários/Pix ficam fora** (repositório público).
 
