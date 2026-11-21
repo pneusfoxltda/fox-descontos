@@ -161,6 +161,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Celular (< 900 px): cartões, com as mesmas regras.
   Tela inteira no computador (como o Google Sheets). **WhatsApp**: primeiro nome tirado do
   **e-mail** do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
+  Agendou: mensagem de confirmação (hoje/amanhã/dia), de remarcação (atrasado) ou pedindo o dia (Kommo).
+  **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
   **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`): o robô tira da
   descrição do item do relatório de cotações e completa as cotações dos últimos 7 dias.
 - **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`); os mais antigos

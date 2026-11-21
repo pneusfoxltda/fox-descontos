@@ -615,24 +615,23 @@ function diaDoAgendamento(iso) {
   return dias === 0 ? "hoje" : dias === 1 ? "amanhã (" + sem + ")" : sem + ", " + fmtData(iso);
 }
 function mensagemWa(l) {
+  // Nunca prometer pneu separado nem horário reservado (o estoque pode acabar).
   const quem = nomeDoEmail(), loja = NOME_LOJA[l.loja] || l.loja || "";
   const oi = `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. 😊\n`;
-  const pneus = l.medida ? "Os pneus " + l.medida + " já estão separados no seu nome" : "Seu orçamento já está separado no seu nome";
+  const pneu = l.medida ? "os pneus " + l.medida : "o seu orçamento";
   if (l.status === "agendou") {
     if (!l.agendado_para)          // agendado pelo Kommo, sem data na lista
-      return oi + `Vi que você agendou sua visita com a gente, que bom! ${pneus}. ✅\n` +
-        `Para eu deixar tudo pronto e você ser atendido sem espera, qual dia e horário ficam melhor para você?`;
+      return oi + `Que bom que você agendou sua visita para ver ${pneu}! 🙌\n` +
+        `Qual dia fica melhor para você? Assim já te aguardo aqui na loja.`;
     if (atrasado(l))                // a data já passou e o cliente não veio
-      return oi + `Sentimos sua falta no seu horário aqui na loja. Aconteceu alguma coisa?\n` +
-        `${pneus.replace("já estão", "continuam").replace("já está", "continua")}. Qual o melhor dia para remarcarmos? Deixo o horário reservado para você. 👍`;
-    return oi + `Passando para confirmar seu horário aqui na loja: *${diaDoAgendamento(l.agendado_para)}*. 📅\n` +
-      `${pneus}, é só chegar e se apresentar no balcão que já começamos o atendimento, sem espera.\n` +
-      `Posso confirmar sua presença? Se precisar, te mando a localização da loja. Estamos te esperando! 🚗`;
+      return oi + `Sentimos sua falta na visita marcada. Ainda tem interesse n${l.medida ? "os pneus " + l.medida : "o seu orçamento"}?\n` +
+        `Me diz o melhor dia que te espero aqui na loja! 👍`;
+    return oi + `Confirmando sua visita *${diaDoAgendamento(l.agendado_para)}* para ${pneu}. 📅\n` +
+      `Estamos te esperando! Posso confirmar sua presença? Se quiser, te mando a localização da loja.`;
   }
   return oi +
-    `Vi que você fez um orçamento ${quandoFoi(l.data_cotacao)}${l.medida ? " do pneu " + l.medida : ""} com a gente. ` +
-    `Ficou alguma dúvida ou faltou algo para fechar?\n` +
-    `Consigo separar os pneus e deixar um horário reservado para você aqui na loja, sem espera. Qual o melhor dia para você passar aqui?`;
+    `Vi que você fez um orçamento ${quandoFoi(l.data_cotacao)}${l.medida ? " do pneu " + l.medida : ""} com a gente. Ficou alguma dúvida?\n` +
+    `Qual o melhor dia para você passar aqui na loja? Te espero!`;
 }
 function linkWa(l) {
   const d = dig(l.telefone); if (d.length < 10) return "";
