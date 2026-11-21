@@ -148,6 +148,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Amanhã / Próximos 7 dias / Sem data / Todos + calendário), não pelo dia da cotação.
   **Venda perdida** exige **motivo** (`motivo_perda`, lista fixa + "Outro motivo" com obs).
   Perdida que depois compra → "Venda ganha televendas". SQL: `13_ligacoes_agenda_perda.sql`.
+- **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`); os mais antigos
+  somem, menos os **agendados** (ficam até ter resultado). O **Dashboard usa tudo** (decisão do TI).
 - **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor
   (nome, e-mail, loja; um por um ou em lote "Nome; e-mail; LOJA"), dar Dashboard a gerentes,
   mudar loja/Dashboard/ativo. Cria o login com senha = e-mail e `trocar_senha = true`.

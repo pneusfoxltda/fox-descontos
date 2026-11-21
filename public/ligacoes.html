@@ -383,13 +383,25 @@ async function carregar() {
 }
 
 function escolherDiaInicial() {
-  const daLoja = todas.filter(l => !filtro.loja || l.loja === filtro.loja);
+  const dias = diasDaLista();
+  const daLoja = todas.filter(l => (!filtro.loja || l.loja === filtro.loja) && dias.includes(l.data_cotacao));
   const comPend = daLoja.find(l => l.status === "pendente");
   filtro.data = (comPend || daLoja[0] || {}).data_cotacao || "";
 }
 
+// Na LISTA ficam só os 5 dias de cotação mais recentes (os mais antigos somem),
+// menos os agendados, que ficam até alguém dar o resultado. O Dashboard usa tudo.
+const DIAS_NA_LISTA = 5;
+function diasDaLista() {
+  return [...new Set(todas.filter(l => !filtro.loja || l.loja === filtro.loja).map(l => l.data_cotacao))]
+    .sort().reverse().slice(0, DIAS_NA_LISTA);
+}
+function naLista(l, dias) { return dias.includes(l.data_cotacao) || l.status === "agendou"; }
+
 function daLojaEData(ignorarData = false) {
-  return todas.filter(l => (!filtro.loja || l.loja === filtro.loja) && (ignorarData || !filtro.data || l.data_cotacao === filtro.data));
+  const dias = diasDaLista();
+  return todas.filter(l => (!filtro.loja || l.loja === filtro.loja) && naLista(l, dias) &&
+    (ignorarData || !filtro.data || l.data_cotacao === filtro.data));
 }
 
 function visiveis() {
@@ -418,11 +430,11 @@ function render() {
     renderAbasELista(daLoja);
     return;
   }
-  const dias = [...new Set(daLoja.map(l => l.data_cotacao))].sort().reverse();
+  const dias = diasDaLista();
   const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
   $("datas").innerHTML = dias.length ? dias.map(d =>
     `<button class="chip ${d === filtro.data ? "on" : ""}" data-d="${d}"><b>${fmtData(d)}</b> ${diaSemana(d)}<span class="n" title="pendentes">${pend(d)}</span></button>`
-  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Todos os dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
+  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Os ${dias.length} dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
     : '<span class="resumo">Nenhuma cotação na lista ainda.</span>';
   document.querySelectorAll(".chip[data-d]").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
   renderAbasELista(daLoja);
@@ -443,7 +455,7 @@ function renderAbasELista(daLoja) {
 
   const lista = visiveis();
   const quando = filtro.aba === "agendou" ? "agendado(s)" + (filtro.agenda.length === 10 ? " para " + fmtDataLonga(filtro.agenda) : "")
-    : filtro.busca.trim() || !filtro.data ? "em todos os dias" : "em " + fmtDataLonga(filtro.data);
+    : filtro.busca.trim() || !filtro.data ? `nos últimos ${DIAS_NA_LISTA} dias` : "em " + fmtDataLonga(filtro.data);
   $("resumo").textContent = `${lista.length} cliente(s) ${quando}` + (filtro.loja ? " · " + filtro.loja : "");
   $("lista").innerHTML = lista.length
     ? lista.slice(0, limite).map(cartao).join("") + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
