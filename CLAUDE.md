@@ -163,8 +163,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **e-mail** do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
   Agendou: mensagem de confirmação (hoje/amanhã/dia), de remarcação (atrasado) ou pedindo o dia (Kommo).
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
-- **Data do agendamento pelo Kommo**: o robô lê o campo do lead com "agend" no nome (data, data e hora ou texto
-  "26/11") e grava em `agendado_para` quando a lista está sem data ou com data mais antiga (fica a mais recente).
+- **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead (confirmado pelo TI) e grava em `agendado_para` quando a lista está sem data ou com data mais antiga (fica a mais recente).
   O registro do robô mostra só os NOMES dos campos de data dos leads (para achar o campo certo).
   **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`): o robô tira da
   descrição do item do relatório de cotações e completa as cotações dos últimos 7 dias.
