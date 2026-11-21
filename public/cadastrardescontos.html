@@ -259,7 +259,7 @@ function toast(msg, ok = true) {
   el.className = "toast " + (ok ? "ok" : "err");
   el.style.display = "block";
   clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.display = "none"; }, 3500);
+  el._t = setTimeout(() => { el.style.display = "none"; }, ok ? 3500 : 8000);
 }
 
 // ── TIPO ──
@@ -364,6 +364,33 @@ document.getElementById("btn-login").onclick = doLogin;
 document.getElementById("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 document.getElementById("l-email").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("l-pass").focus(); });
 
+// ── NÚMERO REPETIDO ──
+// O mesmo orçamento / O.S. não pode ser cadastrado duas vezes (o banco também recusa).
+const MSG_REPETIDO = (tipo, numero) =>
+  `⚠️ Esse ${tipo === "orcamento" ? "orçamento" : "O.S."} (nº ${numero}) já foi cadastrado`;
+
+async function jaCadastrado(tipo, numero) {
+  try {
+    const url = SUPA_URL + "/rest/v1/descontos?select=numero,criado_em,negociador_nome"
+      + "&tipo=eq." + encodeURIComponent(tipo)
+      + "&numero=ilike." + encodeURIComponent(numero.replace(/[%_\\]/g, "\\$&"))
+      + "&limit=1";
+    const r = await fetch(url, { headers: H() });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d && d[0] ? d[0] : null;
+  } catch (e) { return null; }
+}
+
+function textoRepetido(tipo, numero, d) {
+  let t = MSG_REPETIDO(tipo, numero);
+  if (d && d.criado_em) {
+    const quando = new Date(d.criado_em).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+    t += " em " + quando + (d.negociador_nome ? " por " + d.negociador_nome : "");
+  }
+  return t + ". Para mudar algum dado, peça ao Comercial para editar o cadastro.";
+}
+
 // ── SALVAR ──
 async function salvar() {
   const numero = document.getElementById("f-numero").value.trim();
@@ -391,6 +418,13 @@ async function salvar() {
 
   const btn = document.getElementById("btn-salvar");
   btn.disabled = true; btn.textContent = "Salvando...";
+
+  const existente = await jaCadastrado(tipo, numero);
+  if (existente) {
+    toast(textoRepetido(tipo, numero, existente), false);
+    btn.disabled = false; btn.textContent = "💾 Salvar Desconto Autorizado";
+    return;
+  }
 
   const payload = {
     tipo: tipo,
@@ -441,8 +475,9 @@ async function salvar() {
         else if (errBody && errBody.details) errMsg = errBody.details;
         console.error(errBody);
       } catch { }
-      // Dica específica para coluna ausente
-      if (errMsg.includes("telefone_cliente") || errMsg.includes("column")) {
+      if (r.status === 409 || /duplicate|descontos_numero_tipo_unico|23505/i.test(errMsg)) {
+        toast(textoRepetido(tipo, numero, null), false);
+      } else if (errMsg.includes("telefone_cliente") || errMsg.includes("column")) {
         toast("❌ Coluna 'telefone_cliente' não existe na tabela. Execute: ALTER TABLE descontos ADD COLUMN telefone_cliente TEXT; no Supabase.", false);
       } else {
         toast("❌ " + errMsg, false);
