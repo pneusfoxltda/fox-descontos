@@ -226,8 +226,8 @@ function fmtDataHora(iso) {
 }
 
 function getBadge(q) {
-  if (q.venda_movere) return {lbl:"✅ Venda concluída (Movere)" + (q.venda_movere_em ? " · " + fmtDia(q.venda_movere_em) : ""), cls:"badge-venda"};
   if (q.liberado) return {lbl:"✓ Liberado", cls:"badge-lib"};
+  if (q.venda_movere) return {lbl:"✅ Venda concluída (Movere)" + (q.venda_movere_em ? " · " + fmtDia(q.venda_movere_em) : ""), cls:"badge-venda"};
   if (isExp(q.validade)) return {lbl:"Vencido", cls:"badge-venc"};
   return {lbl:"Pendente liberação", cls:"badge-pend"};
 }
@@ -251,7 +251,7 @@ function renderCards(list, showConc60 = false) {
     </div>
     <span class="badge ${b.cls}">${b.lbl}</span>
   </div>
-  ${q.venda_movere && q.venda_movere_conferido_em ? `<div class="venda-reg">🤖 Venda registrada pelo robô em ${fmtDataHora(q.venda_movere_conferido_em)}</div>` : ""}
+  ${q.venda_movere && !q.liberado && q.venda_movere_conferido_em ? `<div class="venda-reg">🤖 Venda registrada pelo robô em ${fmtDataHora(q.venda_movere_conferido_em)}</div>` : ""}
   <div class="quote-body">
     <div class="info-grid">
       <div class="ii"><label>CBA</label><div class="val">${q.cba||"—"}</div></div>

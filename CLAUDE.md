@@ -77,9 +77,11 @@ vendas para o televendas; `apps-script/` tem o do painel).
 
 ## Consultar (App de descontos)
 
-- Abas: **Todos** · **Válidos** (no prazo e não liberados) · **Liberados** · **Vencidas**
-  (vencidos e não liberados, inclusive os que a rotina `auto_perdida` marcou como perdida).
-  Válidos + Liberados + Vencidas = Todos. A aba "Pendentes" foi removida (igual a Válidos).
+- Abas (cada desconto em UMA só; decisão do TI): **Todos** · **Válidos** (no prazo, não
+  liberado, sem venda no Movere) · **Liberados** (a equipe liberou; o robô não mexe) ·
+  **Vencidas** (fora do prazo, não liberado, sem venda no Movere; inclui as `auto_perdida`) ·
+  **✅ Venda concluída (Movere)** (não liberado e o robô achou a venda).
+  Válidos + Liberados + Vencidas + Venda concluída = Todos. A aba "Pendentes" foi removida.
 - A lista mostra 60 por vez ("Mostrar mais") e é memorizada para não travar ao digitar.
 
 ## Venda concluída (Movere) — branch `venda-movere`
@@ -89,6 +91,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (relatório 742591, mesmo login do Apps Script das planilhas) e compara os **últimos 8
   dígitos do telefone** com `descontos.telefone_cliente`. Venda no dia do cadastro ou
   depois → `venda_movere = true` (vale mesmo vencido). Só pelo telefone (decisão do TI).
+  **Só descontos PENDENTES de liberação** (decisão do TI): o robô ignora os liberados e as
+  telas só mostram "Venda concluída" quando `venda_movere && !liberado` (`vendeuSemLib` no App);
+  se a equipe liberar depois, o desconto sai do filtro e fica só em Liberados.
 - Segredos no GitHub: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`.
   Rodar à mão com "teste" marcado mostra o que faria sem gravar.
 - O registro do GitHub Actions é **público**: o robô nunca imprime telefone nem nome.
