@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Fox Pneus — Ligações das lojas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+button,select,input{font-family:inherit;}
+a{color:inherit;}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:34px 30px;width:100%;max-width:380px;}
+.login-logo{display:flex;justify-content:center;margin-bottom:16px;}
+.login-logo img{width:64px;height:64px;object-fit:contain;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:#888;text-align:center;margin-bottom:22px;}
+.login-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+.lf{margin-bottom:12px;}
+.lf label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.lf input{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-size:15px;padding:12px 13px;outline:none;width:100%;}
+.lf input:focus{border-color:#CC1F1F;}
+.btn-red{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;padding:13px;cursor:pointer;width:100%;}
+.btn-red:hover{background:#E02020;}
+.btn-red:disabled{opacity:.6;cursor:default;}
+
+/* ── TOPO ── */
+#main-screen{display:none;}
+.top{background:#111;border-bottom:1px solid #222;padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.top img{width:34px;height:34px;object-fit:contain;}
+.top .tt{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1.5px;color:#fff;line-height:1;}
+.top .ts{font-size:11px;color:#888;}
+.top .sp{flex:1;}
+.top select{background:#1C1C1C;color:#fff;border:1px solid #3A3A3A;border-radius:7px;padding:8px 10px;font-size:13px;font-weight:700;}
+.top .user{font-size:12px;color:#aaa;text-align:right;}
+.top .sair{background:transparent;border:1px solid #3A3A3A;color:#ccc;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;}
+
+.wrap{max-width:1000px;margin:0 auto;padding:16px;}
+
+/* ── FILTROS ── */
+.lbl{font-size:10px;font-weight:700;color:#777;letter-spacing:1.2px;text-transform:uppercase;margin:4px 0 8px;}
+.datas{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;}
+.chip{flex-shrink:0;background:#161616;border:1px solid #2E2E2E;color:#bbb;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.chip b{color:#fff;}
+.chip .n{display:inline-block;min-width:20px;margin-left:6px;background:#2A2A2A;border-radius:10px;padding:1px 7px;font-size:11px;color:#ddd;}
+.chip.on{background:#2A0E0E;border-color:#CC1F1F;color:#fff;}
+.chip.on .n{background:#CC1F1F;color:#fff;}
+.abas{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 12px;}
+.aba{background:transparent;border:1px solid #333;color:#999;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.aba.on{color:#fff;}
+.busca{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.busca input,.busca select{background:#111;border:1px solid #333;border-radius:8px;color:#F0F0F0;font-size:14px;padding:10px 12px;outline:none;}
+.busca input{flex:1;min-width:200px;}
+.busca input:focus{border-color:#CC1F1F;}
+.resumo{font-size:12px;color:#888;margin-bottom:10px;}
+
+/* ── CARTÕES ── */
+.card{background:#161616;border:1px solid #262626;border-left:4px solid #555;border-radius:10px;padding:14px;margin-bottom:10px;}
+.card.st-pendente{border-left-color:#F39C12;}
+.card.st-nao_atende,.card.st-retornar{border-left-color:#3498DB;}
+.card.st-sem_interesse{border-left-color:#777;}
+.card.st-agendou{border-left-color:#8B5CF6;}
+.card.st-comprou{border-left-color:#22C55E;}
+.c1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+.cli{font-size:16px;font-weight:700;color:#fff;}
+.meta{font-size:12px;color:#888;margin-top:3px;}
+.val{font-size:16px;font-weight:700;color:#4ADE80;white-space:nowrap;}
+.tel{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;}
+.tel .num{font-size:15px;font-weight:600;color:#7DB8F0;margin-right:4px;}
+.bt{border:none;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+.bt-lig{background:#1E3A5F;color:#BFDBFE;}
+.bt-wa{background:#0F3D24;color:#86EFAC;}
+.acao{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.acao select{background:#0D0D0D;border:1px solid #3A3A3A;color:#fff;border-radius:7px;padding:9px 10px;font-size:13px;font-weight:600;}
+.acao input{flex:1;min-width:160px;background:#0D0D0D;border:1px solid #3A3A3A;color:#fff;border-radius:7px;padding:9px 10px;font-size:13px;outline:none;}
+.acao .salvar{background:#CC1F1F;color:#fff;}
+.st{font-size:12px;margin-top:8px;color:#aaa;}
+.st b{color:#fff;}
+.selo{display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;}
+.selo.comprou{background:#0E2A1F;color:#4ADE80;border:1px solid #22C55E;}
+.selo.agendou{background:#1F1535;color:#C4B5FD;border:1px solid #8B5CF6;}
+.hist-bt{background:none;border:none;color:#888;font-size:12px;text-decoration:underline;cursor:pointer;margin-top:8px;}
+.hist{margin-top:8px;border-top:1px dashed #2E2E2E;padding-top:8px;font-size:12px;color:#aaa;}
+.hist div{margin-bottom:4px;}
+.vazio{text-align:center;color:#777;padding:40px 10px;font-size:14px;}
+.mais{display:block;margin:10px auto;background:#1C1C1C;border:1px solid #333;color:#ddd;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1A2E1A;border:1px solid #27AE60;color:#E8F5E9;border-radius:9px;padding:12px 18px;font-size:13px;font-weight:600;display:none;z-index:200;max-width:92vw;}
+.toast.err{background:#2E1A1A;border-color:#CC1F1F;color:#FFCDD2;}
+@media(max-width:600px){.top .user{display:none;}.wrap{padding:12px;}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo"><img src="/logo-fox.png" alt="Fox Pneus"></div>
+    <div class="login-t">Ligações das lojas</div>
+    <div class="login-s">Entre com o seu e-mail e senha do FOXNET</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="lf"><label>E-mail</label><input type="email" id="l-email" autocomplete="username" placeholder="seu@email.com"></div>
+    <div class="lf"><label>Senha</label><input type="password" id="l-pass" autocomplete="current-password" placeholder="Senha"></div>
+    <button class="btn-red" id="btn-login">Entrar</button>
+  </div>
+</div>
+
+<div id="main-screen">
+  <div class="top">
+    <img src="/logo-fox.png" alt="">
+    <div><div class="tt">Ligações das lojas</div><div class="ts" id="ts-loja"></div></div>
+    <div class="sp"></div>
+    <select id="sel-loja" style="display:none" title="Loja"></select>
+    <div class="user" id="user-nome"></div>
+    <button class="sair" id="btn-sair">Sair</button>
+  </div>
+
+  <div class="wrap">
+    <div class="lbl">Dia da cotação</div>
+    <div class="datas" id="datas"></div>
+
+    <div class="abas" id="abas"></div>
+
+    <div class="busca">
+      <input id="busca" placeholder="Buscar por nome, telefone ou nº da cotação…" autocomplete="off">
+      <select id="sel-operador"><option value="">Todos os vendedores</option></select>
+    </div>
+    <div class="resumo" id="resumo"></div>
+    <div id="lista"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os dados são as regras do banco (cada loja vê a sua).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+
+const STATUS = {
+  pendente:      {nome: "Pendente ligação",          cor: "#F39C12"},
+  nao_atende:    {nome: "Liguei — não atende",       cor: "#3498DB"},
+  retornar:      {nome: "Liguei — retornar depois",  cor: "#3498DB"},
+  sem_interesse: {nome: "Liguei — sem interesse",    cor: "#999"},
+  agendou:       {nome: "Agendou",                   cor: "#8B5CF6"},
+  comprou:       {nome: "Comprou",                   cor: "#22C55E"},
+};
+const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou"]; // "comprou" só o robô marca
+const ABAS = [
+  ["pendentes", "Pendentes",  "#F39C12", l => l.status === "pendente"],
+  ["liguei",    "Já liguei",  "#3498DB", l => ["nao_atende", "retornar", "sem_interesse"].includes(l.status)],
+  ["agendou",   "Agendou",    "#8B5CF6", l => l.status === "agendou"],
+  ["comprou",   "Comprou",    "#22C55E", l => l.status === "comprou"],
+  ["todas",     "Todas",      "#888",    l => true],
+];
+const DIAS = 30;          // mostra as cotações dos últimos 30 dias
+const POR_PAGINA = 50;
+
+let perfil = null, ehAdmin = false;
+let todas = [];                       // ligações carregadas
+let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: ""};
+let limite = POR_PAGINA;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const dig = s => String(s || "").replace(/\D/g, "");
+const fmtData = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
+const fmtDataLonga = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m + "/" + a; };
+const fmtQuando = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}).replace(",", " às");
+const fmtR = v => (v == null || v === "") ? "" : Number(v).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+function diaSemana(iso) { const [a, m, d] = iso.split("-").map(Number); return ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][new Date(a, m - 1, d).getDay()]; }
+
+function toast(msg, ok = true) {
+  const t = $("toast"); t.textContent = msg; t.className = "toast" + (ok ? "" : " err"); t.style.display = "block";
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = "none", ok ? 2500 : 6000);
+}
+
+// ── LOGIN ──
+async function entrar(sessao) {
+  if (!sessao) return null;
+  const { data: p } = await sb.from("perfis").select("nome,email,funcoes,ativo,loja").eq("id", sessao.user.id).maybeSingle();
+  ehAdmin = !!(p && p.ativo && (p.funcoes || []).includes("admin"));
+  if (!p || !p.ativo) { await sb.auth.signOut(); return {erro: "Seu acesso está desativado. Fale com o TI."}; }
+  if (!p.loja && !ehAdmin) { await sb.auth.signOut(); return {erro: "Seu usuário ainda não tem loja definida. Peça ao TI para colocar a sua loja."}; }
+  perfil = p;
+  $("login-screen").style.display = "none";
+  $("main-screen").style.display = "block";
+  $("user-nome").textContent = p.nome || p.email;
+  filtro.loja = ehAdmin ? "" : p.loja;
+  $("ts-loja").textContent = ehAdmin ? "Admin — todas as lojas" : "Loja " + p.loja;
+  await carregar();
+  return {ok: true};
+}
+
+async function doLogin() {
+  const email = $("l-email").value.trim().toLowerCase(), pass = $("l-pass").value;
+  const err = $("login-err"), btn = $("btn-login");
+  err.style.display = "none";
+  if (!email || !pass) { err.textContent = "Informe e-mail e senha."; err.style.display = "block"; return; }
+  btn.disabled = true; btn.textContent = "Entrando...";
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) { err.textContent = "E-mail ou senha incorretos."; err.style.display = "block"; }
+    else { const r = await entrar(data.session); if (r && r.erro) { err.textContent = r.erro; err.style.display = "block"; } }
+  } catch (e) { err.textContent = "Erro ao conectar. Tente novamente."; err.style.display = "block"; }
+  btn.disabled = false; btn.textContent = "Entrar";
+}
+
+// ── DADOS ──
+async function carregar() {
+  $("lista").innerHTML = '<div class="vazio">Carregando…</div>';
+  const desde = new Date(Date.now() - DIAS * 864e5).toISOString().slice(0, 10);
+  const linhas = [];
+  for (let de = 0; ; de += 1000) {             // o banco entrega no máximo 1000 por vez
+    const { data, error } = await sb.from("ligacoes")
+      .select("id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,comprou_em")
+      .gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao")
+      .range(de, de + 999);
+    if (error) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
+    linhas.push(...data);
+    if (data.length < 1000) break;
+  }
+  todas = linhas;
+  if (ehAdmin) {
+    const lojas = [...new Set(todas.map(l => l.loja))].sort();
+    $("sel-loja").innerHTML = '<option value="">Todas as lojas</option>' + lojas.map(l => `<option ${l === filtro.loja ? "selected" : ""}>${esc(l)}</option>`).join("");
+    $("sel-loja").style.display = "";
+  }
+  // Abre no dia mais recente que ainda tem pendentes (senão, o mais recente)
+  if (!filtro.data) {
+    const daLoja = todas.filter(l => !filtro.loja || l.loja === filtro.loja);
+    const comPend = daLoja.find(l => l.status === "pendente");
+    filtro.data = (comPend || daLoja[0] || {}).data_cotacao || "";
+  }
+  render();
+}
+
+function daLojaEData(ignorarData = false) {
+  return todas.filter(l => (!filtro.loja || l.loja === filtro.loja) && (ignorarData || !filtro.data || l.data_cotacao === filtro.data));
+}
+
+function visiveis() {
+  const aba = ABAS.find(a => a[0] === filtro.aba);
+  const b = norm(filtro.busca.trim()), bd = dig(filtro.busca);
+  return daLojaEData(!!b).filter(l => aba[3](l))
+    .filter(l => !filtro.operador || l.operador === filtro.operador)
+    .filter(l => !b || norm(l.cliente).includes(b) || norm(l.cotacao).includes(b) || (bd.length >= 3 && dig(l.telefone).includes(bd)));
+}
+
+// ── TELA ──
+function render() {
+  const daLoja = daLojaEData(true);
+  // Dias (com quantos pendentes cada um tem)
+  const dias = [...new Set(daLoja.map(l => l.data_cotacao))].sort().reverse();
+  const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
+  $("datas").innerHTML = dias.length ? dias.map(d =>
+    `<button class="chip ${d === filtro.data ? "on" : ""}" data-d="${d}"><b>${fmtData(d)}</b> ${diaSemana(d)}<span class="n" title="pendentes">${pend(d)}</span></button>`
+  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Todos os dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
+    : '<span class="resumo">Nenhuma cotação nos últimos 30 dias.</span>';
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
+
+  // Abas com contagem do dia escolhido
+  const base = daLojaEData();
+  $("abas").innerHTML = ABAS.map(([id, nome, cor, f]) => {
+    const on = filtro.aba === id;
+    return `<button class="aba ${on ? "on" : ""}" data-a="${id}" style="${on ? `background:${cor}22;border-color:${cor};` : ""}">${nome} (${base.filter(f).length})</button>`;
+  }).join("");
+  document.querySelectorAll(".aba").forEach(a => a.onclick = () => { filtro.aba = a.dataset.a; limite = POR_PAGINA; render(); });
+
+  // Vendedores do recorte
+  const ops = [...new Set(daLoja.map(l => l.operador).filter(Boolean))].sort();
+  const selOp = $("sel-operador"), atual = filtro.operador;
+  selOp.innerHTML = '<option value="">Todos os vendedores</option>' + ops.map(o => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("");
+
+  const lista = visiveis();
+  const quando = filtro.busca.trim() ? "em todos os dias" : (filtro.data ? "em " + fmtDataLonga(filtro.data) : "em todos os dias");
+  $("resumo").textContent = `${lista.length} cliente(s) ${quando}` + (filtro.loja ? " · " + filtro.loja : "");
+  $("lista").innerHTML = lista.length
+    ? lista.slice(0, limite).map(cartao).join("") + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
+    : '<div class="vazio">Nenhum cliente aqui. 🎉</div>';
+  const mais = $("btn-mais"); if (mais) mais.onclick = () => { limite += POR_PAGINA; render(); };
+}
+
+function cartao(l) {
+  const d = dig(l.telefone);
+  const wa = d.length >= 10 ? "https://wa.me/55" + (d.length > 11 && d.startsWith("55") ? d.slice(2) : d) : "";
+  const st = STATUS[l.status] || STATUS.pendente;
+  const fechado = l.status === "comprou";
+  const linhaStatus = l.status === "comprou"
+    ? `<span class="selo comprou">✅ Comprou${l.comprou_em ? " em " + fmtDataLonga(l.comprou_em) : ""}</span>`
+    : l.status === "agendou" && (l.status_por || "").startsWith("Robô")
+      ? `<span class="selo agendou">📅 Agendado no Kommo</span>`
+      : l.status_em ? `<b>${esc(st.nome)}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(st.nome)}</b>`;
+  return `<div class="card st-${esc(l.status)}" id="c-${l.id}">
+    <div class="c1">
+      <div><div class="cli">${esc(l.cliente || "Cliente sem nome")}</div>
+        <div class="meta">Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · " + esc(l.operador) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div></div>
+      <div class="val">${fmtR(l.valor)}</div>
+    </div>
+    ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
+      <a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>
+      ${wa ? `<a class="bt bt-wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>` : ""}
+    <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
+    ${fechado ? "" : `<div class="acao">
+      <select id="s-${l.id}">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${STATUS[s].nome}</option>`).join("")}</select>
+      <input id="o-${l.id}" placeholder="Observação (opcional)" maxlength="300">
+      <button class="bt salvar" onclick="salvar(${l.id})">Salvar</button>
+    </div>`}
+    <button class="hist-bt" onclick="historico(${l.id})">Ver histórico</button>
+    <div class="hist" id="h-${l.id}" style="display:none"></div>
+  </div>`;
+}
+
+async function salvar(id) {
+  const status = $("s-" + id).value, obs = $("o-" + id).value.trim();
+  const { error } = await sb.rpc("marcar_ligacao", { p_id: id, p_status: status, p_obs: obs || null });
+  if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); return; }
+  const l = todas.find(x => x.id === id);
+  if (l) { l.status = status; l.status_em = new Date().toISOString(); l.status_por = perfil.nome || perfil.email; if (obs) l.obs = obs; }
+  toast("Salvo: " + STATUS[status].nome);
+  render();
+}
+
+async function historico(id) {
+  const box = $("h-" + id);
+  if (box.style.display === "block") { box.style.display = "none"; return; }
+  box.style.display = "block"; box.textContent = "Carregando…";
+  const { data, error } = await sb.from("ligacoes_historico").select("quando,quem,status,obs").eq("ligacao_id", id).order("quando");
+  if (error) { box.textContent = "Não consegui carregar o histórico."; return; }
+  const l = todas.find(x => x.id === id);
+  box.innerHTML = `<div>📥 Entrou na lista (cotação de ${fmtDataLonga(l.data_cotacao)})</div>` +
+    (data.length ? data.map(h => `<div>${fmtQuando(h.quando)} · <b>${esc((STATUS[h.status] || {}).nome || h.status)}</b> · ${esc(h.quem)}${h.obs ? " · " + esc(h.obs) : ""}</div>`).join("")
+                 : "<div>Ninguém marcou nada ainda.</div>");
+}
+
+// ── EVENTOS ──
+$("btn-login").onclick = doLogin;
+$("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+$("l-email").addEventListener("keydown", e => { if (e.key === "Enter") $("l-pass").focus(); });
+$("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("sel-loja").onchange = e => { filtro.loja = e.target.value; filtro.data = ""; filtro.operador = ""; limite = POR_PAGINA;
+  const daLoja = daLojaEData(true); const p = daLoja.find(l => l.status === "pendente"); filtro.data = (p || daLoja[0] || {}).data_cotacao || ""; render(); };
+$("sel-operador").onchange = e => { filtro.operador = e.target.value; limite = POR_PAGINA; render(); };
+let tb; $("busca").oninput = e => { clearTimeout(tb); tb = setTimeout(() => { filtro.busca = e.target.value; limite = POR_PAGINA; render(); }, 200); };
+
+// Já entrou no FOXNET (App, Cadastrar…)? Aproveita a mesma sessão.
+sb.auth.getSession().then(async ({ data }) => {
+  if (data.session) {
+    const r = await entrar(data.session);
+    if (r && r.erro) { $("login-err").textContent = r.erro; $("login-err").style.display = "block"; }
+  }
+});
+</script>
+<script src="/fernanda.js" defer></script>
+</body>
+</html>

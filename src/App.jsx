@@ -52,6 +52,8 @@ const supa = {
   }
 };
 const LOJAS=["CAUTO/MATRIZ PVH","CAUTO ARIQUEMES","CAUTO JIPARANA","CAUTO CACOAL","CAUTO VILHENA","PARINTINS - MANAUS","XAPURI - RIO BRANCO"];
+// Lojas das "Ligações das lojas" (nomes iguais ao Estabelecimento do Movere/Analytics)
+const LOJAS_LIGACOES=["MATRIZ","C.AUTO PVH","ARIQUEMES","JI-PARANA","CACOAL","C.AUTO VLH","PARINTINS","XAPURI"];
 const SEGS=["Liso","A/T","A/T+","T/A","CARGA","LISO MISTO"];
 const VENDEDORES=["Clebe Higa","Kessya Marques","Ana Clara","Sabrina Duarte"];
 const PGTO=["À vista","2x no cartão","3x no cartão","4x no cartão","5x no cartão","6x no cartão","7x no cartão","8x no cartão","9x no cartão","10x no cartão","11x no cartão","12x no cartão","13x no cartão","14x no cartão"];
@@ -268,7 +270,7 @@ export default function App(){
   const[result,setResult]=useState(null);
   const[notFound,setNotFound]=useState(false);
   const[toast,setToast]=useState(null);
-  const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
+  const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],loja:"",foto:null});
   const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[roboStatus,setRoboStatus]=useState(null); // última rodada do robô "Conferir vendas Movere" (só admin)
@@ -352,8 +354,8 @@ export default function App(){
     return()=>sub.subscription.unsubscribe();
   },[]);
   const carregarUsuarios=async()=>{
-    const {data}=await sb.from("perfis").select("id,nome,email,funcoes,ativo,foto").order("nome");
-    if(data)setUsers(data.map(p=>({id:p.id,nome:p.nome,email:p.email,funcoes:p.funcoes||[],ativo:p.ativo,foto:p.foto,role:papelLegado(p.funcoes||[]),ultimoAcesso:null})));
+    const {data}=await sb.from("perfis").select("id,nome,email,funcoes,ativo,foto,loja").order("nome");
+    if(data)setUsers(data.map(p=>({id:p.id,nome:p.nome,email:p.email,funcoes:p.funcoes||[],ativo:p.ativo,foto:p.foto,loja:p.loja||"",role:papelLegado(p.funcoes||[]),ultimoAcesso:null})));
   };
   useEffect(()=>{if(!session)return;(async()=>{try{
     const db = await supa.from("descontos");
@@ -443,6 +445,12 @@ export default function App(){
       setConcQuery1("");
       toast_("Registrado com sucesso!");
     }catch(e){toast_("Erro.",false);}
+  };
+  const doMudarLoja=async(u,loja)=>{
+    const {error}=await sb.from("perfis").update({loja:loja||null}).eq("id",u.id);
+    if(error){toast_("Erro ao salvar a loja: "+error.message,false);return;}
+    setUsers(prev=>prev.map(x=>x.id===u.id?{...x,loja}:x));
+    toast_(loja?u.nome+" agora é da loja "+loja+" (Ligações).":"Loja removida de "+u.nome+".");
   };
   const doToggleRole=async(u,nivel)=>{
     const tem=(u.funcoes||[]).includes(nivel);
@@ -706,16 +714,16 @@ export default function App(){
     const em=newUser.email.trim().toLowerCase(),nome=newUser.nome.trim();
     if(!nome||!em||!newUser.pass){toast_("Preencha nome, e-mail e senha.",false);return;}
     if(newUser.pass.length<8){toast_("A senha precisa ter pelo menos 8 caracteres.",false);return;}
-    if(!newUser.roles.length){toast_("Escolha pelo menos um nível de acesso.",false);return;}
+    if(!newUser.roles.length&&!newUser.loja){toast_("Escolha um nível de acesso ou a loja (para as Ligações).",false);return;}
     if(users.find(x=>x.email.toLowerCase()===em)){toast_("E-mail já cadastrado.",false);return;}
     try{
       const {data,error}=await clienteAvulso().auth.signUp({email:em,password:newUser.pass,options:{data:{nome},emailRedirectTo:location.origin+"/descontos"}});
       if(error){toast_("Erro ao criar: "+error.message,false);return;}
       const uid=data.user&&data.user.id;
       if(!uid||(data.user.identities&&data.user.identities.length===0)){toast_("Esse e-mail já tem cadastro. Use \"Ativar\" ou mude o nível na lista.",false);return;}
-      const {error:e2}=await sb.from("perfis").upsert({id:uid,nome,email:em,funcoes:newUser.roles,ativo:true});
+      const {error:e2}=await sb.from("perfis").upsert({id:uid,nome,email:em,funcoes:newUser.roles,loja:newUser.loja||null,ativo:true});
       if(e2){toast_("Login criado, mas houve erro ao gravar o nível: "+e2.message,false);return;}
-      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],foto:null});
+      setNewUser({nome:"",email:"",pass:"",roles:["televendas"],loja:"",foto:null});
       toast_("Acesso criado! "+nome+" recebe um e-mail para confirmar o cadastro.");
       carregarUsuarios();
     }catch(e){toast_("Erro ao criar o acesso.",false);}
@@ -1782,6 +1790,12 @@ export default function App(){
         </div>
         <div className="fg2">
           <div className="field"><label>Senha inicial (mín. 8)</label><input type="password" placeholder="A pessoa pode trocar depois" value={newUser.pass} onChange={e=>setNewUser(f=>({...f,pass:e.target.value}))}/></div>
+          <div className="field"><label>Loja (Ligações das lojas)</label>
+            <select value={newUser.loja} onChange={e=>setNewUser(f=>({...f,loja:e.target.value}))}>
+              <option value="">Sem loja</option>{LOJAS_LIGACOES.map(l=><option key={l}>{l}</option>)}
+            </select>
+            <div style={{fontSize:10,color:MUTED,marginTop:4}}>Quem tem loja vê a lista de ligações dessa loja. Vendedor de loja pode ficar só com a loja, sem nível.</div>
+          </div>
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
                 {NIVEIS.map(([v,ic,nm])=>[v,ic+" "+nm]).map(([val,lbl])=>(
@@ -1834,6 +1848,9 @@ export default function App(){
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{u.nome}</div>
                 <div style={{fontSize:10,color:MUTED}}>{u.email}{u.ativo===false?" · desativado":""}</div>
+                <select value={u.loja||""} onChange={e=>doMudarLoja(u,e.target.value)} title="Loja (Ligações das lojas)" style={{marginTop:4,background:"#0D0D0D",color:u.loja?"#fff":MUTED,border:"1px solid #333",borderRadius:5,fontSize:10,padding:"2px 4px"}}>
+                  <option value="">📞 sem loja</option>{LOJAS_LIGACOES.map(l=><option key={l} value={l}>📞 {l}</option>)}
+                </select>
               </div>
             </div>
             {/* Permission toggles */}
