@@ -96,6 +96,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   grava essas colunas) + `consulta_publica` devolve `venda_movere`. Rodar ANTES de publicar.
 - Filtros do dashboard 744813 (só operadoras do televendas) ficam **desligados** para
   conferir vendas de todas as lojas (`USAR_FILTRO_DASH=1` liga).
+  O TI confirmou que o relatório 742591 traz vendas de **todas as lojas**.
 - Testes: `python tests/test_conferir_vendas_movere.py` (rede imitada).
 
 ## Próximos passos (em ordem)
