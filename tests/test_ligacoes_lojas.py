@@ -199,8 +199,10 @@ def test_data_do_campo_kommo():
     assert ll.data_do_campo({"values": [{"value": "2026-11-27T10:00:00-04:00"}]}) == D(2026, 11, 27)
     assert ll.data_do_campo({"values": [{"value": "Dia 28/11 às 9h"}]}).day == 28
     assert ll.data_do_campo({"values": [{"value": "sem data"}]}) is None
-    assert ll.eh_campo_agendamento({"field_name": "Data do Agendamento"})
-    assert not ll.eh_campo_agendamento({"field_name": "Aniversário"})
+    assert ll.prioridade_campo({"field_name": "Data da visita", "field_type": "date_time"}) == 0
+    assert ll.prioridade_campo({"field_name": "Data do Agendamento", "field_type": "date"}) == 1
+    assert ll.prioridade_campo({"field_name": "Agendamento", "field_type": "select"}) is None
+    assert ll.prioridade_campo({"field_name": "1ª Venda", "field_type": "date"}) is None
 
 
 def test_reconferir_com_data_do_kommo():

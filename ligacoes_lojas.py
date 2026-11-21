@@ -80,8 +80,19 @@ def data_do_campo(f: dict):
     return None
 
 
+def prioridade_campo(f: dict):
+    """Campo do lead com a data do agendamento: "Data da visita" (o certo, confirmado pelo TI);
+    na falta dele, outro campo de data com "visita" ou "agend" no nome. None = não serve."""
+    nome = str(f.get("field_name") or "").strip().lower()
+    if nome == "data da visita":
+        return 0
+    if f.get("field_type") in ("date", "date_time") and ("visita" in nome or "agend" in nome):
+        return 1
+    return None
+
+
 def eh_campo_agendamento(f: dict) -> bool:
-    return "agend" in str(f.get("field_name") or "").lower()
+    return prioridade_campo(f) is not None
 
 
 def telefones_kommo(cli: httpx.Client, token: str):
@@ -99,7 +110,7 @@ def telefones_kommo(cli: httpx.Client, token: str):
             raise RuntimeError(f"Kommo respondeu {r.status_code}")
         return r.json()
 
-    contatos, data_contato, campos_data, com_data, leads = set(), {}, set(), 0, 0
+    contatos, data_contato, campos_data, com_data, leads, usados = set(), {}, set(), 0, 0, {}
     for etapa in ETAPAS:
         pagina = 1
         while True:
@@ -109,13 +120,18 @@ def telefones_kommo(cli: httpx.Client, token: str):
                 break
             for lead in (d.get("_embedded") or {}).get("leads") or []:
                 leads += 1
-                quando = None
+                quando, melhor, campo = None, 9, ""
                 for f in lead.get("custom_fields_values") or []:
                     if f.get("field_type") in ("date", "date_time"):
                         campos_data.add(str(f.get("field_name") or ""))   # só o NOME do campo (sem dados do cliente)
-                    if eh_campo_agendamento(f) and not quando:
-                        quando = data_do_campo(f)
-                com_data += 1 if quando else 0
+                    pr = prioridade_campo(f)
+                    if pr is not None and pr < melhor:
+                        d_ = data_do_campo(f)
+                        if d_:
+                            quando, melhor, campo = d_, pr, str(f.get("field_name") or "")
+                if quando:
+                    com_data += 1
+                    usados[campo] = usados.get(campo, 0) + 1
                 for c in ((lead.get("_embedded") or {}).get("contacts") or []):
                     contatos.add(c["id"])
                     if quando and (c["id"] not in data_contato or quando > data_contato[c["id"]]):
@@ -124,6 +140,7 @@ def telefones_kommo(cli: httpx.Client, token: str):
                 break
             pagina += 1
     print(f"📅 Kommo: {leads} lead(s) agendado(s), {com_data} com data de agendamento"
+          + (" (" + ", ".join(f"{n}: {q}" for n, q in sorted(usados.items())) + ")" if usados else "")
           + (f" · campos de data nos leads: {', '.join(sorted(campos_data))}" if campos_data else " · nenhum campo de data nos leads"))
 
     tels, datas, ids = set(), {}, sorted(contatos)
