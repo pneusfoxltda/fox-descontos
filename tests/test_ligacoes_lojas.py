@@ -3,6 +3,7 @@ Rodar:  python tests/test_ligacoes_lojas.py"""
 import csv
 import io
 import json
+from datetime import datetime
 import os
 import sys
 from datetime import date
@@ -188,6 +189,37 @@ def test_sem_token_kommo_falha_e_registra():
     os.environ.pop("KOMMO_TOKEN", None)
     os.environ.update(SUPABASE_SERVICE_KEY="", ANALYTICS_LOGIN="l", ANALYTICS_SENHA="s")
     assert ll.rodar() == 1
+
+
+def test_data_do_campo_kommo():
+    from datetime import date as D
+    ts = int(datetime(2026, 11, 26, 14, 0, tzinfo=cv.TZ_LOJA).timestamp())
+    assert ll.data_do_campo({"values": [{"value": ts}]}) == D(2026, 11, 26)
+    assert ll.data_do_campo({"values": [{"value": str(ts)}]}) == D(2026, 11, 26)
+    assert ll.data_do_campo({"values": [{"value": "2026-11-27T10:00:00-04:00"}]}) == D(2026, 11, 27)
+    assert ll.data_do_campo({"values": [{"value": "Dia 28/11 às 9h"}]}).day == 28
+    assert ll.data_do_campo({"values": [{"value": "sem data"}]}) is None
+    assert ll.eh_campo_agendamento({"field_name": "Data do Agendamento"})
+    assert not ll.eh_campo_agendamento({"field_name": "Aniversário"})
+
+
+def test_reconferir_com_data_do_kommo():
+    from datetime import date as D
+    tel = "(69) 98888-0003"
+    k = cv.chave_tel(tel)
+    datas = {k: D(2026, 11, 26)}
+    base = {"telefone": tel, "data_cotacao": "2026-11-19"}
+    m = ll.reconferir([{**base, "id": 1, "status": "pendente"}], {}, {k}, datas)
+    assert m == [{"id": 1, "status": "agendou", "quem": ll.ROBO_KOMMO, "agendado_para": "2026-11-26"}]
+    # já agendou sem data (Kommo) → só completa a data
+    m = ll.reconferir([{**base, "id": 2, "status": "agendou", "agendado_para": None}], {}, {k}, datas)
+    assert m[0]["so_data"] and m[0]["agendado_para"] == "2026-11-26"
+    # a loja marcou data mais antiga → fica a do Kommo (mais recente)
+    assert ll.reconferir([{**base, "id": 3, "status": "agendou", "agendado_para": "2026-11-24"}], {}, {k}, datas)[0]["agendado_para"] == "2026-11-26"
+    # a loja marcou data igual ou mais nova → não mexe
+    assert ll.reconferir([{**base, "id": 4, "status": "agendou", "agendado_para": "2026-11-28"}], {}, {k}, datas) == []
+    # já tem resultado (venda perdida) → não mexe
+    assert ll.reconferir([{**base, "id": 5, "status": "venda_perdida"}], {}, {k}, datas) == []
 
 
 if __name__ == "__main__":
