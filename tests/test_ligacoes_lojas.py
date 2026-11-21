@@ -59,20 +59,25 @@ def test_reconferir():
         {"id": 2, "telefone": "69 98888-0011", "data_cotacao": "2026-11-20", "status": "nao_atende"},      # comprou ANTES → não
         {"id": 3, "telefone": "69 98888-0003", "data_cotacao": "2026-11-18", "status": "retornar"},        # agendou
         {"id": 4, "telefone": "69 98888-0003", "data_cotacao": "2026-11-18", "status": "sem_interesse"},   # sem interesse não vira agendou
-        {"id": 5, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "sem_interesse"},        # mas vira comprou
+        {"id": 5, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "sem_interesse"},        # mas comprou → televendas
+        {"id": 6, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "agendou"},              # agendou e comprou → televendas
     ]
     m = {x["id"]: x for x in ll.reconferir(abertas, vendas, {cv.chave_tel("69 98888-0003")})}
-    assert set(m) == {1, 3, 5}
-    assert m[1]["status"] == "comprou" and m[1]["comprou_em"] == "2026-11-20" and m[1]["quem"] == ll.ROBO_MOVERE
+    assert set(m) == {1, 3, 5, 6}
+    assert m[1]["status"] == "venda_televendas" and m[1]["comprou_em"] == "2026-11-20" and m[1]["quem"] == ll.ROBO_MOVERE
+    assert m[5]["status"] == m[6]["status"] == "venda_televendas"
     assert m[3]["status"] == "agendou" and m[3]["quem"] == ll.ROBO_KOMMO
 
 
 def test_dias_para_importar():
     hoje = date(2026, 11, 23)  # segunda
-    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, 22)]
+    # primeira vez: desde 19/11 (quinta)
+    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, d) for d in (19, 20, 21, 22)]
+    assert ll.dias_para_importar(None, date(2026, 11, 21)) == [date(2026, 11, 19), date(2026, 11, 20)]
     assert ll.dias_para_importar(date(2026, 11, 20), hoje) == [date(2026, 11, 21), date(2026, 11, 22)]
     assert ll.dias_para_importar(date(2026, 11, 22), hoje) == []
-    assert len(ll.dias_para_importar(date(2026, 10, 1), hoje)) == 7
+    assert ll.dias_para_importar(date(2026, 10, 1), date(2026, 12, 10))[0] == date(2026, 12, 3)   # no máximo 7 dias
+    assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 19)              # nunca antes de 19/11
 
 
 def _rodar_com_rede(dias_no_analytics, dry=False):
@@ -154,7 +159,7 @@ def test_fluxo_completo():
     assert sorted(x["cotacao"] for x in reg["post_ligacoes"]) == ["5001", "5006"]
     n = {x["cotacao"]: x for x in reg["post_ligacoes"]}["5001"]
     assert n["tel_chave"] == "88880001" and n["valor"] == 320.5 and n["data_cotacao"] == "2026-11-20"
-    assert len(reg["patch"]) == 1 and reg["patch"][0][1]["status"] == "comprou"
+    assert len(reg["patch"]) == 1 and reg["patch"][0][1]["status"] == "venda_televendas"
     assert reg["patch"][0][1]["comprou_em"] == "2026-11-20"
     assert reg["hist"][0]["quem"] == ll.ROBO_MOVERE
     assert reg["rodadas"][-1]["ok"] is True and reg["rodadas"][-1]["robo"] == "ligacoes_lojas"

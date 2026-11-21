@@ -8,9 +8,11 @@ Toda rodada:
   1. IMPORTA as cotações dos dias ainda não importados (até ontem; no máximo 7),
      tirando quem já comprou, quem está agendado no Kommo (etapas 6 e 7) e
      telefones repetidos (fica a cotação mais antiga).
-  2. RECONFERE a lista aberta dos últimos 30 dias:
-       comprou depois (telefone nas vendas do Analytics) → "comprou"
+  2. RECONFERE a lista dos últimos 30 dias:
+       comprou (telefone nas vendas do Analytics) e a loja NÃO marcou
+       "Venda ganha" (com a O.S.)                        → "Venda ganha televendas"
        agendado no Kommo depois                          → "agendou"
+  A lista começa nas cotações de 19/11/2026 (decisão do TI).
 
 Segredos (GitHub → Settings → Secrets → Actions):
   ANALYTICS_LOGIN, ANALYTICS_SENHA, SUPABASE_SERVICE_KEY, KOMMO_TOKEN
@@ -38,11 +40,14 @@ ETAPAS = [112913852, 89179011]           # 6 - AGENDADOS (IA), 7 - AGENDADO
 LOJAS_IGNORADAS = {"ATACADO"}            # igual ao Apps Script
 DIAS_RECONFERIR = 30
 MAX_DIAS_IMPORTAR = 7
-ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse")   # podem virar "comprou"
+INICIO = date(2026, 11, 19)              # primeiras cotações da lista (decisão do TI)
+# Se o cliente comprou e a loja não marcou "Venda ganha" → "Venda ganha televendas"
+ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou")
 SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
 ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
 RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0}
+STATUS_COMPROU = "venda_televendas"
 
 
 # ── Kommo ─────────────────────────────────────────────────────────────────────
@@ -154,17 +159,18 @@ def reconferir(abertas: list, vendas: dict, agendados: set) -> list:
     for l in abertas:
         dia = comprou_desde(l.get("telefone"), date.fromisoformat(l["data_cotacao"]), vendas)
         if dia:
-            mudancas.append({"id": l["id"], "status": "comprou", "comprou_em": dia.isoformat(), "quem": ROBO_MOVERE})
+            mudancas.append({"id": l["id"], "status": STATUS_COMPROU, "comprou_em": dia.isoformat(), "quem": ROBO_MOVERE})
         elif l["status"] in SEM_CONTATO and cv.chaves_tel(l.get("telefone")) & agendados:
             mudancas.append({"id": l["id"], "status": "agendou", "quem": ROBO_KOMMO})
     return mudancas
 
 
 def dias_para_importar(ultima, hoje: date) -> list:
-    """Dias depois do último importado até ontem (no máximo 7). Primeira vez: só ontem."""
+    """Dias depois do último importado até ontem (no máximo 7, nunca antes de 19/11).
+    Primeira vez: desde 19/11."""
     ontem = hoje - timedelta(days=1)
-    inicio = (ultima + timedelta(days=1)) if ultima else ontem
-    inicio = max(inicio, hoje - timedelta(days=MAX_DIAS_IMPORTAR))
+    inicio = (ultima + timedelta(days=1)) if ultima else INICIO
+    inicio = max(inicio, hoje - timedelta(days=MAX_DIAS_IMPORTAR), INICIO)
     return [inicio + timedelta(days=i) for i in range((ontem - inicio).days + 1)]
 
 
@@ -274,9 +280,9 @@ def main() -> int:
 
         # 2) Reconferir a lista aberta
         mudancas = reconferir(abertas, vendas, agendados)
-        RESUMO["comprou"] = sum(1 for m in mudancas if m["status"] == "comprou")
+        RESUMO["comprou"] = sum(1 for m in mudancas if m["status"] == STATUS_COMPROU)
         RESUMO["agendou"] = sum(1 for m in mudancas if m["status"] == "agendou")
-        print(f"🔁 Reconferência: comprou {RESUMO['comprou']} · agendou no Kommo {RESUMO['agendou']}"
+        print(f"🔁 Reconferência: venda ganha televendas {RESUMO['comprou']} · agendou no Kommo {RESUMO['agendou']}"
               + (" (teste, nada gravado)" if dry else ""))
         if not dry:
             agora = datetime.now(timezone.utc).isoformat()
@@ -292,7 +298,7 @@ def main() -> int:
                          headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}),
                          json={"ligacao_id": m["id"], "quem": m["quem"], "status": m["status"], "obs": obs}).raise_for_status()
 
-    registrar_rodada(True, f"novas {RESUMO['inseridas']} · comprou {RESUMO['comprou']} · agendou {RESUMO['agendou']}",
+    registrar_rodada(True, f"novas {RESUMO['inseridas']} · venda televendas {RESUMO['comprou']} · agendou {RESUMO['agendou']}",
                      teste=dry)
     print("✅ Fim.")
     return 0

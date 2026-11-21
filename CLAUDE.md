@@ -120,22 +120,34 @@ vendas para o televendas; `apps-script/` tem o do painel).
 
 ## Ligações das lojas — branch `ligacoes-lojas`
 
-- Página `/ligacoes.html` (bloco "Ligações das lojas" do FOXNET). Login do FOXNET; cada pessoa
-  vê só a loja do seu perfil (`perfis.loja`), admin vê todas (seletor de loja). Filtro por **dia
-  da cotação** (abre no mais recente com pendentes), abas Pendentes / Já liguei / Agendou /
-  Comprou / Todas, busca (nome, telefone, nº) e filtro por vendedor. Botões Ligar e WhatsApp.
-- Status pela função `marcar_ligacao` (registra quem e quando em `ligacoes_historico`);
-  "comprou" só o robô marca. Loja de cada pessoa: App → Usuários (campo "Loja").
-  Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
-  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (`LOJAS_LIGACOES` no App).
+- **Quem liga são os VENDEDORES DAS LOJAS** (não o televendas). Página `/ligacoes.html`
+  (bloco "Ligações das lojas" do FOXNET). Cada vendedor vê só a loja do seu perfil
+  (`perfis.loja`). **Gerentes** (`perfis.dash_ligacoes`) e admin veem todas as lojas e a aba
+  **📊 Dashboard** (lojas, vendedores, análises); gerente só olha, não marca fora da loja dele.
+- **Primeiro acesso**: login = e-mail, senha inicial = o próprio e-mail (minúsculas);
+  `perfis.trocar_senha` obriga a criar senha nova (≥ 8, diferente do e-mail) → `senha_trocada()`.
+- Lista por **dia da cotação** (abre no mais recente com pendentes), abas Pendentes / Já liguei /
+  Agendou / Venda ganha (loja) / Venda televendas / Todas, busca e filtro por vendedor,
+  botões Ligar e WhatsApp, histórico. Status pela função `marcar_ligacao` (registra quem e
+  quando); **"Venda ganha" exige o nº da O.S.**
+- **"Venda ganha televendas"** (só o robô): o cliente comprou e a loja NÃO marcou "Venda ganha"
+  (mesmo que tenha ligado) — decisão do TI.
+- **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor
+  (nome, e-mail, loja; um por um ou em lote "Nome; e-mail; LOJA"), dar Dashboard a gerentes,
+  mudar loja/Dashboard/ativo. Cria o login com senha = e-mail e `trocar_senha = true`.
+  Esquecer a senha: o admin manda o e-mail de recuperação pelo Supabase (Authentication → Users).
+- Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
+  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (`LOJAS_LIGACOES` no App, `LOJAS` no admin).
 - Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`, seg–sáb 7h20–11h20 de hora em hora,
-  14h20 e 17h20): importa as cotações dos dias ainda não importados (relatório 782403 com os
-  filtros do dashboard 782276, igual ao Apps Script), tira quem comprou (vendas 742591, sem
-  filtro), quem está agendado no Kommo (etapas 6 e 7) e telefone repetido; reconfere a lista
-  aberta dos últimos 30 dias (comprou → "comprou"; agendou no Kommo → "agendou").
+  14h20 e 17h20): **começa nas cotações de 19/11/2026**; importa os dias ainda não importados
+  (relatório 782403 com os filtros do dashboard 782276, igual ao Apps Script), tira quem
+  comprou (vendas 742591, sem filtro), quem está agendado no Kommo (etapas 6 e 7) e telefone
+  repetido; reconfere os últimos 30 dias (comprou → "venda_televendas"; agendou → "agendou").
   Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
 - **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
-- `12_ligacoes.sql`: tabelas `ligacoes` e `ligacoes_historico`, `minha_loja()`, `marcar_ligacao()`.
+- `12_ligacoes.sql`: tabelas `ligacoes` e `ligacoes_historico`, colunas `perfis.trocar_senha`
+  e `perfis.dash_ligacoes`, funções `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
+  `senha_trocada()`.
 - Testes: `python tests/test_ligacoes_lojas.py`.
 
 ## Próximos passos (em ordem)

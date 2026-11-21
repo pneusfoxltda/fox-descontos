@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>FOXNET — Administração</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+button,select,input,textarea{font-family:inherit;}
+a{color:inherit;}
+.tela-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:34px 30px;width:100%;max-width:380px;}
+.login-logo{display:flex;justify-content:center;margin-bottom:16px;}
+.login-logo img{width:64px;height:64px;object-fit:contain;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:#999;text-align:center;margin-bottom:22px;}
+.msg-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+.lf{margin-bottom:12px;}
+.lf label,.campo label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.lf input,.campo input,.campo select,textarea{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-size:14px;padding:11px 12px;outline:none;width:100%;}
+.lf input:focus,.campo input:focus,textarea:focus{border-color:#CC1F1F;}
+.btn-red{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;padding:12px 18px;cursor:pointer;}
+.btn-red:hover{background:#E02020;}
+.btn-red:disabled{opacity:.6;cursor:default;}
+.btn-out{background:transparent;border:1px solid #3A3A3A;color:#ddd;border-radius:8px;font-size:13px;font-weight:600;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;}
+
+#main-screen{display:none;}
+.top{background:#111;border-bottom:1px solid #222;padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.top img{width:34px;height:34px;object-fit:contain;}
+.top .tt{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1.5px;color:#fff;line-height:1;}
+.top .ts{font-size:11px;color:#888;}
+.top .sp{flex:1;}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px;}
+.atalhos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:18px;}
+.atalho{background:#161616;border:1px solid #262626;border-radius:12px;padding:16px;text-decoration:none;display:block;}
+.atalho:hover{border-color:#CC1F1F;}
+.atalho b{display:block;font-size:15px;color:#fff;margin-bottom:4px;}
+.atalho span{font-size:12px;color:#888;}
+.sec{background:#141414;border:1px solid #262626;border-radius:12px;padding:18px;margin-bottom:16px;}
+.sec h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:#fff;margin-bottom:4px;}
+.sec .sub{font-size:12px;color:#999;margin-bottom:14px;line-height:1.5;}
+.linha3{display:grid;grid-template-columns:1.2fr 1.4fr 1fr auto;gap:10px;align-items:end;}
+@media(max-width:760px){.linha3{grid-template-columns:1fr;}}
+textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical;}
+.log{margin-top:10px;font-size:12px;line-height:1.7;}
+.log .ok{color:#4ADE80;} .log .er{color:#F87171;} .log .av{color:#FBBF24;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;padding:8px;border-bottom:1px solid #2A2A2A;white-space:nowrap;}
+.tbl td{padding:9px 8px;border-bottom:1px solid #1F1F1F;vertical-align:middle;}
+.tbl select{background:#0D0D0D;color:#fff;border:1px solid #333;border-radius:6px;padding:5px 6px;font-size:12px;}
+.tag{display:inline-block;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;}
+.tag.am{background:#2A2000;color:#FBBF24;border:1px solid #5C4000;}
+.tag.vd{background:#0E2A1F;color:#4ADE80;border:1px solid #1A5C32;}
+.tag.cz{background:#222;color:#999;border:1px solid #333;}
+.scroll{overflow-x:auto;}
+.filtro{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.filtro input{flex:1;min-width:200px;background:#0D0D0D;border:1px solid #333;border-radius:7px;color:#fff;font-size:13px;padding:9px 11px;outline:none;}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1A2E1A;border:1px solid #27AE60;color:#E8F5E9;border-radius:9px;padding:12px 18px;font-size:13px;font-weight:600;display:none;z-index:200;max-width:92vw;}
+.toast.err{background:#2E1A1A;border-color:#CC1F1F;color:#FFCDD2;}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="tela-centro">
+  <div class="login-card">
+    <div class="login-logo"><img src="/logo-fox.png" alt="Fox Pneus"></div>
+    <div class="login-t">FOXNET · Administração</div>
+    <div class="login-s">Somente o administrador</div>
+    <div class="msg-err" id="login-err"></div>
+    <div class="lf"><label>E-mail</label><input type="email" id="l-email" autocomplete="username"></div>
+    <div class="lf"><label>Senha</label><input type="password" id="l-pass" autocomplete="current-password"></div>
+    <button class="btn-red" id="btn-login" style="width:100%">Entrar</button>
+  </div>
+</div>
+
+<div id="main-screen">
+  <div class="top">
+    <img src="/logo-fox.png" alt="">
+    <div><div class="tt">FOXNET · Administração</div><div class="ts" id="ts-user"></div></div>
+    <div class="sp"></div>
+    <button class="btn-out" id="btn-sair">Sair</button>
+  </div>
+
+  <div class="wrap">
+    <div class="atalhos">
+      <a class="atalho" href="/ligacoes.html"><b>📊 Ligações das lojas</b><span>Lista de todas as lojas e o Dashboard completo</span></a>
+      <a class="atalho" href="/descontos"><b>🏷️ App de descontos</b><span>Descontos, usuários e níveis do sistema de descontos</span></a>
+      <a class="atalho" href="/foxnet/"><b>🦊 FOXNET</b><span>Voltar para a intranet</span></a>
+    </div>
+
+    <div class="sec">
+      <h3>Cadastrar vendedor de loja</h3>
+      <div class="sub">O vendedor entra em <b>Ligações das lojas</b> com o <b>e-mail</b>. A <b>primeira senha é o próprio e-mail</b> e, no primeiro acesso, o sistema obriga a criar uma senha nova que só ele sabe. Ele vê só a lista da loja dele.</div>
+      <div class="linha3">
+        <div class="campo"><label>Nome</label><input id="v-nome" placeholder="Nome do vendedor"></div>
+        <div class="campo"><label>E-mail</label><input id="v-email" type="email" placeholder="nome@redefox.com.br"></div>
+        <div class="campo"><label>Loja</label><select id="v-loja"></select></div>
+        <button class="btn-red" id="btn-vend">Cadastrar</button>
+      </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:13px;color:#ddd;font-weight:600">Cadastrar vários de uma vez</summary>
+        <div class="sub" style="margin-top:10px">Uma pessoa por linha, no formato <code>Nome; e-mail; LOJA</code>. Lojas: <span id="lista-lojas"></span>.</div>
+        <textarea id="v-lote" placeholder="Maria Souza; maria.souza@redefox.com.br; CACOAL&#10;João Lima; joao.lima@redefox.com.br; C.AUTO VLH"></textarea>
+        <button class="btn-red" id="btn-lote" style="margin-top:10px">Cadastrar todos</button>
+      </details>
+      <div class="log" id="log-vend"></div>
+    </div>
+
+    <div class="sec">
+      <h3>Gerentes (veem o Dashboard das ligações)</h3>
+      <div class="sub">O gerente vê a lista e o <b>Dashboard de todas as lojas</b>, só para acompanhar (não marca nada fora da loja dele). Se ainda não tiver acesso, o cadastro é criado com a senha = e-mail e troca obrigatória no primeiro acesso.</div>
+      <div class="linha3">
+        <div class="campo"><label>Nome</label><input id="g-nome" placeholder="Nome do gerente"></div>
+        <div class="campo"><label>E-mail</label><input id="g-email" type="email" placeholder="gerente@redefox.com.br"></div>
+        <div class="campo"><label>Loja dele (opcional)</label><select id="g-loja"></select></div>
+        <button class="btn-red" id="btn-ger">Dar acesso</button>
+      </div>
+      <div class="log" id="log-ger"></div>
+    </div>
+
+    <div class="sec">
+      <h3>Acessos das Ligações</h3>
+      <div class="sub">Todas as pessoas com loja ou com Dashboard. Mude a loja ou o acesso ao Dashboard direto aqui.</div>
+      <div class="filtro"><input id="f-busca" placeholder="Buscar por nome, e-mail ou loja…"></div>
+      <div class="scroll"><table class="tbl" id="t-acessos"></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os dados são as regras do banco (só o admin altera perfis).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+// Cliente avulso (sem guardar sessão): cria o login novo sem tirar o admin da conta dele.
+const avulso = () => supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "foxnet-avulso" } });
+
+// Lojas = nome do Estabelecimento no Movere/Analytics (iguais à lista de ligações)
+const LOJAS = ["MATRIZ", "C.AUTO PVH", "ARIQUEMES", "JI-PARANA", "CACOAL", "C.AUTO VLH", "PARINTINS", "XAPURI"];
+
+let perfis = [];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+const espera = ms => new Promise(r => setTimeout(r, ms));
+function toast(msg, ok = true) {
+  const t = $("toast"); t.textContent = msg; t.className = "toast" + (ok ? "" : " err"); t.style.display = "block";
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = "none", ok ? 2500 : 6000);
+}
+function logar(id, cls, msg) { $(id).insertAdjacentHTML("beforeend", `<div class="${cls}">${msg}</div>`); }
+function normLoja(l) {
+  const n = norm(l).replace(/\s+/g, " ").trim().toUpperCase();
+  return LOJAS.find(x => norm(x).toUpperCase() === n) || LOJAS.find(x => norm(x).toUpperCase().replace(/[.\s-]/g, "") === n.replace(/[.\s-]/g, "")) || "";
+}
+
+// ── LOGIN (só admin) ──
+async function entrar(sessao) {
+  if (!sessao) return null;
+  const { data: p } = await sb.from("perfis").select("nome,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
+  if (!p || !p.ativo || !(p.funcoes || []).includes("admin")) { await sb.auth.signOut(); return {erro: "Esta página é só do administrador."}; }
+  $("login-screen").style.display = "none";
+  $("main-screen").style.display = "block";
+  $("ts-user").textContent = "Admin · " + (p.nome || p.email);
+  await carregar();
+  return {ok: true};
+}
+async function doLogin() {
+  const email = $("l-email").value.trim().toLowerCase(), pass = $("l-pass").value, err = $("login-err");
+  err.style.display = "none";
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { err.textContent = "E-mail ou senha incorretos."; err.style.display = "block"; return; }
+  const r = await entrar(data.session);
+  if (r && r.erro) { err.textContent = r.erro; err.style.display = "block"; }
+}
+
+// ── DADOS ──
+async function carregar() {
+  const { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha").order("nome");
+  if (error) { toast("Não consegui carregar os acessos: " + error.message, false); return; }
+  perfis = data || [];
+  renderTabela();
+}
+
+// Cria (ou atualiza) o acesso. Senha inicial = e-mail, troca obrigatória no 1º acesso.
+async function criarAcesso({nome, email, loja, dash}) {
+  email = email.trim().toLowerCase(); nome = nome.trim();
+  if (!nome || !emailOk(email)) return {erro: "nome ou e-mail inválido"};
+  const existente = perfis.find(p => (p.email || "").toLowerCase() === email);
+  if (existente) {
+    const mud = {};
+    if (loja !== undefined && loja) mud.loja = loja;
+    if (dash) mud.dash_ligacoes = true;
+    if (!Object.keys(mud).length) return {ok: "já tinha acesso (nada mudou)"};
+    const { error } = await sb.from("perfis").update(mud).eq("id", existente.id);
+    return error ? {erro: error.message} : {ok: "já tinha acesso: atualizado" + (mud.loja ? " (loja " + mud.loja + ")" : "") + (mud.dash_ligacoes ? " (Dashboard)" : "")};
+  }
+  const { data, error } = await avulso().auth.signUp({ email, password: email, options: { data: { nome } } });
+  if (error) return {erro: /rate|limit/i.test(error.message) ? "muitos cadastros seguidos: espere 5 minutos e tente de novo" : error.message};
+  const uid = data.user && data.user.id;
+  if (!uid || (data.user.identities && data.user.identities.length === 0)) return {erro: "esse e-mail já tem login, mas não achei o perfil. Fale com o suporte."};
+  const { error: e2 } = await sb.from("perfis").upsert({ id: uid, nome, email, funcoes: [], ativo: true, loja: loja || null, dash_ligacoes: !!dash, trocar_senha: true });
+  return e2 ? {erro: "login criado, mas não gravei o perfil: " + e2.message} : {ok: "criado · senha inicial = e-mail"};
+}
+
+async function cadastrarVendedor() {
+  const nome = $("v-nome").value, email = $("v-email").value, loja = $("v-loja").value;
+  if (!loja) { toast("Escolha a loja do vendedor.", false); return; }
+  $("btn-vend").disabled = true;
+  const r = await criarAcesso({nome, email, loja});
+  $("btn-vend").disabled = false;
+  logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} — ${esc(r.erro || r.ok)}`);
+  if (!r.erro) { $("v-nome").value = ""; $("v-email").value = ""; await carregar(); }
+}
+
+async function cadastrarLote() {
+  const linhas = $("v-lote").value.split("\n").map(l => l.trim()).filter(Boolean);
+  if (!linhas.length) { toast("Cole pelo menos uma linha.", false); return; }
+  $("btn-lote").disabled = true;
+  let ok = 0, erro = 0;
+  for (const linha of linhas) {
+    const [nome = "", email = "", lojaTxt = ""] = linha.split(/[;\t]/).map(x => x.trim());
+    const loja = normLoja(lojaTxt);
+    if (!loja) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} — loja "${esc(lojaTxt)}" não existe`); continue; }
+    const r = await criarAcesso({nome, email, loja});
+    r.erro ? erro++ : ok++;
+    logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} — ${esc(r.erro || r.ok)}`);
+    await espera(700);
+    if (r.erro && /espere/.test(r.erro)) break;
+  }
+  logar("log-vend", erro ? "av" : "ok", `Fim: ${ok} ok, ${erro} com problema.`);
+  $("btn-lote").disabled = false;
+  await carregar();
+}
+
+async function darAcessoGerente() {
+  const nome = $("g-nome").value, email = $("g-email").value, loja = $("g-loja").value;
+  $("btn-ger").disabled = true;
+  const r = await criarAcesso({nome: nome || email, email, loja: loja || undefined, dash: true});
+  $("btn-ger").disabled = false;
+  logar("log-ger", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome || email)} &lt;${esc(email)}&gt; — ${esc(r.erro || r.ok)}`);
+  if (!r.erro) { $("g-nome").value = ""; $("g-email").value = ""; await carregar(); }
+}
+
+async function mudar(id, campos, msg) {
+  const { error } = await sb.from("perfis").update(campos).eq("id", id);
+  if (error) { toast("Erro: " + error.message, false); await carregar(); return; }
+  Object.assign(perfis.find(p => p.id === id), campos);
+  toast(msg); renderTabela();
+}
+
+function renderTabela() {
+  const b = norm($("f-busca").value);
+  const lista = perfis.filter(p => p.loja || p.dash_ligacoes)
+    .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "")).includes(b))
+    .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || (a.nome || "").localeCompare(c.nome || ""));
+  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>E-mail</th><th>Loja</th><th>Dashboard</th><th>Situação</th><th>Ativo</th></tr>` +
+    (lista.length ? lista.map(p => `<tr>
+      <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
+      <td>${esc(p.email)}</td>
+      <td><select data-id="${p.id}" class="s-loja"><option value="">— sem loja —</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select></td>
+      <td><input type="checkbox" data-id="${p.id}" class="c-dash" ${p.dash_ligacoes ? "checked" : ""}></td>
+      <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
+      <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
+    </tr>`).join("") : `<tr><td colspan="6" style="color:#777;padding:14px">Ninguém com loja ou Dashboard ainda.</td></tr>`);
+  document.querySelectorAll(".s-loja").forEach(s => s.onchange = () => mudar(s.dataset.id, {loja: s.value || null}, s.value ? "Loja alterada para " + s.value : "Loja removida"));
+  document.querySelectorAll(".c-dash").forEach(c => c.onchange = () => mudar(c.dataset.id, {dash_ligacoes: c.checked}, c.checked ? "Dashboard liberado" : "Dashboard removido"));
+  document.querySelectorAll(".c-ativo").forEach(c => c.onchange = () => mudar(c.dataset.id, {ativo: c.checked}, c.checked ? "Acesso reativado" : "Acesso desativado"));
+}
+
+// ── EVENTOS ──
+const opLojas = '<option value="">Escolha…</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
+$("v-loja").innerHTML = opLojas;
+$("g-loja").innerHTML = '<option value="">— nenhuma —</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
+$("lista-lojas").textContent = LOJAS.join(", ");
+$("btn-login").onclick = doLogin;
+$("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+$("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("btn-vend").onclick = cadastrarVendedor;
+$("btn-lote").onclick = cadastrarLote;
+$("btn-ger").onclick = darAcessoGerente;
+$("f-busca").oninput = renderTabela;
+sb.auth.getSession().then(async ({ data }) => {
+  if (data.session) { const r = await entrar(data.session); if (r && r.erro) { $("login-err").textContent = r.erro; $("login-err").style.display = "block"; } }
+});
+</script>
+</body>
+</html>
