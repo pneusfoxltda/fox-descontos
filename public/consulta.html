@@ -66,6 +66,7 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
 .quote-tipo{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
 .badge{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;white-space:nowrap;}
 .badge-lib{background:#0F2D1A;color:#27AE60;border:1px solid #1A5C32;}
+.venda-reg{margin:-6px 20px 10px;font-size:11px;color:#4ADE80;text-align:right;}
 .badge-venda{background:#0E2A1F;color:#4ADE80;border:1px solid #22C55E;}
 .badge-pend{background:#2A2000;color:#F39C12;border:1px solid #5C4000;}
 .badge-venc{background:#2E1A1A;color:#CC1F1F;border:1px solid #4A2E2E;}
@@ -218,6 +219,12 @@ function fmtDia(iso) {
   return m ? m[3] + "/" + m[2] : "";
 }
 
+function fmtDataHora(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"});
+}
+
 function getBadge(q) {
   if (q.venda_movere) return {lbl:"✅ Venda concluída (Movere)" + (q.venda_movere_em ? " · " + fmtDia(q.venda_movere_em) : ""), cls:"badge-venda"};
   if (q.liberado) return {lbl:"✓ Liberado", cls:"badge-lib"};
@@ -244,6 +251,7 @@ function renderCards(list, showConc60 = false) {
     </div>
     <span class="badge ${b.cls}">${b.lbl}</span>
   </div>
+  ${q.venda_movere && q.venda_movere_conferido_em ? `<div class="venda-reg">🤖 Venda registrada pelo robô em ${fmtDataHora(q.venda_movere_conferido_em)}</div>` : ""}
   <div class="quote-body">
     <div class="info-grid">
       <div class="ii"><label>CBA</label><div class="val">${q.cba||"—"}</div></div>

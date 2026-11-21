@@ -355,7 +355,7 @@ export default function App(){
   };
   useEffect(()=>{if(!session)return;(async()=>{try{
     const db = await supa.from("descontos");
-    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente,venda_movere,venda_movere_em,venda_movere_valor");
+    const {data:qu} = await db.select("id,tipo,numero,cba,medida,segmento,loja,valor,pgto,validade,obs,liberado,negociador_nome,negociador_email,erro_interno,liberador_nome,liberador_email,liberado_em,criado_em,vendedor,perdida,motivo_perda,curtidas,anexo_nome,anexo_tipo,telefone_cliente,venda_movere,venda_movere_em,venda_movere_valor,venda_movere_conferido_em");
     if(qu){setDashKey(k=>k+1);setQuotes(qu.map(q=>({
       tipo:q.tipo||"orcamento",numero:q.numero,cba:q.cba,medida:q.medida,segmento:q.segmento,
       loja:q.loja,valor:q.valor,pgto:q.pgto,validade:q.validade,obs:q.obs,
@@ -364,7 +364,7 @@ export default function App(){
       liberadoEm:q.liberado_em,criadoEm:q.criado_em,_id:q.id,vendedor:q.vendedor,perdida:q.perdida||false,motivoPerda:q.motivo_perda||"",
       anexoBase64:null,anexoTipo:q.anexo_tipo,anexoNome:q.anexo_nome,curtidas:q.curtidas||0,
       telefoneCliente:q.telefone_cliente||null,
-      vendaMovere:!!q.venda_movere,vendaMovereEm:q.venda_movere_em||null,vendaMovereValor:q.venda_movere_valor
+      vendaMovere:!!q.venda_movere,vendaMovereEm:q.venda_movere_em||null,vendaMovereValor:q.venda_movere_valor,vendaMovereRegistro:q.venda_movere_conferido_em||null
     })));}
     // Auto-marcar expiradas como perdidas
     const rpcH={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};
@@ -1654,7 +1654,7 @@ export default function App(){
           {result.telefoneCliente&&<div className="rcell"><div className="rl">📱 Telefone do Cliente</div><div className="rv" style={{color:"#3498DB"}}>{result.telefoneCliente}</div></div>}
           <div className="rcell"><div className="rl">Validade</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{fmtDate(result.validade)}</div></div>
           <div className="rcell"><div className="rl">Status</div><div className={result.liberado?"rv-ok":isExp(result.validade)?"rv-exp":"rv-ok"}>{result.liberado?"Venda liberada":isExp(result.validade)?"Fora da validade":"Pendente de liberação"}</div></div>
-          {result.vendaMovere&&<div className="rcell full"><div className="rl">Movere</div><div className="rv-ok">✅ Venda concluída (Movere){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}{result.vendaMovereValor?" · "+fmtVal(result.vendaMovereValor):""}<div style={{fontSize:11,color:MUTED,fontWeight:400,marginTop:4}}>Conferido automaticamente pelo telefone do cliente no relatório de vendas do Analytics.</div></div></div>}
+          {result.vendaMovere&&<div className="rcell full"><div className="rl">Movere</div><div className="rv-ok">✅ Venda concluída (Movere){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}{result.vendaMovereValor?" · "+fmtVal(result.vendaMovereValor):""}<div style={{fontSize:11,color:MUTED,fontWeight:400,marginTop:4}}>🤖 Registrado pelo robô{result.vendaMovereRegistro?" em "+new Date(result.vendaMovereRegistro).toLocaleString("pt-BR",{timeZone:"America/Porto_Velho",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):""} · conferido pelo telefone do cliente no relatório de vendas do Analytics.</div></div></div>}
           
           {result.obs&&<div className="rcell full"><div className="rl">Obs</div><div className="rv">{result.obs}</div></div>}
         </div>

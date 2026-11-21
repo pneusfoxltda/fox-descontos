@@ -58,7 +58,7 @@ as $$
   from (
     select d.numero, d.tipo, d.cba, d.medida, d.loja, d.valor, d.pgto, d.validade,
            d.obs, d.liberado, d.vendedor, d.criado_em, d.telefone_cliente,
-           d.venda_movere, d.venda_movere_em
+           d.venda_movere, d.venda_movere_em, d.venda_movere_conferido_em
     from public.descontos d
     where trim(coalesce(p_termo, '')) <> ''
       and case p_modo
