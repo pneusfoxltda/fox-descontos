@@ -69,6 +69,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
     (pdf.js, por posição: valor embaixo do rótulo) ou **imagem** (Tesseract no navegador),
     preenche, pergunta o que falta, põe concorrência e anexo (App) e salva ao ouvir "salvar".
     Vendedor "Fernanda" no orçamento não é preenchido (pede o vendedor responsável).
+    **CBA = coluna "Cód."** da tabela de produtos do orçamento; com vários produtos vale o **1º** (decisão do TI).
   · **Painel do televendas**: "sou a Kessya" fica guardado no navegador (`fe_tv_quem`) e ela
     responde só os números dessa pessoa (`window.FE_TV`, exposto no `render()` do mês).
     Não é segurança de verdade (qualquer um pode dizer que é a Kessya) — o painel já é aberto.

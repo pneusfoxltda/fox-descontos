@@ -185,6 +185,9 @@
       if (tel && tel.replace(/\D/g, "").length >= 8) d.telefone = so(/(\+?[\d() \t.-]{8,20})/, tel).trim();
       const ven = abaixoDe(L, /^vendedor\s*:?/i);
       if (ven) d.vendedor = ven.replace(/^\d+\s*-\s*/, "").trim().split(/\s+/)[0];
+      // CBA = coluna "Cód." da tabela de produtos (o 1º produto, se tiver vários)
+      const cod = abaixoDe(L, /^c[oóòôeé]d\.?:?\s*$/i);
+      if (so(/^\s*(\d{3,})\b/, cod)) d.cba = so(/^\s*(\d{3,})\b/, cod);
       const pg = abaixoDe(L, /^condi[cç][aã]o(\s*de)?\s*pagamento\s*:?/i);
       if (pg) d.pgtoOrcamento = pg.split(/\s{2,}|\d/)[0].trim() || pg;
     }
@@ -198,6 +201,11 @@
     if (!d.cliente) { m = t.match(/Cliente\s*:\s*(?:\d+\s*-\s*)?([^\n]+)/i); if (m && !/telefone|vendedor/i.test(m[1])) d.cliente = m[1].trim(); }
     if (!d.telefone) { m = t.match(/(?:Telefone|Celular)\s*:\s*(\+?[\d() \t.-]{8,20})/i); if (m && m[1].replace(/\D/g, "").length >= 8) d.telefone = m[1].trim(); }
     if (!d.vendedor) { m = t.match(/Vendedor\s*:\s*(?:\d+\s*-\s*)?([A-Za-zÀ-ú]+)/i); if (m) d.vendedor = m[1].trim(); }
+    if (!d.cba) {
+      // Sem posição (texto corrido): 1ª linha que começa com número logo depois do cabeçalho "Cód. Descrição"
+      const linhas = t.split("\n"), h = linhas.findIndex(l => /c[oó]d\.?\s+descri[cç][aã]o/i.test(l));
+      if (h >= 0) for (const l of linhas.slice(h + 1, h + 6)) { m = l.match(/^\s*(\d{3,})\s+\S/); if (m) { d.cba = m[1]; break; } }
+    }
     d.medida = medidaDoTexto(t);
     if (d.medida) {
       const i = t.toUpperCase().search(/\d{3}\s*\/\s*\d{2}\s*Z?R|\d{1,2}[.,]\d{2}\s*[-–]\s*\d{2}/);
