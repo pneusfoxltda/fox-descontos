@@ -640,7 +640,7 @@ export default function App(){
         anexo_tipo:anexo?anexo.tipo:null,
         anexo_nome:anexo?anexo.nome:null
       });
-      if(error){console.error("Supabase error:",error);toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
+      if(error){console.error("Supabase error:",error);if(/duplicate|descontos_numero_tipo_unico|23505/i.test(String(error))){toast_("Esse número já está cadastrado.",false);return;}toast_("Erro ao salvar: "+String(error).substring(0,80),false);return;}
       const obsCompleto=form.obs+(concAdicionados.length>0?"\n\n📊 CONCORRENTES:\n"+concAdicionados.map(x=>`• ${x.empresa}: ${parseFloat(x.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} (${x.pgto})`).join("\n"):"");
       form.medida=form.medida.toUpperCase();const novo={...form,numero:form.numero.trim(),telefoneCliente:(form.telefone||"").trim()||null,criadoEm:new Date().toISOString(),negociadorNome:session.username,negociadorEmail:session.email,liberado:false,obs:obsCompleto,anexoBase64:anexo?anexo.base64:null,anexoTipo:anexo?anexo.tipo:null,anexoNome:anexo?anexo.nome:null,erroInterno:form.erroInterno||false};
       setQuotes(prev=>[novo,...prev]);

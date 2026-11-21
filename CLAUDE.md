@@ -99,6 +99,16 @@ vendas para o televendas; `apps-script/` tem o do painel).
   O TI confirmou que o relatório 742591 traz vendas de **todas as lojas**.
 - Testes: `python tests/test_conferir_vendas_movere.py` (rede imitada).
 
+## Número repetido — branch `cadastro-sem-duplicado`
+
+- `10_sem_numero_repetido.sql`: guarda cópia dos repetidos em `descontos_duplicados_apagados`
+  (coluna `dados` jsonb, só admin pelo SQL Editor), apaga os repetidos (fica o liberado; senão
+  o 1º cadastrado) e cria o índice único `descontos_numero_tipo_unico`
+  (`lower(btrim(numero))` + tipo; `conc` fica de fora). Orçamento e O.S. com o mesmo nº podem.
+- `cadastrardescontos.html` confere antes de salvar e mostra quem cadastrou e quando;
+  App e página tratam o erro 23505 com aviso amigável.
+- ⚠️ No App, "Excluir" apaga por número + tipo (apagaria os dois repetidos).
+
 ## Próximos passos (em ordem)
 
 1. ✅ **Trancar o banco (RLS)** — CONCLUÍDO em 21/11/2026. Passos 06, 07 e 08 rodados no
