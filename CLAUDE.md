@@ -159,6 +159,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
   histórico; da 2ª em diante o WhatsApp fica em destaque; WhatsApp abre com mensagem pronta.
   Pendentes ordenados pelo maior valor + total em aberto. Cabeçalho e Cotação/Nome fixos.
   Celular (< 900 px): cartões, com as mesmas regras.
+  Tela inteira no computador (como o Google Sheets). **WhatsApp**: primeiro nome tirado do
+  **e-mail** do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
+  **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`): o robô tira da
+  descrição do item do relatório de cotações e completa as cotações dos últimos 7 dias.
 - **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`); os mais antigos
   somem, menos os **agendados** (ficam até ter resultado). O **Dashboard usa tudo** (decisão do TI).
 - **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor

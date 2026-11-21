@@ -147,7 +147,10 @@ a{color:inherit;}
 .tl th.fx1,.tl th.fx2{z-index:4;}
 .tl .r{text-align:right;font-variant-numeric:tabular-nums;}
 .tl .tnum{color:#7DB8F0;font-weight:600;}
-body.modo-tabela #v-lista{max-width:none;}
+body.modo-tabela #v-lista{max-width:none;padding:10px 14px 0;}
+body.modo-tabela .tabwrap{max-height:calc(100vh - 215px);}
+body.modo-tabela .datas{padding-bottom:2px;} body.modo-tabela .tl td{padding:6px 8px;} body.modo-tabela .tl th{padding:9px 8px;}
+body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} body.modo-tabela .cel.mt{max-width:150px;} body.modo-tabela .cel.an{width:170px;} body.modo-tabela .abas{margin:8px 0;} body.modo-tabela .busca{margin-bottom:8px;}
 .mini{display:inline-block;margin-left:6px;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none;}
 .mini.lig{background:#1E3A5F;color:#BFDBFE;} .mini.wa{background:#0F3D24;color:#86EFAC;}
 .mini.wa.forte,.bt-wa.forte{background:#16A34A;color:#fff;box-shadow:0 0 0 2px #22C55E55;animation:pulsa 1.6s infinite;}
@@ -405,10 +408,11 @@ async function buscarTudo(tabela, colunas, montar) {
 async function carregar() {
   $("lista").innerHTML = '<div class="vazio">Carregando…</div>';
   const desde = new Date(Date.now() - DIAS * 864e5).toISOString().slice(0, 10);
+  const COLS = "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em,agendado_para,motivo_perda";
+  const ordem = q => q.gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao");
   try {
-    todas = await buscarTudo("ligacoes",
-      "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em,agendado_para,motivo_perda",
-      q => q.gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao"));
+    try { todas = await buscarTudo("ligacoes", COLS + ",medida", ordem); }
+    catch (e1) { todas = await buscarTudo("ligacoes", COLS, ordem); }   // SQL 14 ainda não rodou: segue sem a medida
   } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
   historicoTodo = null;
   if (veTodas) {
@@ -522,7 +526,7 @@ function cartao(l) {
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
       <div><div class="cli">${esc(l.cliente || "Cliente sem nome")}</div>
-        <div class="meta">Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · " + esc(l.operador) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div></div>
+        <div class="meta">${l.medida ? "🛞 " + esc(l.medida) + " · " : ""}Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · " + esc(l.operador) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div></div>
       <div class="val">${fmtR(l.valor)}</div>
     </div>
     ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
@@ -593,13 +597,27 @@ function nomeStatus(l) {
 const primeiro = s => { const p = String(s || "").trim().split(/\s+/)[0] || ""; return p ? p[0].toUpperCase() + p.slice(1).toLowerCase() : ""; };
 const NOME_LOJA = {"MATRIZ": "Matriz Porto Velho", "C.AUTO PVH": "Centro Automotivo Porto Velho", "ARIQUEMES": "Ariquemes", "JI-PARANA": "Ji-Paraná",
   "CACOAL": "Cacoal", "C.AUTO VLH": "Centro Automotivo Vilhena", "PARINTINS": "Manaus", "XAPURI": "Rio Branco"};
+// Primeiro nome do vendedor tirado do e-mail (ex.: maria.souza@redefox.com.br → Maria)
+function nomeDoEmail() {
+  const e = String((perfil && perfil.email) || "").split("@")[0].split(/[._\-0-9]+/).filter(Boolean)[0];
+  return e ? primeiro(e) : primeiro(perfil && perfil.nome);
+}
+function quandoFoi(iso) {
+  const dias = Math.round((new Date(hojeISO() + "T12:00:00") - new Date(iso + "T12:00:00")) / 864e5);
+  return dias <= 0 ? "hoje" : dias === 1 ? "ontem" : "no dia " + fmtData(iso);
+}
+// Mensagem pronta do WhatsApp (pensada para trazer o cliente até a loja)
+function mensagemWa(l) {
+  const quem = nomeDoEmail(), loja = NOME_LOJA[l.loja] || l.loja || "";
+  return `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. 😊\n` +
+    `Vi que você fez um orçamento ${quandoFoi(l.data_cotacao)}${l.medida ? " do pneu " + l.medida : ""} com a gente. ` +
+    `Ficou alguma dúvida ou faltou algo para fechar?\n` +
+    `Consigo separar os pneus e deixar um horário reservado para você aqui na loja, sem espera. Qual o melhor dia para você passar aqui?`;
+}
 function linkWa(l) {
   const d = dig(l.telefone); if (d.length < 10) return "";
   const num = d.length > 11 && d.startsWith("55") ? d.slice(2) : d;
-  const quem = primeiro(perfil && perfil.nome), loja = NOME_LOJA[l.loja] || l.loja || "";
-  const msg = `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. ` +
-    `Vi que você fez uma cotação com a gente (nº ${l.cotacao}${l.valor ? ", " + fmtR(l.valor) : ""}). Posso te ajudar a fechar? 😊`;
-  return "https://wa.me/55" + num + "?text=" + encodeURIComponent(msg);
+  return "https://wa.me/55" + num + "?text=" + encodeURIComponent(mensagemWa(l));
 }
 
 // Grava o status (e o que ele exige). Mostra "Desfazer" por alguns segundos.
@@ -683,7 +701,7 @@ function linhaTabela(l) {
   const quem = l.status_em ? `<div class="quem">${esc(primeiro(l.status_por) || l.status_por || "")} · ${fmtQuando(l.status_em)}</div>` : "";
   const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
     <td class="fx1">${esc(l.cotacao)}</td>
-    <td class="fx2">${esc(l.cliente || "")}</td>
+    <td class="fx2">${esc(l.cliente || "")}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
     <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span><a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="WhatsApp com mensagem pronta">WA</a>` : ""}` : ""}</td>
     <td>${esc(l.operador || "")}</td>
     <td class="r">${fmtR(l.valor)}</td>

@@ -99,6 +99,27 @@ def filtro_dias(uris: list) -> str:
     return f"[{cv._md()}/obj/{cv.ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in uris)})"
 
 
+import re as _re
+_MEDIDA = [_re.compile(r"(\d{3})\s*/\s*(\d{2})\s*Z?R\s*(\d{2}(?:[.,]5)?)", _re.I),
+           _re.compile(r"(\d{1,2}[.,]\d{2})\s*[-–]\s*(\d{2})"),
+           _re.compile(r"(\d{2,3})\s*[xX]\s*(\d{1,2}[.,]\d{2})\s*R\s*(\d{2})", _re.I)]
+
+
+def medida_de(texto: str):
+    """Medida do pneu na descrição do item: '255/50R20 LISO ALENZA' → '255/50R20'."""
+    t = str(texto or "")
+    m = _MEDIDA[0].search(t)
+    if m:
+        return f"{m.group(1)}/{m.group(2)}R{m.group(3).replace(',', '.')}"
+    m = _MEDIDA[1].search(t)
+    if m:
+        return f"{m.group(1).replace(',', '.')}-{m.group(2)}"
+    m = _MEDIDA[2].search(t)
+    if m:
+        return f"{m.group(1)}X{m.group(2).replace(',', '.')}R{m.group(3)}"
+    return None
+
+
 def cotacoes(linhas: list) -> list:
     """CSV de cotações → uma linha por cotação (valor somado), mais antigas primeiro.
     Colunas (igual ao Apps Script): Cotação, Cliente, Telefone, Período,
@@ -107,13 +128,15 @@ def cotacoes(linhas: list) -> list:
     for r in linhas[1:]:
         if len(r) < 9:
             continue
-        cot, cli_, tel, per, est, op, _, _, val = r[:9]
+        cot, cli_, tel, per, est, op, _, item, val = r[:9]
         d = cv.data_br(per)
         if not cot or d is None:
             continue
         g = grupos.setdefault(cot, {"cotacao": cot.strip(), "cliente": cli_.strip(), "telefone": tel.strip(),
                                     "data": d, "loja": est.strip(), "operador": op.strip(), "valor": 0.0})
         g["valor"] += cv.numero_br(val)
+        if not g.get("medida"):
+            g["medida"] = medida_de(item)
     lista = sorted(grupos.values(), key=lambda x: (x["data"], x["cotacao"]))
     for g in lista:
         g["valor"] = round(g["valor"], 2)
@@ -214,12 +237,20 @@ def main() -> int:
     hoje = datetime.now(cv.TZ_LOJA).date()
 
     with httpx.Client(timeout=60) as cli:
+        # Coluna "medida" (SQL 14) já existe?
+        tem_medida = cli.get(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?select=medida&limit=1",
+                             headers=cv._sb_headers(chave)).status_code == 200
+        if not tem_medida:
+            print("⚠️ Falta rodar o SQL 14 (coluna da medida): sigo sem a medida do pneu.")
         # Estado atual da lista
         ult = sb_get(cli, chave, "ligacoes?select=data_cotacao&order=data_cotacao.desc&limit=1")
         ultima = date.fromisoformat(ult[0]["data_cotacao"]) if ult else None
         desde = (hoje - timedelta(days=DIAS_RECONFERIR)).isoformat()
-        abertas = sb_get(cli, chave, "ligacoes?select=id,telefone,tel_chave,data_cotacao,status"
+        abertas = sb_get(cli, chave, "ligacoes?select=id,cotacao,telefone,tel_chave,data_cotacao,status" + (",medida" if tem_medida else "") +
                                      f"&status=in.({','.join(ABERTOS)})&data_cotacao=gte.{desde}&limit=10000")
+        # Cotações já na lista sem a medida (últimos 7 dias): completar com o relatório
+        sem_medida = [l for l in abertas if tem_medida and not l.get("medida")
+                      and date.fromisoformat(l["data_cotacao"]) >= hoje - timedelta(days=7)]
         RESUMO["abertas"] = len(abertas)
         dias = dias_para_importar(ultima, hoje)
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
@@ -249,9 +280,20 @@ def main() -> int:
         if dias and not prontos:
             print(f"⏳ O Analytics ainda não tem {dias[0].strftime('%d/%m')}: importo na próxima rodada.")
         novas = []
+        dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
+        todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
+        if sem_medida and not dry:
+            medidas = {c["cotacao"]: c.get("medida") for c in todas_cots if c.get("medida")}
+            completas = 0
+            for l in sem_medida:
+                med = medidas.get(l.get("cotacao"))
+                if med:
+                    cli.patch(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?id=eq.{l['id']}",
+                              headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}), json={"medida": med}).raise_for_status()
+                    completas += 1
+            print(f"📏 Medida do pneu completada em {completas} cotação(ões) da lista")
         if prontos:
-            linhas = cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in prontos]))
-            cots = [c for c in cotacoes(linhas) if c["data"] in prontos]
+            cots = [c for c in todas_cots if c["data"] in prontos]
             existentes = {c["cotacao"] for c in sb_get(
                 cli, chave, "ligacoes?select=cotacao&limit=20000&data_cotacao=in.(" +
                 ",".join(d.isoformat() for d in prontos) + ")")}
@@ -270,7 +312,8 @@ def main() -> int:
                 corpo = [{"cotacao": c["cotacao"], "cliente": c["cliente"] or None, "telefone": c["telefone"] or None,
                           "tel_chave": cv.chave_tel(c["telefone"]) or None, "loja": c["loja"],
                           "operador": c["operador"] or None, "valor": c["valor"],
-                          "data_cotacao": c["data"].isoformat()} for c in novas]
+                          "data_cotacao": c["data"].isoformat(),
+                          **({"medida": c.get("medida")} if tem_medida else {})} for c in novas]
                 for i in range(0, len(corpo), 500):
                     r = cli.post(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?on_conflict=cotacao",
                                  headers=cv._sb_headers(chave, {"Prefer": "resolution=ignore-duplicates,return=minimal"}),

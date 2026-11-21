@@ -16,7 +16,7 @@ import ligacoes_lojas as ll  # noqa: E402
 
 # Cotação, Cliente, Telefone, Periodo, Estabelecimento, NomeOperador, Vendedor, Item, Valor Total
 COT = """Cotação,Cliente,Telefone,Periodo,Estabelecimento,NomeOperador,Vendedor,Item,Valor Total
-5001,Cliente Novo,69 98888-0001,20/11/2026,CACOAL,Maria,Maria,Pneu A,"300,00"
+5001,Cliente Novo,69 98888-0001,20/11/2026,CACOAL,Maria,Maria,255/50R20 LISO ALENZA,"300,00"
 5001,Cliente Novo,69 98888-0001,20/11/2026,CACOAL,Maria,Maria,Válvula,"20,50"
 5002,Já Comprou,69 98888-0002,20/11/2026,CACOAL,Maria,Maria,Pneu B,100
 5003,Agendado Kommo,69 98888-0003,20/11/2026,C.AUTO VLH,João,João,Pneu C,200
@@ -39,6 +39,8 @@ def test_cotacoes_agrupa_e_soma():
     c = {x["cotacao"]: x for x in ll.cotacoes(ler(COT))}
     assert c["5001"]["valor"] == 320.5 and c["5006"]["valor"] == 1250.0
     assert c["5001"]["data"] == date(2026, 11, 20) and c["5001"]["loja"] == "CACOAL"
+    assert c["5001"]["medida"] == "255/50R20" and c["5002"]["medida"] is None
+    assert ll.medida_de("PNEU 7.50-16 CARGA") == "7.50-16" and ll.medida_de("31X10.50R15 AT") == "31X10.50R15"
 
 
 def test_escolher_novas_regras():
@@ -95,10 +97,12 @@ def _rodar_com_rede(dias_no_analytics, dry=False):
                 reg["patch"].append((u, json.loads(req.content))); return httpx.Response(204)
             if req.method == "POST":
                 reg["post_ligacoes"] += json.loads(req.content); return httpx.Response(201)
+            if "select=medida&limit=1" in u:
+                return httpx.Response(200, json=[])
             if "order=data_cotacao.desc" in u:
                 return httpx.Response(200, json=[{"data_cotacao": "2026-11-19"}])
             if "status=in." in u:
-                return httpx.Response(200, json=[{"id": 77, "telefone": "(69) 3333-0010", "tel_chave": "33330010",
+                return httpx.Response(200, json=[{"id": 77, "cotacao": "5001", "telefone": "(69) 3333-0010", "tel_chave": "33330010",
                                                   "data_cotacao": "2026-11-19", "status": "pendente"}])
             if "select=cotacao" in u:
                 return httpx.Response(200, json=[])
@@ -160,8 +164,11 @@ def test_fluxo_completo():
     assert sorted(x["cotacao"] for x in reg["post_ligacoes"]) == ["5001", "5006"]
     n = {x["cotacao"]: x for x in reg["post_ligacoes"]}["5001"]
     assert n["tel_chave"] == "88880001" and n["valor"] == 320.5 and n["data_cotacao"] == "2026-11-20"
-    assert len(reg["patch"]) == 1 and reg["patch"][0][1]["status"] == "venda_televendas"
-    assert reg["patch"][0][1]["comprou_em"] == "2026-11-20"
+    assert n["medida"] == "255/50R20"
+    # completa a medida de quem já estava na lista sem ela
+    assert any(c.get("medida") == "255/50R20" for _, c in reg["patch"])
+    st = [c for _, c in reg["patch"] if "status" in c]
+    assert len(st) == 1 and st[0]["status"] == "venda_televendas" and st[0]["comprou_em"] == "2026-11-20"
     assert reg["hist"][0]["quem"] == ll.ROBO_MOVERE
     assert reg["rodadas"][-1]["ok"] is True and reg["rodadas"][-1]["robo"] == "ligacoes_lojas"
 
