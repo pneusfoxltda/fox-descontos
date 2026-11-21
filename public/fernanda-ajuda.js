@@ -146,7 +146,7 @@
     linhas.forEach(l => l.itens.sort((a, b) => a.x0 - b.x0));
     return linhas.sort((a, b) => a.y - b.y);
   }
-  const ROTULOS = /^(cliente|telefone|vendedor|celular|canal|campanha|cota[cç][aã]o|condi[cç][aã]o|parcelas|total|c[oó]d|descri[cç][aã]o|marca|qtd|pre[cç]o|data)\b/i;
+  const ROTULOS = /^(c[l1i][il1]?ente|telefone|vendedor|celular|canal|campanha|cota[cç][aã]o|condi[cç][aã]o|parcelas|total|c[oó]d|descri[cç][aã]o|marca|qtd|pre[cç]o|data)\b/i;
   function abaixoDe(linhas, reRotulo) {
     for (let li = 0; li < linhas.length; li++) {
       const its = linhas[li].itens;
@@ -169,17 +169,24 @@
   }
 
   // Lê o texto do orçamento do Movere (PDF ou imagem)
+  // Na imagem, a leitura troca número por letra dentro da medida ("255/SOR20" → 255/50R20)
+  function corrigeMedidaOcr(t) {
+    const fix = v => v.replace(/[Oo]/g, "0").replace(/[Ss]/g, "5").replace(/[Il|]/g, "1").replace(/B/g, "8");
+    return t.replace(/\b([0-9OoSsIl|B]{3})\s*\/\s*([0-9OoSsIl|B]{2})(\s*Z?R\s*)([0-9OoSsIl|B]{2})\b/g,
+      (m, a, b, r, c) => (a + b + c).replace(/\D/g, "").length >= 4 ? fix(a) + "/" + fix(b) + r + fix(c) : m);
+  }
   function lerOrcamento(texto, itens) {
-    const t = String(texto || "").replace(/\r/g, "");
+    const t = corrigeMedidaOcr(String(texto || "").replace(/\r/g, ""));
     const d = {};
     if (itens && itens.length) {
       const L = montarLinhas(itens);
       const so = (re, v) => { const m = String(v || "").match(re); return m ? m[1] : null; };
-      const cot = abaixoDe(L, /^cota[cç][aã]o\b/i);
+      const juntaNum = v => v && String(v).replace(/(\d)\s+(?=\d)/g, "$1");   // "95 1 290" → "951290"
+      const cot = juntaNum(abaixoDe(L, /^cota[cç][aã]o\b/i));
       if (so(/(\d{3,})/, cot)) { d.numero = so(/(\d{3,})/, cot); d.tipo = "orcamento"; }
-      const os = abaixoDe(L, /^(ordem de servi[cç]o|o\.?s\.?)\b/i);
+      const os = juntaNum(abaixoDe(L, /^(ordem de servi[cç]o|o\.?s\.?)\b/i));
       if (!d.numero && so(/(\d{3,})/, os)) { d.numero = so(/(\d{3,})/, os); d.tipo = "os"; }
-      const cli = abaixoDe(L, /^cliente\s*:?/i);
+      const cli = abaixoDe(L, /^c[l1i][il1]?ente\s*:?/i);
       if (cli) d.cliente = cli.replace(/^\d+\s*-\s*/, "").trim();
       const tel = abaixoDe(L, /^telefone\s*:?/i) || abaixoDe(L, /^celular\s*:?/i);
       if (tel && tel.replace(/\D/g, "").length >= 8) d.telefone = so(/(\+?[\d() \t.-]{8,20})/, tel).trim();
@@ -209,7 +216,7 @@
     d.medida = medidaDoTexto(t);
     if (d.medida) {
       const i = t.toUpperCase().search(/\d{3}\s*\/\s*\d{2}\s*Z?R|\d{1,2}[.,]\d{2}\s*[-–]\s*\d{2}/);
-      d.segmento = segmentoDoTexto(t.slice(i, i + 60));
+      d.segmento = segmentoDoTexto(t.slice(i, i + 60).replace(/\b(USO|L1SO|LIS0|IISO|LlSO|LIS O)\b/gi, "LISO"));
     }
     m = t.match(/Valor Total\s*:?\s*R?\$?\s*([\d.]+,\d{2})/i);
     if (m) d.valorOrcamento = numBR(m[1]);
@@ -368,9 +375,30 @@
     const texto = montarLinhas(todos).map(l => l.itens.map(i => i.s).join(" ")).join("\n");
     return { texto, itens: todos };
   }
-  async function textoDaImagem(arquivo) {
+  // Print pequeno lê mal: amplia (até 3x, no máximo 3000 px) e deixa preto e branco (limiar de Otsu)
+  async function prepararImagem(arquivo) {
+    const url = URL.createObjectURL(arquivo);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const k = Math.max(1, Math.min(3, 3000 / img.width));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext("2d"); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      const d = g.getImageData(0, 0, c.width, c.height), a = d.data, hist = new Array(256).fill(0);
+      for (let i = 0; i < a.length; i += 4) { const y = (0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]) | 0; a[i] = y; hist[y]++; }
+      let tot = a.length / 4, soma = 0, sB = 0, wB = 0, melhor = 0, lim = 160;
+      for (let i = 0; i < 256; i++) soma += i * hist[i];
+      for (let i = 0; i < 256; i++) { wB += hist[i]; if (!wB) continue; const wF = tot - wB; if (!wF) break; sB += i * hist[i];
+        const mB = sB / wB, mF = (soma - sB) / wF, v = wB * wF * (mB - mF) ** 2; if (v > melhor) { melhor = v; lim = i; } }
+      for (let i = 0; i < a.length; i += 4) { const v = a[i] <= lim ? 0 : 255; a[i] = a[i + 1] = a[i + 2] = v; }
+      g.putImageData(d, 0, 0);
+      return await new Promise(r => c.toBlob(r, "image/png"));
+    } catch (e) { return null; } finally { URL.revokeObjectURL(url); }
+  }
+  async function textoDaImagem(arquivo, semPreparo) {
     await carregarScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
-    const r = await window.Tesseract.recognize(arquivo, "por");
+    const pronta = semPreparo ? null : await prepararImagem(arquivo);
+    const r = await window.Tesseract.recognize(pronta || arquivo, "por");
     const itens = [];
     (r.data.lines || []).forEach(l => {
       // junta palavras próximas numa "caixa" (ex.: "0 - PABLO"), separa colunas distantes
@@ -409,7 +437,11 @@
     let lido;
     try { lido = ehPdf ? await textoDoPdf(arquivo) : await textoDaImagem(arquivo); }
     catch (e) { bot("Não consegui ler esse arquivo (" + e.message + "). Pode me escrever os dados que eu preencho. 🙏"); return; }
-    const d = lerOrcamento(lido.texto, lido.itens);
+    let d = lerOrcamento(lido.texto, lido.itens);
+    const nota = x => ["numero", "telefone", "cba", "medida", "cliente"].filter(c => x[c]).length;
+    if (!ehPdf && nota(d) < 3) {
+      try { const l2 = await textoDaImagem(arquivo, true), d2 = lerOrcamento(l2.texto, l2.itens); if (nota(d2) > nota(d)) d = d2; } catch (e) {}
+    }
     if (!d.numero && !d.medida && !d.telefone) {
       bot(ehPdf ? "Abri o PDF, mas não reconheci um orçamento do Movere nele. 🤔 Pode me escrever os dados?"
                 : "Não consegui ler bem essa imagem. 🤔 Tente um print mais nítido (sem cortar) ou me escreva os dados.");
@@ -777,5 +809,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montar); else montar();
 
   // Para testes
-  window.FE_AJUDA_TESTE = { lerOrcamento, textoDoPdf, montarLinhas, lerMensagem, numBR, dataDoTexto, medidaDoTexto, segmentoDoTexto, pgtoDoTexto, lojaDoTexto };
+  window.FE_AJUDA_TESTE = { lerOrcamento, prepararImagem, textoDoPdf, montarLinhas, lerMensagem, numBR, dataDoTexto, medidaDoTexto, segmentoDoTexto, pgtoDoTexto, lojaDoTexto };
 })();
