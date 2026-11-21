@@ -277,8 +277,8 @@ export default function App(){
   const quotesPorStatus=useMemo(()=>quotes.filter(q=>{
     if(filtroStatus==="todos")return true;
     if(filtroStatus==="liberado")return !!q.liberado;
-    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado; // dentro do prazo e ainda não liberado
-    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado; // vencidos não liberados (inclui os marcados como perdida)
+    if(filtroStatus==="validos")return !isExp(q.validade)&&!q.liberado&&!q.vendaMovere; // no prazo, não liberado e sem venda no Movere
+    if(filtroStatus==="vencido")return isExp(q.validade)&&!q.liberado&&!q.vendaMovere; // vencido, não liberado e sem venda no Movere (inclui perdidas)
     if(filtroStatus==="perdida")return !!q.perdida;
     if(filtroStatus==="venda")return vendeuSemLib(q);
     return true;
@@ -1730,10 +1730,10 @@ export default function App(){
             ["venda","✅ Venda concluída (Movere)","#22C55E"]
           ].map(([v,l,c])=>{
             const cnt = v==="todos"?quotes.length
-              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado).length
+              :v==="validos"?quotes.filter(q=>!isExp(q.validade)&&!q.liberado&&!q.vendaMovere).length
               :v==="liberado"?quotes.filter(q=>!!q.liberado).length
               :v==="venda"?quotes.filter(vendeuSemLib).length
-              :quotes.filter(q=>isExp(q.validade)&&!q.liberado).length;
+              :quotes.filter(q=>isExp(q.validade)&&!q.liberado&&!q.vendaMovere).length;
             return(<button key={v} onClick={()=>setFiltroStatus(v)} style={{background:filtroStatus===v?c+"22":"transparent",border:"1px solid "+(filtroStatus===v?c:"#333"),color:filtroStatus===v?c:"#888",borderRadius:6,padding:"6px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
               {l} ({cnt})
             </button>);
