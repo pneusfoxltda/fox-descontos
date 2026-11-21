@@ -1,0 +1,44 @@
+name: Ligações das lojas (FOXNET)
+
+# Monta a lista de ligações de cada loja no FOXNET e reconfere quem comprou
+# ou agendou. As planilhas do Google (Apps Script) continuam funcionando igual.
+on:
+  schedule:
+    # Seg–Sáb, horário de Porto Velho (UTC−4):
+    #   7h20, 8h20, 9h20, 10h20, 11h20 → importa as cotações de ontem
+    #     (tenta de novo se o Analytics ainda não atualizou)
+    #   14h20 e 17h20 → reconfere quem agendou no Kommo durante o dia
+    - cron: '20 11,12,13,14,15,18,21 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: 'Só mostrar o que faria, sem gravar nada'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ligacoes-lojas
+  cancel-in-progress: false
+
+jobs:
+  ligacoes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install httpx
+
+      - name: Montar a lista de ligações
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          KOMMO_TOKEN: ${{ secrets.KOMMO_TOKEN }}
+          DRY_RUN: ${{ inputs.teste && '1' || '' }}
+        run: python ligacoes_lojas.py

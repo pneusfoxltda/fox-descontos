@@ -49,12 +49,11 @@ const feNorm = s=>String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLo
 const feEsc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const feLojaNr = nr=>FE_LOJAS.find(l=>l.nr===nr);
 
-const FE_REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/descontos", televendas:"/televendas.html"};
+const FE_REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/descontos", televendas:"/televendas.html", ligacoes:"/ligacoes.html"};
 const FE_NO_FOXNET = !!document.getElementById("tiles") || location.pathname.replace(/index\.html$/,"").replace(/\/+$/,"/") === "/foxnet/";
 function feGo(h){
   const id=h.replace("#/","");
   if(FE_REAL[id]) { location.href=FE_REAL[id]; return; }
-  if(id==="ligacoes") { feOpen(); feBot("As Ligações das lojas ainda estão em construção. Chegam na próxima fase! 🚧"); return; }
   if(FE_NO_FOXNET) location.hash=h; else location.href="/foxnet/"+h;
 }
 function feMenu(i){ if(FE_NO_FOXNET && typeof filtrar==="function"){ filtrar("ia"); return; } location.href="/foxnet/"; }
@@ -80,7 +79,7 @@ const FE_KB = [
   {k:["claude","anthropic"], t:"Claude", d:"IA da Anthropic", url:FE_EXT.claude},
   {k:["ia","inteligencia artificial","escrever mensagem","texto","resumir"], t:"IA na Fox", d:"ChatGPT, Gemini e Claude", menu:3},
   {k:["cnpj","endereco","telefone da loja","telefone loja","dados da loja","informacoes rapidas","info rapida","lojas"], t:"Informações rápidas", d:"CNPJ, endereço e telefone de cada loja", go:"#/info"},
-  {k:["ligacao","ligacoes","ligar","cotacoes em aberto","retorno","planilha de ligacao"], t:"Ligações das lojas", d:"Em construção — chega na próxima fase", go:"#/ligacoes"},
+  {k:["ligacao","ligacoes","ligar","cotacoes em aberto","retorno","planilha de ligacao"], t:"Ligações das lojas", d:"Clientes que cotaram e ainda não compraram, por loja e por dia", go:"#/ligacoes"},
 ];
 const FE_CHIPS = ["Consultar desconto","Fazer cotação","CNPJ da loja","Qual loja atende Jaru?","Corolla paga 2 alinhamentos?","Ver o BI"];
 const feWords = q=>feNorm(q).replace(/[^a-z0-9/ ]/g," ").split(/\s+/).filter(Boolean);

@@ -118,6 +118,38 @@ vendas para o televendas; `apps-script/` tem o do painel).
   App e página tratam o erro 23505 com aviso amigável.
 - ⚠️ No App, "Excluir" apaga por número + tipo (apagaria os dois repetidos).
 
+## Ligações das lojas — branch `ligacoes-lojas`
+
+- **Quem liga são os VENDEDORES DAS LOJAS** (não o televendas). Página `/ligacoes.html`
+  (bloco "Ligações das lojas" do FOXNET). Cada vendedor vê só a loja do seu perfil
+  (`perfis.loja`). **Gerentes** (`perfis.dash_ligacoes`) e admin veem todas as lojas e a aba
+  **📊 Dashboard** (lojas, vendedores, análises); gerente só olha, não marca fora da loja dele.
+- **Primeiro acesso**: login = e-mail, senha inicial = o próprio e-mail (minúsculas);
+  `perfis.trocar_senha` obriga a criar senha nova (≥ 8, diferente do e-mail) → `senha_trocada()`.
+- Lista por **dia da cotação** (abre no mais recente com pendentes), abas Pendentes / Já liguei /
+  Agendou / Venda ganha (loja) / Venda televendas / Todas, busca e filtro por vendedor,
+  botões Ligar e WhatsApp, histórico. Status pela função `marcar_ligacao` (registra quem e
+  quando); **"Venda ganha" exige o nº da O.S.**
+- **"Venda ganha televendas"** (só o robô): o cliente comprou e a loja NÃO marcou "Venda ganha"
+  (mesmo que tenha ligado) — decisão do TI.
+- **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor
+  (nome, e-mail, loja; um por um ou em lote "Nome; e-mail; LOJA"), dar Dashboard a gerentes,
+  mudar loja/Dashboard/ativo. Cria o login com senha = e-mail e `trocar_senha = true`.
+  Esquecer a senha: o admin manda o e-mail de recuperação pelo Supabase (Authentication → Users).
+- Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
+  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (`LOJAS_LIGACOES` no App, `LOJAS` no admin).
+- Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`, seg–sáb 7h20–11h20 de hora em hora,
+  14h20 e 17h20): **começa nas cotações de 19/11/2026**; importa os dias ainda não importados
+  (relatório 782403 com os filtros do dashboard 782276, igual ao Apps Script), tira quem
+  comprou (vendas 742591, sem filtro), quem está agendado no Kommo (etapas 6 e 7) e telefone
+  repetido; reconfere os últimos 30 dias (comprou → "venda_televendas"; agendou → "agendou").
+  Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
+- **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
+- `12_ligacoes.sql`: tabelas `ligacoes` e `ligacoes_historico`, colunas `perfis.trocar_senha`
+  e `perfis.dash_ligacoes`, funções `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
+  `senha_trocada()`.
+- Testes: `python tests/test_ligacoes_lojas.py`.
+
 ## Próximos passos (em ordem)
 
 1. ✅ **Trancar o banco (RLS)** — CONCLUÍDO em 21/11/2026. Passos 06, 07 e 08 rodados no
@@ -134,8 +166,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
    Resultado por loja → vendedores da loja, Resultado televendas. Fazer **junto com o TI**.
    Fonte provável: o mesmo caminho do `sync_televendas.py` (Movere, de hora em hora).
    Só depois do banco trancado (dados sensíveis).
-5. **Ligações das lojas** no FOXNET (hoje "em breve"): Apps Script também grava no
-   Supabase; lojas marcam o status no portal.
+5. **Ligações das lojas** no FOXNET — feito (ver seção acima). Depois de um tempo em paralelo,
+   o TI decide se desliga as planilhas.
 6. Opcional: e-mail da empresa (SMTP) no Supabase para "esqueci minha senha".
 
 ## Pendências de informação do TI

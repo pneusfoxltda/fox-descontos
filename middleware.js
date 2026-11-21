@@ -23,6 +23,7 @@
  *       domínio dos sistemas: SISTEMAS_URL (fox-descontos.vercel.app).
  *   fox-descontos.vercel.app → continua com todos os sistemas, como antes.
  *   /descontos → App de descontos (no domínio dos sistemas).
+ *   /admin     → Administração do FOXNET (acessos das Ligações das lojas).
  */
 import { ipAddress, next, rewrite } from '@vercel/functions';
 
@@ -107,5 +108,7 @@ function encaminhar(url, request) {
   }
   // App de descontos com endereço próprio
   if (caminho === '/descontos') return rewrite(new URL('/index.html', request.url));
+  // Administração do FOXNET (acessos das Ligações das lojas)
+  if (caminho === '/admin') return rewrite(new URL('/admin.html', request.url));
   return next();
 }

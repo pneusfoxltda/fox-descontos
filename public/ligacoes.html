@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Fox Pneus — Ligações das lojas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:100vh;}
+button,select,input{font-family:inherit;}
+a{color:inherit;}
+
+/* ── LOGIN / SENHA ── */
+.tela-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:34px 30px;width:100%;max-width:400px;}
+.login-logo{display:flex;justify-content:center;margin-bottom:16px;}
+.login-logo img{width:64px;height:64px;object-fit:contain;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:#999;text-align:center;margin-bottom:22px;line-height:1.5;}
+.msg-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+.lf{margin-bottom:12px;}
+.lf label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.lf input{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-size:15px;padding:12px 13px;outline:none;width:100%;}
+.lf input:focus{border-color:#CC1F1F;}
+.btn-red{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;padding:13px;cursor:pointer;width:100%;}
+.btn-red:hover{background:#E02020;}
+.btn-red:disabled{opacity:.6;cursor:default;}
+
+/* ── TOPO ── */
+#main-screen{display:none;}
+.top{background:#111;border-bottom:1px solid #222;padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;flex-wrap:wrap;}
+.top img{width:34px;height:34px;object-fit:contain;}
+.top .tt{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1.5px;color:#fff;line-height:1;}
+.top .ts{font-size:11px;color:#888;}
+.top .sp{flex:1;}
+.top select{background:#1C1C1C;color:#fff;border:1px solid #3A3A3A;border-radius:7px;padding:8px 10px;font-size:13px;font-weight:700;}
+.top .user{font-size:12px;color:#aaa;text-align:right;}
+.top .sair{background:transparent;border:1px solid #3A3A3A;color:#ccc;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;}
+.modos{display:flex;gap:6px;}
+.modo{background:transparent;border:1px solid #333;color:#aaa;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.modo.on{background:#2A0E0E;border-color:#CC1F1F;color:#fff;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:16px;}
+
+/* ── FILTROS ── */
+.lbl{font-size:10px;font-weight:700;color:#777;letter-spacing:1.2px;text-transform:uppercase;margin:4px 0 8px;}
+.datas{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;}
+.chip{flex-shrink:0;background:#161616;border:1px solid #2E2E2E;color:#bbb;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.chip b{color:#fff;}
+.chip .n{display:inline-block;min-width:20px;margin-left:6px;background:#2A2A2A;border-radius:10px;padding:1px 7px;font-size:11px;color:#ddd;}
+.chip.on{background:#2A0E0E;border-color:#CC1F1F;color:#fff;}
+.chip.on .n{background:#CC1F1F;color:#fff;}
+.abas{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 12px;}
+.aba{background:transparent;border:1px solid #333;color:#999;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.aba.on{color:#fff;}
+.busca{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.busca input,.busca select{background:#111;border:1px solid #333;border-radius:8px;color:#F0F0F0;font-size:14px;padding:10px 12px;outline:none;}
+.busca input{flex:1;min-width:200px;}
+.busca input:focus{border-color:#CC1F1F;}
+.resumo{font-size:12px;color:#888;margin-bottom:10px;}
+
+/* ── CARTÕES ── */
+.card{background:#161616;border:1px solid #262626;border-left:4px solid #555;border-radius:10px;padding:14px;margin-bottom:10px;}
+.card.st-pendente{border-left-color:#F39C12;}
+.card.st-nao_atende,.card.st-retornar{border-left-color:#3498DB;}
+.card.st-sem_interesse{border-left-color:#777;}
+.card.st-agendou{border-left-color:#8B5CF6;}
+.card.st-venda_ganha{border-left-color:#22C55E;}
+.card.st-venda_televendas,.card.st-comprou{border-left-color:#14B8A6;}
+.c1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+.cli{font-size:16px;font-weight:700;color:#fff;}
+.meta{font-size:12px;color:#888;margin-top:3px;}
+.val{font-size:16px;font-weight:700;color:#4ADE80;white-space:nowrap;}
+.tel{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;}
+.tel .num{font-size:15px;font-weight:600;color:#7DB8F0;margin-right:4px;}
+.bt{border:none;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+.bt-lig{background:#1E3A5F;color:#BFDBFE;}
+.bt-wa{background:#0F3D24;color:#86EFAC;}
+.acao{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.acao select{background:#0D0D0D;border:1px solid #3A3A3A;color:#fff;border-radius:7px;padding:9px 10px;font-size:13px;font-weight:600;}
+.acao input{flex:1;min-width:150px;background:#0D0D0D;border:1px solid #3A3A3A;color:#fff;border-radius:7px;padding:9px 10px;font-size:13px;outline:none;}
+.acao input.os{flex:0 1 190px;border-color:#22C55E;}
+.acao .salvar{background:#CC1F1F;color:#fff;}
+.st{font-size:12px;margin-top:8px;color:#aaa;}
+.st b{color:#fff;}
+.selo{display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;}
+.selo.ganha{background:#0E2A1F;color:#4ADE80;border:1px solid #22C55E;}
+.selo.tv{background:#06292A;color:#5EEAD4;border:1px solid #14B8A6;}
+.selo.agendou{background:#1F1535;color:#C4B5FD;border:1px solid #8B5CF6;}
+.hist-bt{background:none;border:none;color:#888;font-size:12px;text-decoration:underline;cursor:pointer;margin-top:8px;}
+.hist{margin-top:8px;border-top:1px dashed #2E2E2E;padding-top:8px;font-size:12px;color:#aaa;}
+.hist div{margin-bottom:4px;}
+.vazio{text-align:center;color:#777;padding:40px 10px;font-size:14px;}
+.mais{display:block;margin:10px auto;background:#1C1C1C;border:1px solid #333;color:#ddd;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;}
+
+/* ── DASHBOARD ── */
+.dash-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+.dash-filtros .lbl{margin:0 4px 0 0;}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:18px;}
+.kpi{background:#161616;border:1px solid #262626;border-radius:10px;padding:14px;}
+.kpi .k-l{font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;}
+.kpi .k-v{font-size:24px;font-weight:800;color:#fff;margin-top:6px;font-variant-numeric:tabular-nums;}
+.kpi .k-s{font-size:11px;color:#888;margin-top:3px;}
+.sec{background:#141414;border:1px solid #262626;border-radius:12px;padding:16px;margin-bottom:16px;}
+.sec h3{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:1.5px;color:#fff;margin-bottom:4px;}
+.sec .sub{font-size:12px;color:#888;margin-bottom:12px;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;padding:8px 8px;border-bottom:1px solid #2A2A2A;white-space:nowrap;}
+.tbl td{padding:9px 8px;border-bottom:1px solid #1F1F1F;font-variant-numeric:tabular-nums;}
+.tbl td.r,.tbl th.r{text-align:right;}
+.tbl tr.alerta td:first-child{border-left:3px solid #CC1F1F;}
+.barra{height:8px;background:#262626;border-radius:4px;overflow:hidden;min-width:70px;}
+.barra i{display:block;height:100%;border-radius:4px;}
+.pc{display:flex;align-items:center;gap:8px;}
+.pc span{min-width:38px;text-align:right;font-weight:700;}
+.scroll{overflow-x:auto;}
+.insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.ins{background:#161616;border:1px solid #262626;border-radius:10px;padding:14px;}
+.ins h4{font-size:14px;color:#fff;margin-bottom:8px;}
+.ins .linha{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#bbb;padding:5px 0;border-bottom:1px dashed #262626;}
+.ins .linha:last-child{border-bottom:none;}
+.ins .linha b{color:#fff;font-weight:600;}
+.ins .nada{font-size:12px;color:#777;}
+.medalha{display:inline-block;width:20px;}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1A2E1A;border:1px solid #27AE60;color:#E8F5E9;border-radius:9px;padding:12px 18px;font-size:13px;font-weight:600;display:none;z-index:200;max-width:92vw;}
+.toast.err{background:#2E1A1A;border-color:#CC1F1F;color:#FFCDD2;}
+@media(max-width:600px){.top .user{display:none;}.wrap{padding:12px;}.kpi .k-v{font-size:20px;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="tela-centro">
+  <div class="login-card">
+    <div class="login-logo"><img src="/logo-fox.png" alt="Fox Pneus"></div>
+    <div class="login-t">Ligações das lojas</div>
+    <div class="login-s">Entre com o seu e-mail.<br>No primeiro acesso, a senha também é o seu e-mail.</div>
+    <div class="msg-err" id="login-err"></div>
+    <div class="lf"><label>E-mail</label><input type="email" id="l-email" autocomplete="username" placeholder="seu@email.com"></div>
+    <div class="lf"><label>Senha</label><input type="password" id="l-pass" autocomplete="current-password" placeholder="Senha"></div>
+    <button class="btn-red" id="btn-login">Entrar</button>
+  </div>
+</div>
+
+<!-- PRIMEIRO ACESSO: CRIAR SENHA -->
+<div id="senha-screen" class="tela-centro" style="display:none">
+  <div class="login-card">
+    <div class="login-logo"><img src="/logo-fox.png" alt="Fox Pneus"></div>
+    <div class="login-t">Crie a sua senha</div>
+    <div class="login-s">É o seu primeiro acesso. Crie uma senha que <b>só você</b> sabe.<br>Mínimo de 8 caracteres e diferente do seu e-mail.</div>
+    <div class="msg-err" id="senha-err"></div>
+    <div class="lf"><label>Nova senha</label><input type="password" id="s-nova" autocomplete="new-password"></div>
+    <div class="lf"><label>Repita a nova senha</label><input type="password" id="s-conf" autocomplete="new-password"></div>
+    <button class="btn-red" id="btn-senha">Salvar senha e entrar</button>
+  </div>
+</div>
+
+<div id="main-screen">
+  <div class="top">
+    <img src="/logo-fox.png" alt="">
+    <div><div class="tt">Ligações das lojas</div><div class="ts" id="ts-loja"></div></div>
+    <div class="modos" id="modos" style="display:none">
+      <button class="modo on" data-m="lista">📋 Lista</button>
+      <button class="modo" data-m="dash">📊 Dashboard</button>
+    </div>
+    <div class="sp"></div>
+    <select id="sel-loja" style="display:none" title="Loja"></select>
+    <div class="user" id="user-nome"></div>
+    <button class="sair" id="btn-sair">Sair</button>
+  </div>
+
+  <!-- LISTA -->
+  <div class="wrap" id="v-lista">
+    <div class="lbl">Dia da cotação</div>
+    <div class="datas" id="datas"></div>
+    <div class="abas" id="abas"></div>
+    <div class="busca">
+      <input id="busca" placeholder="Buscar por nome, telefone ou nº da cotação…" autocomplete="off">
+      <select id="sel-operador"><option value="">Todos os vendedores</option></select>
+    </div>
+    <div class="resumo" id="resumo"></div>
+    <div id="lista"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="wrap" id="v-dash" style="display:none">
+    <div class="dash-filtros">
+      <span class="lbl">Período (dia da cotação)</span>
+      <div id="periodos" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="sec">
+      <h3>Lojas</h3>
+      <div class="sub">Quem está ligando: % dos clientes que a loja já trabalhou (registrou algo). Em vermelho, lojas abaixo de 30%.</div>
+      <div class="scroll"><table class="tbl" id="t-lojas"></table></div>
+    </div>
+    <div class="sec">
+      <h3>Vendedores</h3>
+      <div class="sub">Quem mais registrou, mais ligou e mais converteu em venda (registros feitos na lista).</div>
+      <div class="scroll"><table class="tbl" id="t-vend"></table></div>
+    </div>
+    <div class="sec">
+      <h3>Análises</h3>
+      <div class="sub">O que merece atenção agora.</div>
+      <div class="insights" id="insights"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os dados são as regras do banco (cada loja vê a sua).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+
+const STATUS = {
+  pendente:         {nome: "Pendente ligação"},
+  nao_atende:       {nome: "Liguei — não atende"},
+  retornar:         {nome: "Liguei — retornar depois"},
+  sem_interesse:    {nome: "Liguei — sem interesse"},
+  agendou:          {nome: "Agendou"},
+  venda_ganha:      {nome: "Venda ganha (loja)"},
+  venda_televendas: {nome: "Venda ganha televendas"},
+  comprou:          {nome: "Venda ganha televendas"},
+};
+const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha"];
+const FECHADOS = ["venda_ganha", "venda_televendas", "comprou"];
+const ehTv = s => s === "venda_televendas" || s === "comprou";
+const ABAS = [
+  ["pendentes", "Pendentes",          "#F39C12", l => l.status === "pendente"],
+  ["liguei",    "Já liguei",          "#3498DB", l => ["nao_atende", "retornar", "sem_interesse"].includes(l.status)],
+  ["agendou",   "Agendou",            "#8B5CF6", l => l.status === "agendou"],
+  ["ganha",     "Venda ganha (loja)", "#22C55E", l => l.status === "venda_ganha"],
+  ["tv",        "Venda televendas",   "#14B8A6", l => ehTv(l.status)],
+  ["todas",     "Todas",              "#888",    l => true],
+];
+const DIAS = 31;
+const POR_PAGINA = 50;
+const ehRobo = quem => String(quem || "").startsWith("Robô");
+
+let perfil = null, ehAdmin = false, veTodas = false;
+let todas = [], historicoTodo = null;
+let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: ""};
+let limite = POR_PAGINA, modo = "lista", periodo = "7";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const dig = s => String(s || "").replace(/\D/g, "");
+const fmtData = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
+const fmtDataLonga = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m + "/" + a; };
+const fmtQuando = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}).replace(",", " às");
+const fmtR = v => (v == null || v === "") ? "" : Number(v).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
+const fmtR0 = v => Number(v || 0).toLocaleString("pt-BR", {style: "currency", currency: "BRL", maximumFractionDigits: 0});
+const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+const hojeISO = () => new Date().toLocaleDateString("sv-SE", {timeZone: "America/Porto_Velho"});
+function diaSemana(iso) { const [a, m, d] = iso.split("-").map(Number); return ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][new Date(a, m - 1, d).getDay()]; }
+const podeEditar = l => ehAdmin || (perfil && perfil.loja && l.loja === perfil.loja);
+
+function toast(msg, ok = true) {
+  const t = $("toast"); t.textContent = msg; t.className = "toast" + (ok ? "" : " err"); t.style.display = "block";
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.display = "none", ok ? 2500 : 6000);
+}
+function mostrar(tela) { ["login-screen", "senha-screen", "main-screen"].forEach(id => $(id).style.display = id === tela ? (id === "main-screen" ? "block" : "flex") : "none"); }
+
+// ── LOGIN ──
+async function entrar(sessao) {
+  if (!sessao) return null;
+  const { data: p } = await sb.from("perfis").select("nome,email,funcoes,ativo,loja,trocar_senha,dash_ligacoes").eq("id", sessao.user.id).maybeSingle();
+  if (!p || !p.ativo) { await sb.auth.signOut(); return {erro: "Seu acesso está desativado ou não existe. Fale com o TI."}; }
+  ehAdmin = (p.funcoes || []).includes("admin");
+  veTodas = ehAdmin || !!p.dash_ligacoes;
+  if (!p.loja && !veTodas) { await sb.auth.signOut(); return {erro: "Seu usuário ainda não tem loja definida. Peça ao TI para colocar a sua loja."}; }
+  perfil = p;
+  if (p.trocar_senha) { mostrar("senha-screen"); setTimeout(() => $("s-nova").focus(), 50); return {ok: true}; }
+  await abrirSistema();
+  return {ok: true};
+}
+
+async function abrirSistema() {
+  mostrar("main-screen");
+  $("user-nome").textContent = perfil.nome || perfil.email;
+  filtro.loja = veTodas ? "" : perfil.loja;
+  $("ts-loja").textContent = ehAdmin ? "Admin — todas as lojas" : veTodas ? "Gerente — todas as lojas" + (perfil.loja ? " · sua loja: " + perfil.loja : "") : "Loja " + perfil.loja;
+  $("modos").style.display = veTodas ? "flex" : "none";
+  await carregar();
+}
+
+async function doLogin() {
+  const email = $("l-email").value.trim().toLowerCase(), pass = $("l-pass").value;
+  const err = $("login-err"), btn = $("btn-login");
+  err.style.display = "none";
+  if (!email || !pass) { err.textContent = "Informe e-mail e senha."; err.style.display = "block"; return; }
+  btn.disabled = true; btn.textContent = "Entrando...";
+  try {
+    let { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    // Primeira senha = e-mail em minúsculas: aceita também se a pessoa digitou com maiúsculas
+    if (error && pass !== pass.toLowerCase() && pass.trim().toLowerCase() === email)
+      ({ data, error } = await sb.auth.signInWithPassword({ email, password: email }));
+    if (error) { err.textContent = "E-mail ou senha incorretos."; err.style.display = "block"; }
+    else { const r = await entrar(data.session); if (r && r.erro) { err.textContent = r.erro; err.style.display = "block"; } }
+  } catch (e) { err.textContent = "Erro ao conectar. Tente novamente."; err.style.display = "block"; }
+  btn.disabled = false; btn.textContent = "Entrar";
+}
+
+async function salvarSenha() {
+  const a = $("s-nova").value, b = $("s-conf").value, err = $("senha-err"), btn = $("btn-senha");
+  err.style.display = "none";
+  const falha = m => { err.textContent = m; err.style.display = "block"; };
+  if (a.length < 8) return falha("A senha precisa ter pelo menos 8 caracteres.");
+  if (a !== b) return falha("As duas senhas não são iguais.");
+  if (a.trim().toLowerCase() === String(perfil.email || "").toLowerCase()) return falha("A senha não pode ser o seu e-mail.");
+  btn.disabled = true; btn.textContent = "Salvando...";
+  const { error } = await sb.auth.updateUser({ password: a });
+  if (error) { btn.disabled = false; btn.textContent = "Salvar senha e entrar"; return falha("Não consegui salvar: " + error.message); }
+  await sb.rpc("senha_trocada");
+  perfil.trocar_senha = false;
+  btn.disabled = false; btn.textContent = "Salvar senha e entrar";
+  toast("Senha criada! A partir de agora use a sua senha nova.");
+  await abrirSistema();
+}
+
+// ── DADOS ──
+async function buscarTudo(tabela, colunas, montar) {
+  const linhas = [];
+  for (let de = 0; ; de += 1000) {               // o banco entrega no máximo 1000 por vez
+    const { data, error } = await montar(sb.from(tabela).select(colunas)).range(de, de + 999);
+    if (error) throw error;
+    linhas.push(...data);
+    if (data.length < 1000) break;
+  }
+  return linhas;
+}
+
+async function carregar() {
+  $("lista").innerHTML = '<div class="vazio">Carregando…</div>';
+  const desde = new Date(Date.now() - DIAS * 864e5).toISOString().slice(0, 10);
+  try {
+    todas = await buscarTudo("ligacoes",
+      "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em",
+      q => q.gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao"));
+  } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
+  historicoTodo = null;
+  if (veTodas) {
+    const lojas = [...new Set(todas.map(l => l.loja))].sort();
+    $("sel-loja").innerHTML = '<option value="">Todas as lojas</option>' + lojas.map(l => `<option ${l === filtro.loja ? "selected" : ""}>${esc(l)}</option>`).join("");
+    $("sel-loja").style.display = "";
+  }
+  escolherDiaInicial();
+  modo === "dash" ? renderDash() : render();
+}
+
+function escolherDiaInicial() {
+  const daLoja = todas.filter(l => !filtro.loja || l.loja === filtro.loja);
+  const comPend = daLoja.find(l => l.status === "pendente");
+  filtro.data = (comPend || daLoja[0] || {}).data_cotacao || "";
+}
+
+function daLojaEData(ignorarData = false) {
+  return todas.filter(l => (!filtro.loja || l.loja === filtro.loja) && (ignorarData || !filtro.data || l.data_cotacao === filtro.data));
+}
+
+function visiveis() {
+  const aba = ABAS.find(a => a[0] === filtro.aba);
+  const b = norm(filtro.busca.trim()), bd = dig(filtro.busca);
+  return daLojaEData(!!b).filter(l => aba[3](l))
+    .filter(l => !filtro.operador || l.operador === filtro.operador)
+    .filter(l => !b || norm(l.cliente).includes(b) || norm(l.cotacao).includes(b) || (bd.length >= 3 && dig(l.telefone).includes(bd)));
+}
+
+// ── LISTA ──
+function render() {
+  const daLoja = daLojaEData(true);
+  const dias = [...new Set(daLoja.map(l => l.data_cotacao))].sort().reverse();
+  const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
+  $("datas").innerHTML = dias.length ? dias.map(d =>
+    `<button class="chip ${d === filtro.data ? "on" : ""}" data-d="${d}"><b>${fmtData(d)}</b> ${diaSemana(d)}<span class="n" title="pendentes">${pend(d)}</span></button>`
+  ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Todos os dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
+    : '<span class="resumo">Nenhuma cotação na lista ainda.</span>';
+  document.querySelectorAll(".chip[data-d]").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
+
+  const base = daLojaEData();
+  $("abas").innerHTML = ABAS.map(([id, nome, cor, f]) => {
+    const on = filtro.aba === id;
+    return `<button class="aba ${on ? "on" : ""}" data-a="${id}" style="${on ? `background:${cor}22;border-color:${cor};` : ""}">${nome} (${base.filter(f).length})</button>`;
+  }).join("");
+  document.querySelectorAll(".aba").forEach(a => a.onclick = () => { filtro.aba = a.dataset.a; limite = POR_PAGINA; render(); });
+
+  const ops = [...new Set(daLoja.map(l => l.operador).filter(Boolean))].sort();
+  const atual = filtro.operador;
+  $("sel-operador").innerHTML = '<option value="">Todos os vendedores</option>' + ops.map(o => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("");
+
+  const lista = visiveis();
+  const quando = filtro.busca.trim() || !filtro.data ? "em todos os dias" : "em " + fmtDataLonga(filtro.data);
+  $("resumo").textContent = `${lista.length} cliente(s) ${quando}` + (filtro.loja ? " · " + filtro.loja : "");
+  $("lista").innerHTML = lista.length
+    ? lista.slice(0, limite).map(cartao).join("") + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
+    : '<div class="vazio">Nenhum cliente aqui. 🎉</div>';
+  const mais = $("btn-mais"); if (mais) mais.onclick = () => { limite += POR_PAGINA; render(); };
+}
+
+function cartao(l) {
+  const d = dig(l.telefone);
+  const wa = d.length >= 10 ? "https://wa.me/55" + (d.length > 11 && d.startsWith("55") ? d.slice(2) : d) : "";
+  const st = STATUS[l.status] || STATUS.pendente;
+  let linhaStatus;
+  if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "—")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
+  else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">📞 Venda ganha televendas${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
+  else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
+  else linhaStatus = l.status_em ? `<b>${esc(st.nome)}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(st.nome)}</b>`;
+  const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
+  return `<div class="card st-${esc(l.status)}" id="c-${l.id}">
+    <div class="c1">
+      <div><div class="cli">${esc(l.cliente || "Cliente sem nome")}</div>
+        <div class="meta">Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · " + esc(l.operador) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div></div>
+      <div class="val">${fmtR(l.valor)}</div>
+    </div>
+    ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
+      <a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>
+      ${wa ? `<a class="bt bt-wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>` : ""}
+    <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
+    ${editavel ? `<div class="acao">
+      <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "venda_ganha" ? "✅ Venda ganha (informe a O.S.)" : STATUS[s].nome}</option>`).join("")}</select>
+      <input id="os-${l.id}" class="os" placeholder="Nº da O.S. (obrigatório)" maxlength="30" style="display:none">
+      <input id="o-${l.id}" placeholder="Observação (opcional)" maxlength="300">
+      <button class="bt salvar" onclick="salvar(${l.id})">Salvar</button>
+    </div>` : ""}
+    <button class="hist-bt" onclick="historico(${l.id})">Ver histórico</button>
+    <div class="hist" id="h-${l.id}" style="display:none"></div>
+  </div>`;
+}
+
+function trocouStatus(id) {
+  const os = $("os-" + id), ganha = $("s-" + id).value === "venda_ganha";
+  os.style.display = ganha ? "" : "none";
+  if (ganha) os.focus();
+}
+
+async function salvar(id) {
+  const status = $("s-" + id).value, obs = $("o-" + id).value.trim(), os = $("os-" + id).value.trim();
+  if (status === "venda_ganha" && !os) { toast("Informe o nº da O.S. da venda.", false); $("os-" + id).focus(); return; }
+  const { error } = await sb.rpc("marcar_ligacao", { p_id: id, p_status: status, p_obs: obs || null, p_os: status === "venda_ganha" ? os : null });
+  if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); return; }
+  const l = todas.find(x => x.id === id);
+  if (l) {
+    l.status = status; l.status_em = new Date().toISOString(); l.status_por = perfil.nome || perfil.email;
+    if (obs) l.obs = obs;
+    if (status === "venda_ganha") l.os_venda = os;
+  }
+  historicoTodo = null;
+  toast(status === "venda_ganha" ? "Venda ganha registrada com a O.S. " + os + " 🎉" : "Salvo: " + STATUS[status].nome);
+  render();
+}
+
+async function historico(id) {
+  const box = $("h-" + id);
+  if (box.style.display === "block") { box.style.display = "none"; return; }
+  box.style.display = "block"; box.textContent = "Carregando…";
+  const { data, error } = await sb.from("ligacoes_historico").select("quando,quem,status,obs").eq("ligacao_id", id).order("quando");
+  if (error) { box.textContent = "Não consegui carregar o histórico."; return; }
+  const l = todas.find(x => x.id === id);
+  box.innerHTML = `<div>📥 Entrou na lista (cotação de ${fmtDataLonga(l.data_cotacao)})</div>` +
+    (data.length ? data.map(h => `<div>${fmtQuando(h.quando)} · <b>${esc((STATUS[h.status] || {}).nome || h.status)}</b> · ${esc(h.quem)}${h.obs ? " · " + esc(h.obs) : ""}</div>`).join("")
+                 : "<div>Ninguém registrou nada ainda.</div>");
+}
+
+// ── DASHBOARD ──
+const PERIODOS = [["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+function inicioPeriodo() {
+  const h = hojeISO();
+  if (periodo === "mes") return h.slice(0, 8) + "01";
+  return new Date(new Date(h + "T12:00:00").getTime() - (Number(periodo) - 1) * 864e5).toISOString().slice(0, 10);
+}
+
+async function garantirHistorico() {
+  if (historicoTodo) return;
+  const desde = new Date(Date.now() - (DIAS + 2) * 864e5).toISOString();
+  historicoTodo = await buscarTudo("ligacoes_historico", "ligacao_id,quando,quem,status,obs", q => q.gte("quando", desde).order("quando"));
+}
+
+async function renderDash() {
+  $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Carregando o dashboard…</div>';
+  try { await garantirHistorico(); } catch (e) { $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Não consegui carregar o histórico.</div>'; return; }
+  $("periodos").innerHTML = PERIODOS.map(([v, n]) => `<button class="chip ${v === periodo ? "on" : ""}" data-p="${v}">${n}</button>`).join("");
+  document.querySelectorAll(".chip[data-p]").forEach(c => c.onclick = () => { periodo = c.dataset.p; renderDash(); });
+
+  const ini = inicioPeriodo();
+  const L = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
+  const porId = new Map(L.map(l => [l.id, l]));
+  const H = historicoTodo.filter(h => porId.has(h.ligacao_id) && !ehRobo(h.quem));   // só registros de pessoas
+  const tocados = new Set(H.map(h => h.ligacao_id));
+  const primeiro = new Map(); H.forEach(h => { if (!primeiro.has(h.ligacao_id)) primeiro.set(h.ligacao_id, h.quando); });
+
+  const total = L.length, ganhas = L.filter(l => l.status === "venda_ganha"), tv = L.filter(l => ehTv(l.status));
+  const pendSemContato = L.filter(l => l.status === "pendente" && !tocados.has(l.id));
+  const abertosValor = L.filter(l => !FECHADOS.includes(l.status)).reduce((s, l) => s + Number(l.valor || 0), 0);
+  const soma = arr => arr.reduce((s, l) => s + Number(l.valor || 0), 0);
+  const kpi = (l, v, s) => `<div class="kpi"><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-s">${s}</div></div>`;
+  $("kpis").innerHTML = [
+    kpi("Clientes na lista", total, `cotações desde ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
+    kpi("Trabalhados pela loja", pct(tocados.size, total) + "%", `${tocados.size} com algum registro`),
+    kpi("Sem nenhum contato", pendSemContato.length, `ainda pendentes · ${fmtR0(soma(pendSemContato))}`),
+    kpi("Venda ganha (loja)", ganhas.length, `${fmtR0(soma(ganhas))} · conversão ${pct(ganhas.length, total)}%`),
+    kpi("Venda ganha televendas", tv.length, `${fmtR0(soma(tv))} · a loja não registrou`),
+    kpi("Valor em aberto", fmtR0(abertosValor), "clientes ainda sem venda"),
+  ].join("");
+
+  // Lojas
+  const lojas = [...new Set(L.map(l => l.loja))];
+  const linhasLoja = lojas.map(loja => {
+    const ll = L.filter(l => l.loja === loja);
+    const tc = ll.filter(l => tocados.has(l.id));
+    const tempos = tc.map(l => (new Date(primeiro.get(l.id)) - new Date(l.criado_em)) / 36e5).filter(x => x >= 0);
+    const ult = H.filter(h => porId.get(h.ligacao_id).loja === loja).map(h => h.quando).sort().pop();
+    return { loja, total: ll.length, trab: tc.length, p: pct(tc.length, ll.length),
+             sem: ll.filter(l => l.status === "pendente" && !tocados.has(l.id)).length,
+             ganha: ll.filter(l => l.status === "venda_ganha").length, tv: ll.filter(l => ehTv(l.status)).length,
+             aberto: soma(ll.filter(l => !FECHADOS.includes(l.status))),
+             tempo: tempos.length ? tempos.reduce((a, b) => a + b, 0) / tempos.length : null, ult };
+  }).sort((a, b) => b.p - a.p || b.ganha - a.ganha);
+  const barra = (p, cor) => `<div class="pc"><div class="barra" style="flex:1"><i style="width:${p}%;background:${cor}"></i></div><span>${p}%</span></div>`;
+  const corP = p => p >= 70 ? "#22C55E" : p >= 30 ? "#F59E0B" : "#EF4444";
+  const fmtHoras = h => h == null ? "—" : h < 24 ? Math.round(h) + " h" : (h / 24).toFixed(1).replace(".", ",") + " dias";
+  $("t-lojas").innerHTML = `<tr><th>Loja</th><th class="r">Clientes</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Venda loja</th><th class="r">Venda televendas</th><th class="r">Conversão</th><th class="r">Em aberto</th><th class="r">1º contato (média)</th><th>Último registro</th></tr>` +
+    (linhasLoja.length ? linhasLoja.map(r => `<tr class="${r.p < 30 && r.total >= 5 ? "alerta" : ""}"><td><b>${esc(r.loja)}</b></td><td class="r">${r.total}</td><td>${barra(r.p, corP(r.p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${r.tv}</td><td class="r">${pct(r.ganha, r.total)}%</td><td class="r">${fmtR0(r.aberto)}</td><td class="r">${fmtHoras(r.tempo)}</td><td>${r.ult ? fmtQuando(r.ult) : '<span style="color:#EF4444">nenhum</span>'}</td></tr>`).join("")
+      : `<tr><td colspan="10" class="nada" style="color:#777;padding:14px">Nenhuma cotação no período.</td></tr>`);
+
+  // Vendedores (quem registrou)
+  const vend = {};
+  H.forEach(h => {
+    const v = vend[h.quem] || (vend[h.quem] = {nome: h.quem, lojas: new Set(), reg: 0, clientes: new Set(), lig: 0, naoAtende: 0, ganhas: 0, valor: 0, ult: null});
+    const l = porId.get(h.ligacao_id);
+    v.lojas.add(l.loja); v.reg++; v.clientes.add(h.ligacao_id);
+    if (["nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha"].includes(h.status)) v.lig++;
+    if (h.status === "nao_atende") v.naoAtende++;
+    if (h.status === "venda_ganha" && l.status === "venda_ganha") { v.ganhas++; v.valor += Number(l.valor || 0); }
+    v.ult = h.quando;
+  });
+  const rank = Object.values(vend).sort((a, b) => b.ganhas - a.ganhas || b.clientes.size - a.clientes.size);
+  const med = i => ["🥇", "🥈", "🥉"][i] || "";
+  $("t-vend").innerHTML = `<tr><th>Vendedor</th><th>Loja</th><th class="r">Clientes atendidos</th><th class="r">Registros</th><th class="r">Não atende</th><th class="r">Vendas ganhas</th><th class="r">Valor vendido</th><th class="r">Conversão</th><th>Último registro</th></tr>` +
+    (rank.length ? rank.map((v, i) => `<tr><td><span class="medalha">${med(i)}</span><b>${esc(v.nome)}</b></td><td>${esc([...v.lojas].join(", "))}</td><td class="r">${v.clientes.size}</td><td class="r">${v.reg}</td><td class="r">${v.naoAtende}</td><td class="r">${v.ganhas}</td><td class="r">${fmtR0(v.valor)}</td><td class="r">${pct(v.ganhas, v.clientes.size)}%</td><td>${fmtQuando(v.ult)}</td></tr>`).join("")
+      : `<tr><td colspan="9" style="color:#777;padding:14px">Ninguém registrou nada no período.</td></tr>`);
+
+  // Análises
+  const ins = (t, linhas, vazio) => `<div class="ins"><h4>${t}</h4>${linhas.length ? linhas.join("") : `<div class="nada">${vazio}</div>`}</div>`;
+  const linha = (a, b) => `<div class="linha"><span>${a}</span><b>${b}</b></div>`;
+  const hoje = hojeISO();
+  const diasParado = l => Math.max(0, Math.round((new Date(hoje + "T12:00:00") - new Date(l.data_cotacao + "T12:00:00")) / 864e5));
+  const naoLigam = linhasLoja.filter(r => r.total >= 5 && r.p < 30);
+  const maiores = [...pendSemContato].sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0)).slice(0, 6);
+  const contNA = {}; H.filter(h => h.status === "nao_atende").forEach(h => contNA[h.ligacao_id] = (contNA[h.ligacao_id] || 0) + 1);
+  const naoAtendem = Object.entries(contNA).filter(([, n]) => n >= 2).map(([id, n]) => [porId.get(Number(id)), n])
+    .filter(([l]) => l && !FECHADOS.includes(l.status)).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const tvComContato = tv.filter(l => tocados.has(l.id));
+  const tvSemContato = tv.filter(l => !tocados.has(l.id));
+  const lentas = linhasLoja.filter(r => r.tempo != null).sort((a, b) => b.tempo - a.tempo).slice(0, 3);
+  const top = rank.filter(v => v.ganhas > 0).slice(0, 3);
+  $("insights").innerHTML = [
+    ins("🚨 Lojas que não estão ligando", naoLigam.map(r => linha(esc(r.loja), `${r.p}% trabalhados · ${r.sem} sem contato`)), "Todas as lojas estão trabalhando a lista. 👏"),
+    ins("💰 Maiores valores sem nenhum contato", maiores.map(l => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)} · há ${diasParado(l)} dia(s)</span>`, fmtR0(l.valor))), "Nenhum cliente parado. 👏"),
+    ins("📵 Não atendem (2+ tentativas) — tente WhatsApp", naoAtendem.map(([l, n]) => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)}</span>`, `${n} tentativas`)), "Ninguém com várias tentativas sem atender."),
+    ins("📞 Vendas que a loja não registrou", [
+      linha("Comprou e a loja <b>ligou</b>, mas não marcou venda ganha", tvComContato.length + " · " + fmtR0(soma(tvComContato))),
+      linha("Comprou sem nenhum contato da loja", tvSemContato.length + " · " + fmtR0(soma(tvSemContato))),
+    ], ""),
+    ins("⏱ Lojas mais lentas no 1º contato", lentas.map(r => linha(esc(r.loja), "média " + fmtHoras(r.tempo))), "Ainda não há contatos no período."),
+    ins("🏆 Quem mais converteu", top.map((v, i) => linha(`${med(i)} ${esc(v.nome)}`, `${v.ganhas} venda(s) · ${fmtR0(v.valor)}`)), "Nenhuma venda ganha registrada no período ainda."),
+  ].join("");
+}
+
+function trocarModo(m) {
+  modo = m;
+  document.querySelectorAll(".modo").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("v-lista").style.display = m === "lista" ? "" : "none";
+  $("v-dash").style.display = m === "dash" ? "" : "none";
+  m === "dash" ? renderDash() : render();
+}
+
+// ── EVENTOS ──
+$("btn-login").onclick = doLogin;
+$("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+$("l-email").addEventListener("keydown", e => { if (e.key === "Enter") $("l-pass").focus(); });
+$("btn-senha").onclick = salvarSenha;
+$("s-conf").addEventListener("keydown", e => { if (e.key === "Enter") salvarSenha(); });
+$("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+document.querySelectorAll(".modo").forEach(b => b.onclick = () => trocarModo(b.dataset.m));
+$("sel-loja").onchange = e => { filtro.loja = e.target.value; filtro.operador = ""; limite = POR_PAGINA; escolherDiaInicial(); modo === "dash" ? renderDash() : render(); };
+$("sel-operador").onchange = e => { filtro.operador = e.target.value; limite = POR_PAGINA; render(); };
+let tb; $("busca").oninput = e => { clearTimeout(tb); tb = setTimeout(() => { filtro.busca = e.target.value; limite = POR_PAGINA; render(); }, 200); };
+
+// Já entrou no FOXNET (App, Cadastrar…)? Aproveita a mesma sessão.
+sb.auth.getSession().then(async ({ data }) => {
+  if (data.session) {
+    const r = await entrar(data.session);
+    if (r && r.erro) { $("login-err").textContent = r.erro; $("login-err").style.display = "block"; }
+  }
+});
+</script>
+<script src="/fernanda.js" defer></script>
+</body>
+</html>
