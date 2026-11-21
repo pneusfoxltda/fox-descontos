@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>Fox Pneus — Ligações das lojas</title>
+<title>Fox Pneus · Ligações das lojas</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -228,9 +228,9 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxn
 
 const STATUS = {
   pendente:         {nome: "Pendente ligação"},
-  nao_atende:       {nome: "Liguei — não atende"},
-  retornar:         {nome: "Liguei — retornar depois"},
-  sem_interesse:    {nome: "Liguei — sem interesse"},
+  nao_atende:       {nome: "Liguei, não atende"},
+  retornar:         {nome: "Liguei, retornar depois"},
+  sem_interesse:    {nome: "Liguei, sem interesse"},
   agendou:          {nome: "Agendou"},
   venda_ganha:      {nome: "Venda ganha (loja)"},
   venda_perdida:    {nome: "Venda perdida"},
@@ -313,7 +313,7 @@ async function abrirSistema() {
   mostrar("main-screen");
   $("user-nome").textContent = perfil.nome || perfil.email;
   filtro.loja = veTodas ? "" : perfil.loja;
-  $("ts-loja").textContent = ehAdmin ? "Admin — todas as lojas" : veTodas ? "Gerente — todas as lojas" + (perfil.loja ? " · sua loja: " + perfil.loja : "") : "Loja " + perfil.loja;
+  $("ts-loja").textContent = ehAdmin ? "Admin · todas as lojas" : veTodas ? "Gerente · todas as lojas" + (perfil.loja ? " · sua loja: " + perfil.loja : "") : "Loja " + perfil.loja;
   $("modos").style.display = veTodas ? "flex" : "none";
   await carregar();
 }
@@ -468,10 +468,10 @@ function cartao(l) {
   const wa = d.length >= 10 ? "https://wa.me/55" + (d.length > 11 && d.startsWith("55") ? d.slice(2) : d) : "";
   const st = STATUS[l.status] || STATUS.pendente;
   let linhaStatus;
-  if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "—")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
+  if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
   else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">📞 Venda ganha televendas${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
-  else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "—")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
-  else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado — dê o resultado</span>' : ""} · ${esc(l.status_por || "")}`;
+  else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
+  else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
   else linhaStatus = l.status_em ? `<b>${esc(st.nome)}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(st.nome)}</b>`;
   const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
@@ -603,7 +603,7 @@ async function renderDash() {
   }).sort((a, b) => b.p - a.p || b.ganha - a.ganha);
   const barra = (p, cor) => `<div class="pc"><div class="barra" style="flex:1"><i style="width:${p}%;background:${cor}"></i></div><span>${p}%</span></div>`;
   const corP = p => p >= 70 ? "#22C55E" : p >= 30 ? "#F59E0B" : "#EF4444";
-  const fmtHoras = h => h == null ? "—" : h < 24 ? Math.round(h) + " h" : (h / 24).toFixed(1).replace(".", ",") + " dias";
+  const fmtHoras = h => h == null ? "" : h < 24 ? Math.round(h) + " h" : (h / 24).toFixed(1).replace(".", ",") + " dias";
   $("t-lojas").innerHTML = `<tr><th>Loja</th><th class="r">Clientes</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Venda loja</th><th class="r">Venda televendas</th><th class="r">Perdidas</th><th class="r">Agend. atrasados</th><th class="r">Conversão</th><th class="r">Em aberto</th><th class="r">1º contato (média)</th><th>Último registro</th></tr>` +
     (linhasLoja.length ? linhasLoja.map(r => `<tr class="${r.p < 30 && r.total >= 5 ? "alerta" : ""}"><td><b>${esc(r.loja)}</b></td><td class="r">${r.total}</td><td>${barra(r.p, corP(r.p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${r.tv}</td><td class="r">${r.perd}</td><td class="r" style="${r.atr ? "color:#F87171;font-weight:700" : ""}">${r.atr}</td><td class="r">${pct(r.ganha, r.total)}%</td><td class="r">${fmtR0(r.aberto)}</td><td class="r">${fmtHoras(r.tempo)}</td><td>${r.ult ? fmtQuando(r.ult) : '<span style="color:#EF4444">nenhum</span>'}</td></tr>`).join("")
       : `<tr><td colspan="12" class="nada" style="color:#777;padding:14px">Nenhuma cotação no período.</td></tr>`);
@@ -641,17 +641,17 @@ async function renderDash() {
   const top = rank.filter(v => v.ganhas > 0).slice(0, 3);
   $("insights").innerHTML = [
     ins("🚨 Lojas que não estão ligando", naoLigam.map(r => linha(esc(r.loja), `${r.p}% trabalhados · ${r.sem} sem contato`)), "Todas as lojas estão trabalhando a lista. 👏"),
-    ins("💰 Maiores valores sem nenhum contato", maiores.map(l => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)} · há ${diasParado(l)} dia(s)</span>`, fmtR0(l.valor))), "Nenhum cliente parado. 👏"),
-    ins("📵 Não atendem (2+ tentativas) — tente WhatsApp", naoAtendem.map(([l, n]) => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)}</span>`, `${n} tentativas`)), "Ninguém com várias tentativas sem atender."),
+    ins("💰 Maiores valores sem nenhum contato", maiores.map(l => linha(`${esc(l.cliente || "")} <span style="color:#777">· ${esc(l.loja)} · há ${diasParado(l)} dia(s)</span>`, fmtR0(l.valor))), "Nenhum cliente parado. 👏"),
+    ins("📵 Não atendem (2+ tentativas): tente WhatsApp", naoAtendem.map(([l, n]) => linha(`${esc(l.cliente || "")} <span style="color:#777">· ${esc(l.loja)}</span>`, `${n} tentativas`)), "Ninguém com várias tentativas sem atender."),
     ins("📞 Vendas que a loja não registrou", [
       linha("Comprou e a loja <b>ligou</b>, mas não marcou venda ganha", tvComContato.length + " · " + fmtR0(soma(tvComContato))),
       linha("Comprou sem nenhum contato da loja", tvSemContato.length + " · " + fmtR0(soma(tvSemContato))),
     ], ""),
     ins("⏱ Lojas mais lentas no 1º contato", lentas.map(r => linha(esc(r.loja), "média " + fmtHoras(r.tempo))), "Ainda não há contatos no período."),
-    ins("❌ Motivos de venda perdida", Object.entries(perdidas.reduce((a, l) => (a[l.motivo_perda || "—"] = (a[l.motivo_perda || "—"] || 0) + 1, a), {}))
+    ins("❌ Motivos de venda perdida", Object.entries(perdidas.reduce((a, l) => (a[l.motivo_perda || ""] = (a[l.motivo_perda || ""] || 0) + 1, a), {}))
       .sort((a, b) => b[1] - a[1]).map(([m, n]) => linha(esc(m), `${n} · ${pct(n, perdidas.length)}%`)), "Nenhuma venda perdida registrada no período."),
     ins("📅 Agendamentos atrasados (sem resultado)", L.filter(atrasado).sort((a, b) => a.agendado_para.localeCompare(b.agendado_para)).slice(0, 6)
-      .map(l => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)}</span>`, "era " + fmtData(l.agendado_para))), "Nenhum agendamento atrasado. 👏"),
+      .map(l => linha(`${esc(l.cliente || "")} <span style="color:#777">· ${esc(l.loja)}</span>`, "era " + fmtData(l.agendado_para))), "Nenhum agendamento atrasado. 👏"),
     ins("🏆 Quem mais converteu", top.map((v, i) => linha(`${med(i)} ${esc(v.nome)}`, `${v.ganhas} venda(s) · ${fmtR0(v.valor)}`)), "Nenhuma venda ganha registrada no período ainda."),
   ].join("");
 }

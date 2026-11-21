@@ -66,8 +66,8 @@ const FE_KB = [
   {k:["cadastrar desconto","registrar desconto","lancar desconto","novo desconto","cadastrar","pedir desconto","solicitar desconto"], t:"Cadastrar desconto", d:"Registrar desconto autorizado para liberação", go:"#/cadastrar"},
   {k:["liberar desconto","liberacao","aprovar desconto","dashboard desconto","app de desconto","app desconto","concorrencia","concorrente","inteligencia","usuarios","descontos"], t:"App de descontos", d:"Dashboard, liberação, concorrência e usuários", go:"#/descontos"},
   {k:["meta","metas","faturamento","quanto vendi","minhas vendas","vendas do televendas","painel televendas","televendas","ranking"], t:"Painel do televendas", d:"Faturamento e metas de cada vendedora", go:"#/televendas"},
-  {k:["cotacao","cotar","orcamento","ordem de servico","abrir os","criar os","fazer os","rotina 11","pedido","venda balcao"], t:"Movere — Cotação e O.S.", d:"Rotina 11: cotação, criação de O.S. e rotina diária", url:FE_EXT.movereCot},
-  {k:["movere","erp","estoque","nota fiscal","financeiro","rotina","cadastro de cliente","produto"], t:"Movere — Sistema completo", d:"Todas as rotinas do ERP", url:FE_EXT.movere},
+  {k:["cotacao","cotar","orcamento","ordem de servico","abrir os","criar os","fazer os","rotina 11","pedido","venda balcao"], t:"Movere · Cotação e O.S.", d:"Rotina 11: cotação, criação de O.S. e rotina diária", url:FE_EXT.movereCot},
+  {k:["movere","erp","estoque","nota fiscal","financeiro","rotina","cadastro de cliente","produto"], t:"Movere · Sistema completo", d:"Todas as rotinas do ERP", url:FE_EXT.movere},
   {k:["bi","analytics","dashboard","relatorio","indicador","resultado","grafico","desempenho"], t:"BI Movere", d:"Dashboards gerais de vendas e lojas", url:FE_EXT.bi},
   {k:["email","e-mail","gmail","correio"], t:"Gmail", d:"E-mail da empresa", url:FE_EXT.gmail},
   {k:["oleo","filtro","lubrificante","troca de oleo","autooleo"], t:"Busca de Óleo (AutoÓleo)", d:"Óleo e filtros certos por veículo", url:FE_EXT.oleo},
@@ -104,7 +104,7 @@ function feSend(){
   setTimeout(()=>{ t.remove(); feAnswer(q); }, 450);
 }
 function feAnswer(q){
-  /* Ajuda da tela (cadastrar, televendas, contas) — fernanda-ajuda.js */
+  /* Ajuda da tela (cadastrar, televendas, contas) · fernanda-ajuda.js */
   if(typeof window.feAjuda==="function" && window.feAjuda(q)) return;
   feAnswerBase(q);
 }

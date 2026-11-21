@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>FOXNET — Administração</title>
+<title>FOXNET · Administração</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -215,7 +215,7 @@ async function cadastrarVendedor() {
   $("btn-vend").disabled = true;
   const r = await criarAcesso({nome, email, loja});
   $("btn-vend").disabled = false;
-  logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} — ${esc(r.erro || r.ok)}`);
+  logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} · ${esc(r.erro || r.ok)}`);
   if (!r.erro) { $("v-nome").value = ""; $("v-email").value = ""; await carregar(); }
 }
 
@@ -227,10 +227,10 @@ async function cadastrarLote() {
   for (const linha of linhas) {
     const [nome = "", email = "", lojaTxt = ""] = linha.split(/[;\t]/).map(x => x.trim());
     const loja = normLoja(lojaTxt);
-    if (!loja) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} — loja "${esc(lojaTxt)}" não existe`); continue; }
+    if (!loja) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} · loja "${esc(lojaTxt)}" não existe`); continue; }
     const r = await criarAcesso({nome, email, loja});
     r.erro ? erro++ : ok++;
-    logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} — ${esc(r.erro || r.ok)}`);
+    logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} · ${esc(r.erro || r.ok)}`);
     await espera(700);
     if (r.erro && /espere/.test(r.erro)) break;
   }
@@ -244,7 +244,7 @@ async function darAcessoGerente() {
   $("btn-ger").disabled = true;
   const r = await criarAcesso({nome: nome || email, email, loja: loja || undefined, dash: true});
   $("btn-ger").disabled = false;
-  logar("log-ger", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome || email)} &lt;${esc(email)}&gt; — ${esc(r.erro || r.ok)}`);
+  logar("log-ger", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome || email)} &lt;${esc(email)}&gt; · ${esc(r.erro || r.ok)}`);
   if (!r.erro) { $("g-nome").value = ""; $("g-email").value = ""; await carregar(); }
 }
 
@@ -264,7 +264,7 @@ function renderTabela() {
     (lista.length ? lista.map(p => `<tr>
       <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
       <td>${esc(p.email)}</td>
-      <td><select data-id="${p.id}" class="s-loja"><option value="">— sem loja —</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select></td>
+      <td><select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select></td>
       <td><input type="checkbox" data-id="${p.id}" class="c-dash" ${p.dash_ligacoes ? "checked" : ""}></td>
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
@@ -277,7 +277,7 @@ function renderTabela() {
 // ── EVENTOS ──
 const opLojas = '<option value="">Escolha…</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
 $("v-loja").innerHTML = opLojas;
-$("g-loja").innerHTML = '<option value="">— nenhuma —</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
+$("g-loja").innerHTML = '<option value="">nenhuma</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
 $("lista-lojas").textContent = LOJAS.join(", ");
 $("btn-login").onclick = doLogin;
 $("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });

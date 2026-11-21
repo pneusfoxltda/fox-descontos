@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
-<title>Fox Pneus — Consulta de Descontos</title>
+<title>Fox Pneus · Consulta de Descontos</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -123,13 +123,13 @@ body{background:#0D0D0D;color:#F0F0F0;font-family:'Inter',sans-serif;min-height:
           autocomplete="off" onkeydown="if(event.key==='Enter')buscar()">
         <button class="btn-search" id="sbtn" onclick="buscar()">Buscar</button>
       </div>
-      <p class="search-hint" id="shint">Ex: 000123 — busca pelo número exato ou parcial</p>
+      <p class="search-hint" id="shint">Ex: 000123, busca pelo número exato ou parcial</p>
     </div>
 
     <!-- Row para tab med -->
     <div id="row-med" style="display:none;">
       <div class="search-row-med">
-        <input type="text" id="med-input" placeholder="Medida do pneu — Ex: 175/65R15"
+        <input type="text" id="med-input" placeholder="Medida do pneu, ex.: 175/65R15"
           autocomplete="off" onkeydown="if(event.key==='Enter')buscar()">
         <select id="med-loja">
           <option value="">Todas as lojas</option>
@@ -182,7 +182,7 @@ function setTab(t) {
     if (t === "num") {
       inp.placeholder = "Digite o número do orçamento...";
       inp.type = "text";
-      document.getElementById("shint").textContent = "Ex: 000123 — busca pelo número exato ou parcial";
+      document.getElementById("shint").textContent = "Ex: 000123, busca pelo número exato ou parcial";
     } else {
       inp.placeholder = "(00) 00000-0000 ou só os dígitos";
       inp.type = "tel";
@@ -197,8 +197,8 @@ function setTab(t) {
 
 const isExp = v => v ? new Date(v+"T23:59:59") < new Date() : false;
 const fmtR = v => parseFloat(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const fmtD = d => { if(!d)return"—"; try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");} };
-const fmtV = d => d?d.split("-").reverse().join("/"):"—";
+const fmtD = d => { if(!d)return""; try{return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});}catch{return d.slice(0,10).split("-").reverse().join("/");} };
+const fmtV = d => d?d.split("-").reverse().join("/"):"";
 const digitsOnly = s => s.replace(/\D/g,"");
 
 function stripConc(obs) {
@@ -246,7 +246,7 @@ function renderCards(list, showConc60 = false) {
     h += `<div class="quote-card${hasConc?" has-conc":""}">
   <div class="quote-top">
     <div>
-      <div class="quote-num">#${q.numero||"—"}</div>
+      <div class="quote-num">#${q.numero||""}</div>
       <div class="quote-tipo">${q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
     </div>
     <span class="badge ${b.cls}">${b.lbl}</span>
@@ -254,19 +254,19 @@ function renderCards(list, showConc60 = false) {
   ${q.venda_movere && !q.liberado && q.venda_movere_conferido_em ? `<div class="venda-reg">🤖 Venda registrada pelo robô em ${fmtDataHora(q.venda_movere_conferido_em)}</div>` : ""}
   <div class="quote-body">
     <div class="info-grid">
-      <div class="ii"><label>CBA</label><div class="val">${q.cba||"—"}</div></div>
-      <div class="ii"><label>Produto — Medida</label><div class="val">${q.medida||"—"}</div></div>
+      <div class="ii"><label>CBA</label><div class="val">${q.cba||""}</div></div>
+      <div class="ii"><label>Produto · Medida</label><div class="val">${q.medida||""}</div></div>
       ${q.telefone_cliente?`<div class="ii"><label>📱 Telefone do Cliente</label><div class="val blue">${q.telefone_cliente}</div></div>`:""}
       <div class="ii"><label>Valor Negociado</label><div class="val big">${fmtR(q.valor)}</div></div>
-      <div class="ii"><label>Pagamento / Parcelas</label><div class="val">${q.pgto||"—"}</div></div>
+      <div class="ii"><label>Pagamento / Parcelas</label><div class="val">${q.pgto||""}</div></div>
       <div class="ii"><label>Validade</label><div class="val ${isExp(q.validade)?"dim":""}">${fmtV(q.validade)}</div></div>
-      <div class="ii"><label>Vendedor</label><div class="val">${q.vendedor||"—"}</div></div>
+      <div class="ii"><label>Vendedor</label><div class="val">${q.vendedor||""}</div></div>
       <div class="ii"><label>Data do Cadastro</label><div class="val">${fmtD(q.criado_em)}</div></div>
     </div>
     ${obs?`<div class="divider"></div><div class="motivo-box"><label>Motivo / Observações</label><p>${obs}</p></div>`:""}
     ${hasConc?`<div class="conc-box"><label>📊 Concorrência registrada</label><p>${conc}</p></div>`:""}
   </div>
-  <div class="loja-bar">🏪 <span>${q.loja||"—"}</span></div>
+  <div class="loja-bar">🏪 <span>${q.loja||""}</span></div>
 </div>`;
   }
   return h;
@@ -282,7 +282,9 @@ async function consultaPublica(modo, termo, loja) {
   });
   if (!r.ok) throw new Error(r.status);
   const data = await r.json();
-  return Array.isArray(data) ? data : [];
+  // registros antigos guardavam "—" quando não havia o dado: mostra em branco
+  const limpa = v => (v === "—" ? "" : v);
+  return Array.isArray(data) ? data.map(q => ({...q, cba: limpa(q.cba), loja: limpa(q.loja), pgto: limpa(q.pgto)})) : [];
 }
 
 /* ── Sistema de Logs ── */
@@ -290,14 +292,14 @@ let _cachedIp = null;
 async function getIp() {
   if (_cachedIp) return _cachedIp;
   _cachedIp = await fetch("https://api.ipify.org?format=json")
-    .then(r=>r.json()).then(d=>d.ip).catch(()=>"—");
+    .then(r=>r.json()).then(d=>d.ip).catch(()=>"");
   return _cachedIp;
 }
 
 async function registrarLog(acao, busca, loja, sucesso, motivo) {
   try {
     const ip = await getIp();
-    const ua = navigator.userAgent || "—";
+    const ua = navigator.userAgent || "";
     const dispositivo = /Mobile|Android|iPhone|iPad/i.test(ua) ? "📱 Mobile" : "🖥️ Desktop";
     const extra = motivo ? motivo + " | " + dispositivo : dispositivo;
     await fetch(URL_BASE+"/rest/v1/logs_consulta", {
