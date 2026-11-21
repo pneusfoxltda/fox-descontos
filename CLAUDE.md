@@ -82,6 +82,22 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Válidos + Liberados + Vencidas = Todos. A aba "Pendentes" foi removida (igual a Válidos).
 - A lista mostra 60 por vez ("Mostrar mais") e é memorizada para não travar ao digitar.
 
+## Venda concluída (Movere) — branch `venda-movere`
+
+- Robô `conferir_vendas_movere.py` (workflow `conferir-vendas-movere.yml`, seg–sáb 7h50,
+  12h50 e 17h50 de Porto Velho): baixa o relatório de vendas do **Analytics Movere**
+  (relatório 742591, mesmo login do Apps Script das planilhas) e compara os **últimos 8
+  dígitos do telefone** com `descontos.telefone_cliente`. Venda no dia do cadastro ou
+  depois → `venda_movere = true` (vale mesmo vencido). Só pelo telefone (decisão do TI).
+- Segredos no GitHub: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`.
+  Rodar à mão com "teste" marcado mostra o que faria sem gravar.
+- O registro do GitHub Actions é **público**: o robô nunca imprime telefone nem nome.
+- `09_venda_movere.sql`: colunas novas + gatilho `proteger_venda_movere` (só o robô
+  grava essas colunas) + `consulta_publica` devolve `venda_movere`. Rodar ANTES de publicar.
+- Filtros do dashboard 744813 (só operadoras do televendas) ficam **desligados** para
+  conferir vendas de todas as lojas (`USAR_FILTRO_DASH=1` liga).
+- Testes: `python tests/test_conferir_vendas_movere.py` (rede imitada).
+
 ## Próximos passos (em ordem)
 
 1. **Trancar o banco (RLS)** — EM ANDAMENTO (branch `seguranca-rls`). Ordem combinada:
