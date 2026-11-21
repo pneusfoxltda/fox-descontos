@@ -624,7 +624,7 @@ function mensagemWa(l) {
         `Para eu deixar tudo pronto e você ser atendido sem espera, qual dia e horário ficam melhor para você?`;
     if (atrasado(l))                // a data já passou e o cliente não veio
       return oi + `Sentimos sua falta no seu horário aqui na loja. Aconteceu alguma coisa?\n` +
-        `${pneus.replace("já estão", "continuam").replace("já está", "continua")} e o seu orçamento continua de pé. Qual o melhor dia para remarcarmos? Deixo o horário reservado para você. 👍`;
+        `${pneus.replace("já estão", "continuam").replace("já está", "continua")}. Qual o melhor dia para remarcarmos? Deixo o horário reservado para você. 👍`;
     return oi + `Passando para confirmar seu horário aqui na loja: *${diaDoAgendamento(l.agendado_para)}*. 📅\n` +
       `${pneus}, é só chegar e se apresentar no balcão que já começamos o atendimento, sem espera.\n` +
       `Posso confirmar sua presença? Se precisar, te mando a localização da loja. Estamos te esperando! 🚗`;
