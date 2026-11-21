@@ -27,6 +27,8 @@ import os
 import sys
 from datetime import date, datetime, timedelta, timezone
 
+import re as _re
+
 import httpx
 
 import conferir_vendas_movere as cv   # login/relatórios do Analytics e utilidades
@@ -51,8 +53,40 @@ STATUS_COMPROU = "venda_televendas"
 
 
 # ── Kommo ─────────────────────────────────────────────────────────────────────
-def telefones_kommo(cli: httpx.Client, token: str) -> set:
-    """Telefones (últimos 8 dígitos) dos contatos dos leads nas etapas de agendamento."""
+def data_do_campo(f: dict):
+    """Data de um campo do Kommo (data, data e hora, ou texto como 26/11 ou 26/11/2026)."""
+    for v in f.get("values") or []:
+        x = v.get("value")
+        if x in (None, ""):
+            continue
+        if isinstance(x, (int, float)) or (isinstance(x, str) and x.strip().isdigit()):
+            return datetime.fromtimestamp(int(x), cv.TZ_LOJA).date()
+        t = str(x).strip()
+        m = _re.match(r"(\d{4})-(\d{2})-(\d{2})", t)
+        if m:
+            return date(int(m[1]), int(m[2]), int(m[3]))
+        m = _re.search(r"\b(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?\b", t)
+        if m:
+            hoje = datetime.now(cv.TZ_LOJA).date()
+            ano = int(m[3]) if m[3] else hoje.year
+            ano += 2000 if ano < 100 else 0
+            try:
+                d = date(ano, int(m[2]), int(m[1]))
+            except ValueError:
+                return None
+            if not m[3] and d < hoje - timedelta(days=60):   # 05/01 escrito em dezembro → ano que vem
+                d = date(ano + 1, d.month, d.day)
+            return d
+    return None
+
+
+def eh_campo_agendamento(f: dict) -> bool:
+    return "agend" in str(f.get("field_name") or "").lower()
+
+
+def telefones_kommo(cli: httpx.Client, token: str):
+    """Leads nas etapas de agendamento → (telefones, {telefone: data do agendamento}).
+    Telefone = últimos 8 dígitos. A data vem do campo do lead com "agend" no nome."""
     h = {"Authorization": "Bearer " + token.strip()}
 
     def get(url):
@@ -65,7 +99,7 @@ def telefones_kommo(cli: httpx.Client, token: str) -> set:
             raise RuntimeError(f"Kommo respondeu {r.status_code}")
         return r.json()
 
-    contatos = set()
+    contatos, data_contato, campos_data, com_data, leads = set(), {}, set(), 0, 0
     for etapa in ETAPAS:
         pagina = 1
         while True:
@@ -74,24 +108,40 @@ def telefones_kommo(cli: httpx.Client, token: str) -> set:
             if not d:
                 break
             for lead in (d.get("_embedded") or {}).get("leads") or []:
+                leads += 1
+                quando = None
+                for f in lead.get("custom_fields_values") or []:
+                    if f.get("field_type") in ("date", "date_time"):
+                        campos_data.add(str(f.get("field_name") or ""))   # só o NOME do campo (sem dados do cliente)
+                    if eh_campo_agendamento(f) and not quando:
+                        quando = data_do_campo(f)
+                com_data += 1 if quando else 0
                 for c in ((lead.get("_embedded") or {}).get("contacts") or []):
                     contatos.add(c["id"])
+                    if quando and (c["id"] not in data_contato or quando > data_contato[c["id"]]):
+                        data_contato[c["id"]] = quando
             if not (d.get("_links") or {}).get("next"):
                 break
             pagina += 1
+    print(f"📅 Kommo: {leads} lead(s) agendado(s), {com_data} com data de agendamento"
+          + (f" · campos de data nos leads: {', '.join(sorted(campos_data))}" if campos_data else " · nenhum campo de data nos leads"))
 
-    tels, ids = set(), sorted(contatos)
+    tels, datas, ids = set(), {}, sorted(contatos)
     for i in range(0, len(ids), 40):          # lotes de 40 (limite de tamanho da URL)
         q = "&".join(f"filter%5Bid%5D%5B%5D={x}" for x in ids[i:i + 40])
         d = get(f"{KOMMO}/contacts?{q}&limit=250")
         if not d:
             continue
         for c in (d.get("_embedded") or {}).get("contacts") or []:
+            quando = data_contato.get(c.get("id"))
             for f in c.get("custom_fields_values") or []:
                 if f.get("field_code") == "PHONE":
                     for v in f.get("values") or []:
-                        tels |= cv.chaves_tel(v.get("value"))
-    return tels
+                        for k in cv.chaves_tel(v.get("value")):
+                            tels.add(k)
+                            if quando and (k not in datas or quando > datas[k]):
+                                datas[k] = quando
+    return tels, datas
 
 
 # ── Analytics ─────────────────────────────────────────────────────────────────
@@ -99,7 +149,6 @@ def filtro_dias(uris: list) -> str:
     return f"[{cv._md()}/obj/{cv.ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in uris)})"
 
 
-import re as _re
 _MEDIDA = [_re.compile(r"(\d{3})\s*/\s*(\d{2})\s*Z?R\s*(\d{2}(?:[.,]5)?)", _re.I),
            _re.compile(r"(\d{1,2}[.,]\d{2})\s*[-–]\s*(\d{2})"),
            _re.compile(r"(\d{2,3})\s*[xX]\s*(\d{1,2}[.,]\d{2})\s*R\s*(\d{2})", _re.I)]
@@ -176,15 +225,28 @@ def escolher_novas(cots: list, vendas: dict, agendados: set, ja_existem: set, te
     return novas, motivos
 
 
-def reconferir(abertas: list, vendas: dict, agendados: set) -> list:
-    """Lista aberta → mudanças: comprou (prioridade) ou agendou."""
-    mudancas = []
+def data_kommo(tel, datas: dict):
+    ds = [datas[k] for k in cv.chaves_tel(tel) if k in datas]
+    return max(ds) if ds else None
+
+
+def reconferir(abertas: list, vendas: dict, agendados: set, datas: dict = None) -> list:
+    """Lista aberta → mudanças: comprou (prioridade), agendou no Kommo, ou data do agendamento do Kommo.
+    A data do Kommo entra quando a lista está sem data ou com uma data mais antiga (fica a mais recente)."""
+    datas, mudancas = datas or {}, []
     for l in abertas:
         dia = comprou_desde(l.get("telefone"), date.fromisoformat(l["data_cotacao"]), vendas)
+        quando = data_kommo(l.get("telefone"), datas)
         if dia:
             mudancas.append({"id": l["id"], "status": STATUS_COMPROU, "comprou_em": dia.isoformat(), "quem": ROBO_MOVERE})
         elif l["status"] in SEM_CONTATO and cv.chaves_tel(l.get("telefone")) & agendados:
-            mudancas.append({"id": l["id"], "status": "agendou", "quem": ROBO_KOMMO})
+            m = {"id": l["id"], "status": "agendou", "quem": ROBO_KOMMO}
+            if quando:
+                m["agendado_para"] = quando.isoformat()
+            mudancas.append(m)
+        elif l["status"] == "agendou" and quando and (not l.get("agendado_para") or quando.isoformat() > l["agendado_para"]):
+            mudancas.append({"id": l["id"], "status": "agendou", "agendado_para": quando.isoformat(),
+                             "so_data": True, "quem": ROBO_KOMMO})
     return mudancas
 
 
@@ -246,7 +308,7 @@ def main() -> int:
         ult = sb_get(cli, chave, "ligacoes?select=data_cotacao&order=data_cotacao.desc&limit=1")
         ultima = date.fromisoformat(ult[0]["data_cotacao"]) if ult else None
         desde = (hoje - timedelta(days=DIAS_RECONFERIR)).isoformat()
-        abertas = sb_get(cli, chave, "ligacoes?select=id,cotacao,telefone,tel_chave,data_cotacao,status" + (",medida" if tem_medida else "") +
+        abertas = sb_get(cli, chave, "ligacoes?select=id,cotacao,telefone,tel_chave,data_cotacao,status,agendado_para" + (",medida" if tem_medida else "") +
                                      f"&status=in.({','.join(ABERTOS)})&data_cotacao=gte.{desde}&limit=10000")
         # Cotações já na lista sem a medida (últimos 7 dias): completar com o relatório
         sem_medida = [l for l in abertas if tem_medida and not l.get("medida")
@@ -256,8 +318,8 @@ def main() -> int:
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
               f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}")
 
-        agendados = telefones_kommo(cli, segredos["KOMMO_TOKEN"])
-        print(f"📅 Telefones agendados no Kommo: {len(agendados)}")
+        agendados, datas_kommo = telefones_kommo(cli, segredos["KOMMO_TOKEN"])
+        print(f"📅 Telefones agendados no Kommo: {len(agendados)} · com data: {len(datas_kommo)}")
 
         tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"])
         print("🔐 Login no Analytics OK")
@@ -322,21 +384,27 @@ def main() -> int:
         RESUMO["inseridas"] = len(novas)
 
         # 2) Reconferir a lista aberta
-        mudancas = reconferir(abertas, vendas, agendados)
+        mudancas = reconferir(abertas, vendas, agendados, datas_kommo)
         RESUMO["comprou"] = sum(1 for m in mudancas if m["status"] == STATUS_COMPROU)
-        RESUMO["agendou"] = sum(1 for m in mudancas if m["status"] == "agendou")
+        RESUMO["agendou"] = sum(1 for m in mudancas if m["status"] == "agendou" and not m.get("so_data"))
+        so_data = sum(1 for m in mudancas if m.get("so_data"))
         print(f"🔁 Reconferência: venda ganha televendas {RESUMO['comprou']} · agendou no Kommo {RESUMO['agendou']}"
+              f" · data do agendamento atualizada pelo Kommo {so_data}"
               + (" (teste, nada gravado)" if dry else ""))
         if not dry:
             agora = datetime.now(timezone.utc).isoformat()
             for m in mudancas:
-                corpo = {"status": m["status"], "status_em": agora, "status_por": m["quem"]}
+                corpo = {} if m.get("so_data") else {"status": m["status"], "status_em": agora, "status_por": m["quem"]}
                 if m.get("comprou_em"):
                     corpo["comprou_em"] = m["comprou_em"]
+                if m.get("agendado_para"):
+                    corpo["agendado_para"] = m["agendado_para"]
                 cli.patch(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?id=eq.{m['id']}",
                           headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo).raise_for_status()
                 obs = (f"Comprou em {date.fromisoformat(m['comprou_em']).strftime('%d/%m/%Y')}"
-                       if m.get("comprou_em") else "Agendado no Kommo")
+                       if m.get("comprou_em") else
+                       ("Data do agendamento no Kommo: " + date.fromisoformat(m["agendado_para"]).strftime("%d/%m/%Y")
+                        if m.get("agendado_para") else "Agendado no Kommo"))
                 cli.post(f"{cv.SUPABASE_URL}/rest/v1/ligacoes_historico",
                          headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}),
                          json={"ligacao_id": m["id"], "quem": m["quem"], "status": m["status"], "obs": obs}).raise_for_status()
