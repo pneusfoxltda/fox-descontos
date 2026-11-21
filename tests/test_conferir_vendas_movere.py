@@ -57,7 +57,7 @@ def test_fluxo_completo_com_rede_imitada(capsys=None):
     def responder(req: httpx.Request):
         u = str(req.url)
         if u.startswith(cv.SUPABASE_URL) and req.method == "GET":
-            assert "venda_movere=is.false" in u and "tipo=neq.conc" in u
+            assert "venda_movere=is.false" in u and "tipo=neq.conc" in u and "liberado=not.is.true" in u
             return httpx.Response(200, json=[
                 {"id": "a", "numero": "777", "tipo": "orcamento", "telefone_cliente": "69 99999-1234",
                  "criado_em": "2026-11-19T15:00:00+00:00"},

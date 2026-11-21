@@ -4,7 +4,8 @@ conferir_vendas_movere.py
 Marca como "Venda concluída (Movere)" os descontos cujo cliente COMPROU.
 
 Como funciona (mesma lógica do Apps Script das planilhas de ligações):
-  1. Pega no Supabase os descontos ainda não marcados que têm telefone do cliente.
+  1. Pega no Supabase os descontos PENDENTES DE LIBERAÇÃO (os já liberados pela
+     equipe ficam de fora), ainda não marcados e com telefone do cliente.
   2. Entra no Analytics do Movere e baixa o relatório de vendas dos dias
      desde o desconto mais antigo até hoje.
   3. Compara pelos ÚLTIMOS 8 DÍGITOS do telefone (celular ou comercial).
@@ -162,7 +163,7 @@ def _sb_headers(chave: str, extras: dict = None) -> dict:
 def buscar_pendentes(cli: httpx.Client, chave: str, desde: date) -> list:
     url = (f"{SUPABASE_URL}/rest/v1/descontos"
            f"?select=id,numero,tipo,telefone_cliente,criado_em"
-           f"&venda_movere=is.false&tipo=neq.conc&telefone_cliente=not.is.null"
+           f"&venda_movere=is.false&liberado=not.is.true&tipo=neq.conc&telefone_cliente=not.is.null"
            f"&criado_em=gte.{desde.isoformat()}&order=criado_em.asc&limit=5000")
     r = cli.get(url, headers=_sb_headers(chave))
     if r.status_code == 400 and "venda_movere" in r.text:
@@ -286,7 +287,7 @@ def main() -> int:
 
     with httpx.Client(timeout=60) as cli:
         pendentes = buscar_pendentes(cli, chave, desde)
-        print(f"🔎 Descontos com telefone ainda sem venda (últimos {JANELA_DIAS} dias): {len(pendentes)}")
+        print(f"🔎 Descontos pendentes de liberação, com telefone e sem venda (últimos {JANELA_DIAS} dias): {len(pendentes)}")
         if not pendentes:
             print("✅ Nada para conferir.")
             return 0

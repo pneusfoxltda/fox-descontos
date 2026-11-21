@@ -89,6 +89,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (relatório 742591, mesmo login do Apps Script das planilhas) e compara os **últimos 8
   dígitos do telefone** com `descontos.telefone_cliente`. Venda no dia do cadastro ou
   depois → `venda_movere = true` (vale mesmo vencido). Só pelo telefone (decisão do TI).
+  **Só descontos PENDENTES de liberação** (decisão do TI): o robô ignora os liberados e as
+  telas só mostram "Venda concluída" quando `venda_movere && !liberado` (`vendeuSemLib` no App);
+  se a equipe liberar depois, o desconto sai do filtro e fica só em Liberados.
 - Segredos no GitHub: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`.
   Rodar à mão com "teste" marcado mostra o que faria sem gravar.
 - O registro do GitHub Actions é **público**: o robô nunca imprime telefone nem nome.
