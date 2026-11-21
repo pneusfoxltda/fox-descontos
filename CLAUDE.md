@@ -175,8 +175,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Esquecer a senha: o admin manda o e-mail de recuperação pelo Supabase (Authentication → Users).
 - Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
   CACOAL, C.AUTO VLH, PARINTINS, XAPURI (`LOJAS_LIGACOES` no App, `LOJAS` no admin).
-- Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`, seg–sáb 7h20–11h20 de hora em hora,
-  14h20 e 17h20): **começa nas cotações de 19/11/2026**; importa os dias ainda não importados
+- Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`, seg–sáb 9h, 12h, 16h e 19h
+  de Porto Velho, decisão do TI): **começa nas cotações de 19/11/2026**; importa os dias ainda não importados
   (relatório 782403 com os filtros do dashboard 782276, igual ao Apps Script), tira quem
   comprou (vendas 742591, sem filtro), quem está agendado no Kommo (etapas 6 e 7) e telefone
   repetido; reconfere os últimos 30 dias (comprou → "venda_televendas"; agendou → "agendou").

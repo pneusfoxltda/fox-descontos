@@ -4,11 +4,10 @@ name: Ligações das lojas (FOXNET)
 # ou agendou. As planilhas do Google (Apps Script) continuam funcionando igual.
 on:
   schedule:
-    # Seg–Sáb, horário de Porto Velho (UTC−4):
-    #   7h20, 8h20, 9h20, 10h20, 11h20 → importa as cotações de ontem
-    #     (tenta de novo se o Analytics ainda não atualizou)
-    #   14h20 e 17h20 → reconfere quem agendou no Kommo durante o dia
-    - cron: '20 11,12,13,14,15,18,21 * * 1-6'
+    # Seg–Sáb, horário de Porto Velho (UTC−4): 9h, 12h, 16h e 19h (decisão do TI)
+    #   cada rodada importa as cotações de ontem (se ainda faltar) e reconfere
+    #   quem comprou (Movere) e quem agendou no Kommo (com a Data da visita)
+    - cron: '0 13,16,20,23 * * 1-6'
   workflow_dispatch:
     inputs:
       teste:
