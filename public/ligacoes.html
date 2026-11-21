@@ -69,6 +69,8 @@ a{color:inherit;}
 .card.st-agendou{border-left-color:#8B5CF6;}
 .card.st-venda_ganha{border-left-color:#22C55E;}
 .card.st-venda_televendas,.card.st-comprou{border-left-color:#14B8A6;}
+.card.st-venda_perdida{border-left-color:#EF4444;}
+.card.atrasado{background:#1F1414;}
 .c1{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
 .cli{font-size:16px;font-weight:700;color:#fff;}
 .meta{font-size:12px;color:#888;margin-top:3px;}
@@ -89,6 +91,11 @@ a{color:inherit;}
 .selo.ganha{background:#0E2A1F;color:#4ADE80;border:1px solid #22C55E;}
 .selo.tv{background:#06292A;color:#5EEAD4;border:1px solid #14B8A6;}
 .selo.agendou{background:#1F1535;color:#C4B5FD;border:1px solid #8B5CF6;}
+.selo.perdida{background:#2A1010;color:#FCA5A5;border:1px solid #EF4444;}
+.selo.atraso{background:#3A1010;color:#FCA5A5;border:1px solid #EF4444;margin-left:6px;}
+.acao input.dt{flex:0 1 170px;border-color:#8B5CF6;color-scheme:dark;}
+.acao select.mt{border-color:#EF4444;}
+.agenda-data{background:#161616;border:1px solid #2E2E2E;color:#ddd;border-radius:20px;padding:7px 12px;font-size:13px;color-scheme:dark;}
 .hist-bt{background:none;border:none;color:#888;font-size:12px;text-decoration:underline;cursor:pointer;margin-top:8px;}
 .hist{margin-top:8px;border-top:1px dashed #2E2E2E;padding-top:8px;font-size:12px;color:#aaa;}
 .hist div{margin-bottom:4px;}
@@ -174,7 +181,7 @@ a{color:inherit;}
 
   <!-- LISTA -->
   <div class="wrap" id="v-lista">
-    <div class="lbl">Dia da cotação</div>
+    <div class="lbl" id="lbl-dia">Dia da cotação</div>
     <div class="datas" id="datas"></div>
     <div class="abas" id="abas"></div>
     <div class="busca">
@@ -226,17 +233,21 @@ const STATUS = {
   sem_interesse:    {nome: "Liguei — sem interesse"},
   agendou:          {nome: "Agendou"},
   venda_ganha:      {nome: "Venda ganha (loja)"},
+  venda_perdida:    {nome: "Venda perdida"},
   venda_televendas: {nome: "Venda ganha televendas"},
   comprou:          {nome: "Venda ganha televendas"},
 };
-const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha"];
-const FECHADOS = ["venda_ganha", "venda_televendas", "comprou"];
+const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha", "venda_perdida"];
+const FECHADOS = ["venda_ganha", "venda_perdida", "venda_televendas", "comprou"];
+const MOTIVOS_PERDA = ["Preço (achou mais barato)", "Comprou na concorrência", "Desistiu da compra", "Não temos a medida/produto",
+  "Prazo de entrega", "Condição de pagamento", "Não compareceu ao agendamento", "Já resolveu o problema", "Outro motivo"];
 const ehTv = s => s === "venda_televendas" || s === "comprou";
 const ABAS = [
   ["pendentes", "Pendentes",          "#F39C12", l => l.status === "pendente"],
   ["liguei",    "Já liguei",          "#3498DB", l => ["nao_atende", "retornar", "sem_interesse"].includes(l.status)],
   ["agendou",   "Agendou",            "#8B5CF6", l => l.status === "agendou"],
   ["ganha",     "Venda ganha (loja)", "#22C55E", l => l.status === "venda_ganha"],
+  ["perdida",   "Venda perdida",      "#EF4444", l => l.status === "venda_perdida"],
   ["tv",        "Venda televendas",   "#14B8A6", l => ehTv(l.status)],
   ["todas",     "Todas",              "#888",    l => true],
 ];
@@ -246,7 +257,22 @@ const ehRobo = quem => String(quem || "").startsWith("Robô");
 
 let perfil = null, ehAdmin = false, veTodas = false;
 let todas = [], historicoTodo = null;
-let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: ""};
+let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: "", agenda: "todos"};
+// Aba "Agendou": filtro pela DATA DO AGENDAMENTO (não pelo dia da cotação)
+const AGENDA = [["atrasados", "⚠️ Atrasados"], ["hoje", "Hoje"], ["amanha", "Amanhã"], ["7dias", "Próximos 7 dias"], ["semdata", "Sem data (Kommo)"], ["todos", "Todos"]];
+const somaDias = (iso, n) => new Date(new Date(iso + "T12:00:00").getTime() + n * 864e5).toISOString().slice(0, 10);
+const atrasado = l => l.status === "agendou" && l.agendado_para && l.agendado_para < hojeISO();
+function naAgenda(l, f) {
+  const h = hojeISO(), d = l.agendado_para;
+  if (f === "todos") return true;
+  if (f === "semdata") return !d;
+  if (!d) return false;
+  if (f === "atrasados") return d < h;
+  if (f === "hoje") return d === h;
+  if (f === "amanha") return d === somaDias(h, 1);
+  if (f === "7dias") return d >= h && d <= somaDias(h, 7);
+  return d === f;   // um dia escolhido no calendário
+}
 let limite = POR_PAGINA, modo = "lista", periodo = "7";
 
 const $ = id => document.getElementById(id);
@@ -343,7 +369,7 @@ async function carregar() {
   const desde = new Date(Date.now() - DIAS * 864e5).toISOString().slice(0, 10);
   try {
     todas = await buscarTudo("ligacoes",
-      "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em",
+      "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em,agendado_para,motivo_perda",
       q => q.gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao"));
   } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
   historicoTodo = null;
@@ -369,14 +395,29 @@ function daLojaEData(ignorarData = false) {
 function visiveis() {
   const aba = ABAS.find(a => a[0] === filtro.aba);
   const b = norm(filtro.busca.trim()), bd = dig(filtro.busca);
-  return daLojaEData(!!b).filter(l => aba[3](l))
+  const ag = filtro.aba === "agendou";
+  const lista = daLojaEData(!!b || ag).filter(l => aba[3](l))
+    .filter(l => !ag || naAgenda(l, filtro.agenda))
     .filter(l => !filtro.operador || l.operador === filtro.operador)
     .filter(l => !b || norm(l.cliente).includes(b) || norm(l.cotacao).includes(b) || (bd.length >= 3 && dig(l.telefone).includes(bd)));
+  if (ag) lista.sort((x, y) => (x.agendado_para || "9999").localeCompare(y.agendado_para || "9999"));
+  return lista;
 }
 
 // ── LISTA ──
 function render() {
   const daLoja = daLojaEData(true);
+  $("lbl-dia").textContent = filtro.aba === "agendou" ? "Data do agendamento" : "Dia da cotação";
+  if (filtro.aba === "agendou") {
+    const ags = daLoja.filter(l => l.status === "agendou");
+    const esc2 = filtro.agenda.length === 10 ? filtro.agenda : "";
+    $("datas").innerHTML = AGENDA.map(([k, n]) => `<button class="chip ${filtro.agenda === k ? "on" : ""}" data-g="${k}">${n}<span class="n">${ags.filter(l => naAgenda(l, k)).length}</span></button>`).join("") +
+      `<input type="date" class="agenda-data" id="ag-dia" value="${esc2}" title="Escolher um dia">`;
+    document.querySelectorAll(".chip[data-g]").forEach(c => c.onclick = () => { filtro.agenda = c.dataset.g; limite = POR_PAGINA; render(); });
+    $("ag-dia").onchange = e => { filtro.agenda = e.target.value || "todos"; limite = POR_PAGINA; render(); };
+    renderAbasELista(daLoja);
+    return;
+  }
   const dias = [...new Set(daLoja.map(l => l.data_cotacao))].sort().reverse();
   const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
   $("datas").innerHTML = dias.length ? dias.map(d =>
@@ -384,11 +425,15 @@ function render() {
   ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">Todos os dias<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
     : '<span class="resumo">Nenhuma cotação na lista ainda.</span>';
   document.querySelectorAll(".chip[data-d]").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
+  renderAbasELista(daLoja);
+}
 
+function renderAbasELista(daLoja) {
   const base = daLojaEData();
   $("abas").innerHTML = ABAS.map(([id, nome, cor, f]) => {
     const on = filtro.aba === id;
-    return `<button class="aba ${on ? "on" : ""}" data-a="${id}" style="${on ? `background:${cor}22;border-color:${cor};` : ""}">${nome} (${base.filter(f).length})</button>`;
+    const n = (id === "agendou" ? daLoja : base).filter(f).length;   // Agendou conta todos os dias
+    return `<button class="aba ${on ? "on" : ""}" data-a="${id}" style="${on ? `background:${cor}22;border-color:${cor};` : ""}">${nome} (${n})</button>`;
   }).join("");
   document.querySelectorAll(".aba").forEach(a => a.onclick = () => { filtro.aba = a.dataset.a; limite = POR_PAGINA; render(); });
 
@@ -397,7 +442,8 @@ function render() {
   $("sel-operador").innerHTML = '<option value="">Todos os vendedores</option>' + ops.map(o => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("");
 
   const lista = visiveis();
-  const quando = filtro.busca.trim() || !filtro.data ? "em todos os dias" : "em " + fmtDataLonga(filtro.data);
+  const quando = filtro.aba === "agendou" ? "agendado(s)" + (filtro.agenda.length === 10 ? " para " + fmtDataLonga(filtro.agenda) : "")
+    : filtro.busca.trim() || !filtro.data ? "em todos os dias" : "em " + fmtDataLonga(filtro.data);
   $("resumo").textContent = `${lista.length} cliente(s) ${quando}` + (filtro.loja ? " · " + filtro.loja : "");
   $("lista").innerHTML = lista.length
     ? lista.slice(0, limite).map(cartao).join("") + (lista.length > limite ? `<button class="mais" id="btn-mais">Mostrar mais (${lista.length - limite})</button>` : "")
@@ -412,10 +458,12 @@ function cartao(l) {
   let linhaStatus;
   if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "—")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
   else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">📞 Venda ganha televendas${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
+  else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "—")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
+  else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado — dê o resultado</span>' : ""} · ${esc(l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
   else linhaStatus = l.status_em ? `<b>${esc(st.nome)}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(st.nome)}</b>`;
   const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
-  return `<div class="card st-${esc(l.status)}" id="c-${l.id}">
+  return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
       <div><div class="cli">${esc(l.cliente || "Cliente sem nome")}</div>
         <div class="meta">Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · " + esc(l.operador) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div></div>
@@ -426,8 +474,11 @@ function cartao(l) {
       ${wa ? `<a class="bt bt-wa" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>` : ""}
     <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
     ${editavel ? `<div class="acao">
-      <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "venda_ganha" ? "✅ Venda ganha (informe a O.S.)" : STATUS[s].nome}</option>`).join("")}</select>
+      <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${
+        s === "venda_ganha" ? "✅ Venda ganha (informe a O.S.)" : s === "venda_perdida" ? "❌ Venda perdida (informe o motivo)" : s === "agendou" ? "📅 Agendou (informe a data)" : STATUS[s].nome}</option>`).join("")}</select>
       <input id="os-${l.id}" class="os" placeholder="Nº da O.S. (obrigatório)" maxlength="30" style="display:none">
+      <input id="dt-${l.id}" class="dt" type="date" min="${hojeISO()}" value="${l.agendado_para || ""}" title="Data do agendamento" style="display:none">
+      <select id="mp-${l.id}" class="mt" style="display:none"><option value="">Motivo da perda…</option>${MOTIVOS_PERDA.map(m => `<option>${m}</option>`).join("")}</select>
       <input id="o-${l.id}" placeholder="Observação (opcional)" maxlength="300">
       <button class="bt salvar" onclick="salvar(${l.id})">Salvar</button>
     </div>` : ""}
@@ -437,24 +488,35 @@ function cartao(l) {
 }
 
 function trocouStatus(id) {
-  const os = $("os-" + id), ganha = $("s-" + id).value === "venda_ganha";
-  os.style.display = ganha ? "" : "none";
-  if (ganha) os.focus();
+  const v = $("s-" + id).value;
+  const mostra = (el, sim) => { el.style.display = sim ? "" : "none"; if (sim) el.focus(); };
+  mostra($("os-" + id), v === "venda_ganha");
+  mostra($("dt-" + id), v === "agendou");
+  mostra($("mp-" + id), v === "venda_perdida");
 }
 
 async function salvar(id) {
   const status = $("s-" + id).value, obs = $("o-" + id).value.trim(), os = $("os-" + id).value.trim();
+  const dt = $("dt-" + id).value, motivo = $("mp-" + id).value;
   if (status === "venda_ganha" && !os) { toast("Informe o nº da O.S. da venda.", false); $("os-" + id).focus(); return; }
-  const { error } = await sb.rpc("marcar_ligacao", { p_id: id, p_status: status, p_obs: obs || null, p_os: status === "venda_ganha" ? os : null });
+  if (status === "agendou" && !dt) { toast("Informe a data do agendamento.", false); $("dt-" + id).style.display = ""; $("dt-" + id).focus(); return; }
+  if (status === "venda_perdida" && !motivo) { toast("Escolha o motivo da venda perdida.", false); $("mp-" + id).style.display = ""; $("mp-" + id).focus(); return; }
+  if (status === "venda_perdida" && motivo === "Outro motivo" && !obs) { toast("Escreva qual foi o motivo na observação.", false); $("o-" + id).focus(); return; }
+  const { error } = await sb.rpc("marcar_ligacao", { p_id: id, p_status: status, p_obs: obs || null, p_os: status === "venda_ganha" ? os : null,
+    p_data: status === "agendou" ? dt : null, p_motivo: status === "venda_perdida" ? motivo : null });
   if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); return; }
   const l = todas.find(x => x.id === id);
   if (l) {
     l.status = status; l.status_em = new Date().toISOString(); l.status_por = perfil.nome || perfil.email;
     if (obs) l.obs = obs;
     if (status === "venda_ganha") l.os_venda = os;
+    if (status === "agendou") l.agendado_para = dt;
+    if (status === "venda_perdida") l.motivo_perda = motivo;
   }
   historicoTodo = null;
-  toast(status === "venda_ganha" ? "Venda ganha registrada com a O.S. " + os + " 🎉" : "Salvo: " + STATUS[status].nome);
+  toast(status === "venda_ganha" ? "Venda ganha registrada com a O.S. " + os + " 🎉"
+      : status === "agendou" ? "Agendado para " + fmtDataLonga(dt) + " 📅"
+      : status === "venda_perdida" ? "Venda perdida registrada: " + motivo : "Salvo: " + STATUS[status].nome);
   render();
 }
 
@@ -498,6 +560,7 @@ async function renderDash() {
   const primeiro = new Map(); H.forEach(h => { if (!primeiro.has(h.ligacao_id)) primeiro.set(h.ligacao_id, h.quando); });
 
   const total = L.length, ganhas = L.filter(l => l.status === "venda_ganha"), tv = L.filter(l => ehTv(l.status));
+  const perdidas = L.filter(l => l.status === "venda_perdida");
   const pendSemContato = L.filter(l => l.status === "pendente" && !tocados.has(l.id));
   const abertosValor = L.filter(l => !FECHADOS.includes(l.status)).reduce((s, l) => s + Number(l.valor || 0), 0);
   const soma = arr => arr.reduce((s, l) => s + Number(l.valor || 0), 0);
@@ -508,6 +571,7 @@ async function renderDash() {
     kpi("Sem nenhum contato", pendSemContato.length, `ainda pendentes · ${fmtR0(soma(pendSemContato))}`),
     kpi("Venda ganha (loja)", ganhas.length, `${fmtR0(soma(ganhas))} · conversão ${pct(ganhas.length, total)}%`),
     kpi("Venda ganha televendas", tv.length, `${fmtR0(soma(tv))} · a loja não registrou`),
+    kpi("Venda perdida", perdidas.length, `${fmtR0(soma(perdidas))} · com motivo`),
     kpi("Valor em aberto", fmtR0(abertosValor), "clientes ainda sem venda"),
   ].join("");
 
@@ -521,15 +585,16 @@ async function renderDash() {
     return { loja, total: ll.length, trab: tc.length, p: pct(tc.length, ll.length),
              sem: ll.filter(l => l.status === "pendente" && !tocados.has(l.id)).length,
              ganha: ll.filter(l => l.status === "venda_ganha").length, tv: ll.filter(l => ehTv(l.status)).length,
+             perd: ll.filter(l => l.status === "venda_perdida").length, atr: ll.filter(atrasado).length,
              aberto: soma(ll.filter(l => !FECHADOS.includes(l.status))),
              tempo: tempos.length ? tempos.reduce((a, b) => a + b, 0) / tempos.length : null, ult };
   }).sort((a, b) => b.p - a.p || b.ganha - a.ganha);
   const barra = (p, cor) => `<div class="pc"><div class="barra" style="flex:1"><i style="width:${p}%;background:${cor}"></i></div><span>${p}%</span></div>`;
   const corP = p => p >= 70 ? "#22C55E" : p >= 30 ? "#F59E0B" : "#EF4444";
   const fmtHoras = h => h == null ? "—" : h < 24 ? Math.round(h) + " h" : (h / 24).toFixed(1).replace(".", ",") + " dias";
-  $("t-lojas").innerHTML = `<tr><th>Loja</th><th class="r">Clientes</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Venda loja</th><th class="r">Venda televendas</th><th class="r">Conversão</th><th class="r">Em aberto</th><th class="r">1º contato (média)</th><th>Último registro</th></tr>` +
-    (linhasLoja.length ? linhasLoja.map(r => `<tr class="${r.p < 30 && r.total >= 5 ? "alerta" : ""}"><td><b>${esc(r.loja)}</b></td><td class="r">${r.total}</td><td>${barra(r.p, corP(r.p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${r.tv}</td><td class="r">${pct(r.ganha, r.total)}%</td><td class="r">${fmtR0(r.aberto)}</td><td class="r">${fmtHoras(r.tempo)}</td><td>${r.ult ? fmtQuando(r.ult) : '<span style="color:#EF4444">nenhum</span>'}</td></tr>`).join("")
-      : `<tr><td colspan="10" class="nada" style="color:#777;padding:14px">Nenhuma cotação no período.</td></tr>`);
+  $("t-lojas").innerHTML = `<tr><th>Loja</th><th class="r">Clientes</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Venda loja</th><th class="r">Venda televendas</th><th class="r">Perdidas</th><th class="r">Agend. atrasados</th><th class="r">Conversão</th><th class="r">Em aberto</th><th class="r">1º contato (média)</th><th>Último registro</th></tr>` +
+    (linhasLoja.length ? linhasLoja.map(r => `<tr class="${r.p < 30 && r.total >= 5 ? "alerta" : ""}"><td><b>${esc(r.loja)}</b></td><td class="r">${r.total}</td><td>${barra(r.p, corP(r.p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${r.tv}</td><td class="r">${r.perd}</td><td class="r" style="${r.atr ? "color:#F87171;font-weight:700" : ""}">${r.atr}</td><td class="r">${pct(r.ganha, r.total)}%</td><td class="r">${fmtR0(r.aberto)}</td><td class="r">${fmtHoras(r.tempo)}</td><td>${r.ult ? fmtQuando(r.ult) : '<span style="color:#EF4444">nenhum</span>'}</td></tr>`).join("")
+      : `<tr><td colspan="12" class="nada" style="color:#777;padding:14px">Nenhuma cotação no período.</td></tr>`);
 
   // Vendedores (quem registrou)
   const vend = {};
@@ -571,6 +636,10 @@ async function renderDash() {
       linha("Comprou sem nenhum contato da loja", tvSemContato.length + " · " + fmtR0(soma(tvSemContato))),
     ], ""),
     ins("⏱ Lojas mais lentas no 1º contato", lentas.map(r => linha(esc(r.loja), "média " + fmtHoras(r.tempo))), "Ainda não há contatos no período."),
+    ins("❌ Motivos de venda perdida", Object.entries(perdidas.reduce((a, l) => (a[l.motivo_perda || "—"] = (a[l.motivo_perda || "—"] || 0) + 1, a), {}))
+      .sort((a, b) => b[1] - a[1]).map(([m, n]) => linha(esc(m), `${n} · ${pct(n, perdidas.length)}%`)), "Nenhuma venda perdida registrada no período."),
+    ins("📅 Agendamentos atrasados (sem resultado)", L.filter(atrasado).sort((a, b) => a.agendado_para.localeCompare(b.agendado_para)).slice(0, 6)
+      .map(l => linha(`${esc(l.cliente || "—")} <span style="color:#777">· ${esc(l.loja)}</span>`, "era " + fmtData(l.agendado_para))), "Nenhum agendamento atrasado. 👏"),
     ins("🏆 Quem mais converteu", top.map((v, i) => linha(`${med(i)} ${esc(v.nome)}`, `${v.ganhas} venda(s) · ${fmtR0(v.valor)}`)), "Nenhuma venda ganha registrada no período ainda."),
   ].join("");
 }

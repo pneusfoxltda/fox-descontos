@@ -42,7 +42,7 @@ DIAS_RECONFERIR = 30
 MAX_DIAS_IMPORTAR = 7
 INICIO = date(2026, 11, 19)              # primeiras cotações da lista (decisão do TI)
 # Se o cliente comprou e a loja não marcou "Venda ganha" → "Venda ganha televendas"
-ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou")
+ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_perdida")
 SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
 ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 

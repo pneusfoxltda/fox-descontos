@@ -61,11 +61,12 @@ def test_reconferir():
         {"id": 4, "telefone": "69 98888-0003", "data_cotacao": "2026-11-18", "status": "sem_interesse"},   # sem interesse não vira agendou
         {"id": 5, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "sem_interesse"},        # mas comprou → televendas
         {"id": 6, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "agendou"},              # agendou e comprou → televendas
+        {"id": 7, "telefone": "33330010", "data_cotacao": "2026-11-15", "status": "venda_perdida"},        # perdida mas comprou → televendas
     ]
     m = {x["id"]: x for x in ll.reconferir(abertas, vendas, {cv.chave_tel("69 98888-0003")})}
-    assert set(m) == {1, 3, 5, 6}
+    assert set(m) == {1, 3, 5, 6, 7}
     assert m[1]["status"] == "venda_televendas" and m[1]["comprou_em"] == "2026-11-20" and m[1]["quem"] == ll.ROBO_MOVERE
-    assert m[5]["status"] == m[6]["status"] == "venda_televendas"
+    assert m[5]["status"] == m[6]["status"] == m[7]["status"] == "venda_televendas"
     assert m[3]["status"] == "agendou" and m[3]["quem"] == ll.ROBO_KOMMO
 
 
