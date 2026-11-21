@@ -120,6 +120,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
    Supabase; segredo `SUPABASE_SERVICE_KEY` no GitHub (o robô do televendas voltou a gravar
    `vendas_televendas_clientes`, que antes dava 401). Regras: ver `07_trancar_banco.sql`.
    Painel do televendas: resumo e metas continuam sem login (aguardando decisão do TI).
+   **Editar metas / dias úteis** só no link `televendas.html?admin=1` e só para admin
+   (`LINK_ADMIN` em televendas.html); no link normal (tela da equipe) nunca aparece.
 2. **Apagar as senhas legíveis** das tabelas `usuarios` e `usuarios_televendas`.
 3. Remontar **liberação, consultas e relatórios** com as ideias do TI (ele vai trazer).
    Ideias já sugeridas: recusar com motivo, histórico de quem liberou, aviso ao vendedor,

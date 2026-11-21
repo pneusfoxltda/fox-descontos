@@ -1311,6 +1311,7 @@ function renderCalFeriados(ano, mes) {
 let modalAno = null, modalMes = null;  // mês sendo editado no modal
 
 function abrirModal() {
+  if(!LINK_ADMIN || !isAdmin()) return;
   // Usa o mês visível no dashboard (não a data de hoje)
   if (mesVisaoAno !== null) {
     modalAno = mesVisaoAno;
@@ -1399,7 +1400,12 @@ function isAutenticado() { return sessionStorage.getItem('fox_tv_auth') === '1';
 /* Sincronização de usuários com Supabase */
 async function carregarUsuariosSupabase() { /* login novo: as senhas não ficam mais no navegador */ }
 function isAdmin() { return sessionStorage.getItem('fox_tv_auth_admin') === '1'; }
+// "Editar metas" (metas e dias úteis) só aparece no link de admin:
+//   https://fox-descontos.vercel.app/televendas.html?admin=1  — e só para quem é admin.
+// No link normal (tela da equipe) o botão nunca aparece, mesmo com o admin logado.
+const LINK_ADMIN = (() => { const q = new URLSearchParams(location.search); return q.get('admin') === '1' || q.has('login'); })();
 function mostrarBotoesAdmin() {
+  if(!LINK_ADMIN) return;
   document.getElementById('btn-admin').style.display = '';
 }
 async function salvarUsuarioSupabase(username, password) {
@@ -1466,10 +1472,11 @@ async function tentarLogin() {
   }
 }
 // Já entrou no FOXNET (App de descontos ou Cadastrar)? Aproveita a mesma sessão.
-sbAuth.auth.getSession().then(({ data }) => {
+sbAuth.auth.getSession().then(async ({ data }) => {
   SB_TOKEN = data.session ? data.session.access_token : null;
-  if(data.session) entrarTV(data.session);
+  if(data.session) await entrarTV(data.session);
   else { sessionStorage.removeItem('fox_tv_auth'); sessionStorage.removeItem('fox_tv_auth_admin'); }
+  pedirLoginNoLinkAdmin();   // só depois de saber se já está logado
 });
 
 /* ── Gerenciamento de usuários (admin) ── */
@@ -1918,10 +1925,10 @@ function fecharClientes() {
 /* ── Admin ── restaura botões se sessão admin ainda ativa */
 if(isAdmin()) mostrarBotoesAdmin();
 
-// Abre login automaticamente se URL contém ?admin=1 ou ?login e usuário não está logado
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  if((params.get('admin') === '1' || params.has('login')) && !isAdmin()) {
+// Link de admin (?admin=1 ou ?login): pede login se ainda não for admin.
+// É chamada depois de conferir a sessão (acima), para não abrir o login à toa.
+function pedirLoginNoLinkAdmin() {
+  if(LINK_ADMIN && !isAdmin()) {
     carregarUsuariosSupabase().then(() => {
       window._loginCallback = null; // sem ação pós-login (admin já aparece pelo flag)
       document.getElementById('modal-login').classList.add('open');
@@ -1931,7 +1938,7 @@ if(isAdmin()) mostrarBotoesAdmin();
       setTimeout(() => document.getElementById('login-user').focus(), 150);
     });
   }
-})();
+}
 
 /* ── Auto-atualização dinâmica ── */
 let timerAuto = null;
