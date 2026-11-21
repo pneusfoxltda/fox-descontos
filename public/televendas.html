@@ -1045,6 +1045,14 @@ function render(rows) {
     : diasUteis(ano, mes).filter(d => d >= diaHoje).length);
   const precisaPorDia = faltaMeta / duRestantes;
 
+  // Para a Fernanda (assistente) responder "quanto preciso vender hoje?" etc. — só na visão do mês
+  window.FE_TV = { ano, mes, diaHoje, mesCompleto, duTotal, duPassados, duRestantes, pctDesejado,
+    mult, metaIdx, metas: {...metas}, metaMult: META_MULT.slice(),
+    operadores: OPERADORES.map(op => ({ codigo: op.codigo, nome: op.nome,
+      totalMes: porOp[op.codigo].totalMes, porDia: {...porOp[op.codigo].porDia} })),
+    feriados: (feriados[`${ano}-${String(mes).padStart(2,'0')}`] || []).slice(),
+    diasUteis: diasUteis(ano, mes) };
+
   // Data última sync
   const ultSyncRows = rows.filter(r=>r.atualizado_em);
   const ultSync = ultSyncRows.length > 0
