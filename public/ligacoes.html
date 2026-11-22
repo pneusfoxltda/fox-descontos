@@ -196,6 +196,16 @@ select.cel.resp{min-width:110px}
 .aviso-robo.amarelo{background:#2A2108;border:1px solid #78590F;color:#FCD34D}
 input.cel.os.falta{border-color:#F59E0B}
 
+/* ── JANELA DE FÉRIAS ── */
+.fer-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:none;align-items:center;justify-content:center;padding:16px;}
+.fer-modal.on{display:flex;}
+.fer-caixa{background:var(--s1);border:1px solid var(--bd2);border-radius:16px;padding:20px;width:100%;max-width:420px;}
+.fer-caixa h3{font-size:17px;margin-bottom:8px;color:var(--tx);}
+.fer-caixa p{font-size:13px;color:var(--tx2);line-height:1.5;margin-bottom:14px;}
+.fer-l{display:block;font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.fer-sd{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--tx2);margin:10px 0 16px;cursor:pointer;}
+.fer-bts{display:flex;justify-content:flex-end;gap:8px;}
+.fer-ok{background:var(--ac);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;}
 /* ── PALETA DE CORES ── */
 .tema-bt{display:inline-flex;align-items:center;gap:4px;background:transparent;border:1px solid var(--bd2);color:var(--tx2);border-radius:7px;padding:6px 9px;font-size:13px;cursor:pointer;}
 .tema-bt:hover,.tema-bt.on{border-color:var(--ac);color:var(--tx);}
@@ -282,6 +292,16 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
     <div class="tema-nota">A cor fica guardada só neste navegador. "Dispositivo" segue o claro/escuro do computador ou celular.</div>
     <button class="tema-pad" id="tema-pad">Voltar ao padrão (escuro, vermelho Fox)</button>
   </div>
+  <div class="fer-modal" id="fer-modal" onclick="if(event.target===this)fecharFerias()">
+    <div class="fer-caixa">
+      <h3 id="fer-tit">Colocar de férias</h3>
+      <p id="fer-txt"></p>
+      <label class="fer-l">Que dia volta a trabalhar?</label>
+      <input type="date" id="fer-data" class="cel" style="width:100%;font-size:15px;padding:9px 10px">
+      <label class="fer-sd"><input type="checkbox" id="fer-semdata"> Ainda não sei (só volta quando clicar em "Voltou: ativar")</label>
+      <div class="fer-bts"><button class="tema-bt" onclick="fecharFerias()">Cancelar</button><button class="fer-ok" id="fer-ok">Colocar de férias</button></div>
+    </div>
+  </div>
   <div class="aviso-robo" id="aviso-robo" style="display:none"></div>
   <!-- LISTA -->
   <div class="wrap" id="v-lista">
@@ -365,6 +385,10 @@ const ABAS = [
 const DIAS = 31;
 const POR_PAGINA = 50;
 const ehRobo = quem => String(quem || "").startsWith("Robô");
+// Quem mudou o status. Mudança do robô aparece como "🤖 Sistema (Movere)" ou "🤖 Sistema (Kommo)":
+// não conta ponto para o vendedor (o Dashboard de vendedores só conta registros de pessoas).
+const quemFez = l => ehRobo(l.status_por) ? "🤖 Sistema" + (/kommo/i.test(l.status_por) ? " (Kommo)" : /movere/i.test(l.status_por) ? " (Movere)" : "")
+  : (primeiro(l.status_por) || l.status_por || "");
 
 let perfil = null, ehAdmin = false, veTodas = false;
 // Funções nas ligações (SQL 15): vendedor → só os clientes dele; gerente da loja → a loja
@@ -542,19 +566,43 @@ function painelVendedores() {
   const vs = vendDaLoja(loja), gere = podeGerir(loja);
   box.style.display = "";
   box.innerHTML = `<span class="pv-t">Vendedores · ${esc(loja)}</span>` + (vs.length ? vs.map(v =>
-    `<span class="vchip ${v.ferias ? "fer" : "atv"}">${esc(v.apelido)} <small>${v.ferias ? "🏖️ férias" : "✅ ativo · " + v.abertos + " em aberto"}</small>` +
+    `<span class="vchip ${v.ferias ? "fer" : "atv"}">${esc(v.apelido)} <small>${v.ferias ? "🏖️ férias" + (v.ferias_ate ? " · volta " + fmtData(v.ferias_ate) : " · sem data de volta") : "✅ ativo · " + v.abertos + " em aberto"}</small>` +
     (gere ? `<button onclick="mudarFerias('${v.id}', ${!v.ferias})">${v.ferias ? "Voltou: ativar" : "Colocar de férias"}</button>` : "") + `</span>`).join("")
     : `<span class="pv-s">Nenhum vendedor cadastrado nesta loja. ${ehAdmin ? 'Cadastre em <a href="/admin">👥 Usuários</a>.' : "Peça ao TI para cadastrar."}</span>`);
 }
+// Férias: pergunta o dia da volta. Na hora, os clientes em aberto passam para os outros vendedores
+// ativos; no dia da volta ele(a) volta a receber sozinho(a) (SQL 16). "Voltou: ativar" ativa antes.
+function amanhaISO() { const d = new Date(hojeISO() + "T12:00:00"); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); }
 async function mudarFerias(id, ferias) {
   const v = vendedoresLoja.find(x => x.id === id); if (!v) return;
-  const pergunta = ferias
-    ? `Colocar ${v.apelido} de férias?\n\nOs ${v.abertos} cliente(s) em aberto dele(a) vão ser divididos entre os outros vendedores ativos, e ele(a) não recebe clientes novos até voltar.`
-    : `${v.apelido} voltou? Ele(a) volta a receber clientes novos a partir da próxima divisão.`;
-  if (!confirm(pergunta)) return;
-  const { data, error } = await sb.rpc("vendedor_ferias", { p_vendedor: id, p_ferias: ferias });
+  if (!ferias) {
+    if (!confirm(`${v.apelido} voltou? Ele(a) volta a receber clientes novos a partir da próxima divisão.`)) return;
+    return gravarFerias(v, false, null);
+  }
+  const outros = vendedoresLoja.filter(x => x.loja === v.loja && x.id !== v.id && !x.ferias).map(x => x.apelido);
+  $("fer-tit").textContent = `Colocar ${v.apelido} de férias`;
+  $("fer-txt").innerHTML = `Os <b>${v.abertos}</b> cliente(s) em aberto de ${esc(v.apelido)} passam agora para ${outros.length ? "<b>" + esc(outros.join(", ")) + "</b>" : "<b>ninguém</b> (não há outro vendedor ativo; ficam sem responsável)"}. ` +
+    `A partir de agora ${esc(v.apelido)} não recebe clientes novos.`;
+  $("fer-data").min = amanhaISO(); $("fer-data").value = "";
+  $("fer-ok").onclick = () => {
+    const volta = $("fer-data").value;
+    if (!volta && !$("fer-semdata").checked) { $("fer-data").focus(); toast("Escolha o dia que volta (ou marque \"Ainda não sei\").", false); return; }
+    if (volta && volta < amanhaISO()) { toast("O dia da volta precisa ser depois de hoje.", false); return; }
+    fecharFerias(); gravarFerias(v, true, volta || null);
+  };
+  $("fer-semdata").checked = false;
+  $("fer-modal").classList.add("on"); setTimeout(() => $("fer-data").focus(), 50);
+}
+function fecharFerias() { $("fer-modal").classList.remove("on"); }
+async function gravarFerias(v, ferias, volta) {
+  let { data, error } = await sb.rpc("vendedor_ferias", ferias && volta ? { p_vendedor: v.id, p_ferias: true, p_volta: volta } : { p_vendedor: v.id, p_ferias: ferias });
+  if (error && volta && /p_volta|function|schema cache/i.test(error.message)) {   // SQL 16 ainda não rodou
+    ({ data, error } = await sb.rpc("vendedor_ferias", { p_vendedor: v.id, p_ferias: true }));
+    if (!error) toast("Férias gravadas, mas SEM a data de volta: falta rodar o passo 16 no Supabase.", false);
+  }
   if (error) { toast("Não consegui mudar: " + error.message, false); return; }
-  toast(ferias ? `${v.apelido} de férias · ${data || 0} cliente(s) passaram para os outros` : `${v.apelido} ativo de novo`);
+  if (ferias) toast(`${v.apelido} de férias${volta ? " até " + fmtData(new Date(new Date(volta + "T12:00:00") - 864e5).toISOString().slice(0, 10)) + " (volta " + fmtData(volta) + ")" : ""} · ${data || 0} cliente(s) passaram para os outros`);
+  else toast(`${v.apelido} ativo de novo`);
   await carregar();
 }
 async function trocarResp(id, vendedorId) {
@@ -658,11 +706,12 @@ function render() {
   }
   const dias = diasDaLista();
   const pend = d => daLoja.filter(l => l.data_cotacao === d && l.status === "pendente").length;
-  $("datas").innerHTML = dias.length ? dias.map(d =>
+  $("datas").innerHTML = dias.length ? [...dias].sort().map(d =>   // em ordem crescente: 19/11, 20/11, 21/11
     `<button class="chip ${d === filtro.data ? "on" : ""}" data-d="${d}"><b>${fmtData(d)}</b> ${diaSemana(d)}<span class="n" title="pendentes">${pend(d)}</span></button>`
   ).join("") + `<button class="chip ${!filtro.data ? "on" : ""}" data-d="">${dias.length > 1 ? "Os " + dias.length + " dias" : "Todos"}<span class="n">${daLoja.filter(l => l.status === "pendente").length}</span></button>`
     : '<span class="resumo">Nenhuma cotação na lista ainda.</span>';
   document.querySelectorAll(".chip[data-d]").forEach(c => c.onclick = () => { filtro.data = c.dataset.d; limite = POR_PAGINA; render(); });
+  const chipOn = $("datas").querySelector(".chip.on"); if (chipOn) $("datas").scrollLeft = Math.max(0, chipOn.offsetLeft - $("datas").offsetLeft - 40);
   renderAbasELista(daLoja);
 }
 
@@ -707,9 +756,9 @@ function cartao(l) {
   if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
   else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">📞 Venda ganha televendas${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
   else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
-  else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(l.status_por || "")}`;
+  else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(ehRobo(l.status_por) ? quemFez(l) : l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
-  else linhaStatus = (l.status_em ? `<b>${esc(nomeStatus(l))}</b> · ${esc(l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(nomeStatus(l))}</b>`);
+  else linhaStatus = (l.status_em ? `<b>${esc(nomeStatus(l))}</b> · ${esc(ehRobo(l.status_por) ? quemFez(l) : l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(nomeStatus(l))}</b>`);
   const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
@@ -921,7 +970,7 @@ function linhaTabela(l) {
   const d = dig(l.telefone), wa = linkWa(l), t = tentativas(id), forte = t >= 2 && !fechado;
   const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("");
   const hs = histDe(id), dias = Math.max(0, Math.round((new Date(hojeISO() + "T12:00:00") - new Date(l.data_cotacao + "T12:00:00")) / 864e5));
-  const quem = l.status_em ? `<div class="quem">${esc(primeiro(l.status_por) || l.status_por || "")} · ${fmtQuando(l.status_em)}</div>` : "";
+  const quem = l.status_em ? `<div class="quem">${esc(quemFez(l))} · ${fmtQuando(l.status_em)}</div>` : "";
   const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
     <td class="fx1">${esc(l.cotacao)}</td>
     <td class="fx2">${esc(nomeCli(l))}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
@@ -1012,16 +1061,17 @@ async function renderDash() {
   const porResp = {};
   L.forEach(l => {
     const k = l.responsavel_nome || "(sem responsável)";
-    const r = porResp[k] || (porResp[k] = {nome: k, loja: l.loja, rec: 0, trab: 0, sem: 0, ganha: 0, perd: 0, valor: 0});
+    const r = porResp[k] || (porResp[k] = {nome: k, loja: l.loja, rec: 0, trab: 0, sem: 0, ganha: 0, perd: 0, valor: 0, sis: 0});
     r.rec++; if (tocados.has(l.id)) r.trab++;
     if (l.status === "pendente" && !tocados.has(l.id)) r.sem++;
     if (l.status === "venda_ganha") { r.ganha++; r.valor += Number(l.valor || 0); }
     if (l.status === "venda_perdida") r.perd++;
+    if (ehTv(l.status)) r.sis++;   // venda que o robô achou no Movere: não é ponto do vendedor
   });
   const respRank = Object.values(porResp).sort((a, b) => (b.trab / b.rec) - (a.trab / a.rec) || b.ganha - a.ganha);
-  $("t-resp").innerHTML = `<tr><th>Responsável</th><th>Loja</th><th class="r">Recebeu</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Vendas ganhas</th><th class="r">Valor vendido</th><th class="r">Perdidas</th></tr>` +
-    (respRank.length ? respRank.map(r => { const p = pct(r.trab, r.rec); return `<tr class="${p < 30 && r.rec >= 5 ? "alerta" : ""}"><td><b>${esc(r.nome)}</b></td><td>${esc(r.loja)}</td><td class="r">${r.rec}</td><td>${barra(p, corP(p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${fmtR0(r.valor)}</td><td class="r">${r.perd}</td></tr>`; }).join("")
-      : `<tr><td colspan="8" style="color:#777;padding:14px">Nenhum cliente no período.</td></tr>`);
+  $("t-resp").innerHTML = `<tr><th>Responsável</th><th>Loja</th><th class="r">Recebeu</th><th style="min-width:150px">Trabalhados</th><th class="r">Sem contato</th><th class="r">Vendas ganhas</th><th class="r">Valor vendido</th><th class="r">Perdidas</th><th class="r" title="O robô achou a venda no Movere (não conta para o vendedor)">🤖 Venda pelo sistema</th></tr>` +
+    (respRank.length ? respRank.map(r => { const p = pct(r.trab, r.rec); return `<tr class="${p < 30 && r.rec >= 5 ? "alerta" : ""}"><td><b>${esc(r.nome)}</b></td><td>${esc(r.loja)}</td><td class="r">${r.rec}</td><td>${barra(p, corP(p))}</td><td class="r">${r.sem}</td><td class="r">${r.ganha}</td><td class="r">${fmtR0(r.valor)}</td><td class="r">${r.perd}</td><td class="r">${r.sis}</td></tr>`; }).join("")
+      : `<tr><td colspan="9" style="color:#777;padding:14px">Nenhum cliente no período.</td></tr>`);
 
   // Vendedores (quem registrou)
   const vend = {};

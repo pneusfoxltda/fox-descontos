@@ -199,7 +199,8 @@ function lerFuncao(txt) {
 
 let sql15 = true;
 async function carregar() {
-  let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome");
+  let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias,ferias_ate").order("nome");
+  if (error && /ferias_ate/.test(error.message)) ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome"));   // passo 16 ainda não rodou
   if (error && /papel_ligacoes|apelido|ferias/.test(error.message)) {
     sql15 = false;
     ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha").order("nome"));
@@ -346,11 +347,24 @@ async function mudarDivisao(p, campos, msg) {
   } catch (e) { toast("Erro: " + e.message, false); await carregar(); }
 }
 async function mudarFerias(p, ferias) {
-  if (ferias && !confirm(`Colocar ${p.apelido || primeiroNome(p.nome)} de férias? Os clientes em aberto dele passam para os outros vendedores da loja.`)) { renderTabela(); return; }
+  const nome = p.apelido || primeiroNome(p.nome);
+  let volta = null;
+  if (ferias) {
+    const r = prompt(`Colocar ${nome} de férias.\nOs clientes em aberto passam agora para os outros vendedores da loja.\n\nQue dia volta a trabalhar? (dd/mm/aaaa; deixe em branco se ainda não sabe)`, "");
+    if (r === null) { renderTabela(); return; }
+    if (r.trim()) {
+      const m = r.trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (!m) { toast("Data inválida. Use dd/mm/aaaa.", false); renderTabela(); return; }
+      const ano = m[3] ? (m[3].length === 2 ? "20" + m[3] : m[3]) : String(new Date().getFullYear());
+      volta = `${ano}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    }
+  }
   try {
-    const n = await rpc("vendedor_ferias", {p_vendedor: p.id, p_ferias: ferias});
-    p.ferias = ferias; renderTabela();
-    toast(ferias ? `${p.apelido || primeiroNome(p.nome)} de férias · ${n} cliente(s) passaram para os outros` : `${p.apelido || primeiroNome(p.nome)} voltou: recebe clientes novos de novo`);
+    let n;
+    try { n = await rpc("vendedor_ferias", volta ? {p_vendedor: p.id, p_ferias: true, p_volta: volta} : {p_vendedor: p.id, p_ferias: ferias}); }
+    catch (e) { if (!volta || !/p_volta|function|schema cache/i.test(e.message)) throw e; n = await rpc("vendedor_ferias", {p_vendedor: p.id, p_ferias: true}); toast("Férias gravadas SEM a data de volta: falta rodar o passo 16.", false); }
+    p.ferias = ferias; p.ferias_ate = volta; renderTabela();
+    toast(ferias ? `${nome} de férias${volta ? " · volta " + volta.split("-").reverse().join("/") : ""} · ${n} cliente(s) passaram para os outros` : `${nome} voltou: recebe clientes novos de novo`);
   } catch (e) { toast("Erro: " + e.message, false); renderTabela(); }
 }
 
@@ -366,7 +380,7 @@ function renderTabela() {
       <td>${esc(p.email)}</td>
       <td><select data-id="${p.id}" class="s-funcao">${FUNCOES.map(([v, n]) => `<option value="${v}" ${v === f ? "selected" : ""}>${n}</option>`).join("")}</select></td>
       <td>${f === "gerente_todas" ? '<span class="tag cz">todas</span>' : `<select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select>`}</td>
-      <td>${f === "vendedor" && sql15 ? `<label style="cursor:pointer"><input type="checkbox" data-id="${p.id}" class="c-ferias" ${p.ferias ? "checked" : ""}> ${p.ferias ? "🏖️ férias" : "trabalhando"}</label>` : ""}</td>
+      <td>${f === "vendedor" && sql15 ? `<label style="cursor:pointer"><input type="checkbox" data-id="${p.id}" class="c-ferias" ${p.ferias ? "checked" : ""}> ${p.ferias ? "🏖️ férias" + (p.ferias_ate ? " · volta " + p.ferias_ate.split("-").reverse().join("/") : "") : "trabalhando"}</label>` : ""}</td>
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
     </tr>`; }).join("") : `<tr><td colspan="8" style="color:#777;padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);

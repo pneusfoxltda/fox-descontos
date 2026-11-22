@@ -151,6 +151,14 @@ vendas para o televendas; `apps-script/` tem o do painel).
     (`vendedor_ferias`: os clientes em aberto dele vão para os outros; não recebe novos).
   · **Gerente de todas as lojas** (Jonathan, sem loja): vê tudo, só acompanha.
   · **Admin**: tudo; botão **👥 Usuários** (abre `/admin`) e aviso do robô no topo.
+- **Férias com data de volta** (SQL `16_ferias_data_volta.sql`, `perfis.ferias_ate`): ao clicar em
+  "Colocar de férias" o gerente escolhe o dia da volta (ou "Ainda não sei"). Na hora os clientes em
+  aberto passam para os outros vendedores ativos e ele não recebe novos; no dia da volta
+  `voltar_das_ferias()` (chamada pela divisão, o robô das 7h) o reativa sozinho. "Voltou: ativar" ativa antes.
+- **Robô nunca dá ponto ao vendedor**: o que o robô muda (venda achada no Movere, agendado no Kommo)
+  aparece como "🤖 Sistema (Movere)" / "🤖 Sistema (Kommo)", é atualizado na própria linha (não exclui),
+  e no Dashboard fica na coluna "🤖 Venda pelo sistema" (fora das "Vendas ganhas" do vendedor).
+- **Dias da cotação em ordem crescente** (19/11, 20/11, 21/11, "Os N dias"), decisão do TI.
 - **Divisão automática** (`distribuir_ligacoes`): clientes sem responsável são divididos por igual
   entre os vendedores ativos (não férias) da loja, maiores valores primeiro; a sobra roda
   (`ligacoes_rodizio`: 29/3 → 10,10,9 e quem ficou com 9 recebe o extra da próxima vez).
