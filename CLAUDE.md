@@ -190,8 +190,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   ativo (vendedor que sai da divisão passa os clientes para os outros); "Dividir clientes agora".
   Esquecer a senha: o admin manda o e-mail de recuperação pelo Supabase (Authentication → Users).
 - Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
-  CACOAL, C.AUTO VLH, PARINTINS, XAPURI. Equipe da Matriz: Felipe, Marcos, Edileia, Vithoria
-  (vendedores) e Wagner (gerente).
+  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (= Rio Branco, Acre; Vilhena = C.AUTO VLH).
+  As equipes de todas as lojas (vendedores e gerentes, 22/11/2026) estão em `EQUIPES` no `admin.html`
+  (botão "Preencher com as equipes de todas as lojas").
 - Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`): **todo dia, inclusive sábado e domingo,
   7h, 10h, 15h e 18h** de Porto Velho (decisão do TI). Importa os dias ainda não importados
   (cotações de ontem: sábado → lista de domingo etc.; relatório 782403 com os filtros do dashboard

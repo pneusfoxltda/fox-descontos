@@ -113,7 +113,7 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
         <textarea id="v-lote" placeholder="Maria Souza; maria.souza@redefox.com.br; CACOAL; vendedor&#10;Carlos Lima; carlos.lima@redefox.com.br; CACOAL; gerente"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn-red" id="btn-lote">Cadastrar todos</button>
-          <button class="btn-out" id="btn-matriz">Preencher com a equipe da Matriz + Jonathan</button>
+          <button class="btn-out" id="btn-matriz">Preencher com as equipes de todas as lojas</button>
         </div>
       </details>
       <div class="log" id="log-vend"></div>
@@ -284,12 +284,49 @@ async function cadastrarLote() {
   await dividirAgora(true);
 }
 
-const EQUIPE_MATRIZ = [
+// Equipes passadas pelo TI (22/11/2026). Rio Branco = loja XAPURI no Movere.
+const EQUIPES = [
+  // MATRIZ
   "Felipe Seixas; felipe.seixas@redefox.com.br; MATRIZ; vendedor",
   "Marcos Henrique; marcos.henrique@redefox.com.br; MATRIZ; vendedor",
   "Edileia Brito; edileia.brito@redefox.com.br; MATRIZ; vendedor",
   "Vithoria Ferreira; vithoria.ferreira@redefox.com.br; MATRIZ; vendedor",
   "Wagner Raiol; wagner.raiol@redefox.com.br; MATRIZ; gerente",
+  // C.AUTO PVH
+  "Jederson Silva; jederson.silva@redefox.com.br; C.AUTO PVH; vendedor",
+  "Elizabete Soares; elizabete.soares@redefox.com.br; C.AUTO PVH; vendedor",
+  "Beatriz Mota; beatriz.mota@redefox.com.br; C.AUTO PVH; vendedor",
+  "Elaine Gouveia; elaine.gouveia@redefox.com.br; C.AUTO PVH; gerente",
+  // JI-PARANA
+  "Ana Silva; ana.silva@redefox.com.br; JI-PARANA; vendedor",
+  "Lurdes Oliveira; lurdes.oliveira@redefox.com.br; JI-PARANA; vendedor",
+  "Vinícius Pereira; vinicius.pereira@redefox.com.br; JI-PARANA; vendedor",
+  "Júlio Melo; julio.melo@redefox.com.br; JI-PARANA; vendedor",
+  "Luciana Alves; luciana.alves@redefox.com.br; JI-PARANA; gerente",
+  // CACOAL
+  "Márcia Ramos; marcia.ramos@redefox.com.br; CACOAL; vendedor",
+  "Matheus Rodrigues; matheus.rodrigues@redefox.com.br; CACOAL; vendedor",
+  "Viviane Raach; viviane.raach@redefox.com.br; CACOAL; vendedor",
+  "Márcia Souza; marcia.souza@redefox.com.br; CACOAL; gerente",
+  // ARIQUEMES
+  "Lucas Fonseca; lucas.fonseca@redefox.com.br; ARIQUEMES; vendedor",
+  "Estênio Júnior; estenio.junior@redefox.com.br; ARIQUEMES; vendedor",
+  "Jorge Júnior; jorge.junior@redefox.com.br; ARIQUEMES; gerente",
+  // PARINTINS
+  "Handerson Souza; handerson.souza@redefox.com.br; PARINTINS; vendedor",
+  "Jeferson Almeida; jeffeson.almeida@redefox.com.br; PARINTINS; vendedor",
+  "Ideu Rabelo; ideu.rabelo@redefox.com.br; PARINTINS; vendedor",
+  "Alex Patrick; alex.patrick@redefox.com.br; PARINTINS; gerente",
+  // XAPURI
+  "Paulo Araujo; paulo.araujo@redefox.com.br; XAPURI; vendedor",
+  "Camile Souza; camile.souza@redefox.com.br; XAPURI; vendedor",
+  "Lucicleia Oliveira; lucicleia.oliveira@redefox.com.br; XAPURI; vendedor",
+  "Raimundo Alves; raimundo.alves@redefox.com.br; XAPURI; gerente",
+  // C.AUTO VLH
+  "Carlos Garcia; carlos.garcia@redefox.com.br; C.AUTO VLH; vendedor",
+  "Nalbert Soel; nalbert.soel@redefox.com.br; C.AUTO VLH; vendedor",
+  "Beatriz Santos; beatriz.santos@redefox.com.br; C.AUTO VLH; gerente",
+  // Todas as lojas
   "Jonathan Lemes; jonathan.lemes@redefox.com.br; ; gerente todas",
 ];
 
@@ -369,7 +406,7 @@ $("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin();
 $("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 $("btn-vend").onclick = cadastrarVendedor;
 $("btn-lote").onclick = cadastrarLote;
-$("btn-matriz").onclick = () => { $("v-lote").value = EQUIPE_MATRIZ.join("\n"); toast("Confira as linhas e clique em Cadastrar todos."); };
+$("btn-matriz").onclick = () => { $("v-lote").value = EQUIPES.join("\n"); toast("Confira as linhas e clique em Cadastrar todos."); };
 $("btn-dividir").onclick = () => dividirAgora(false);
 $("f-busca").oninput = renderTabela;
 sb.auth.getSession().then(async ({ data }) => {
