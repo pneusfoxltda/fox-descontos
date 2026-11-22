@@ -262,6 +262,21 @@ def test_dia_importado_pela_metade_completa_depois():
     assert sorted(x["cotacao"] for x in reg["post_ligacoes"]) == ["5001"]
 
 
+def test_de_madrugada_nao_importa_o_dia_anterior():
+    # 21/11 às 2h: o Analytics ainda está carregando o 20/11 → não importa (nem avisa erro)
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, hora=2)
+    assert codigo == 0 and reg["post_ligacoes"] == [] and reg["rodadas"][-1]["ok"] is True
+
+
+def test_dia_sem_nenhuma_cotacao_nao_conta_como_importado():
+    global COT
+    antigo, COT = COT, COT.split("\n")[0] + "\n"          # relatório vazio
+    try:
+        codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, hora=18)
+    finally:
+        COT = antigo
+    assert codigo == 1 and reg["post_ligacoes"] == [] and "20/11" in reg["rodadas"][-1]["mensagem"]
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

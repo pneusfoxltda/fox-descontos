@@ -213,7 +213,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (cotações de ontem: sábado → lista de domingo etc.; relatório 782403 com os filtros do dashboard
   782276), tira quem comprou no dia da cotação ou depois (vendas 742591), quem está nas 2 colunas
   de agendados do Kommo (etapas 6 e 7, com ou sem data) e telefone repetido; divide entre os
-  vendedores; **confere de novo os 2 últimos dias já importados** (`dias_para_revisar`: cotações que
+  vendedores; o dia D só entra **a partir das 6h de D+1** e só se tiver cotações (a data existe no
+  calendário do Analytics mesmo sem dados; em 21/11 à 1h30 o 20/11 entrou com só 3 clientes);
+  **confere de novo os 2 últimos dias já importados** (`dias_para_revisar`: cotações que
   chegaram atrasadas no Analytics entram depois, sem repetir); reconfere os últimos 30 dias (comprou → "venda_televendas"; pendente que aparece no
   Kommo → "agendou", a data vem depois).
   **Aviso de erro**: se na rodada das 18h algum dia ainda não chegou, a rodada termina com ERRO →

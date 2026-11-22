@@ -59,6 +59,10 @@ ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
 RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0, "divididos": 0}
 HORA_ULTIMA_RODADA = 17     # a rodada das 18h (com folga de atraso do GitHub) é a última do dia
+# O dia D só é importado a partir das 6h de D+1: de madrugada o Analytics ainda está carregando o dia
+# (em 21/11, à 1h30, o 20/11 tinha só 3 cotações). A data existe no calendário do Analytics mesmo sem
+# dados, então "a data existe" não serve para saber se o dia chegou.
+HORA_MIN_IMPORTAR = 6
 STATUS_COMPROU = "venda_televendas"
 
 
@@ -373,17 +377,25 @@ def main() -> int:
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
 
         # 1) Importar — só os dias que já existem no Analytics (senão, tenta na próxima rodada)
+        agora = datetime.now(cv.TZ_LOJA).replace(tzinfo=None)
         prontos = []
         for d in dias:
-            if d not in uris_vendas:
+            fechou = agora >= datetime(d.year, d.month, d.day) + timedelta(days=1, hours=HORA_MIN_IMPORTAR)
+            if d not in uris_vendas or not fechou:
                 break
             prontos.append(d)
         if dias and not prontos:
-            print(f"⏳ O Analytics ainda não tem {dias[0].strftime('%d/%m')}: importo na próxima rodada.")
+            print(f"⏳ {dias[0].strftime('%d/%m')} ainda não está pronto no Analytics: importo na próxima rodada.")
         prontos = sorted(set(prontos) | {d for d in revisar if d in uris_vendas})
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
+        # Dia novo sem nenhuma cotação: ainda não chegou (fica para a próxima rodada; às 18h vira aviso)
+        com_dados = {c["data"] for c in todas_cots}
+        vazios = [d for d in prontos if d in dias and d not in com_dados]
+        if vazios:
+            print(f"⏳ Sem nenhuma cotação ainda em {', '.join(d.strftime('%d/%m') for d in vazios)}: importo na próxima rodada.")
+            prontos = [d for d in prontos if d not in vazios]
         if sem_medida and not dry:
             medidas = {c["cotacao"]: c.get("medida") for c in todas_cots if c.get("medida")}
             completas = 0
