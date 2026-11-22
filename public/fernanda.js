@@ -86,7 +86,21 @@ const feWords = q=>feNorm(q).replace(/[^a-z0-9/ ]/g," ").split(/\s+/).filter(Boo
 const STOP = new Set("a o as os e de da do das dos em no na nos nas um uma para pra pro por com que qual quais como onde quero queria preciso gostaria ver me mim eu voce vc tem ter tenho fazer abrir acessar entrar achar encontrar sobre esse essa isso aqui ai la ja mais ou se sim nao".split(" "));
 let feStarted=false;
 
-function feOpen(){ fePanel.classList.add("on"); feLaunch.style.display="none"; if(!feStarted){feStarted=true; feBot("Oi, aqui é a Fernanda! 🦊\nMe diga o que você precisa que eu encontro no FOXNET pra você.\n\nPode escrever do seu jeito, tipo: “fazer uma cotação”, “CNPJ de Cacoal”, “qual loja atende Rolim de Moura”."); feRenderChips(FE_CHIPS);} setTimeout(()=>feIn.focus(),50); }
+/* Primeiro nome de quem está logado (mesmo login do App, Cadastrar, Televendas e Ligações), só para cumprimentar */
+function feNomeLogado(){
+  try{ if(window.FE_LIG && FE_LIG.pronto() && FE_LIG.eu().nome) return FE_LIG.eu().nome; }catch(e){}
+  try{
+    const s=JSON.parse(localStorage.getItem("foxnet-auth")||"null"), u=s && (s.user || (s.currentSession && s.currentSession.user));
+    if(!u) return "";
+    const n=((u.user_metadata && u.user_metadata.nome) || String(u.email||"").split("@")[0]).trim().split(/[\s._-]+/)[0] || "";
+    return n ? n[0].toUpperCase()+n.slice(1).toLowerCase() : "";
+  }catch(e){ return ""; }
+}
+window.feNomeLogado=feNomeLogado;
+function feBubTexto(){ const b=document.getElementById("feBub"); if(!b) return; const nm=feNomeLogado(); if(!nm) return; const fx=b.querySelector(".fx"); b.textContent=""; if(fx) b.appendChild(fx); b.appendChild(document.createTextNode("Oi, "+nm+"! Aqui é a Fernanda. Em que posso te ajudar hoje?")); }
+setTimeout(feBubTexto, 400); window.addEventListener("fe-lig", feBubTexto, {once:true});
+const FE_TELA_LIGACOES = /\/ligacoes(\.html)?$/.test(location.pathname);
+function feOpen(){ fePanel.classList.add("on"); feLaunch.style.display="none"; if(!feStarted){feStarted=true; if(FE_TELA_LIGACOES){ feRenderChips(FE_CHIPS); } else { const nm=feNomeLogado(); feBot((nm?"Oi, "+nm+"! Aqui é a Fernanda! 🦊":"Oi, aqui é a Fernanda! 🦊")+"\nMe diga o que você precisa que eu encontro no FOXNET pra você.\n\nPode escrever do seu jeito, tipo: “fazer uma cotação”, “CNPJ de Cacoal”, “qual loja atende Rolim de Moura”."); feRenderChips(FE_CHIPS);} } setTimeout(()=>feIn.focus(),50); }
 function feClose(){ fePanel.classList.remove("on"); feLaunch.style.display="flex"; feBub.style.display="none"; }
 function feScroll(){ feMsgs.scrollTop=feMsgs.scrollHeight; }
 function feBot(txt){ const d=document.createElement("div"); d.className="fe-m bot"; d.textContent=txt; feMsgs.appendChild(d); feScroll(); }

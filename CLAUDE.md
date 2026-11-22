@@ -80,6 +80,17 @@ vendas para o televendas; `apps-script/` tem o do painel).
   · **Erros de digitação**: Fuse.js 7.1.0 (Apache 2.0) copiado em `public/vendor/` (sem CDN, sem rede).
     Corrige só palavras desconhecidas por uma conhecida com a mesma 1ª letra (`FE_COMUNS` = palavras que
     nunca corrige) e avisa "Acho que você quis dizer…". O ECC (affaan-m/ECC) foi avaliado e **não** usado.
+  · **Ligações das lojas** (`public/fernanda-ligacoes.js`, carregado pelo fernanda-ajuda.js só em
+    `/ligacoes.html`; lê `window.FE_LIG`, a "ponte" no fim do ligacoes.html, evento `fe-lig`):
+    chama a pessoa pelo primeiro nome; **um aviso por período** (manhã: clientes de ontem, agendados de
+    hoje com quem agendou: "foi você", outra pessoa ou "o televendas pelo Kommo", atrasados; tarde:
+    quanto falta, WhatsApp para quem não atendeu; noite: resumo do dia), guardado por pessoa+dia+período
+    no navegador (`fe_lig_aviso_...`) e repetido na virada do período se a página ficar aberta.
+    Chat: agendados de hoje/amanhã/atrasados/sem data, por onde começo (maior valor), quantos faltam,
+    quem não atende, meu resumo, dicas de abordagem (nunca prometer pneu separado), como fazer.
+    Botões "Ver na lista" (destaca a linha), Ligar e WhatsApp (os mesmos links da tela).
+  · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
+    `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
   com 2 alinhamentos. **Dados bancários/Pix ficam fora** (repositório público).
 
