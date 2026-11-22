@@ -139,18 +139,40 @@ vendas para o televendas; `apps-script/` tem o do painel).
   App e página tratam o erro 23505 com aviso amigável.
 - ⚠️ No App, "Excluir" apaga por número + tipo (apagaria os dois repetidos).
 
-## Ligações das lojas — branch `ligacoes-lojas`
+## Ligações das lojas — branch `ligacoes-lojas` + `ligacoes-vendedores`
 
 - **Quem liga são os VENDEDORES DAS LOJAS** (não o televendas). Página `/ligacoes.html`
-  (bloco "Ligações das lojas" do FOXNET). Cada vendedor vê só a loja do seu perfil
-  (`perfis.loja`). **Gerentes** (`perfis.dash_ligacoes`) e admin veem todas as lojas e a aba
-  **📊 Dashboard** (lojas, vendedores, análises); gerente só olha, não marca fora da loja dele.
+  (bloco "Ligações das lojas" do FOXNET).
+- **Funções** (`perfis.papel_ligacoes`, SQL `15_ligacoes_vendedores.sql`), decisão do TI:
+  · **Vendedor da loja**: vê SÓ os clientes dele (`ligacoes.responsavel_id`); só liga e preenche
+    status, O.S., data do agendamento, motivo da perda e anotação. Sem Dashboard, sem histórico.
+  · **Gerente da loja** (ex.: Wagner, MATRIZ): vê todos da loja, Dashboard e histórico; troca o
+    responsável (`trocar_responsavel`, fica no histórico); põe vendedor de **férias** / volta
+    (`vendedor_ferias`: os clientes em aberto dele vão para os outros; não recebe novos).
+  · **Gerente de todas as lojas** (Jonathan, sem loja): vê tudo, só acompanha.
+  · **Admin**: tudo; botão **👥 Usuários** (abre `/admin`) e aviso do robô no topo.
+- **Férias com data de volta** (SQL `16_ferias_data_volta.sql`, `perfis.ferias_ate`): ao clicar em
+  "Colocar de férias" o gerente escolhe o dia da volta (ou "Ainda não sei"). Na hora os clientes em
+  aberto passam para os outros vendedores ativos e ele não recebe novos; no dia da volta
+  `voltar_das_ferias()` (chamada pela divisão, o robô das 7h) o reativa sozinho. "Voltou: ativar" ativa antes.
+- **Robô nunca dá ponto ao vendedor**: o que o robô muda (venda achada no Movere, agendado no Kommo)
+  aparece como "🤖 Sistema (Movere)" / "🤖 Sistema (Kommo)", é atualizado na própria linha (não exclui),
+  e no Dashboard fica na coluna "🤖 Venda pelo sistema" (fora das "Vendas ganhas" do vendedor).
+- **Dias da cotação em ordem crescente** (19/11, 20/11, 21/11, "Os N dias"), decisão do TI.
+- **Divisão automática** (`distribuir_ligacoes`): clientes sem responsável são divididos por igual
+  entre os vendedores ativos (não férias) da loja, maiores valores primeiro; a sobra roda
+  (`ligacoes_rodizio`: 29/3 → 10,10,9 e quem ficou com 9 recebe o extra da próxima vez).
+  O robô chama depois de importar. Loja sem vendedor ativo: fica sem responsável (gerente vê).
+- Colunas **Cotou** (primeiro nome de quem cotou no televendas; nomes iguais ganham a inicial:
+  "Sabrina R", "Sabrina D") e **Responsável** (`perfis.apelido`, primeiro nome; só gerente/admin muda).
 - **Primeiro acesso**: login = e-mail, senha inicial = o próprio e-mail (minúsculas);
   `perfis.trocar_senha` obriga a criar senha nova (≥ 8, diferente do e-mail) → `senha_trocada()`.
 - Lista por **dia da cotação** (abre no mais recente com pendentes), abas Pendentes / Já liguei /
-  Agendou / Venda ganha (loja) / Venda televendas / Todas, busca e filtro por vendedor,
-  botões Ligar e WhatsApp, histórico. Status pela função `marcar_ligacao` (registra quem e
-  quando); **"Venda ganha" exige o nº da O.S.**
+  Agendou / Venda ganha (loja) / Venda televendas / Todas, busca, filtro por quem cotou e por
+  responsável, botões Ligar e WhatsApp (iguais aos de antes, com a mensagem pronta; não mudar, decisão do TI), histórico.
+  Status pela função `marcar_ligacao` (registra quem e quando; vendedor só nos clientes dele).
+  **"Venda ganha" só salva com o status E o nº da O.S.** (os dois; decisão do TI).
+  `ligacoes.tentativas` conta os "Não atendeu" (o vendedor não lê o histórico).
 - **"Venda ganha televendas"** (só o robô): o cliente comprou e a loja NÃO marcou "Venda ganha"
   (mesmo que tenha ligado) — decisão do TI.
 - **Agendou** exige a **data do agendamento** (`ligacoes.agendado_para`); o agendado do Kommo
@@ -158,40 +180,48 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Amanhã / Próximos 7 dias / Sem data / Todos + calendário), não pelo dia da cotação.
   **Venda perdida** exige **motivo** (`motivo_perda`, lista fixa + "Outro motivo" com obs).
   Perdida que depois compra → "Venda ganha televendas". SQL: `13_ligacoes_agenda_perda.sql`.
-- **Formato planilha** (computador ≥ 900 px): tabela com as colunas da planilha do TI (Cotação,
-  Nome, Contato, Vendedor, Valor, Data, Status, Nº O.S., Data agendamento, Motivo da perda,
-  Anotação, Histórico 🕘). Salva sozinho ao mudar a célula, com "↶ Desfazer" por 8 s.
-  **Regras automáticas**: digitou a O.S. → Venda ganha; escolheu a data → Agendou; escolheu o
-  motivo → Venda perdida; "Outro motivo" exige a Anotação. Tentativas "Não atendeu (2x)" pelo
-  histórico; da 2ª em diante o WhatsApp fica em destaque; WhatsApp abre com mensagem pronta.
-  Pendentes ordenados pelo maior valor + total em aberto. Cabeçalho e Cotação/Nome fixos.
-  Celular (< 900 px): cartões, com as mesmas regras.
-  Tela inteira no computador (como o Google Sheets). **WhatsApp**: primeiro nome tirado do
-  **e-mail** do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
-  Agendou: mensagem de confirmação (hoje/amanhã/dia), de remarcação (atrasado) ou pedindo o dia (Kommo).
+- **Formato planilha** (computador ≥ 900 px): tabela com as colunas da planilha do TI. Salva sozinho
+  ao mudar a célula, com "↶ Desfazer" por 8 s. **Regras automáticas**: data → Agendou; motivo →
+  Venda perdida; "Outro motivo" exige a Anotação; O.S. sozinha fica anotada até escolher "Venda ganha".
+  Tentativas "Não atendeu (2x)"; da 2ª em diante o WhatsApp fica em destaque.
+  Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
+  **WhatsApp**: primeiro nome do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
-- **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead (confirmado pelo TI) e grava em `agendado_para` quando a lista está sem data ou com data mais antiga (fica a mais recente).
-  O registro do robô mostra só os NOMES dos campos de data dos leads (para achar o campo certo).
-  **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`): o robô tira da
-  descrição do item do relatório de cotações e completa as cotações dos últimos 7 dias.
-- **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`); os mais antigos
-  somem, menos os **agendados** (ficam até ter resultado). O **Dashboard usa tudo** (decisão do TI).
-- **`/admin`** (`public/admin.html`, rewrite no `middleware.js`, só admin): cadastrar vendedor
-  (nome, e-mail, loja; um por um ou em lote "Nome; e-mail; LOJA"), dar Dashboard a gerentes,
-  mudar loja/Dashboard/ativo. Cria o login com senha = e-mail e `trocar_senha = true`.
+- **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead e grava em
+  `agendado_para` quando a lista está sem data ou com data mais antiga.
+  **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`).
+- **Nome do cliente** aparece sem o telefone que às vezes vem junto do Movere (`nomeCli`: tira
+  sequências com 8+ dígitos; só na tela, o dado no banco não muda).
+- **Histórico** na tela: só **admin** e **gerente da loja** (o gerente de todas as lojas não vê a
+  coluna; o histórico só alimenta o Dashboard dele). Decisão do TI.
+- **Paleta de cores** (🎨 ▾ no topo das Ligações): Claro / Escuro / Dispositivo + 15 cores + conta-gotas
+  (cor própria). Guardada no navegador (`localStorage "lig_tema"`), sem login. Padrão = escuro com o
+  vermelho Fox (igual a antes). As cores da página são variáveis CSS (`--bg`, `--s1`, `--ac`, `--th`...).
+- **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`), menos os **agendados**.
+  O **Dashboard usa tudo** (decisão do TI) e tem a "Divisão por vendedor".
+- **`/admin`** (`public/admin.html`, só admin): cadastrar pessoa com função (vendedor / gerente da
+  loja / gerente de todas), primeiro nome e loja; lote "Nome; e-mail; LOJA; função" com botão que
+  preenche a equipe da Matriz + Jonathan; tabela para mudar função, primeiro nome, loja, férias e
+  ativo (vendedor que sai da divisão passa os clientes para os outros); "Dividir clientes agora".
   Esquecer a senha: o admin manda o e-mail de recuperação pelo Supabase (Authentication → Users).
 - Lojas = nomes do Estabelecimento no Movere: MATRIZ, C.AUTO PVH, ARIQUEMES, JI-PARANA,
-  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (`LOJAS_LIGACOES` no App, `LOJAS` no admin).
-- Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`, seg–sáb 9h, 12h, 16h e 19h
-  de Porto Velho, decisão do TI): **começa nas cotações de 19/11/2026**; importa os dias ainda não importados
-  (relatório 782403 com os filtros do dashboard 782276, igual ao Apps Script), tira quem
-  comprou (vendas 742591, sem filtro), quem está agendado no Kommo (etapas 6 e 7) e telefone
-  repetido; reconfere os últimos 30 dias (comprou → "venda_televendas"; agendou → "agendou").
+  CACOAL, C.AUTO VLH, PARINTINS, XAPURI (= Rio Branco, Acre; Vilhena = C.AUTO VLH).
+  As equipes de todas as lojas (vendedores e gerentes, 22/11/2026) estão em `EQUIPES` no `admin.html`
+  (botão "Preencher com as equipes de todas as lojas").
+- Robô `ligacoes_lojas.py` (workflow `ligacoes-lojas.yml`): **todo dia, inclusive sábado e domingo,
+  7h, 10h, 15h e 18h** de Porto Velho (decisão do TI). Importa os dias ainda não importados
+  (cotações de ontem: sábado → lista de domingo etc.; relatório 782403 com os filtros do dashboard
+  782276), tira quem comprou no dia da cotação ou depois (vendas 742591), quem está nas 2 colunas
+  de agendados do Kommo (etapas 6 e 7, com ou sem data) e telefone repetido; divide entre os
+  vendedores; reconfere os últimos 30 dias (comprou → "venda_televendas"; pendente que aparece no
+  Kommo → "agendou", a data vem depois).
+  **Aviso de erro**: se na rodada das 18h algum dia ainda não chegou, a rodada termina com ERRO →
+  o GitHub manda e-mail ao dono do repositório (só em erro) e o admin vê o aviso vermelho no topo
+  das Ligações (`robo_execucoes`). Começa nas cotações de 19/11/2026.
   Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
 - **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
-- `12_ligacoes.sql`: tabelas `ligacoes` e `ligacoes_historico`, colunas `perfis.trocar_senha`
-  e `perfis.dash_ligacoes`, funções `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
-  `senha_trocada()`.
+- SQL: `12_ligacoes.sql` (tabelas, `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
+  `senha_trocada()`), 13, 14 e **`15_ligacoes_vendedores.sql`** (funções, responsável, férias, divisão).
 - Testes: `python tests/test_ligacoes_lojas.py`.
 
 ## Próximos passos (em ordem)

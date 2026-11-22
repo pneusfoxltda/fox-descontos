@@ -42,8 +42,9 @@ a{color:inherit;}
 .sec{background:#141414;border:1px solid #262626;border-radius:12px;padding:18px;margin-bottom:16px;}
 .sec h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:#fff;margin-bottom:4px;}
 .sec .sub{font-size:12px;color:#999;margin-bottom:14px;line-height:1.5;}
-.linha3{display:grid;grid-template-columns:1.2fr 1.4fr 1fr auto;gap:10px;align-items:end;}
-@media(max-width:760px){.linha3{grid-template-columns:1fr;}}
+.linha5{display:grid;grid-template-columns:1.3fr .8fr 1.4fr 1.1fr 1fr auto;gap:10px;align-items:end;}
+@media(max-width:900px){.linha5{grid-template-columns:1fr;}}
+.tbl input.ap{background:#0D0D0D;color:#fff;border:1px solid #333;border-radius:6px;padding:5px 6px;font-size:12px;width:100px;}
 textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical;}
 .log{margin-top:10px;font-size:12px;line-height:1.7;}
 .log .ok{color:#4ADE80;} .log .er{color:#F87171;} .log .av{color:#FBBF24;}
@@ -92,39 +93,36 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
     </div>
 
     <div class="sec">
-      <h3>Cadastrar vendedor de loja</h3>
-      <div class="sub">O vendedor entra em <b>Ligações das lojas</b> com o <b>e-mail</b>. A <b>primeira senha é o próprio e-mail</b> e, no primeiro acesso, o sistema obriga a criar uma senha nova que só ele sabe. Ele vê só a lista da loja dele.</div>
-      <div class="linha3">
-        <div class="campo"><label>Nome</label><input id="v-nome" placeholder="Nome do vendedor"></div>
+      <h3>Cadastrar pessoa (Ligações das lojas)</h3>
+      <div class="sub">A pessoa entra em <b>Ligações das lojas</b> com o <b>e-mail</b>. A <b>primeira senha é o próprio e-mail</b> e, no primeiro acesso, o sistema obriga a criar uma senha nova.<br>
+        <b>Vendedor da loja</b>: vê só os clientes dele (os clientes da loja são divididos por igual entre os vendedores ativos).
+        <b>Gerente da loja</b>: vê todos da loja dele, o Dashboard e o histórico, troca o responsável e coloca vendedor de férias.
+        <b>Gerente de todas as lojas</b>: vê tudo de todas as lojas, só para acompanhar.<br>
+        O <b>primeiro nome</b> é como a pessoa aparece na coluna Responsável (ex.: Felipe, Vithoria).</div>
+      <div class="linha5">
+        <div class="campo"><label>Nome completo</label><input id="v-nome" placeholder="Nome da pessoa"></div>
+        <div class="campo"><label>Primeiro nome</label><input id="v-apelido" placeholder="Ex.: Felipe" maxlength="20"></div>
         <div class="campo"><label>E-mail</label><input id="v-email" type="email" placeholder="nome@redefox.com.br"></div>
+        <div class="campo"><label>Função</label><select id="v-funcao"></select></div>
         <div class="campo"><label>Loja</label><select id="v-loja"></select></div>
         <button class="btn-red" id="btn-vend">Cadastrar</button>
       </div>
-      <details style="margin-top:14px">
+      <details style="margin-top:14px" id="det-lote">
         <summary style="cursor:pointer;font-size:13px;color:#ddd;font-weight:600">Cadastrar vários de uma vez</summary>
-        <div class="sub" style="margin-top:10px">Uma pessoa por linha, no formato <code>Nome; e-mail; LOJA</code>. Lojas: <span id="lista-lojas"></span>.</div>
-        <textarea id="v-lote" placeholder="Maria Souza; maria.souza@redefox.com.br; CACOAL&#10;João Lima; joao.lima@redefox.com.br; C.AUTO VLH"></textarea>
-        <button class="btn-red" id="btn-lote" style="margin-top:10px">Cadastrar todos</button>
+        <div class="sub" style="margin-top:10px">Uma pessoa por linha: <code>Nome; e-mail; LOJA; função</code>. Função: <b>vendedor</b>, <b>gerente</b> (da loja) ou <b>gerente todas</b> (deixe a loja em branco). Sem função = vendedor. Lojas: <span id="lista-lojas"></span>.</div>
+        <textarea id="v-lote" placeholder="Maria Souza; maria.souza@redefox.com.br; CACOAL; vendedor&#10;Carlos Lima; carlos.lima@redefox.com.br; CACOAL; gerente"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn-red" id="btn-lote">Cadastrar todos</button>
+          <button class="btn-out" id="btn-matriz">Preencher com as equipes de todas as lojas</button>
+        </div>
       </details>
       <div class="log" id="log-vend"></div>
     </div>
 
     <div class="sec">
-      <h3>Gerentes (veem o Dashboard das ligações)</h3>
-      <div class="sub">O gerente vê a lista e o <b>Dashboard de todas as lojas</b>, só para acompanhar (não marca nada fora da loja dele). Se ainda não tiver acesso, o cadastro é criado com a senha = e-mail e troca obrigatória no primeiro acesso.</div>
-      <div class="linha3">
-        <div class="campo"><label>Nome</label><input id="g-nome" placeholder="Nome do gerente"></div>
-        <div class="campo"><label>E-mail</label><input id="g-email" type="email" placeholder="gerente@redefox.com.br"></div>
-        <div class="campo"><label>Loja dele (opcional)</label><select id="g-loja"></select></div>
-        <button class="btn-red" id="btn-ger">Dar acesso</button>
-      </div>
-      <div class="log" id="log-ger"></div>
-    </div>
-
-    <div class="sec">
       <h3>Acessos das Ligações</h3>
-      <div class="sub">Todas as pessoas com loja ou com Dashboard. Mude a loja ou o acesso ao Dashboard direto aqui.</div>
-      <div class="filtro"><input id="f-busca" placeholder="Buscar por nome, e-mail ou loja…"></div>
+      <div class="sub">Mude aqui a função, o primeiro nome, a loja, as férias e o acesso. Ao colocar um vendedor de <b>férias</b>, desativar ou mudar de loja/função, os clientes em aberto dele passam para os outros vendedores da loja (fica registrado no histórico).</div>
+      <div class="filtro"><input id="f-busca" placeholder="Buscar por nome, e-mail ou loja…"><button class="btn-out" id="btn-dividir">Dividir clientes sem responsável agora</button></div>
       <div class="scroll"><table class="tbl" id="t-acessos"></table></div>
     </div>
   </div>
@@ -181,42 +179,86 @@ async function doLogin() {
 }
 
 // ── DADOS ──
+// Função nas Ligações → colunas do perfil
+const FUNCOES = [["vendedor", "Vendedor da loja"], ["gerente", "Gerente da loja"], ["gerente_todas", "Gerente de todas as lojas"], ["", "Sem acesso às Ligações"]];
+const funcaoDe = p => p.papel_ligacoes === "gerente" ? (p.loja ? "gerente" : "gerente_todas") : p.papel_ligacoes === "vendedor" ? "vendedor" : (p.dash_ligacoes ? (p.loja ? "gerente" : "gerente_todas") : (p.loja ? "vendedor" : ""));
+const nomeFuncao = f => (FUNCOES.find(x => x[0] === f) || ["", ""])[1];
+const primeiroNome = n => { const w = String(n || "").trim().split(/\s+/)[0] || ""; return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ""; };
+function camposDaFuncao(funcao, loja) {
+  if (funcao === "vendedor") return {papel_ligacoes: "vendedor", dash_ligacoes: false, loja};
+  if (funcao === "gerente") return {papel_ligacoes: "gerente", dash_ligacoes: true, loja};
+  if (funcao === "gerente_todas") return {papel_ligacoes: "gerente", dash_ligacoes: true, loja: null};
+  return {papel_ligacoes: null, dash_ligacoes: false};
+}
+function lerFuncao(txt) {
+  const t = norm(txt).replace(/\s+/g, " ").trim();
+  if (!t || t.startsWith("vend")) return "vendedor";
+  if (t.startsWith("ger") || t.startsWith("dash")) return /todas|geral|rede/.test(t) ? "gerente_todas" : "gerente";
+  return null;
+}
+
+let sql15 = true;
 async function carregar() {
-  const { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha").order("nome");
+  let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias,ferias_ate").order("nome");
+  if (error && /ferias_ate/.test(error.message)) ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome"));   // passo 16 ainda não rodou
+  if (error && /papel_ligacoes|apelido|ferias/.test(error.message)) {
+    sql15 = false;
+    ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha").order("nome"));
+    toast("Falta rodar o passo 15 (15_ligacoes_vendedores.sql) no Supabase: função, primeiro nome e férias ainda não funcionam.", false);
+  }
   if (error) { toast("Não consegui carregar os acessos: " + error.message, false); return; }
   perfis = data || [];
   renderTabela();
 }
 
+async function rpc(nome, args) {
+  const { data, error } = await sb.rpc(nome, args);
+  if (error) throw new Error(error.message);
+  return data;
+}
+// Antes de um vendedor sair da divisão (férias, desativar, mudar loja/função): os clientes dele vão para os outros
+async function soltarClientes(p) {
+  if (!sql15 || funcaoDe(p) !== "vendedor" || !p.loja || p.ferias) return 0;
+  return await rpc("vendedor_ferias", {p_vendedor: p.id, p_ferias: true});
+}
+
 // Cria (ou atualiza) o acesso. Senha inicial = e-mail, troca obrigatória no 1º acesso.
-async function criarAcesso({nome, email, loja, dash}) {
+async function criarAcesso({nome, email, loja, funcao, apelido}) {
   email = email.trim().toLowerCase(); nome = nome.trim();
+  apelido = (apelido || "").trim() || primeiroNome(nome);
   if (!nome || !emailOk(email)) return {erro: "nome ou e-mail inválido"};
+  if ((funcao === "vendedor" || funcao === "gerente") && !loja) return {erro: "escolha a loja"};
+  const campos = camposDaFuncao(funcao, loja || null);
+  if (sql15) campos.apelido = apelido; else { delete campos.papel_ligacoes; }
   const existente = perfis.find(p => (p.email || "").toLowerCase() === email);
   if (existente) {
-    const mud = {};
-    if (loja !== undefined && loja) mud.loja = loja;
-    if (dash) mud.dash_ligacoes = true;
-    if (!Object.keys(mud).length) return {ok: "já tinha acesso (nada mudou)"};
-    const { error } = await sb.from("perfis").update(mud).eq("id", existente.id);
-    return error ? {erro: error.message} : {ok: "já tinha acesso: atualizado" + (mud.loja ? " (loja " + mud.loja + ")" : "") + (mud.dash_ligacoes ? " (Dashboard)" : "")};
+    const mudouDivisao = funcaoDe(existente) === "vendedor" && (funcao !== "vendedor" || loja !== existente.loja);
+    try { if (mudouDivisao) await soltarClientes(existente); } catch (e) { return {erro: e.message}; }
+    if (sql15 && funcao === "vendedor" && mudouDivisao) campos.ferias = false;   // mudou de loja/função: começa trabalhando
+    const { error } = await sb.from("perfis").update({...campos, ativo: true}).eq("id", existente.id);
+    return error ? {erro: error.message} : {ok: "já tinha acesso: atualizado (" + nomeFuncao(funcao) + (campos.loja ? " · " + campos.loja : "") + ")"};
   }
   const { data, error } = await avulso().auth.signUp({ email, password: email, options: { data: { nome } } });
   if (error) return {erro: /rate|limit/i.test(error.message) ? "muitos cadastros seguidos: espere 5 minutos e tente de novo" : error.message};
   const uid = data.user && data.user.id;
   if (!uid || (data.user.identities && data.user.identities.length === 0)) return {erro: "esse e-mail já tem login, mas não achei o perfil. Fale com o suporte."};
-  const { error: e2 } = await sb.from("perfis").upsert({ id: uid, nome, email, funcoes: [], ativo: true, loja: loja || null, dash_ligacoes: !!dash, trocar_senha: true });
-  return e2 ? {erro: "login criado, mas não gravei o perfil: " + e2.message} : {ok: "criado · senha inicial = e-mail"};
+  const { error: e2 } = await sb.from("perfis").upsert({ id: uid, nome, email, funcoes: [], ativo: true, loja: null, trocar_senha: true, ...campos });
+  return e2 ? {erro: "login criado, mas não gravei o perfil: " + e2.message} : {ok: "criado · " + nomeFuncao(funcao) + " · senha inicial = e-mail"};
+}
+
+async function dividirAgora(silencioso) {
+  if (!sql15) return;
+  try { const n = await rpc("distribuir_ligacoes", {}); if (!silencioso || n) toast(n ? n + " cliente(s) divididos entre os vendedores" : "Nenhum cliente sem responsável"); }
+  catch (e) { toast("Não consegui dividir: " + e.message, false); }
 }
 
 async function cadastrarVendedor() {
-  const nome = $("v-nome").value, email = $("v-email").value, loja = $("v-loja").value;
-  if (!loja) { toast("Escolha a loja do vendedor.", false); return; }
+  const nome = $("v-nome").value, email = $("v-email").value, loja = $("v-loja").value, funcao = $("v-funcao").value, apelido = $("v-apelido").value;
   $("btn-vend").disabled = true;
-  const r = await criarAcesso({nome, email, loja});
+  const r = await criarAcesso({nome, email, loja, funcao, apelido});
   $("btn-vend").disabled = false;
-  logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} · ${esc(r.erro || r.ok)}`);
-  if (!r.erro) { $("v-nome").value = ""; $("v-email").value = ""; await carregar(); }
+  logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(nomeFuncao(funcao))}${loja && funcao !== "gerente_todas" ? " · " + esc(loja) : ""} · ${esc(r.erro || r.ok)}`);
+  if (!r.erro) { $("v-nome").value = ""; $("v-email").value = ""; $("v-apelido").value = ""; await carregar(); if (funcao === "vendedor") await dividirAgora(true); }
 }
 
 async function cadastrarLote() {
@@ -225,66 +267,161 @@ async function cadastrarLote() {
   $("btn-lote").disabled = true;
   let ok = 0, erro = 0;
   for (const linha of linhas) {
-    const [nome = "", email = "", lojaTxt = ""] = linha.split(/[;\t]/).map(x => x.trim());
+    const [nome = "", email = "", lojaTxt = "", funcaoTxt = ""] = linha.split(/[;\t]/).map(x => x.trim());
+    const funcao = lerFuncao(funcaoTxt);
     const loja = normLoja(lojaTxt);
-    if (!loja) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} · loja "${esc(lojaTxt)}" não existe`); continue; }
-    const r = await criarAcesso({nome, email, loja});
+    if (!funcao) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} · função "${esc(funcaoTxt)}" não existe (use vendedor, gerente ou gerente todas)`); continue; }
+    if (funcao !== "gerente_todas" && !loja) { erro++; logar("log-vend", "er", `✗ ${esc(linha)} · loja "${esc(lojaTxt)}" não existe`); continue; }
+    const r = await criarAcesso({nome, email, loja: funcao === "gerente_todas" ? null : loja, funcao});
     r.erro ? erro++ : ok++;
-    logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(loja)} · ${esc(r.erro || r.ok)}`);
+    logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(nomeFuncao(funcao))}${funcao !== "gerente_todas" ? " · " + esc(loja) : ""} · ${esc(r.erro || r.ok)}`);
+    if (!r.erro) await carregar();
     await espera(700);
     if (r.erro && /espere/.test(r.erro)) break;
   }
   logar("log-vend", erro ? "av" : "ok", `Fim: ${ok} ok, ${erro} com problema.`);
   $("btn-lote").disabled = false;
   await carregar();
+  await dividirAgora(true);
 }
 
-async function darAcessoGerente() {
-  const nome = $("g-nome").value, email = $("g-email").value, loja = $("g-loja").value;
-  $("btn-ger").disabled = true;
-  const r = await criarAcesso({nome: nome || email, email, loja: loja || undefined, dash: true});
-  $("btn-ger").disabled = false;
-  logar("log-ger", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome || email)} &lt;${esc(email)}&gt; · ${esc(r.erro || r.ok)}`);
-  if (!r.erro) { $("g-nome").value = ""; $("g-email").value = ""; await carregar(); }
-}
+// Equipes passadas pelo TI (22/11/2026). Rio Branco = loja XAPURI no Movere.
+const EQUIPES = [
+  // MATRIZ
+  "Felipe Seixas; felipe.seixas@redefox.com.br; MATRIZ; vendedor",
+  "Marcos Henrique; marcos.henrique@redefox.com.br; MATRIZ; vendedor",
+  "Edileia Brito; edileia.brito@redefox.com.br; MATRIZ; vendedor",
+  "Vithoria Ferreira; vithoria.ferreira@redefox.com.br; MATRIZ; vendedor",
+  "Wagner Raiol; wagner.raiol@redefox.com.br; MATRIZ; gerente",
+  // C.AUTO PVH
+  "Jederson Silva; jederson.silva@redefox.com.br; C.AUTO PVH; vendedor",
+  "Elizabete Soares; elizabete.soares@redefox.com.br; C.AUTO PVH; vendedor",
+  "Beatriz Mota; beatriz.mota@redefox.com.br; C.AUTO PVH; vendedor",
+  "Elaine Gouveia; elaine.gouveia@redefox.com.br; C.AUTO PVH; gerente",
+  // JI-PARANA
+  "Ana Silva; ana.silva@redefox.com.br; JI-PARANA; vendedor",
+  "Lurdes Oliveira; lurdes.oliveira@redefox.com.br; JI-PARANA; vendedor",
+  "Vinícius Pereira; vinicius.pereira@redefox.com.br; JI-PARANA; vendedor",
+  "Júlio Melo; julio.melo@redefox.com.br; JI-PARANA; vendedor",
+  "Luciana Alves; luciana.alves@redefox.com.br; JI-PARANA; gerente",
+  // CACOAL
+  "Márcia Ramos; marcia.ramos@redefox.com.br; CACOAL; vendedor",
+  "Matheus Rodrigues; matheus.rodrigues@redefox.com.br; CACOAL; vendedor",
+  "Viviane Raach; viviane.raach@redefox.com.br; CACOAL; vendedor",
+  "Márcia Souza; marcia.souza@redefox.com.br; CACOAL; gerente",
+  // ARIQUEMES
+  "Lucas Fonseca; lucas.fonseca@redefox.com.br; ARIQUEMES; vendedor",
+  "Estênio Júnior; estenio.junior@redefox.com.br; ARIQUEMES; vendedor",
+  "Jorge Júnior; jorge.junior@redefox.com.br; ARIQUEMES; gerente",
+  // PARINTINS
+  "Handerson Souza; handerson.souza@redefox.com.br; PARINTINS; vendedor",
+  "Jeferson Almeida; jeffeson.almeida@redefox.com.br; PARINTINS; vendedor",
+  "Ideu Rabelo; ideu.rabelo@redefox.com.br; PARINTINS; vendedor",
+  "Alex Patrick; alex.patrick@redefox.com.br; PARINTINS; gerente",
+  // XAPURI
+  "Paulo Araujo; paulo.araujo@redefox.com.br; XAPURI; vendedor",
+  "Camile Souza; camile.souza@redefox.com.br; XAPURI; vendedor",
+  "Lucicleia Oliveira; lucicleia.oliveira@redefox.com.br; XAPURI; vendedor",
+  "Raimundo Alves; raimundo.alves@redefox.com.br; XAPURI; gerente",
+  // C.AUTO VLH
+  "Carlos Garcia; carlos.garcia@redefox.com.br; C.AUTO VLH; vendedor",
+  "Nalbert Soel; nalbert.soel@redefox.com.br; C.AUTO VLH; vendedor",
+  "Beatriz Santos; beatriz.santos@redefox.com.br; C.AUTO VLH; gerente",
+  // Todas as lojas
+  "Jonathan Lemes; jonathan.lemes@redefox.com.br; ; gerente todas",
+];
 
-async function mudar(id, campos, msg) {
-  const { error } = await sb.from("perfis").update(campos).eq("id", id);
-  if (error) { toast("Erro: " + error.message, false); await carregar(); return; }
-  Object.assign(perfis.find(p => p.id === id), campos);
+async function mudar(p, campos, msg) {
+  const { error } = await sb.from("perfis").update(campos).eq("id", p.id);
+  if (error) { toast("Erro: " + error.message, false); await carregar(); return false; }
+  Object.assign(p, campos);
   toast(msg); renderTabela();
+  return true;
+}
+// Mudança que tira (ou põe) um vendedor da divisão dos clientes
+async function mudarDivisao(p, campos, msg) {
+  try {
+    const n = await soltarClientes(p);
+    if (sql15 && funcaoDe({...p, ...campos}) === "vendedor" && campos.ativo !== false) campos.ferias = false;
+    if (await mudar(p, campos, msg + (n ? ` · ${n} cliente(s) passaram para os outros vendedores` : ""))) await dividirAgora(true);
+  } catch (e) { toast("Erro: " + e.message, false); await carregar(); }
+}
+async function mudarFerias(p, ferias) {
+  const nome = p.apelido || primeiroNome(p.nome);
+  let volta = null;
+  if (ferias) {
+    const r = prompt(`Colocar ${nome} de férias.\nOs clientes em aberto passam agora para os outros vendedores da loja.\n\nQue dia volta a trabalhar? (dd/mm/aaaa; deixe em branco se ainda não sabe)`, "");
+    if (r === null) { renderTabela(); return; }
+    if (r.trim()) {
+      const m = r.trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+      if (!m) { toast("Data inválida. Use dd/mm/aaaa.", false); renderTabela(); return; }
+      const ano = m[3] ? (m[3].length === 2 ? "20" + m[3] : m[3]) : String(new Date().getFullYear());
+      volta = `${ano}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+    }
+  }
+  try {
+    let n;
+    try { n = await rpc("vendedor_ferias", volta ? {p_vendedor: p.id, p_ferias: true, p_volta: volta} : {p_vendedor: p.id, p_ferias: ferias}); }
+    catch (e) { if (!volta || !/p_volta|function|schema cache/i.test(e.message)) throw e; n = await rpc("vendedor_ferias", {p_vendedor: p.id, p_ferias: true}); toast("Férias gravadas SEM a data de volta: falta rodar o passo 16.", false); }
+    p.ferias = ferias; p.ferias_ate = volta; renderTabela();
+    toast(ferias ? `${nome} de férias${volta ? " · volta " + volta.split("-").reverse().join("/") : ""} · ${n} cliente(s) passaram para os outros` : `${nome} voltou: recebe clientes novos de novo`);
+  } catch (e) { toast("Erro: " + e.message, false); renderTabela(); }
 }
 
 function renderTabela() {
   const b = norm($("f-busca").value);
-  const lista = perfis.filter(p => p.loja || p.dash_ligacoes)
-    .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "")).includes(b))
-    .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || (a.nome || "").localeCompare(c.nome || ""));
-  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>E-mail</th><th>Loja</th><th>Dashboard</th><th>Situação</th><th>Ativo</th></tr>` +
-    (lista.length ? lista.map(p => `<tr>
+  const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes)
+    .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "") + " " + (p.apelido || "")).includes(b))
+    .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || funcaoDe(c).localeCompare(funcaoDe(a)) || (a.nome || "").localeCompare(c.nome || ""));
+  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th><th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th>Ativo</th></tr>` +
+    (lista.length ? lista.map(p => { const f = funcaoDe(p); return `<tr>
       <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
+      <td>${sql15 ? `<input class="ap" data-id="${p.id}" value="${esc(p.apelido || primeiroNome(p.nome))}" maxlength="20">` : esc(primeiroNome(p.nome))}</td>
       <td>${esc(p.email)}</td>
-      <td><select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select></td>
-      <td><input type="checkbox" data-id="${p.id}" class="c-dash" ${p.dash_ligacoes ? "checked" : ""}></td>
+      <td><select data-id="${p.id}" class="s-funcao">${FUNCOES.map(([v, n]) => `<option value="${v}" ${v === f ? "selected" : ""}>${n}</option>`).join("")}</select></td>
+      <td>${f === "gerente_todas" ? '<span class="tag cz">todas</span>' : `<select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select>`}</td>
+      <td>${f === "vendedor" && sql15 ? `<label style="cursor:pointer"><input type="checkbox" data-id="${p.id}" class="c-ferias" ${p.ferias ? "checked" : ""}> ${p.ferias ? "🏖️ férias" + (p.ferias_ate ? " · volta " + p.ferias_ate.split("-").reverse().join("/") : "") : "trabalhando"}</label>` : ""}</td>
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
-    </tr>`).join("") : `<tr><td colspan="6" style="color:#777;padding:14px">Ninguém com loja ou Dashboard ainda.</td></tr>`);
-  document.querySelectorAll(".s-loja").forEach(s => s.onchange = () => mudar(s.dataset.id, {loja: s.value || null}, s.value ? "Loja alterada para " + s.value : "Loja removida"));
-  document.querySelectorAll(".c-dash").forEach(c => c.onchange = () => mudar(c.dataset.id, {dash_ligacoes: c.checked}, c.checked ? "Dashboard liberado" : "Dashboard removido"));
-  document.querySelectorAll(".c-ativo").forEach(c => c.onchange = () => mudar(c.dataset.id, {ativo: c.checked}, c.checked ? "Acesso reativado" : "Acesso desativado"));
+    </tr>`; }).join("") : `<tr><td colspan="8" style="color:#777;padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
+  const pe = id => perfis.find(p => p.id === id);
+  document.querySelectorAll(".s-funcao").forEach(s => s.onchange = () => {
+    const p = pe(s.dataset.id), f = s.value;
+    if ((f === "vendedor" || f === "gerente") && !p.loja) { toast("Escolha a loja primeiro.", false); renderTabela(); return; }
+    const campos = camposDaFuncao(f, p.loja); if (!sql15) delete campos.papel_ligacoes;
+    mudarDivisao(p, campos, nomeFuncao(f));
+  });
+  document.querySelectorAll(".s-loja").forEach(s => s.onchange = () => {
+    const p = pe(s.dataset.id);
+    if (!s.value && funcaoDe(p) !== "") { toast("Vendedor e gerente da loja precisam de loja.", false); renderTabela(); return; }
+    mudarDivisao(p, {loja: s.value || null}, s.value ? "Loja alterada para " + s.value : "Loja removida");
+  });
+  document.querySelectorAll(".ap").forEach(i => i.onchange = () => {
+    const v = i.value.trim(); if (!v) { renderTabela(); return; }
+    mudar(pe(i.dataset.id), {apelido: v}, "Primeiro nome: " + v + " (vale para os próximos clientes; os já divididos mantêm o nome antigo até trocar)");
+  });
+  document.querySelectorAll(".c-ferias").forEach(c => c.onchange = () => mudarFerias(pe(c.dataset.id), c.checked));
+  document.querySelectorAll(".c-ativo").forEach(c => c.onchange = () => {
+    const p = pe(c.dataset.id);
+    if (c.checked) mudarDivisao(p, {ativo: true}, "Acesso reativado");
+    else mudarDivisao(p, {ativo: false}, "Acesso desativado");
+  });
 }
 
 // ── EVENTOS ──
-const opLojas = '<option value="">Escolha…</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
-$("v-loja").innerHTML = opLojas;
-$("g-loja").innerHTML = '<option value="">nenhuma</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
+$("v-funcao").innerHTML = FUNCOES.filter(f => f[0]).map(([v, n]) => `<option value="${v}">${n}</option>`).join("");
+$("v-loja").innerHTML = '<option value="">Escolha…</option>' + LOJAS.map(l => `<option>${l}</option>`).join("");
+$("v-funcao").onchange = () => { const t = $("v-funcao").value === "gerente_todas"; $("v-loja").disabled = t; if (t) $("v-loja").value = ""; };
+$("v-nome").oninput = () => { if (!$("v-apelido").dataset.mexeu) $("v-apelido").value = primeiroNome($("v-nome").value); };
+$("v-apelido").oninput = () => $("v-apelido").dataset.mexeu = "1";
 $("lista-lojas").textContent = LOJAS.join(", ");
 $("btn-login").onclick = doLogin;
 $("l-pass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 $("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 $("btn-vend").onclick = cadastrarVendedor;
 $("btn-lote").onclick = cadastrarLote;
-$("btn-ger").onclick = darAcessoGerente;
+$("btn-matriz").onclick = () => { $("v-lote").value = EQUIPES.join("\n"); toast("Confira as linhas e clique em Cadastrar todos."); };
+$("btn-dividir").onclick = () => dividirAgora(false);
 $("f-busca").oninput = renderTabela;
 sb.auth.getSession().then(async ({ data }) => {
   if (data.session) { const r = await entrar(data.session); if (r && r.erro) { $("login-err").textContent = r.erro; $("login-err").style.display = "block"; } }

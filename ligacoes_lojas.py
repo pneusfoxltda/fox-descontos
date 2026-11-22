@@ -4,15 +4,24 @@ ligacoes_lojas.py
 Monta a lista de "Ligações das lojas" no FOXNET (tabela ligacoes do Supabase).
 Mesma lógica do Apps Script das planilhas — que CONTINUA funcionando igual.
 
+Roda TODOS os dias (inclusive sábado e domingo) às 7h, 10h, 15h e 18h de Porto Velho.
 Toda rodada:
   1. IMPORTA as cotações dos dias ainda não importados (até ontem; no máximo 7),
-     tirando quem já comprou, quem está agendado no Kommo (etapas 6 e 7) e
-     telefones repetidos (fica a cotação mais antiga).
+     tirando quem já comprou (no dia da cotação ou depois), quem está nas duas
+     colunas de agendados do Kommo (etapas 6 e 7, com ou sem data) e telefones
+     repetidos (fica a cotação mais antiga). Normalmente o dia anterior entra às 7h;
+     se o Analytics ainda não atualizou, entra na rodada seguinte.
   2. RECONFERE a lista dos últimos 30 dias:
        comprou (telefone nas vendas do Analytics) e a loja NÃO marcou
        "Venda ganha" (com a O.S.)                        → "Venda ganha televendas"
        agendado no Kommo depois                          → "agendou"
+  3. DIVIDE os clientes sem responsável entre os vendedores ativos de cada loja
+     (função distribuir_ligacoes do SQL 15; a sobra vai para quem ficou com menos).
   A lista começa nas cotações de 19/11/2026 (decisão do TI).
+
+Aviso de erro: se a rodada falhar, ou se às 18h o dia anterior ainda não tiver
+entrado na lista, a rodada termina com erro → o GitHub manda e-mail ao dono do
+repositório, e o admin vê o aviso na tela das Ligações.
 
 Segredos (GitHub → Settings → Secrets → Actions):
   ANALYTICS_LOGIN, ANALYTICS_SENHA, SUPABASE_SERVICE_KEY, KOMMO_TOKEN
@@ -48,7 +57,8 @@ ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "ve
 SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
 ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
-RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0}
+RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0, "divididos": 0}
+HORA_ULTIMA_RODADA = 17     # a rodada das 18h (com folga de atraso do GitHub) é a última do dia
 STATUS_COMPROU = "venda_televendas"
 
 
@@ -433,8 +443,27 @@ def main() -> int:
                          headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}),
                          json={"ligacao_id": m["id"], "quem": m["quem"], "status": m["status"], "obs": obs}).raise_for_status()
 
-    registrar_rodada(True, f"novas {RESUMO['inseridas']} · venda televendas {RESUMO['comprou']} · agendou {RESUMO['agendou']}",
-                     teste=dry)
+        # 3) Dividir os clientes sem responsável entre os vendedores de cada loja
+        if not dry:
+            r = cli.post(f"{cv.SUPABASE_URL}/rest/v1/rpc/distribuir_ligacoes",
+                         headers=cv._sb_headers(chave), json={})
+            if r.status_code == 404:
+                print("⚠️ Falta rodar o SQL 15 (divisão entre vendedores): clientes ficam sem responsável.")
+            else:
+                r.raise_for_status()
+                RESUMO["divididos"] = int(r.json() or 0)
+                print(f"👥 Clientes divididos entre os vendedores: {RESUMO['divididos']}")
+
+    faltando = [d for d in dias if d not in prontos]
+    resumo = (f"novas {RESUMO['inseridas']} · divididos {RESUMO['divididos']} · "
+              f"venda televendas {RESUMO['comprou']} · agendou {RESUMO['agendou']}")
+    if faltando and datetime.now(cv.TZ_LOJA).hour >= HORA_ULTIMA_RODADA:
+        msg = (f"lista de {', '.join(d.strftime('%d/%m') for d in faltando)} NÃO foi para as lojas: "
+               f"o Analytics ainda não tinha esse dia na última rodada (18h). " + resumo)
+        print(f"❌ {msg}")
+        registrar_rodada(False, msg, teste=dry)
+        return 1
+    registrar_rodada(True, resumo, teste=dry)
     print("✅ Fim.")
     return 0
 
