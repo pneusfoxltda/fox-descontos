@@ -17,7 +17,7 @@ Toda rodada:
        agendado no Kommo depois                          → "agendou"
   3. DIVIDE os clientes sem responsável entre os vendedores ativos de cada loja
      (função distribuir_ligacoes do SQL 15; a sobra vai para quem ficou com menos).
-  A lista começa nas cotações de 19/11/2026 (decisão do TI).
+  A lista começa nas cotações de 17/11/2026 (os 5 dias antes de 22/11; decisão do TI).
 
 Aviso de erro: se a rodada falhar, ou se às 18h o dia anterior ainda não tiver
 entrado na lista, a rodada termina com erro → o GitHub manda e-mail ao dono do
@@ -51,7 +51,8 @@ ETAPAS = [112913852, 89179011]           # 6 - AGENDADOS (IA), 7 - AGENDADO
 LOJAS_IGNORADAS = {"ATACADO"}            # igual ao Apps Script
 DIAS_RECONFERIR = 30
 MAX_DIAS_IMPORTAR = 7
-INICIO = date(2026, 11, 19)              # primeiras cotações da lista (decisão do TI)
+INICIO = date(2026, 11, 17)              # primeiras cotações da lista (decisão do TI: os últimos 5 dias)
+DIAS_REVISAR = 5                         # toda rodada confere de novo os últimos 5 dias de cotação
 # Se o cliente comprou e a loja não marcou "Venda ganha" → "Venda ganha televendas"
 ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_perdida")
 SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
@@ -282,20 +283,22 @@ def reconferir(abertas: list, vendas: dict, agendados: set, datas: dict = None) 
 
 
 def dias_para_importar(ultima, hoje: date) -> list:
-    """Dias depois do último importado até ontem (no máximo 7, nunca antes de 19/11).
-    Primeira vez: desde 19/11."""
+    """Dias depois do último importado até ontem (no máximo 7, nunca antes do INICIO).
+    Primeira vez: desde o INICIO."""
     ontem = hoje - timedelta(days=1)
     inicio = (ultima + timedelta(days=1)) if ultima else INICIO
     inicio = max(inicio, hoje - timedelta(days=MAX_DIAS_IMPORTAR), INICIO)
     return [inicio + timedelta(days=i) for i in range((ontem - inicio).days + 1)]
 
 
-def dias_para_revisar(ultima, dias: list) -> list:
-    """Os 2 últimos dias já importados (se não estão em "dias"), para pegar cotações que chegaram
-    atrasadas no Analytics."""
+def dias_para_revisar(ultima, dias: list, hoje: date) -> list:
+    """Os últimos DIAS_REVISAR dias de cotação que já passaram pela importação (até o último importado),
+    para pegar cotações que chegaram atrasadas no Analytics ou dias que ficaram de fora. Sem repetir."""
     if not ultima:
         return []
-    return [d for d in (ultima - timedelta(days=1), ultima) if d >= INICIO and d not in dias]
+    inicio = max(INICIO, hoje - timedelta(days=DIAS_REVISAR))
+    return [inicio + timedelta(days=i) for i in range((ultima - inicio).days + 1)
+            if inicio + timedelta(days=i) not in dias]
 
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
@@ -356,7 +359,7 @@ def main() -> int:
         dias = dias_para_importar(ultima, hoje)
         # Os últimos dias já importados são conferidos de novo: se o Analytics ainda não tinha o dia
         # inteiro quando foi importado, as cotações que faltaram entram agora (sem repetir as que já estão).
-        revisar = dias_para_revisar(ultima, dias)
+        revisar = dias_para_revisar(ultima, dias, hoje)
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
               f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}"
               f" · conferir de novo: {', '.join(d.strftime('%d/%m') for d in revisar) or 'nenhum'}")

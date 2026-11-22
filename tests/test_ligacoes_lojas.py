@@ -75,13 +75,13 @@ def test_reconferir():
 
 def test_dias_para_importar():
     hoje = date(2026, 11, 23)  # segunda
-    # primeira vez: desde 19/11 (quinta)
-    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, d) for d in (19, 20, 21, 22)]
-    assert ll.dias_para_importar(None, date(2026, 11, 21)) == [date(2026, 11, 19), date(2026, 11, 20)]
+    # primeira vez: desde 17/11 (terça)
+    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, d) for d in (17, 18, 19, 20, 21, 22)]
+    assert ll.dias_para_importar(None, date(2026, 11, 19)) == [date(2026, 11, 17), date(2026, 11, 18)]
     assert ll.dias_para_importar(date(2026, 11, 20), hoje) == [date(2026, 11, 21), date(2026, 11, 22)]
     assert ll.dias_para_importar(date(2026, 11, 22), hoje) == []
     assert ll.dias_para_importar(date(2026, 10, 1), date(2026, 12, 10))[0] == date(2026, 12, 3)   # no máximo 7 dias
-    assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 19)              # nunca antes de 19/11
+    assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 17)              # nunca antes de 17/11
 
 
 def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultima="2026-11-19", ja_na_lista=()):
@@ -249,9 +249,12 @@ def test_reconferir_com_data_do_kommo():
 
 
 def test_dias_para_revisar():
-    assert ll.dias_para_revisar(None, []) == []
-    assert ll.dias_para_revisar(date(2026, 11, 20), [date(2026, 11, 21)]) == [date(2026, 11, 19), date(2026, 11, 20)]
-    assert ll.dias_para_revisar(date(2026, 11, 19), []) == [date(2026, 11, 19)]          # nunca antes de 19/11
+    hoje = date(2026, 11, 22)
+    assert ll.dias_para_revisar(None, [], hoje) == []
+    # últimos 5 dias (17 a 21/11) menos o que vai ser importado agora
+    assert ll.dias_para_revisar(date(2026, 11, 20), [date(2026, 11, 21)], hoje) == [date(2026, 11, d) for d in (17, 18, 19, 20)]
+    assert ll.dias_para_revisar(date(2026, 11, 28), [], date(2026, 11, 29)) == [date(2026, 11, d) for d in (24, 25, 26, 27, 28)]
+    assert ll.dias_para_revisar(date(2026, 11, 19), [], date(2026, 11, 20)) == [date(2026, 11, 17), date(2026, 11, 18), date(2026, 11, 19)]
 
 
 def test_dia_importado_pela_metade_completa_depois():

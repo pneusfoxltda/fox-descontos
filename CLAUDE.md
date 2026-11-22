@@ -215,12 +215,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   de agendados do Kommo (etapas 6 e 7, com ou sem data) e telefone repetido; divide entre os
   vendedores; o dia D só entra **a partir das 6h de D+1** e só se tiver cotações (a data existe no
   calendário do Analytics mesmo sem dados; em 21/11 à 1h30 o 20/11 entrou com só 3 clientes);
-  **confere de novo os 2 últimos dias já importados** (`dias_para_revisar`: cotações que
-  chegaram atrasadas no Analytics entram depois, sem repetir); reconfere os últimos 30 dias (comprou → "venda_televendas"; pendente que aparece no
+  **confere de novo os últimos 5 dias** (`dias_para_revisar`, `DIAS_REVISAR`: cotações que chegaram
+  atrasadas no Analytics ou dias que ficaram de fora entram depois, sem repetir); reconfere os últimos 30 dias (comprou → "venda_televendas"; pendente que aparece no
   Kommo → "agendou", a data vem depois).
   **Aviso de erro**: se na rodada das 18h algum dia ainda não chegou, a rodada termina com ERRO →
   o GitHub manda e-mail ao dono do repositório (só em erro) e o admin vê o aviso vermelho no topo
-  das Ligações (`robo_execucoes`). Começa nas cotações de 19/11/2026.
+  das Ligações (`robo_execucoes`). Começa nas cotações de 17/11/2026 (`INICIO`; os 5 dias antes de 22/11, decisão do TI).
   Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
 - **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
 - SQL: `12_ligacoes.sql` (tabelas, `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
