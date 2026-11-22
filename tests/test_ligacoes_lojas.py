@@ -84,7 +84,7 @@ def test_dias_para_importar():
     assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 19)              # nunca antes de 19/11
 
 
-def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False):
+def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultima="2026-11-19", ja_na_lista=()):
     reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": [], "divisao": 0}
 
     def responder(req: httpx.Request):
@@ -104,12 +104,12 @@ def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False):
             if "select=medida&limit=1" in u:
                 return httpx.Response(200, json=[])
             if "order=data_cotacao.desc" in u:
-                return httpx.Response(200, json=[{"data_cotacao": "2026-11-19"}])
+                return httpx.Response(200, json=[{"data_cotacao": ultima}])
             if "status=in." in u:
                 return httpx.Response(200, json=[{"id": 77, "cotacao": "5001", "telefone": "(69) 3333-0010", "tel_chave": "33330010",
                                                   "data_cotacao": "2026-11-19", "status": "pendente"}])
             if "select=cotacao" in u:
-                return httpx.Response(200, json=[])
+                return httpx.Response(200, json=[{"cotacao": c} for c in ja_na_lista])
         if u.startswith(ll.KOMMO):
             assert req.headers["Authorization"] == "Bearer kommo"
             if "/leads" in u:
@@ -246,6 +246,20 @@ def test_reconferir_com_data_do_kommo():
     assert ll.reconferir([{**base, "id": 4, "status": "agendou", "agendado_para": "2026-11-28"}], {}, {k}, datas) == []
     # já tem resultado (venda perdida) → não mexe
     assert ll.reconferir([{**base, "id": 5, "status": "venda_perdida"}], {}, {k}, datas) == []
+
+
+def test_dias_para_revisar():
+    assert ll.dias_para_revisar(None, []) == []
+    assert ll.dias_para_revisar(date(2026, 11, 20), [date(2026, 11, 21)]) == [date(2026, 11, 19), date(2026, 11, 20)]
+    assert ll.dias_para_revisar(date(2026, 11, 19), []) == [date(2026, 11, 19)]          # nunca antes de 19/11
+
+
+def test_dia_importado_pela_metade_completa_depois():
+    # 20/11 entrou com só 1 cotação (o Analytics ainda não tinha o dia todo); na rodada seguinte
+    # entram as que faltaram, sem repetir a que já estava.
+    codigo, reg = _rodar_com_rede({"20/11/2026"}, ultima="2026-11-20", ja_na_lista=["5006"])
+    assert codigo == 0
+    assert sorted(x["cotacao"] for x in reg["post_ligacoes"]) == ["5001"]
 
 
 if __name__ == "__main__":

@@ -286,6 +286,14 @@ def dias_para_importar(ultima, hoje: date) -> list:
     return [inicio + timedelta(days=i) for i in range((ontem - inicio).days + 1)]
 
 
+def dias_para_revisar(ultima, dias: list) -> list:
+    """Os 2 últimos dias já importados (se não estão em "dias"), para pegar cotações que chegaram
+    atrasadas no Analytics."""
+    if not ultima:
+        return []
+    return [d for d in (ultima - timedelta(days=1), ultima) if d >= INICIO and d not in dias]
+
+
 # ── Supabase ──────────────────────────────────────────────────────────────────
 def sb_get(cli, chave, caminho):
     r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/{caminho}", headers=cv._sb_headers(chave))
@@ -342,8 +350,12 @@ def main() -> int:
                       and date.fromisoformat(l["data_cotacao"]) >= hoje - timedelta(days=7)]
         RESUMO["abertas"] = len(abertas)
         dias = dias_para_importar(ultima, hoje)
+        # Os últimos dias já importados são conferidos de novo: se o Analytics ainda não tinha o dia
+        # inteiro quando foi importado, as cotações que faltaram entram agora (sem repetir as que já estão).
+        revisar = dias_para_revisar(ultima, dias)
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
-              f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}")
+              f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}"
+              f" · conferir de novo: {', '.join(d.strftime('%d/%m') for d in revisar) or 'nenhum'}")
 
         agendados, datas_kommo = telefones_kommo(cli, segredos["KOMMO_TOKEN"])
         print(f"📅 Telefones agendados no Kommo: {len(agendados)} · com data: {len(datas_kommo)}")
@@ -352,7 +364,7 @@ def main() -> int:
         print("🔐 Login no Analytics OK")
 
         # Vendas desde a cotação aberta mais antiga (ou o 1º dia a importar) até hoje
-        inicio_vendas = min([date.fromisoformat(l["data_cotacao"]) for l in abertas] + dias + [hoje])
+        inicio_vendas = min([date.fromisoformat(l["data_cotacao"]) for l in abertas] + dias + revisar + [hoje])
         dias_vendas = [inicio_vendas + timedelta(days=i) for i in range((hoje - inicio_vendas).days + 1)]
         uris_vendas = {d: u for d in dias_vendas if (u := cv.elemento_dia(cli, tt, d))}
         vendas = {}
@@ -368,6 +380,7 @@ def main() -> int:
             prontos.append(d)
         if dias and not prontos:
             print(f"⏳ O Analytics ainda não tem {dias[0].strftime('%d/%m')}: importo na próxima rodada.")
+        prontos = sorted(set(prontos) | {d for d in revisar if d in uris_vendas})
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
