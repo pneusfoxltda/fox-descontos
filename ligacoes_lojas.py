@@ -17,7 +17,7 @@ Toda rodada:
        agendado no Kommo depois                          → "agendou"
   3. DIVIDE os clientes sem responsável entre os vendedores ativos de cada loja
      (função distribuir_ligacoes do SQL 15; a sobra vai para quem ficou com menos).
-  A lista começa nas cotações de 19/11/2026 (decisão do TI).
+  A lista começa nas cotações de 17/11/2026 (os 5 dias antes de 22/11; decisão do TI).
 
 Aviso de erro: se a rodada falhar, ou se às 18h o dia anterior ainda não tiver
 entrado na lista, a rodada termina com erro → o GitHub manda e-mail ao dono do
@@ -51,7 +51,8 @@ ETAPAS = [112913852, 89179011]           # 6 - AGENDADOS (IA), 7 - AGENDADO
 LOJAS_IGNORADAS = {"ATACADO"}            # igual ao Apps Script
 DIAS_RECONFERIR = 30
 MAX_DIAS_IMPORTAR = 7
-INICIO = date(2026, 11, 19)              # primeiras cotações da lista (decisão do TI)
+INICIO = date(2026, 11, 17)              # primeiras cotações da lista (decisão do TI: os últimos 5 dias)
+DIAS_REVISAR = 5                         # toda rodada confere de novo os últimos 5 dias de cotação
 # Se o cliente comprou e a loja não marcou "Venda ganha" → "Venda ganha televendas"
 ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_perdida")
 SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
@@ -59,6 +60,10 @@ ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
 RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0, "divididos": 0}
 HORA_ULTIMA_RODADA = 17     # a rodada das 18h (com folga de atraso do GitHub) é a última do dia
+# O dia D só é importado a partir das 6h de D+1: de madrugada o Analytics ainda está carregando o dia
+# (em 21/11, à 1h30, o 20/11 tinha só 3 cotações). A data existe no calendário do Analytics mesmo sem
+# dados, então "a data existe" não serve para saber se o dia chegou.
+HORA_MIN_IMPORTAR = 6
 STATUS_COMPROU = "venda_televendas"
 
 
@@ -278,12 +283,22 @@ def reconferir(abertas: list, vendas: dict, agendados: set, datas: dict = None) 
 
 
 def dias_para_importar(ultima, hoje: date) -> list:
-    """Dias depois do último importado até ontem (no máximo 7, nunca antes de 19/11).
-    Primeira vez: desde 19/11."""
+    """Dias depois do último importado até ontem (no máximo 7, nunca antes do INICIO).
+    Primeira vez: desde o INICIO."""
     ontem = hoje - timedelta(days=1)
     inicio = (ultima + timedelta(days=1)) if ultima else INICIO
     inicio = max(inicio, hoje - timedelta(days=MAX_DIAS_IMPORTAR), INICIO)
     return [inicio + timedelta(days=i) for i in range((ontem - inicio).days + 1)]
+
+
+def dias_para_revisar(ultima, dias: list, hoje: date) -> list:
+    """Os últimos DIAS_REVISAR dias de cotação que já passaram pela importação (até o último importado),
+    para pegar cotações que chegaram atrasadas no Analytics ou dias que ficaram de fora. Sem repetir."""
+    if not ultima:
+        return []
+    inicio = max(INICIO, hoje - timedelta(days=DIAS_REVISAR))
+    return [inicio + timedelta(days=i) for i in range((ultima - inicio).days + 1)
+            if inicio + timedelta(days=i) not in dias]
 
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
@@ -342,8 +357,12 @@ def main() -> int:
                       and date.fromisoformat(l["data_cotacao"]) >= hoje - timedelta(days=7)]
         RESUMO["abertas"] = len(abertas)
         dias = dias_para_importar(ultima, hoje)
+        # Os últimos dias já importados são conferidos de novo: se o Analytics ainda não tinha o dia
+        # inteiro quando foi importado, as cotações que faltaram entram agora (sem repetir as que já estão).
+        revisar = dias_para_revisar(ultima, dias, hoje)
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
-              f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}")
+              f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}"
+              f" · conferir de novo: {', '.join(d.strftime('%d/%m') for d in revisar) or 'nenhum'}")
 
         agendados, datas_kommo = telefones_kommo(cli, segredos["KOMMO_TOKEN"])
         print(f"📅 Telefones agendados no Kommo: {len(agendados)} · com data: {len(datas_kommo)}")
@@ -352,7 +371,7 @@ def main() -> int:
         print("🔐 Login no Analytics OK")
 
         # Vendas desde a cotação aberta mais antiga (ou o 1º dia a importar) até hoje
-        inicio_vendas = min([date.fromisoformat(l["data_cotacao"]) for l in abertas] + dias + [hoje])
+        inicio_vendas = min([date.fromisoformat(l["data_cotacao"]) for l in abertas] + dias + revisar + [hoje])
         dias_vendas = [inicio_vendas + timedelta(days=i) for i in range((hoje - inicio_vendas).days + 1)]
         uris_vendas = {d: u for d in dias_vendas if (u := cv.elemento_dia(cli, tt, d))}
         vendas = {}
@@ -361,16 +380,25 @@ def main() -> int:
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
 
         # 1) Importar — só os dias que já existem no Analytics (senão, tenta na próxima rodada)
+        agora = datetime.now(cv.TZ_LOJA).replace(tzinfo=None)
         prontos = []
         for d in dias:
-            if d not in uris_vendas:
+            fechou = agora >= datetime(d.year, d.month, d.day) + timedelta(days=1, hours=HORA_MIN_IMPORTAR)
+            if d not in uris_vendas or not fechou:
                 break
             prontos.append(d)
         if dias and not prontos:
-            print(f"⏳ O Analytics ainda não tem {dias[0].strftime('%d/%m')}: importo na próxima rodada.")
+            print(f"⏳ {dias[0].strftime('%d/%m')} ainda não está pronto no Analytics: importo na próxima rodada.")
+        prontos = sorted(set(prontos) | {d for d in revisar if d in uris_vendas})
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
+        # Dia novo sem nenhuma cotação: ainda não chegou (fica para a próxima rodada; às 18h vira aviso)
+        com_dados = {c["data"] for c in todas_cots}
+        vazios = [d for d in prontos if d in dias and d not in com_dados]
+        if vazios:
+            print(f"⏳ Sem nenhuma cotação ainda em {', '.join(d.strftime('%d/%m') for d in vazios)}: importo na próxima rodada.")
+            prontos = [d for d in prontos if d not in vazios]
         if sem_medida and not dry:
             medidas = {c["cotacao"]: c.get("medida") for c in todas_cots if c.get("medida")}
             completas = 0

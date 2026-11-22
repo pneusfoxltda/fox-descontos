@@ -75,16 +75,16 @@ def test_reconferir():
 
 def test_dias_para_importar():
     hoje = date(2026, 11, 23)  # segunda
-    # primeira vez: desde 19/11 (quinta)
-    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, d) for d in (19, 20, 21, 22)]
-    assert ll.dias_para_importar(None, date(2026, 11, 21)) == [date(2026, 11, 19), date(2026, 11, 20)]
+    # primeira vez: desde 17/11 (terça)
+    assert ll.dias_para_importar(None, hoje) == [date(2026, 11, d) for d in (17, 18, 19, 20, 21, 22)]
+    assert ll.dias_para_importar(None, date(2026, 11, 19)) == [date(2026, 11, 17), date(2026, 11, 18)]
     assert ll.dias_para_importar(date(2026, 11, 20), hoje) == [date(2026, 11, 21), date(2026, 11, 22)]
     assert ll.dias_para_importar(date(2026, 11, 22), hoje) == []
     assert ll.dias_para_importar(date(2026, 10, 1), date(2026, 12, 10))[0] == date(2026, 12, 3)   # no máximo 7 dias
-    assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 19)              # nunca antes de 19/11
+    assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 17)              # nunca antes de 17/11
 
 
-def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False):
+def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultima="2026-11-19", ja_na_lista=()):
     reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": [], "divisao": 0}
 
     def responder(req: httpx.Request):
@@ -104,12 +104,12 @@ def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False):
             if "select=medida&limit=1" in u:
                 return httpx.Response(200, json=[])
             if "order=data_cotacao.desc" in u:
-                return httpx.Response(200, json=[{"data_cotacao": "2026-11-19"}])
+                return httpx.Response(200, json=[{"data_cotacao": ultima}])
             if "status=in." in u:
                 return httpx.Response(200, json=[{"id": 77, "cotacao": "5001", "telefone": "(69) 3333-0010", "tel_chave": "33330010",
                                                   "data_cotacao": "2026-11-19", "status": "pendente"}])
             if "select=cotacao" in u:
-                return httpx.Response(200, json=[])
+                return httpx.Response(200, json=[{"cotacao": c} for c in ja_na_lista])
         if u.startswith(ll.KOMMO):
             assert req.headers["Authorization"] == "Bearer kommo"
             if "/leads" in u:
@@ -247,6 +247,38 @@ def test_reconferir_com_data_do_kommo():
     # já tem resultado (venda perdida) → não mexe
     assert ll.reconferir([{**base, "id": 5, "status": "venda_perdida"}], {}, {k}, datas) == []
 
+
+def test_dias_para_revisar():
+    hoje = date(2026, 11, 22)
+    assert ll.dias_para_revisar(None, [], hoje) == []
+    # últimos 5 dias (17 a 21/11) menos o que vai ser importado agora
+    assert ll.dias_para_revisar(date(2026, 11, 20), [date(2026, 11, 21)], hoje) == [date(2026, 11, d) for d in (17, 18, 19, 20)]
+    assert ll.dias_para_revisar(date(2026, 11, 28), [], date(2026, 11, 29)) == [date(2026, 11, d) for d in (24, 25, 26, 27, 28)]
+    assert ll.dias_para_revisar(date(2026, 11, 19), [], date(2026, 11, 20)) == [date(2026, 11, 17), date(2026, 11, 18), date(2026, 11, 19)]
+
+
+def test_dia_importado_pela_metade_completa_depois():
+    # 20/11 entrou com só 1 cotação (o Analytics ainda não tinha o dia todo); na rodada seguinte
+    # entram as que faltaram, sem repetir a que já estava.
+    codigo, reg = _rodar_com_rede({"20/11/2026"}, ultima="2026-11-20", ja_na_lista=["5006"])
+    assert codigo == 0
+    assert sorted(x["cotacao"] for x in reg["post_ligacoes"]) == ["5001"]
+
+
+def test_de_madrugada_nao_importa_o_dia_anterior():
+    # 21/11 às 2h: o Analytics ainda está carregando o 20/11 → não importa (nem avisa erro)
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, hora=2)
+    assert codigo == 0 and reg["post_ligacoes"] == [] and reg["rodadas"][-1]["ok"] is True
+
+
+def test_dia_sem_nenhuma_cotacao_nao_conta_como_importado():
+    global COT
+    antigo, COT = COT, COT.split("\n")[0] + "\n"          # relatório vazio
+    try:
+        codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, hora=18)
+    finally:
+        COT = antigo
+    assert codigo == 1 and reg["post_ligacoes"] == [] and "20/11" in reg["rodadas"][-1]["mensagem"]
 
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
