@@ -84,14 +84,17 @@ def test_dias_para_importar():
     assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 19)              # nunca antes de 19/11
 
 
-def _rodar_com_rede(dias_no_analytics, dry=False):
-    reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": []}
+def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False):
+    reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": [], "divisao": 0}
 
     def responder(req: httpx.Request):
         u = unquote(str(req.url))
         if u.startswith(cv.SUPABASE_URL):
             if "/robo_execucoes" in u:
                 reg["rodadas"].append(json.loads(req.content)); return httpx.Response(201)
+            if "/rpc/distribuir_ligacoes" in u:
+                reg["divisao"] += 1
+                return httpx.Response(404, json={}) if sem_sql15 else httpx.Response(200, json=2)
             if "/ligacoes_historico" in u:
                 reg["hist"].append(json.loads(req.content)); return httpx.Response(201)
             if req.method == "PATCH":
@@ -145,7 +148,7 @@ def _rodar_com_rede(dias_no_analytics, dry=False):
     class DT(dt_real):
         @classmethod
         def now(cls, tz=None):
-            return dt_real(2026, 11, 21, 9, 0, tzinfo=tz)
+            return dt_real(2026, 11, 21, hora, 0, tzinfo=tz)
     cv.datetime = ll.datetime = DT
     os.environ.update(SUPABASE_SERVICE_KEY="k", ANALYTICS_LOGIN="l", ANALYTICS_SENHA="s", KOMMO_TOKEN="kommo",
                       DRY_RUN="1" if dry else "")
@@ -183,6 +186,27 @@ def test_modo_teste_nao_grava():
     codigo, reg = _rodar_com_rede({"20/11/2026"}, dry=True)
     assert codigo == 0 and reg["post_ligacoes"] == [] and reg["patch"] == [] and reg["hist"] == []
     assert reg["rodadas"][-1]["teste"] is True
+
+
+def test_divide_entre_vendedores_depois_de_importar():
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"})
+    assert codigo == 0 and reg["divisao"] == 1 and "divididos 2" in reg["rodadas"][-1]["mensagem"]
+
+
+def test_sem_sql15_segue_sem_dividir():
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, sem_sql15=True)
+    assert codigo == 0 and reg["post_ligacoes"]
+
+
+def test_dia_faltando_de_manha_nao_avisa():
+    codigo, reg = _rodar_com_rede({"19/11/2026"}, hora=10)    # 20/11 ainda não chegou: tenta às 15h e 18h
+    assert codigo == 0 and reg["rodadas"][-1]["ok"] is True
+
+
+def test_dia_faltando_as_18h_avisa_erro():
+    codigo, reg = _rodar_com_rede({"19/11/2026"}, hora=18)    # última rodada e o dia não foi para as lojas
+    assert codigo == 1 and reg["rodadas"][-1]["ok"] is False
+    assert "20/11" in reg["rodadas"][-1]["mensagem"] and "NÃO foi para as lojas" in reg["rodadas"][-1]["mensagem"]
 
 
 def test_sem_token_kommo_falha_e_registra():
