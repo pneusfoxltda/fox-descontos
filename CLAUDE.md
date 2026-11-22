@@ -182,6 +182,13 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead e grava em
   `agendado_para` quando a lista está sem data ou com data mais antiga.
   **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`).
+- **Nome do cliente** aparece sem o telefone que às vezes vem junto do Movere (`nomeCli`: tira
+  sequências com 8+ dígitos; só na tela, o dado no banco não muda).
+- **Histórico** na tela: só **admin** e **gerente da loja** (o gerente de todas as lojas não vê a
+  coluna; o histórico só alimenta o Dashboard dele). Decisão do TI.
+- **Paleta de cores** (🎨 ▾ no topo das Ligações): Claro / Escuro / Dispositivo + 15 cores + conta-gotas
+  (cor própria). Guardada no navegador (`localStorage "lig_tema"`), sem login. Padrão = escuro com o
+  vermelho Fox (igual a antes). As cores da página são variáveis CSS (`--bg`, `--s1`, `--ac`, `--th`...).
 - **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`), menos os **agendados**.
   O **Dashboard usa tudo** (decisão do TI) e tem a "Divisão por vendedor".
 - **`/admin`** (`public/admin.html`, só admin): cadastrar pessoa com função (vendedor / gerente da
