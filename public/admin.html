@@ -197,7 +197,7 @@ function lerFuncao(txt) {
   return null;
 }
 
-let sql15 = true;
+let sql15 = true, avisosPorPerfil = {};
 async function carregar() {
   let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias,ferias_ate").order("nome");
   if (error && /ferias_ate/.test(error.message)) ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome"));   // passo 16 ainda não rodou
@@ -208,6 +208,10 @@ async function carregar() {
   }
   if (error) { toast("Não consegui carregar os acessos: " + error.message, false); return; }
   perfis = data || [];
+  // Quem ligou os avisos da Fernanda (SQL 17): quantos aparelhos cada pessoa tem
+  avisosPorPerfil = {};
+  const av = await sb.from("push_inscricoes").select("perfil_id,ultimo_envio");
+  if (!av.error) (av.data || []).forEach(a => { const x = avisosPorPerfil[a.perfil_id] || (avisosPorPerfil[a.perfil_id] = {n: 0, ult: null}); x.n++; if (a.ultimo_envio && (!x.ult || a.ultimo_envio > x.ult)) x.ult = a.ultimo_envio; });
   renderTabela();
 }
 
@@ -373,7 +377,7 @@ function renderTabela() {
   const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes)
     .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "") + " " + (p.apelido || "")).includes(b))
     .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || funcaoDe(c).localeCompare(funcaoDe(a)) || (a.nome || "").localeCompare(c.nome || ""));
-  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th><th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th>Ativo</th></tr>` +
+  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th><th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +
     (lista.length ? lista.map(p => { const f = funcaoDe(p); return `<tr>
       <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
       <td>${sql15 ? `<input class="ap" data-id="${p.id}" value="${esc(p.apelido || primeiroNome(p.nome))}" maxlength="20">` : esc(primeiroNome(p.nome))}</td>
@@ -382,8 +386,9 @@ function renderTabela() {
       <td>${f === "gerente_todas" ? '<span class="tag cz">todas</span>' : `<select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select>`}</td>
       <td>${f === "vendedor" && sql15 ? `<label style="cursor:pointer"><input type="checkbox" data-id="${p.id}" class="c-ferias" ${p.ferias ? "checked" : ""}> ${p.ferias ? "🏖️ férias" + (p.ferias_ate ? " · volta " + p.ferias_ate.split("-").reverse().join("/") : "") : "trabalhando"}</label>` : ""}</td>
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
+      <td>${avisosPorPerfil[p.id] ? `<span class="tag vd" title="${avisosPorPerfil[p.id].ult ? "último aviso: " + new Date(avisosPorPerfil[p.id].ult).toLocaleString("pt-BR") : "ainda sem aviso enviado"}">ligado · ${avisosPorPerfil[p.id].n} aparelho(s)</span>` : '<span class="tag cz">desligado</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
-    </tr>`; }).join("") : `<tr><td colspan="8" style="color:#777;padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
+    </tr>`; }).join("") : `<tr><td colspan="9" style="color:#777;padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
   const pe = id => perfis.find(p => p.id === id);
   document.querySelectorAll(".s-funcao").forEach(s => s.onchange = () => {
     const p = pe(s.dataset.id), f = s.value;

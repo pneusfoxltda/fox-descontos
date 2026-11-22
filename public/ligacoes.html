@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
+<!-- "Instalar" no celular (ícone na tela inicial) e avisos da Fernanda -->
+<link rel="manifest" href="/ligacoes.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ligações Fox">
 <title>Fox Pneus · Ligações das lojas</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -281,6 +288,7 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
     </div>
     <div class="sp"></div>
     <select id="sel-loja" style="display:none" title="Loja"></select>
+    <button class="tema-bt" id="aviso-bt" title="Avisos da Fernanda no computador e no celular" style="display:none">🔔</button>
     <button class="tema-bt" id="tema-bt" title="Cores da tela">🎨 <span class="seta">▾</span></button>
     <div class="user" id="user-nome"></div>
     <button class="sair" id="btn-sair">Sair</button>
@@ -1170,6 +1178,7 @@ window.FE_LIG = {
     Object.assign(filtro, {aba: "agendou", agenda: k, busca: ""}); if ($("busca")) $("busca").value = "";
     limite = POR_PAGINA; render(); window.scrollTo({top: 0, behavior: "smooth"});
   },
+  avisos: {estado: () => AVISOS.estado(), ativar: () => AVISOS.ativar().then(r => (botaoAviso(), r)), desativar: () => AVISOS.desativar().then(r => (botaoAviso(), r)), texto: k => AVISOS.TEXTO[k] || AVISOS.TEXTO.erro},
   abrirAba(aba, dia) {
     if (modo !== "lista") trocarModo("lista");
     Object.assign(filtro, {aba, data: dia || "", busca: ""}); if ($("busca")) $("busca").value = "";
@@ -1177,6 +1186,89 @@ window.FE_LIG = {
   },
 };
 const avisarFernanda = () => window.dispatchEvent(new Event("fe-lig"));
+
+// ── AVISOS NO COMPUTADOR E NO CELULAR (notificação push; SQL 17 + robô avisos_ligacoes.py) ──
+// Grátis: o navegador entrega. O aviso só traz números. Cada pessoa liga/desliga no 🔔 ou pela Fernanda.
+const AVISOS = {
+  ehIphone: () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+  instalado: () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true,
+  suportado: () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window,
+  // ativo · desligado · negado · iphone_instalar · nao_suporta
+  async estado() {
+    if (!AVISOS.suportado()) return AVISOS.ehIphone() && !AVISOS.instalado() ? "iphone_instalar" : "nao_suporta";
+    if (Notification.permission === "denied") return "negado";
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      const sub = reg && await reg.pushManager.getSubscription();
+      return sub && Notification.permission === "granted" ? "ativo" : "desligado";
+    } catch (e) { return "desligado"; }
+  },
+  async ativar() {
+    const st = await AVISOS.estado();
+    if (st === "iphone_instalar" || st === "nao_suporta" || st === "negado") return st;
+    const { data: chave, error } = await sb.rpc("push_chave_publica");
+    if (error) return /push_chave_publica|function/i.test(error.message) ? "sem_sql" : "erro";
+    if (!chave) return "sem_chave";
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return "negado";
+    try {
+      const reg = await navigator.serviceWorker.register("/sw-avisos.js", {scope: "/"});
+      await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64paraBytes(chave)});
+      await AVISOS.salvar(sub); botaoAviso.salvo = true;
+      const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
+      reg.showNotification("🦊 Avisos ligados!", {body: `Pronto${nome ? ", " + nome : ""}! Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.`, icon: "/icone-192.png", tag: "fe-lig-teste"});
+      return "ativo";
+    } catch (e) { console.warn("avisos:", e); return "erro"; }
+  },
+  async salvar(sub) {
+    const j = sub.toJSON();
+    const { error } = await sb.rpc("salvar_push", {p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 200)});
+    if (error) throw error;
+  },
+  async desativar() {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) { await sb.rpc("remover_push", {p_endpoint: sub.endpoint}); await sub.unsubscribe(); }
+    } catch (e) {}
+    return "desligado";
+  },
+  TEXTO: {
+    ativo: "Avisos ligados neste aparelho. 🔔 Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.",
+    desligado: "Os avisos estão desligados neste aparelho.",
+    negado: "O navegador está bloqueando os avisos deste site. Para liberar: clique no cadeado (ou no ⓘ) ao lado do endereço, em \"Notificações\", escolha \"Permitir\" e tente de novo.",
+    iphone_instalar: "No iPhone os avisos funcionam com a página instalada: toque em Compartilhar (o quadrado com a seta ↑), depois em \"Adicionar à Tela de Início\". Abra pelo ícone da raposa e ligue os avisos de lá.",
+    nao_suporta: "Este navegador não recebe avisos. Use o Chrome (computador ou Android) ou o Safari do iPhone com a página na Tela de Início.",
+    sem_chave: "Os avisos ainda estão sendo preparados. Tente de novo mais tarde (o robô prepara na próxima rodada).",
+    sem_sql: "Os avisos ainda não foram ligados no sistema (falta o passo 17 no Supabase). Avise o TI.",
+    erro: "Não consegui ligar os avisos agora. Tente de novo daqui a pouco.",
+  },
+};
+function b64paraBytes(b64) { const p = "=".repeat((4 - b64.length % 4) % 4), t = atob((b64 + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(t, c => c.charCodeAt(0)); }
+async function botaoAviso() {
+  const bt = $("aviso-bt"); if (!bt || !perfil) return;
+  const st = await AVISOS.estado();
+  bt.style.display = st === "nao_suporta" ? "none" : "";
+  bt.textContent = st === "ativo" ? "🔔" : "🔕";
+  bt.title = st === "ativo" ? "Avisos ligados neste aparelho (clique para desligar)" : "Receber avisos da Fernanda no computador e no celular";
+  bt.classList.toggle("on", st === "ativo");
+  // Já estava ligado: confirma que o aparelho é desta pessoa (outro vendedor pode ter usado antes)
+  if (st === "ativo" && !botaoAviso.salvo) { botaoAviso.salvo = true; try { const reg = await navigator.serviceWorker.getRegistration("/"); const sub = await reg.pushManager.getSubscription(); if (sub) await AVISOS.salvar(sub); } catch (e) {} }
+}
+$("aviso-bt").onclick = async () => {
+  const st = await AVISOS.estado();
+  if (st === "ativo") {
+    if (!confirm("Desligar os avisos da Fernanda neste aparelho?")) return;
+    await AVISOS.desativar(); toast("Avisos desligados neste aparelho."); return botaoAviso();
+  }
+  const r = await AVISOS.ativar();
+  toast(AVISOS.TEXTO[r] || AVISOS.TEXTO.erro, r === "ativo");
+  botaoAviso();
+};
+window.addEventListener("fe-lig", botaoAviso);
+
 
 // ── PALETA DE CORES (🎨 no topo) ──
 // Claro / Escuro / Dispositivo + uma cor. Guardado no navegador (localStorage "lig_tema"), sem login.

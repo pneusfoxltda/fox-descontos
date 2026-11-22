@@ -89,6 +89,16 @@ vendas para o televendas; `apps-script/` tem o do painel).
     Chat: agendados de hoje/amanhã/atrasados/sem data, por onde começo (maior valor), quantos faltam,
     quem não atende, meu resumo, dicas de abordagem (nunca prometer pneu separado), como fazer.
     Botões "Ver na lista" (destaca a linha), Ligar e WhatsApp (os mesmos links da tela).
+  · **Avisos no computador e no celular** (notificação push do navegador, grátis; SQL `17_avisos_push.sql`,
+    robô `avisos_ligacoes.py`, workflow `avisos-ligacoes.yml`): **seg–sáb 8h, 10h, 14h e 16h30** (decisão do TI:
+    2x de manhã, 2x à tarde). Cada pessoa liga no 🔔 do topo das Ligações ou pela Fernanda ("Sim, quero
+    receber avisos"); a Fernanda oferece uma vez por aparelho. Vendedor: os números dele; gerente: a loja e
+    quem tem mais sem contato; gerente de todas/admin: a rede. **Só números** (nada de cliente). Férias e
+    desativado não recebem; sem nada a dizer não manda. Criptografia RFC 8291 + VAPID feita no próprio
+    robô com `cryptography` (teste contra o exemplo oficial da RFC). A chave VAPID é criada pelo robô na
+    1ª rodada e fica em `push_config` (sem regra de acesso: só a chave de serviço lê). iPhone: precisa
+    "Adicionar à Tela de Início" (`ligacoes.webmanifest`, ícones `icone-192/512.png`). Service worker:
+    `public/sw-avisos.js`. No /admin, coluna "🔔 Avisos". Tocar no aviso abre as Ligações (passa pela trava de IP).
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
@@ -236,7 +246,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
 - SQL: `12_ligacoes.sql` (tabelas, `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
   `senha_trocada()`), 13, 14 e **`15_ligacoes_vendedores.sql`** (funções, responsável, férias, divisão).
-- Testes: `python tests/test_ligacoes_lojas.py`.
+- Testes: `python tests/test_ligacoes_lojas.py` e `python tests/test_avisos_ligacoes.py`.
+- `sb_get` busca em partes de 1000 (o banco entrega no máximo 1000 linhas por vez).
 
 ## Próximos passos (em ordem)
 
