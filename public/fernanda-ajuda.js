@@ -728,6 +728,8 @@
       return true;
     }
     if (respostaConta(q)) return true;
+    // Tela das Ligações: a Fernanda conhece os clientes da pessoa (fernanda-ligacoes.js)
+    if (/\/ligacoes/.test(location.pathname) && window.feLig && window.feLig.resposta(q)) return true;
     const tela = telaCadastro();
     if (tela) {
       const r = ajudaCadastro(q, tela);
@@ -794,7 +796,9 @@
       abrir.apply(this, arguments);
       if (!primeira) return;
       setTimeout(() => {
-        if (telaCadastro()) {
+        if (/\/ligacoes/.test(location.pathname) && window.feLig) {
+          window.feLig.boasVindas();
+        } else if (telaCadastro()) {
           bot("Estou vendo que você está no Cadastrar desconto. 📝 Posso preencher para você: mande o PDF pelo 📎, cole um print aqui (Ctrl+V) ou escreva os dados.");
           chips(["Como você preenche?", "O que falta?"]);
         } else if (/televendas/.test(location.pathname)) {
@@ -807,6 +811,8 @@
     };
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montar); else montar();
+  // Ligações das lojas: carrega a parte da Fernanda que conhece os clientes da pessoa
+  if (/\/ligacoes/.test(location.pathname)) { const s = document.createElement("script"); s.src = "/fernanda-ligacoes.js"; s.defer = true; document.head.appendChild(s); }
 
   // Para testes
   window.FE_AJUDA_TESTE = { lerOrcamento, prepararImagem, textoDoPdf, montarLinhas, lerMensagem, numBR, dataDoTexto, medidaDoTexto, segmentoDoTexto, pgtoDoTexto, lojaDoTexto };

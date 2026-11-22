@@ -196,6 +196,8 @@ select.cel.resp{min-width:110px}
 .aviso-robo.amarelo{background:#2A2108;border:1px solid #78590F;color:#FCD34D}
 input.cel.os.falta{border-color:#F59E0B}
 
+/* Cliente que a Fernanda mostrou */
+.fe-destaque td,.card.fe-destaque{outline:2px solid #E6F77A;outline-offset:-2px;background:rgba(230,247,122,.12)!important;transition:background .3s;}
 /* ── JANELA DE FÉRIAS ── */
 .fer-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:none;align-items:center;justify-content:center;padding:16px;}
 .fer-modal.on{display:flex;}
@@ -543,6 +545,7 @@ async function carregar() {
   escolherDiaInicial();
   modo === "dash" ? renderDash() : render();
   if (usaHistorico()) garantirHistorico().then(() => { montarMapaHist(); if (modo === "lista") render(); }).catch(() => {});
+  avisarFernanda();
 }
 
 // ── VENDEDORES DA LOJA (gerente/admin): responsável, ativo e férias ──
@@ -891,6 +894,7 @@ async function gravar(l, novo, ehDesfazer = false) {
   if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); render(); return false; }
   const quem = perfil.nome || perfil.email, agora = new Date().toISOString();
   Object.assign(l, {status: st, status_em: agora, status_por: quem});
+  setTimeout(avisarFernanda, 0);
   if (obs) l.obs = obs;
   if (os) l.os_venda = os; if (data) l.agendado_para = data; if (motivo) l.motivo_perda = motivo;
   const h = {ligacao_id: l.id, quando: agora, quem, status: st,
@@ -1133,6 +1137,46 @@ function trocarModo(m) {
 // Troca tabela ↔ cartões quando a largura da tela passa do limite
 let eraTabela = ehTabela();
 window.addEventListener("resize", () => { if (ehTabela() !== eraTabela) { eraTabela = ehTabela(); if (modo === "lista" && perfil) render(); } });
+
+// ── PONTE COM A FERNANDA (fernanda-ligacoes.js) ──
+// A Fernanda lê só o que esta tela já carregou (o banco já limita: o vendedor vê só os clientes dele).
+// Nada sai do navegador.
+window.FE_LIG = {
+  pronto: () => !!perfil && todas.length >= 0 && $("main-screen").style.display !== "none",
+  eu: () => ({
+    id: meuId, nome: (perfil && (perfil.apelido || primeiro(perfil.nome) || primeiro(String(perfil.email || "").split("@")[0]))) || "",
+    nomeCompleto: perfil && perfil.nome, email: perfil && perfil.email, loja: perfil && perfil.loja,
+    papel: ehAdmin ? "admin" : ehVendedor ? "vendedor" : gerenteLoja ? "gerente" : ehGerente ? "gerente_todas" : ""
+  }),
+  // Os clientes "da pessoa": vendedor → os dele; gerente → a loja; admin/gerente de todas → a loja escolhida (ou todas)
+  meus: () => todas.filter(l => ehVendedor ? l.responsavel_id === meuId : gerenteLoja ? l.loja === perfil.loja : (!filtro.loja || l.loja === filtro.loja)),
+  hoje: () => hojeISO(),
+  ontem: () => somaDias(hojeISO(), -1),
+  ehMeu: l => !!perfil && !ehRobo(l.status_por) && [perfil.nome, perfil.email].filter(Boolean).includes(l.status_por),
+  ehRobo, nomeCli, primeiro, fmtData, fmtR0, atrasado, ehTv, FECHADOS,
+  tentativas: l => tentativas(l.id),
+  linkWa, linkTel: l => "tel:" + dig(l.telefone),
+  // Leva a tela até um cliente / uma parte da lista
+  abrirCliente(id) {
+    const l = porIdTodas.get(id); if (!l) return;
+    if (modo !== "lista") trocarModo("lista");
+    Object.assign(filtro, {aba: l.status === "agendou" ? "agendou" : "todas", agenda: "todos", data: "", busca: String(l.cotacao), operador: "", resp: ""});
+    if ($("busca")) $("busca").value = String(l.cotacao);
+    limite = POR_PAGINA; render();
+    setTimeout(() => { const el = $("tr-" + id) || $("c-" + id); if (el) { el.scrollIntoView({block: "center", behavior: "smooth"}); el.classList.add("fe-destaque"); setTimeout(() => el.classList.remove("fe-destaque"), 3500); } }, 80);
+  },
+  abrirAgenda(k) {
+    if (modo !== "lista") trocarModo("lista");
+    Object.assign(filtro, {aba: "agendou", agenda: k, busca: ""}); if ($("busca")) $("busca").value = "";
+    limite = POR_PAGINA; render(); window.scrollTo({top: 0, behavior: "smooth"});
+  },
+  abrirAba(aba, dia) {
+    if (modo !== "lista") trocarModo("lista");
+    Object.assign(filtro, {aba, data: dia || "", busca: ""}); if ($("busca")) $("busca").value = "";
+    limite = POR_PAGINA; render(); window.scrollTo({top: 0, behavior: "smooth"});
+  },
+};
+const avisarFernanda = () => window.dispatchEvent(new Event("fe-lig"));
 
 // ── PALETA DE CORES (🎨 no topo) ──
 // Claro / Escuro / Dispositivo + uma cor. Guardado no navegador (localStorage "lig_tema"), sem login.
