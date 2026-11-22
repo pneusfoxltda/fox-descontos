@@ -161,7 +161,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   `perfis.trocar_senha` obriga a criar senha nova (≥ 8, diferente do e-mail) → `senha_trocada()`.
 - Lista por **dia da cotação** (abre no mais recente com pendentes), abas Pendentes / Já liguei /
   Agendou / Venda ganha (loja) / Venda televendas / Todas, busca, filtro por quem cotou e por
-  responsável, botões Ligar (`tel:+55…`) e WhatsApp (`wa.me/55…`, 1º número com DDD), histórico.
+  responsável, botões Ligar e WhatsApp (iguais aos de antes, com a mensagem pronta; não mudar, decisão do TI), histórico.
   Status pela função `marcar_ligacao` (registra quem e quando; vendedor só nos clientes dele).
   **"Venda ganha" só salva com o status E o nº da O.S.** (os dois; decisão do TI).
   `ligacoes.tentativas` conta os "Não atendeu" (o vendedor não lê o histórico).
