@@ -129,6 +129,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **✅ Venda concluída (Movere)** (não liberado e o robô achou a venda).
   Válidos + Liberados + Vencidas + Venda concluída = Todos. A aba "Pendentes" foi removida.
 - A lista mostra 60 por vez ("Mostrar mais") e é memorizada para não travar ao digitar.
+- **Concorrentes** (`todasEmpresas` no App): a lista junta as padrão + as adicionadas no navegador +
+  **todas as empresas já gravadas nos descontos do banco** (antes a empresa nova ficava só no navegador
+  de quem criou e "sumia" nos outros). Sem repetir maiúscula/acento; a busca ignora acento.
 - O App busca os descontos **em partes de 1000** (`supa.from().select()` em `src/App.jsx`; o banco entrega
   no máximo 1000 por vez; em 23/11/2026 eram 736). Fotos da galeria numa ida só (`buscarFotos`, 40 por ida).
 
