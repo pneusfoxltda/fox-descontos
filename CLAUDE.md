@@ -49,6 +49,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   "Explorar sistemas" com filtros, **favoritos sem login** salvos no navegador
   (a barra lateral só aparece com os favoritos), busca que filtra ou pergunta à Fernanda.
   **Sem botão "Entrar"** na intranet. Fundo com vídeo de pneus foi testado e **rejeitado**.
+  **Paleta de cores** (🎨 ▾ no topo, `public/foxnet/tema.js`), igual à das Ligações: Claro / Escuro /
+  Dispositivo + 15 cores + conta-gotas, guardada no navegador (`foxnet_tema`). Padrão = claro com o roxo
+  do FOXNET, idêntico a antes (conferido ponto a ponto). Cores da página em variáveis CSS no `:root`.
 - **Domínio da intranet**: qualquer host que comece com `foxnet` mostra só o FOXNET;
   outros caminhos redirecionam para `https://fox-descontos.vercel.app`.
   `foxnet.vercel.app` é de outra empresa; `foxnet.foxpneu.com.br` foi desistido.
