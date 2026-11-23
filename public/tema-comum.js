@@ -53,6 +53,10 @@
     },
     // O FOXNET roda no endereço da intranet: os sistemas abrem no outro endereço
     noDominioIntranet: () => /^foxnet[.-]/i.test(location.hostname),
+    // Quem entrou como admin em qualquer sistema: o FOXNET deste navegador mostra o botão 🩺 Monitor.
+    // A intranet é outro endereço: a marca vai junto no link da raposa (?monitor=1).
+    admin() { try { localStorage.setItem("fox_monitor", "1"); } catch (e) {} },
+    ehAdminAqui() { try { return localStorage.getItem("fox_monitor") === "1"; } catch (e) { return false; } },
   };
   window.addEventListener("storage", e => { if (e.key === CHAVE) avisar(); });
 
@@ -97,7 +101,7 @@
   if (!noFoxnet) {
     const RAPOSA = 'img[src$="/logo-fox.png"], .header .logo';
     const destino = () => location.hostname === "fox-descontos.vercel.app"
-      ? FoxTema.link("https://foxnet-intranet.vercel.app/")
+      ? FoxTema.link("https://foxnet-intranet.vercel.app/" + (FoxTema.ehAdminAqui() ? "?monitor=1" : ""))
       : "/foxnet/";                                      // links de teste e computador local: o FOXNET do mesmo endereço
     const st = document.createElement("style");
     st.textContent = `${RAPOSA}{cursor:pointer}`;

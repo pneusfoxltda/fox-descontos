@@ -291,8 +291,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - Página **`/monitor`** (`public/monitor.html`, rewrite no `middleware.js`). Pede o login de admin; o banco
   só responde ao admin (`monitor_resumo()`, SQL `18_monitor.sql`, que também cria `robo_execucoes.detalhes`).
 - Botão **"🩺 Monitor"** no topo do FOXNET só no navegador do admin: marcado ao entrar no /monitor
-  (`localStorage fox_monitor`); no endereço da intranet, abrir uma vez `foxnet-intranet.vercel.app/?monitor=1`
-  (`?monitor=0` tira). Sem botão "Entrar" na intranet (decisão mantida).
+  (`localStorage fox_monitor`). Também é marcado sozinho quando o admin entra no App, Ligações, /admin ou
+  Televendas (`FoxTema.admin()`), e a raposa leva a marca para a intranet (`?monitor=1`). À mão:
+  `foxnet-intranet.vercel.app/?monitor=1` (`?monitor=0` tira). Sem botão "Entrar" na intranet (decisão mantida).
 - Mostra (🟢/🟡/🔴, atualiza a cada 5 min): robôs no GitHub (API pública, últimas rodadas, atraso, erro);
   passo a passo da última rodada da lista (login no Analytics, vendas 742591, Kommo, cotações por dia,
   cruzamento e motivos, novos por loja, divisão, reconferência) a partir de `robo_execucoes.detalhes`;
