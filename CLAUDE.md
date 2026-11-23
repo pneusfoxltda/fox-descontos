@@ -50,8 +50,15 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (a barra lateral só aparece com os favoritos), busca que filtra ou pergunta à Fernanda.
   **Sem botão "Entrar"** na intranet. Fundo com vídeo de pneus foi testado e **rejeitado**.
   **Paleta de cores** (🎨 ▾ no topo, `public/foxnet/tema.js`), igual à das Ligações: Claro / Escuro /
-  Dispositivo + 15 cores + conta-gotas, guardada no navegador (`foxnet_tema`). Padrão = claro com o roxo
-  do FOXNET, idêntico a antes (conferido ponto a ponto). Cores da página em variáveis CSS no `:root`.
+  Dispositivo + 15 cores + conta-gotas. Padrão = claro com o roxo do FOXNET, idêntico a antes (conferido
+  ponto a ponto). Cores da página em variáveis CSS no `:root`.
+- **Paleta ÚNICA para todos os sistemas** (`public/tema-comum.js`, `window.FoxTema`; decisão do TI): quem
+  nunca escolheu vê cada tela com a sua cor de sempre; escolheu em qualquer tela, vale em todas (abas
+  abertas mudam na hora). Guardado em `localStorage "fox_tema"` {modo, cor, em}. O FOXNET
+  (foxnet-intranet) e os sistemas (fox-descontos) são endereços diferentes: ao abrir um sistema pelo FOXNET
+  a escolha vai no link (`?tema=modo.COR.hora`, a mais nova vale) e sai do endereço. "Voltar ao padrão" =
+  cada tela com a sua cor. Hoje usam: FOXNET e Ligações. Faltam: App de descontos, Cadastrar, Consulta,
+  Televendas e /admin (cores fixas no código; precisam ser convertidas para variáveis).
 - **Domínio da intranet**: qualquer host que comece com `foxnet` mostra só o FOXNET;
   outros caminhos redirecionam para `https://fox-descontos.vercel.app`.
   `foxnet.vercel.app` é de outra empresa; `foxnet.foxpneu.com.br` foi desistido.

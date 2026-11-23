@@ -1,8 +1,8 @@
 /* ═════════════════════════════════════════════════════════════════════════
    FOXNET · Paleta de cores (🎨 ▾ no topo). Igual à das Ligações das lojas:
    Claro / Escuro / Dispositivo + 15 cores + conta-gotas (cor própria).
-   Guardada só neste navegador (localStorage "foxnet_tema"), sem login.
-   Padrão: claro com o roxo do FOXNET (igual a antes: não mexe em nada).
+   A escolha é a MESMA em todos os sistemas (/tema-comum.js): escolheu aqui, vale nas Ligações
+   e vice-versa. Quem nunca escolheu vê o padrão do FOXNET: claro com o roxo (igual a antes).
    ═════════════════════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -29,7 +29,8 @@
   const cl = v => Math.max(0, Math.min(100, v));
   const hsl = (h, s, l, a) => `hsl(${Math.round((h + 360) % 360)} ${cl(s).toFixed(1)}% ${cl(l).toFixed(1)}%${a != null ? " / " + a : ""})`;
 
-  let tema = (() => { try { return Object.assign({modo: "claro", cor: ROXO}, JSON.parse(localStorage.getItem("foxnet_tema") || "{}")); } catch (e) { return {modo: "claro", cor: ROXO}; } })();
+  const PADRAO = {modo: "claro", cor: ROXO};
+  let tema = (window.FoxTema && FoxTema.get()) || {...PADRAO};
   const midia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   const escuro = () => tema.modo === "escuro" || (tema.modo === "dispositivo" && !!midia && midia.matches);
 
@@ -78,7 +79,7 @@
   }
   function mudar(m) {
     Object.assign(tema, m);
-    try { localStorage.setItem("foxnet_tema", JSON.stringify(tema)); } catch (e) {}
+    if (window.FoxTema) FoxTema.set(tema.modo, tema.cor);   // vale para todos os sistemas
     aplicar();
   }
 
@@ -108,11 +109,12 @@ html.fx-escuro .tile{box-shadow:0 0 0 1px #ffffff12}`;
   pop.className = "fx-pop"; pop.id = "fx-pop"; pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Cores da tela");
   pop.innerHTML = `<div class="fx-modos" id="fx-modos"><button type="button" data-modo="claro">☀️ Claro</button><button type="button" data-modo="escuro">🌙 Escuro</button><button type="button" data-modo="dispositivo">💻 Dispositivo</button></div>
     <div class="fx-cores" id="fx-cores"></div>
-    <div class="fx-nota">A cor fica guardada só neste navegador. "Dispositivo" segue o claro/escuro do computador ou celular.</div>
-    <button type="button" class="fx-pad" id="fx-pad">Voltar ao padrão (claro, roxo FOXNET)</button>`;
+    <div class="fx-nota">A cor escolhida vale para todos os sistemas da Fox neste navegador (FOXNET, Ligações…). "Dispositivo" segue o claro/escuro do computador ou celular.</div>
+    <button type="button" class="fx-pad" id="fx-pad">Voltar ao padrão (cada tela com a sua cor de sempre)</button>`;
   document.body.appendChild(pop);
   document.querySelectorAll("#fx-modos button").forEach(b => b.onclick = () => mudar({modo: b.dataset.modo}));
-  $("fx-pad").onclick = () => mudar({modo: "claro", cor: ROXO});
+  $("fx-pad").onclick = () => { tema = {...PADRAO}; if (window.FoxTema) FoxTema.padrao(); aplicar(); };
+  if (window.FoxTema) FoxTema.onChange(t => { tema = t || {...PADRAO}; aplicar(); });   // mudou em outra aba/sistema
   const bt = $("tema-bt");
   if (bt) bt.onclick = e => { e.stopPropagation(); pop.classList.toggle("on"); };
   document.addEventListener("click", e => { if (!e.target.closest("#fx-pop") && !e.target.closest("#tema-bt")) pop.classList.remove("on"); });

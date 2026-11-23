@@ -165,6 +165,7 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
 </main>
 <div id="toast"></div>
 
+<script src="/tema-comum.js"></script>
 <script src="/foxnet/frases.js"></script>
 <script>
 /* Fase 1: módulos internos abrem as páginas que já existem (cada uma com o seu login). */
@@ -297,14 +298,16 @@ function buscar(){
   if(typeof feOpen==="function"){ feOpen(); feIn.value=q.value; feSend(); q.value=""; }
 }
 /* ── Navegação ── */
+// No endereço da intranet, os sistemas abrem no outro endereço: a cor escolhida vai junto
+const paraSistema = u => (window.FoxTema && FoxTema.noDominioIntranet()) ? FoxTema.link(u) : u;
 function go(h){
   const id=h.replace("#/","");
-  if(REAL[id]) { location.href=REAL[id]; return; }
+  if(REAL[id]) { location.href=paraSistema(REAL[id]); return; }
   location.hash=h;
 }
 function route(){
   const r=(location.hash||"#/").replace("#/","")||"home";
-  if(REAL[r]) { location.replace(REAL[r]); return; }
+  if(REAL[r]) { location.replace(paraSistema(REAL[r])); return; }
   const page=document.getElementById("p-"+r)?r:"home";
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id==="p-"+page));
   document.querySelectorAll(".sb[data-r]").forEach(b=>b.classList.toggle("on",b.dataset.r===page));
