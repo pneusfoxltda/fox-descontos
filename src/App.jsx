@@ -14,8 +14,18 @@ const supa = {
     };
     return {
       async select(cols="*") {
-        const r = await fetch(base + "?select=" + cols, { headers });
-        return { data: await r.json(), error: r.ok ? null : "erro" };
+        // O banco entrega no máximo 1000 linhas por vez: busca em partes até acabar
+        // (sem isso, passando de 1000 descontos o App mostraria só os 1000 primeiros, sem avisar).
+        const ordem = /(^|,)\s*id\s*(,|$)/.test(cols) ? "&order=id.asc" : "";
+        const linhas = [];
+        for (let de = 0; ; de += 1000) {
+          const r = await fetch(base + "?select=" + cols + ordem + "&limit=1000&offset=" + de, { headers });
+          if (!r.ok) return { data: linhas.length ? linhas : null, error: "erro" };
+          const parte = await r.json();
+          linhas.push(...parte);
+          if (parte.length < 1000) break;
+        }
+        return { data: linhas, error: null };
       },
       async insert(obj) {
         const h = {...headers, "Prefer":"return=minimal"};
@@ -240,6 +250,28 @@ function AnimatedNumber({value, duration=1200}){
   },[end]);
   return <span>{display}</span>;
 }
+// Fotos (anexo) de vários descontos numa ida só ao banco, em vez de uma ida por foto.
+// Devolve um Map id → foto em base64. Quem não tem id cai na busca antiga (por número e tipo).
+async function buscarFotos(lista) {
+  const headers = {"apikey": SUPA_KEY, "Authorization": "Bearer " + tokenAtual()};
+  const mapa = new Map();
+  const ids = [...new Set(lista.filter(q => !q.anexoBase64 && q._id != null).map(q => q._id))];
+  for (let i = 0; i < ids.length; i += 40) {          // 40 por ida (as fotos são pesadas)
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/descontos?id=in.(${ids.slice(i, i + 40).join(",")})&select=id,anexo_base64`, {headers});
+      if (r.ok) (await r.json()).forEach(d => { if (d.anexo_base64) mapa.set(d.id, d.anexo_base64); });
+    } catch (e) {}
+  }
+  await Promise.all(lista.filter(q => !q.anexoBase64 && q._id == null).map(async q => {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`, {headers});
+      const d = await r.json(); if (d && d[0] && d[0].anexo_base64) mapa.set("n:" + q.tipo + ":" + q.numero, d[0].anexo_base64);
+    } catch (e) {}
+  }));
+  return mapa;
+}
+const fotoDe = (mapa, q) => q.anexoBase64 || mapa.get(q._id) || mapa.get("n:" + q.tipo + ":" + q.numero) || null;
+
 export default function App(){
   useEffect(()=>{
     document.title="Descontos Fox Pneus";
@@ -911,17 +943,9 @@ export default function App(){
   const semFoto=filtered.filter(q=>q.medida===m.name&&!q.anexoNome&&parseConcObs(q.obs).length>0);
   if(imgs.length>0)return(<button onClick={async()=>{
     setGaleriaModal({medida:m.name,imagens:imgs,semFoto});
-    const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
-    const loaded=await Promise.all(imgs.map(async q=>{
-      if(q.anexoBase64)return q;
-      try{
-        const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});
-        const d=await r.json();
-        const b64=d&&d[0]?d[0].anexo_base64:null;
-        if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}
-        return{...q,anexoBase64:b64};
-      }catch(e){return q;}
-    }));
+    const fotos=await buscarFotos(imgs);
+    const loaded=imgs.map(q=>({...q,anexoBase64:fotoDe(fotos,q)}));
+    if(fotos.size)setQuotes(prev=>prev.map(x=>{const b=fotoDe(fotos,x);return b&&!x.anexoBase64?{...x,anexoBase64:b}:x;}));
     setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
   }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
@@ -1291,11 +1315,9 @@ export default function App(){
                     <span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.concs.length} reg.</span>
                     {m.imgs.length>0&&<button onClick={async()=>{
                       setGaleriaModal({medida:m.medida,imagens:m.imgs,semFoto:[]});
-                      const headers={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual()};
-                      const loaded=await Promise.all(m.imgs.map(async q=>{
-                        if(q.anexoBase64)return q;
-                        try{const r=await fetch(`${SUPA_URL}/rest/v1/descontos?numero=eq.${encodeURIComponent(q.numero)}&tipo=eq.${q.tipo}&select=anexo_base64`,{headers});const d=await r.json();const b64=d&&d[0]?d[0].anexo_base64:null;if(b64){setQuotes(prev=>prev.map(x=>x.numero===q.numero&&x.tipo===q.tipo?{...x,anexoBase64:b64}:x));}return{...q,anexoBase64:b64};}catch(e){return q;}
-                      }));
+                      const fotos=await buscarFotos(m.imgs);
+                      const loaded=m.imgs.map(q=>({...q,anexoBase64:fotoDe(fotos,q)}));
+                      if(fotos.size)setQuotes(prev=>prev.map(x=>{const b=fotoDe(fotos,x);return b&&!x.anexoBase64?{...x,anexoBase64:b}:x;}));
                       setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
                     }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🖼️ {m.imgs.length}</button>}
                   </div>
