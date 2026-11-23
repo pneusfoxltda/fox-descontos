@@ -154,6 +154,7 @@ def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultim
                       DRY_RUN="1" if dry else "")
     for k in ll.RESUMO:
         ll.RESUMO[k] = None if k == "inicio" else 0
+    ll.DETALHES.clear()
     try:
         return ll.rodar(), reg
     finally:
@@ -292,6 +293,13 @@ def test_sb_get_busca_em_partes():
     assert len(linhas) == 2345 and len(pedidos) == 3
     assert all("limit=1000" in p and "limit=20000" not in p for p in pedidos)
     assert "offset=2000" in pedidos[-1] and "data_cotacao=gte.2026-11-01" in pedidos[-1]
+
+def test_rodada_registra_detalhes_para_o_monitor():
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"})
+    d = reg["rodadas"][-1]["detalhes"]
+    assert codigo == 0 and d["analytics_login"] is True and d["kommo_agendados"] == 1 and d["cotacoes"] == 6
+    assert d["fora"]["comprou"] == 1 and d["novas_por_loja"] == {"CACOAL": 1, "C.AUTO VLH": 1} and d["divididos"] == 2
+    assert "Cliente" not in str(d) and "98888" not in str(d)          # nada de dados de cliente
 
 if __name__ == "__main__":
     for nome, f in list(globals().items()):

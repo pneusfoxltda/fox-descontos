@@ -127,7 +127,10 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
   <div class="hero">
     <div class="hero-top">
       <div class="brandline"><span class="fox"></span><span>FOXNET <small>| Sistema Integrado Rede Fox Pneus</small></span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+      <a class="pill tema-bt" id="monitor-bt" href="https://fox-descontos.vercel.app/monitor" style="display:none" title="Monitor do sistema (só o administrador)">🩺 Monitor</a>
       <button class="pill tema-bt" id="tema-bt" title="Cores da tela" type="button">🎨 <span style="font-size:10px">▾</span></button>
+      </div>
     </div>
     <div class="dia" id="dia"></div>
     <h1 class="frase" id="frase"></h1>
@@ -297,6 +300,17 @@ function buscar(){
   if(filtro==="fav"){ toastMsg("Nenhum favorito com “"+q.value+"”. Clique em ⌂ Início para buscar em tudo."); return; }
   if(typeof feOpen==="function"){ feOpen(); feIn.value=q.value; feSend(); q.value=""; }
 }
+/* ── 🩺 Monitor: o botão só aparece no navegador do administrador ──
+   (marcado quando ele entra no /monitor; no endereço da intranet, abrindo uma vez ?monitor=1).
+   Mesmo que alguém veja o botão, a página pede o login de admin e o banco só responde ao admin. */
+(function(){
+  try{
+    const u=new URL(location.href);
+    if(u.searchParams.get("monitor")==="1"){ localStorage.setItem("fox_monitor","1"); u.searchParams.delete("monitor"); history.replaceState(null,"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams:"")+u.hash); }
+    if(u.searchParams.get("monitor")==="0"){ localStorage.removeItem("fox_monitor"); }
+    if(localStorage.getItem("fox_monitor")==="1"){ const b=document.getElementById("monitor-bt"); b.style.display=""; if(!/^foxnet[.-]/i.test(location.hostname)) b.href="/monitor"; }   /* nos sistemas e nos links de teste: o mesmo endereço */
+  }catch(e){}
+})();
 /* ── Navegação ── */
 // No endereço da intranet, os sistemas abrem no outro endereço: a cor escolhida vai junto
 const paraSistema = u => (window.FoxTema && FoxTema.noDominioIntranet()) ? FoxTema.link(u) : u;

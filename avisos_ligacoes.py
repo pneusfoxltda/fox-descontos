@@ -221,6 +221,41 @@ def montar_aviso(turno: str, p: dict, ligs: list, hoje: date, nomes_vend: dict =
     return {"titulo": titulo, "corpo": corpo.strip(), "url": LINK, "tag": "fe-lig-" + turno}
 
 
+# ── Registro da rodada (🩺 Monitor; só contagens) ─────────────────────────────
+def registrar(ok: bool, mensagem: str, detalhes: dict, teste: bool, inicio: datetime):
+    chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+    if not chave:
+        return
+    corpo = {"robo": "avisos_ligacoes", "ok": ok, "teste": teste, "inicio": inicio.isoformat(),
+             "fim": datetime.now(timezone.utc).isoformat(), "conferidos": detalhes.get("aparelhos"),
+             "encontrados": detalhes.get("enviados"), "mensagem": (mensagem or "")[:300] or None, "detalhes": detalhes}
+    try:
+        with httpx.Client(timeout=20) as cli:
+            r = cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes", headers=sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            if r.status_code == 400:      # SQL 18 ainda não rodou
+                corpo.pop("detalhes")
+                cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes", headers=sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+    except Exception as e:
+        print(f"⚠️ Não consegui registrar a rodada: {type(e).__name__}")
+
+
+DETALHES = {}
+
+
+def rodar() -> int:
+    inicio = datetime.now(timezone.utc)
+    DETALHES.clear()
+    teste = os.environ.get("DRY_RUN", "") == "1"
+    try:
+        codigo = main()
+    except Exception as e:      # mensagem curta, sem dados de clientes
+        print(f"❌ Erro: {type(e).__name__}: {str(e)[:200]}")
+        registrar(False, f"{type(e).__name__}: {str(e)[:200]}", DETALHES, teste, inicio)
+        return 1
+    registrar(codigo == 0, None if codigo == 0 else "rodada terminou com erro", DETALHES, teste, inicio)
+    return codigo
+
+
 # ── Principal ─────────────────────────────────────────────────────────────────
 def main() -> int:
     chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
@@ -249,6 +284,7 @@ def main() -> int:
 
         inscs = sb_get(cli, chave, "push_inscricoes?select=id,perfil_id,endpoint,p256dh,auth,falhas")
         print(f"📱 Aparelhos com aviso: {len(inscs)}")
+        DETALHES.update(turno=turno, aparelhos=len(inscs), chave_pronta=True)
         if not inscs:
             print("✅ Fim (ninguém ligou os avisos ainda).")
             return 0
@@ -287,9 +323,10 @@ def main() -> int:
                 cli.patch(f"{SUPABASE_URL}/rest/v1/push_inscricoes?id=eq.{insc['id']}", headers=sb_headers(chave, {"Prefer": "return=minimal"}),
                           json={"falhas": int(insc.get("falhas") or 0) + 1})
         print(f"📨 Avisos enviados: {enviados} · nada a avisar: {sem_nada} · aparelhos removidos: {removidos} · falhas: {falhas}")
+        DETALHES.update(enviados=enviados, nada_a_avisar=sem_nada, removidos=removidos, falhas=falhas, pessoas=len(ids))
     print("✅ Fim.")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(rodar())

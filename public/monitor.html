@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>FOXNET · 🩺 Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0D0D0D;color:#EDEDED;font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+a{color:#7DB8F0}
+button{font-family:inherit;cursor:pointer}
+.tela-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:30px;width:100%;max-width:380px;text-align:center}
+.login img{width:56px;margin-bottom:10px}.login h1{font-size:20px;margin-bottom:4px}.login p{font-size:12px;color:#999;margin-bottom:18px}
+.login input{width:100%;background:#0D0D0D;border:1px solid #3A3A3A;border-radius:8px;color:#fff;font-size:14px;padding:11px 12px;margin-bottom:10px;outline:none}
+.btn{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-weight:700;padding:11px 16px;font-size:14px}
+.btn.cz{background:#262626;border:1px solid #3A3A3A;color:#ddd;font-size:12px;padding:7px 12px}
+.erro{color:#F87171;font-size:13px;margin:6px 0 10px;min-height:18px}
+#app{display:none}
+.top{position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid #222;padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top img{width:32px}.top h1{font-size:17px}.top small{color:#888;font-size:12px;display:block}
+.top .sp{flex:1}
+.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.geral{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.g{flex:1;min-width:150px;border-radius:12px;padding:14px 16px;border:1px solid #2A2A2A;background:#161616}
+.g b{display:block;font-size:28px;font-weight:800}.g span{font-size:12px;color:#aaa}
+.g.vm{border-color:#7F1D1D;background:#2A1212}.g.am{border-color:#78590F;background:#221A06}.g.vd{border-color:#14532D;background:#0C1F14}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.sec{background:#141414;border:1px solid #262626;border-radius:12px;padding:14px 16px}
+.sec.larga{grid-column:1/-1}
+.sec h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sec .sub{font-size:12px;color:#888;margin:-6px 0 10px;line-height:1.45}
+.it{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid #1F1F1F;font-size:13px}
+.it:first-of-type{border-top:none}
+.it .s{flex-shrink:0;width:20px;text-align:center}
+.it .t{flex:1;min-width:0}.it .t b{font-weight:700}.it .t small{display:block;color:#999;font-size:11.5px;margin-top:2px;line-height:1.45}
+.it .v{font-weight:700;white-space:nowrap;font-size:12.5px;color:#ddd}
+.bol{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.bol i{width:8px;height:8px;border-radius:50%;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:#888;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;padding:6px;border-bottom:1px solid #2A2A2A;white-space:nowrap}
+td{padding:7px 6px;border-bottom:1px solid #1C1C1C;white-space:nowrap}
+td.r,th.r{text-align:right}
+.barras{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
+.barras div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:#999}
+.barras i{display:block;width:100%;border-radius:4px 4px 0 0;background:#3B82F6;min-height:2px}
+.barras i.vm{background:#EF4444}.barras i.am{background:#F59E0B}
+.barras em{font-style:normal;color:#ddd;font-weight:700;margin-bottom:2px}
+.prog{height:8px;background:#262626;border-radius:4px;overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:#22C55E}
+.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;background:#262626;color:#bbb;margin:2px 4px 2px 0}
+.nota{font-size:11.5px;color:#888;margin-top:8px;line-height:1.5}
+@media(max-width:600px){.grade{grid-template-columns:1fr}.wrap{padding:10px}}
+</style>
+</head>
+<body>
+
+<div id="login" class="tela-centro">
+  <div class="login">
+    <img src="/logo-fox.png" alt="">
+    <h1>🩺 Monitor</h1>
+    <p>Só o administrador.</p>
+    <input id="l-email" type="email" placeholder="E-mail" autocomplete="username">
+    <input id="l-senha" type="password" placeholder="Senha" autocomplete="current-password">
+    <div class="erro" id="l-erro"></div>
+    <button class="btn" id="l-entrar" style="width:100%">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top">
+    <img src="/logo-fox.png" alt="">
+    <div><h1>🩺 Monitor do sistema</h1><small id="atualizado">Carregando…</small></div>
+    <div class="sp"></div>
+    <button class="btn cz" id="bt-atualizar">↻ Atualizar</button>
+    <a class="btn cz" href="/foxnet/" style="text-decoration:none">🦊 FOXNET</a>
+    <button class="btn cz" id="bt-sair">Sair</button>
+  </div>
+  <div class="wrap">
+    <div class="geral" id="geral"></div>
+    <div class="grade" id="grade"></div>
+    <p class="nota" style="margin-top:16px">Este monitor só lê informações (contagens, datas e se deu certo). Nada de nome ou telefone de cliente.
+      Detalhes completos: <a href="https://github.com/pneusfoxltda/fox-descontos/actions" target="_blank" rel="noopener">rodadas dos robôs no GitHub</a> ·
+      <a href="https://supabase.com/dashboard/project/dxwkiaxpygibzmwzvcuz" target="_blank" rel="noopener">painel do Supabase</a>.
+      <br>Para o botão "🩺 Monitor" aparecer no FOXNET deste computador também no endereço da intranet, abra uma vez:
+      <a href="https://foxnet-intranet.vercel.app/?monitor=1">foxnet-intranet.vercel.app/?monitor=1</a></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os dados é o banco (monitor_resumo só responde ao admin).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+const REPO = "pneusfoxltda/fox-descontos";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const SINAL = {vd: "🟢", am: "🟡", vm: "🔴", cz: "⚪"};
+const COR = {vd: "#22C55E", am: "#F59E0B", vm: "#EF4444", cz: "#555"};
+const horas = d => d ? (Date.now() - new Date(d).getTime()) / 36e5 : Infinity;
+const quando = d => {
+  if (!d) return "nunca";
+  const h = horas(d);
+  const hora = new Date(d).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+  return hora + (h < 1 ? ` (há ${Math.max(1, Math.round(h * 60))} min)` : h < 48 ? ` (há ${Math.round(h)} h)` : ` (há ${Math.round(h / 24)} dias)`);
+};
+const fmtDia = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
+const diaSemana = iso => ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"][new Date(iso + "T12:00:00").getDay()];
+const horaPVH = () => Number(new Date().toLocaleString("en-US", {timeZone: "America/Porto_Velho", hour: "numeric", hour12: false})) % 24;
+const diaPVH = () => new Date().toLocaleString("en-US", {timeZone: "America/Porto_Velho", weekday: "short"});
+
+let contagem = {vd: 0, am: 0, vm: 0};
+function item(st, titulo, detalhe, valor) {
+  if (contagem[st] !== undefined) contagem[st]++;
+  return `<div class="it"><span class="s">${SINAL[st]}</span><div class="t"><b>${titulo}</b>${detalhe ? `<small>${detalhe}</small>` : ""}</div>${valor != null ? `<span class="v">${valor}</span>` : ""}</div>`;
+}
+const secao = (titulo, sub, corpo, larga) => `<div class="sec ${larga ? "larga" : ""}"><h2>${titulo}</h2>${sub ? `<div class="sub">${sub}</div>` : ""}${corpo}</div>`;
+
+// ── LOGIN (só admin) ──
+async function entrar(sessao) {
+  if (!sessao) return;
+  const { data: p } = await sb.from("perfis").select("nome,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
+  if (!p || !p.ativo || !(p.funcoes || []).includes("admin")) { await sb.auth.signOut(); $("l-erro").textContent = "Esta página é só do administrador."; return; }
+  try { localStorage.setItem("fox_monitor", "1"); } catch (e) {}   // mostra o botão 🩺 no FOXNET deste navegador
+  $("login").style.display = "none"; $("app").style.display = "block";
+  carregar();
+}
+$("l-entrar").onclick = async () => {
+  $("l-erro").textContent = "";
+  const { data, error } = await sb.auth.signInWithPassword({email: $("l-email").value.trim().toLowerCase(), password: $("l-senha").value});
+  if (error) { $("l-erro").textContent = "E-mail ou senha incorretos."; return; }
+  entrar(data.session);
+};
+$("l-senha").addEventListener("keydown", e => { if (e.key === "Enter") $("l-entrar").click(); });
+$("bt-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("bt-atualizar").onclick = () => carregar();
+sb.auth.getSession().then(({data}) => entrar(data.session));
+
+// ── ROBÔS NO GITHUB (público: não precisa de senha) ──
+// maxH = quantas horas sem rodar ainda é normal (conta a noite e o domingo)
+const ROBOS = [
+  {arq: "ligacoes-lojas.yml", nome: "Lista das ligações", robo: "ligacoes_lojas", quando: "todo dia 7h, 10h, 15h e 18h", maxH: 15},
+  {arq: "avisos-ligacoes.yml", nome: "Avisos no celular", robo: "avisos_ligacoes", quando: "seg a sáb 8h, 10h, 14h e 16h30", maxH: 42},
+  {arq: "conferir-vendas-movere.yml", nome: "Vendas do Movere nos descontos", robo: "conferir_vendas_movere", quando: "seg a sáb 7h50, 12h50 e 17h50", maxH: 42},
+  {arq: "sync-televendas.yml", nome: "Painel do televendas (Movere)", robo: null, quando: "seg a sáb, de hora em hora (6h45 às 17h45)", maxH: 40},
+];
+async function rodadasGithub(arq) {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${arq}/runs?per_page=8&branch=main`, {cache: "no-store"});
+    if (!r.ok) return {erro: r.status === 403 ? "limite de consultas do GitHub (tente em alguns minutos)" : "GitHub respondeu " + r.status};
+    return {runs: (await r.json()).workflow_runs || []};
+  } catch (e) { return {erro: "sem acesso ao GitHub"}; }
+}
+async function paginas() {
+  const lista = [["FOXNET (intranet)", "/foxnet/"], ["Ligações das lojas", "/ligacoes.html"], ["App de descontos", "/descontos"],
+                 ["Cadastrar desconto", "/cadastrardescontos.html"], ["Consulta", "/consulta.html"], ["Painel do televendas", "/televendas.html"], ["Usuários (/admin)", "/admin"]];
+  const res = await Promise.all(lista.map(async ([n, u]) => {
+    const t0 = performance.now();
+    try { const r = await fetch(u, {cache: "no-store"}); return [n, u, r.ok, r.status, Math.round(performance.now() - t0)]; }
+    catch (e) { return [n, u, false, 0, 0]; }
+  }));
+  // O endereço próprio da intranet (outro domínio): só dá para saber se respondeu
+  try { const t0 = performance.now(); await fetch("https://foxnet-intranet.vercel.app/favicon.png", {mode: "no-cors", cache: "no-store"}); res.unshift(["foxnet-intranet.vercel.app", "https://foxnet-intranet.vercel.app/", true, "ok", Math.round(performance.now() - t0)]); }
+  catch (e) { res.unshift(["foxnet-intranet.vercel.app", "https://foxnet-intranet.vercel.app/", false, 0, 0]); }
+  return res;
+}
+
+async function carregar() {
+  $("bt-atualizar").disabled = true; $("atualizado").textContent = "Carregando…";
+  contagem = {vd: 0, am: 0, vm: 0};
+  const [resumo, gh, pags] = await Promise.all([
+    sb.rpc("monitor_resumo"),
+    Promise.all(ROBOS.map(r => rodadasGithub(r.arq))),
+    paginas(),
+  ]);
+  $("bt-atualizar").disabled = false;
+  if (resumo.error) {
+    $("grade").innerHTML = secao("🔴 Não consegui ler o banco", "", item("vm", /monitor_resumo|function/.test(resumo.error.message) ? "Falta rodar o passo 18 (18_monitor.sql) no Supabase" : esc(resumo.error.message)), true);
+    $("atualizado").textContent = "Erro ao carregar"; return;
+  }
+  const R = resumo.data, html = [];
+
+  // 1) Robôs
+  let corpo = "";
+  ROBOS.forEach((rb, i) => {
+    const g = gh[i], runs = (g.runs || []).filter(x => x.status === "completed");
+    const ult = runs[0], rodando = (g.runs || []).find(x => x.status !== "completed");
+    const nossas = (R.robos || {})[rb.robo] || [];
+    const reg = nossas.find(x => !x.teste) || nossas[0];
+    let st, det;
+    if (g.erro) { st = "am"; det = g.erro; }
+    else if (!ult) { st = "am"; det = "ainda não rodou"; }
+    else if (ult.conclusion !== "success") { st = "vm"; det = `a última rodada deu <b>erro</b> (${quando(ult.updated_at)}). <a href="${ult.html_url}" target="_blank" rel="noopener">ver no GitHub</a>`; }
+    else if (horas(ult.updated_at) > rb.maxH) { st = "am"; det = `não roda há ${Math.round(horas(ult.updated_at))} h (o normal é ${rb.quando})`; }
+    else { st = "vd"; det = `última rodada certa: ${quando(ult.updated_at)}`; }
+    if (reg && reg.ok === false && st === "vd") { st = "vm"; det += ` · mas o robô anotou erro: ${esc(reg.mensagem || "")}`; }
+    const bol = `<span class="bol" title="últimas rodadas (mais nova à esquerda)">${runs.slice(0, 8).map(x => `<i style="background:${x.conclusion === "success" ? COR.vd : COR.vm}"></i>`).join("")}</span>`;
+    corpo += item(st, `${rb.nome}${bol}`, `${det}<br>Horário: ${rb.quando}${rodando ? " · <b>rodando agora</b>" : ""}`);
+  });
+  html.push(secao("🤖 Robôs (GitHub Actions)", "Se cada robô está rodando no horário e se deu certo. As bolinhas são as últimas rodadas.", corpo));
+
+  // 2) Etapas da última rodada da lista (Analytics, Kommo, cruzamento)
+  const rl = ((R.robos || {}).ligacoes_lojas || []).find(x => !x.teste);
+  corpo = "";
+  if (!rl) corpo = item("am", "Ainda não há rodada registrada", "Aparece depois da próxima rodada do robô das ligações.");
+  else {
+    const d = rl.detalhes || {};
+    if (!rl.detalhes) corpo += item("am", "Sem detalhes desta rodada", "Os detalhes aparecem a partir da próxima rodada (depois do passo 18).");
+    corpo += item(d.analytics_login === false || (rl.ok === false && !d.analytics_login) ? "vm" : d.analytics_login ? "vd" : "cz", "Login no Analytics (BI do Movere)", d.analytics_login ? "entrou certo" : rl.ok === false ? esc(rl.mensagem || "") : "");
+    corpo += item(d.vendas_telefones > 0 ? "vd" : d.vendas_telefones === 0 ? "am" : "cz", "Relatório de vendas (742591)", d.vendas_telefones != null ? `${d.vendas_dias || 0} dia(s) · ${d.vendas_telefones} telefones de quem comprou` : "");
+    corpo += item(d.kommo_agendados > 0 ? "vd" : d.kommo_agendados === 0 ? "am" : "cz", "Kommo (agendados das 2 colunas)", d.kommo_agendados != null ? `${d.kommo_agendados} agendados · ${d.kommo_com_data || 0} com Data da visita` : "");
+    if (d.cotacoes != null) {
+      const pd = Object.entries(d.cotacoes_por_dia || {}).sort().map(([k, v]) => `${fmtDia(k)}: ${v}`).join(" · ");
+      corpo += item(d.cotacoes > 0 ? "vd" : "am", "Cotações vindas do Analytics (782403)", `${d.cotacoes} cotações${pd ? " · " + pd : ""}`);
+      const f = d.fora || {};
+      corpo += item("vd", "Cruzamento Analytics × Kommo × lista", `entraram <b>${d.novas}</b> · fora: comprou ${f.comprou || 0}, agendado no Kommo ${f.agendou || 0}, telefone repetido ${f.repetido || 0}, já na lista ${f.ja_importada || 0}, atacado ${f.loja_ignorada || 0}`);
+      const pl = Object.entries(d.novas_por_loja || {}).map(([k, v]) => `<span class="tag">${esc(k)} ${v}</span>`).join("");
+      if (pl) corpo += item("vd", "Novos clientes por loja", pl);
+    }
+    corpo += item(d.divididos != null ? "vd" : "cz", "Divisão entre os vendedores", d.divididos != null ? `${d.divididos} cliente(s) divididos nesta rodada` : "");
+    corpo += item("vd", "Reconferência (comprou / agendou depois)", `${d.comprou || 0} viraram "venda pelo sistema" · ${d.agendou || 0} agendados no Kommo`);
+  }
+  html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:#F87171'>deu erro</b>"}` : "", corpo));
+
+  // 3) Lista por dia
+  const dias = R.ligacoes_dias || [];
+  const tots = dias.map(x => x.total), med = tots.length ? tots.slice().sort((a, b) => a - b)[Math.floor(tots.length / 2)] : 0;
+  const ontem = new Date(new Date(R.hoje + "T12:00:00") - 864e5).toISOString().slice(0, 10);
+  const dOntem = dias.find(x => x.dia === ontem);
+  corpo = `<div class="barras">${dias.map(x => { const c = x.total < med * 0.4 ? "am" : ""; return `<div title="${fmtDia(x.dia)} ${diaSemana(x.dia)}: ${x.total} clientes"><em>${x.total}</em><i class="${c}" style="height:${Math.max(4, Math.round(x.total * 70 / Math.max(1, ...tots)))}px"></i>${fmtDia(x.dia)}</div>`; }).join("")}</div>`;
+  if (horaPVH() >= 9) corpo += item(dOntem && dOntem.total > 0 ? (dOntem.total < med * 0.4 ? "am" : "vd") : "vm", `Cotações de ontem (${fmtDia(ontem)}) na lista`, dOntem ? `${dOntem.total} clientes${dOntem.total < med * 0.4 ? ` (bem abaixo do normal, que é ~${med})` : ""}` : "nenhum cliente de ontem entrou na lista");
+  const semRespTot = dias.reduce((t, x) => t + x.sem_resp, 0);
+  corpo += item(semRespTot ? "am" : "vd", "Clientes sem vendedor responsável", semRespTot ? "loja sem vendedor ativo ou divisão pendente (veja a tabela das lojas)" : "todos estão com um vendedor", semRespTot);
+  html.push(secao("📋 Clientes que entraram na lista (por dia da cotação)", "Últimos 14 dias. Barra amarela = dia bem abaixo do normal.", corpo));
+
+  // 4) Lojas: divisão e uso
+  const lojas = R.ligacoes_lojas || [];
+  corpo = `<div style="overflow-x:auto"><table><tr><th>Loja</th><th class="r">Vend.</th><th class="r">Férias</th><th class="r">Em aberto</th><th class="r">Sem resp.</th><th class="r">Por vendedor</th><th class="r">Contatos hoje</th><th>Último contato</th><th></th></tr>` +
+    lojas.map(l => {
+      const desig = l.vendedores > 1 && l.maior - l.menor > Math.max(3, l.maior * 0.25);
+      const st = l.vendedores === 0 ? "vm" : l.sem_resp > 0 || desig ? "am" : horas(l.ultimo_contato) > 30 ? "am" : "vd";
+      contagem[st]++;
+      return `<tr><td><b>${esc(l.loja)}</b></td><td class="r">${l.vendedores}</td><td class="r">${l.ferias}</td><td class="r">${l.abertos}</td><td class="r" style="${l.sem_resp ? "color:#FBBF24;font-weight:700" : ""}">${l.sem_resp}</td>` +
+        `<td class="r" title="menor e maior quantidade de clientes em aberto por vendedor">${l.menor ?? 0} a ${l.maior ?? 0}${desig ? " ⚠️" : ""}</td><td class="r">${l.contatos_hoje}</td><td>${l.ultimo_contato ? quando(l.ultimo_contato) : "<span style='color:#888'>nenhum ainda</span>"}</td><td>${SINAL[st]}</td></tr>`;
+    }).join("") + `</table></div><p class="nota">🔴 loja sem vendedor ativo · 🟡 clientes sem responsável, divisão desigual (⚠️) ou mais de 30 h sem nenhum contato registrado pela loja. Só conta o trabalho de pessoas com o cliente.</p>`;
+  html.push(secao("🏪 Lojas: divisão dos clientes e uso", "", corpo, true));
+
+  // 5) Avisos
+  const av = R.avisos || {};
+  corpo = item(av.chave ? "vd" : "am", "Chave dos avisos", av.chave ? "pronta" : "ainda não criada (o robô cria na primeira rodada)");
+  corpo += item(av.aparelhos ? "vd" : "am", "Aparelhos com aviso ligado", `${av.pessoas || 0} pessoa(s)`, av.aparelhos || 0);
+  corpo += item(av.com_falha ? "am" : "vd", "Aparelhos com falha na entrega", av.com_falha ? "o robô tenta de novo; se continuar, ele remove o aparelho" : "nenhum", av.com_falha || 0);
+  const ra = ((R.robos || {}).avisos_ligacoes || []).find(x => !x.teste);
+  if (ra && ra.detalhes) corpo += item(ra.ok ? "vd" : "vm", `Última rodada (${esc(ra.detalhes.turno || "")})`, `${quando(ra.inicio)} · enviados ${ra.detalhes.enviados ?? 0} · nada a avisar ${ra.detalhes.nada_a_avisar ?? 0} · falhas ${ra.detalhes.falhas ?? 0}`);
+  else corpo += item("cz", "Último aviso enviado", quando(av.ultimo_envio));
+  html.push(secao("🔔 Avisos no computador e no celular", "", corpo));
+
+  // 6) Descontos
+  const ds = R.descontos || {};
+  corpo = ds.erro ? item("vm", "Não consegui ler os descontos", esc(ds.erro)) :
+    item(horas(ds.ultimo) > 72 && !/Sun|Mon/.test(diaPVH()) ? "am" : "vd", "Último desconto cadastrado", quando(ds.ultimo)) +
+    item("vd", "Cadastrados hoje / nos últimos 7 dias", "", `${ds.hoje} / ${ds.semana}`) +
+    item("vd", "Liberados hoje", "", ds.liberados_hoje) +
+    item(ds.total > 900 ? "am" : "vd", "Total no banco", ds.total > 900 ? "perto de 1000: o App já busca em partes, tudo certo" : "", ds.total) +
+    item("vd", "Venda achada no Movere (aguardando liberação)", "", ds.venda_movere);
+  const rv = ((R.robos || {}).conferir_vendas_movere || []).find(x => !x.teste);
+  if (rv) corpo += item(rv.ok ? "vd" : "vm", "Robô de vendas do Movere", `${quando(rv.inicio)} · conferiu ${rv.conferidos ?? 0} · achou ${rv.encontrados ?? 0}${rv.ok ? "" : " · " + esc(rv.mensagem || "")}`);
+  html.push(secao("🏷️ Sistema de descontos", "", corpo));
+
+  // 7) Televendas e tabelas
+  const T = R.tabelas || {};
+  const tvItem = (nome, t, maxH) => !t || !t.existe ? item("am", nome, "tabela não encontrada") :
+    item(t.erro ? "vm" : t.ultima && horas(t.ultima) > maxH ? "am" : "vd", nome, t.ultima ? `atualizada ${quando(t.ultima)}` : (t.coluna ? "sem data" : "sem coluna de data"), (t.linhas ?? "") + " linhas");
+  corpo = tvItem("Vendas do televendas", T.vendas_televendas, 40) + tvItem("Clientes do televendas", T.vendas_televendas_clientes, 40) + tvItem("Metas do televendas", T.metas_televendas, 24 * 45);
+  html.push(secao("💰 Painel do televendas", "Os dados vêm do Movere pelo robô de hora em hora.", corpo));
+
+  // 8) Páginas
+  corpo = pags.map(([n, u, ok, stt, ms]) => item(ok ? (ms > 4000 ? "am" : "vd") : "vm", `<a href="${u}" target="_blank" rel="noopener">${esc(n)}</a>`, ok ? "" : `não abriu (${stt || "sem resposta"})`, ok ? ms + " ms" : "")).join("");
+  html.push(secao("🌐 Páginas (intranet e sistemas)", "Testadas agora, deste computador.", corpo));
+
+  // 9) Segurança do banco
+  corpo = item((R.sem_rls || []).length ? "vm" : "vd", "Tabelas sem trava (RLS)", (R.sem_rls || []).length ? "qualquer pessoa com a chave pública pode ler/gravar: " + R.sem_rls.map(t => `<span class="tag">${esc(t)}</span>`).join("") : "todas as tabelas estão trancadas", (R.sem_rls || []).length);
+  const ab = R.abertas_sem_login || [];
+  corpo += item(ab.length ? "am" : "vd", "Regras que valem para quem NÃO está logado", ab.length ? "confira se é de propósito (ex.: consulta pública, painel do televendas): " + ab.map(p => `<span class="tag">${esc(p.tabela)} · ${esc(p.acao)}</span>`).join("") : "nenhuma", ab.length);
+  if (R.senhas_usuarios != null || R.senhas_televendas != null) {
+    const n = (R.senhas_usuarios || 0) + (R.senhas_televendas || 0);
+    corpo += item(n ? "am" : "vd", "Senhas antigas legíveis (tabelas usuarios / usuarios_televendas)", n ? "passo 2 dos próximos passos: apagar essas senhas" : "nenhuma", n);
+  }
+  const mb = (R.banco_bytes || 0) / 1048576;
+  corpo += item(mb > 400 ? "vm" : mb > 300 ? "am" : "vd", "Espaço do banco (plano grátis: 500 MB)", `<div class="prog"><i style="width:${Math.min(100, mb / 5).toFixed(1)}%"></i></div>`, mb.toFixed(1) + " MB");
+  html.push(secao("🔒 Supabase: segurança e espaço", "", corpo));
+
+  // 10) Tabelas
+  corpo = `<table><tr><th>Tabela</th><th class="r">Linhas</th><th>Mais recente</th></tr>` + Object.entries(T).sort().map(([k, t]) =>
+    `<tr><td>${esc(k)}</td><td class="r">${t.existe ? (t.linhas ?? "?") : "<span style='color:#888'>não existe</span>"}</td><td>${t.ultima ? quando(t.ultima) : ""}</td></tr>`).join("") + `</table>`;
+  html.push(secao("🗄️ Tabelas do banco", "", corpo));
+
+  $("grade").innerHTML = html.join("");
+  $("geral").innerHTML = `<div class="g vm"><b>${contagem.vm}</b><span>🔴 com erro</span></div><div class="g am"><b>${contagem.am}</b><span>🟡 atenção</span></div><div class="g vd"><b>${contagem.vd}</b><span>🟢 funcionando</span></div>`;
+  $("atualizado").textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR", {timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit"}) + " · atualiza sozinho a cada 5 min";
+}
+setInterval(() => { if ($("app").style.display === "block" && !document.hidden) carregar(); }, 5 * 60 * 1000);
+</script>
+</body>
+</html>
