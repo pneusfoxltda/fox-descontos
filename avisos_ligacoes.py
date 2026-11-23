@@ -35,7 +35,7 @@ SUPABASE_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co"
 TZ_LOJA = timezone(timedelta(hours=-4))          # Porto Velho
 SITE = "https://fox-descontos.vercel.app"
 LINK = SITE + "/ligacoes.html"
-ABERTOS = ("pendente", "nao_atende", "retornar", "agendou")
+ABERTOS = ("pendente", "nao_atende", "retornar", "aguardando_wa", "agendou")
 DIAS = 31
 
 

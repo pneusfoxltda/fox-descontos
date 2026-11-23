@@ -28,7 +28,7 @@
   const saudacao = () => ({manha: "Bom dia", tarde: "Boa tarde", noite: "Boa noite"})[periodo()];
 
   // ── Os números da pessoa ──
-  const ABERTO = ["pendente", "nao_atende", "retornar", "agendou"];
+  const ABERTO = ["pendente", "nao_atende", "retornar", "aguardando_wa", "agendou"];
   function numeros() {
     const F = L(), meus = F.meus(), hoje = F.hoje(), ontem = F.ontem();
     const deOntem = meus.filter(l => l.data_cotacao === ontem);
