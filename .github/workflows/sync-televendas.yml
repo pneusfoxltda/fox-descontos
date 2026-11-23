@@ -70,3 +70,37 @@ jobs:
             /tmp/movere_ss_*.png
           if-no-files-found: ignore
           retention-days: 3
+
+  # ── Despertador dos outros robôs ────────────────────────────────────────────
+  # O horário agendado do GitHub atrasa horas ou pula (em 23/11 a rodada das 7h não aconteceu).
+  # Este robô é disparado de fora, em ponto, de hora em hora: ao terminar, ele acorda os outros
+  # no horário certo de Porto Velho. Os horários agendados de cada robô continuam como reserva
+  # (e no domingo, quando este não roda). Rodar duas vezes não estraga nada: as Ligações não
+  # repetem clientes e os Avisos não mandam o mesmo aviso duas vezes no dia.
+  acordar-robos:
+    needs: sync
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Acordar os robôs do horário
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          H=$(TZ=America/Porto_Velho date +%-H)
+          echo "Hora em Porto Velho: ${H}h"
+          acordar() { echo "→ acordando $1"; gh workflow run "$1" --repo "$REPO" --ref main || echo "⚠️ não consegui acordar $1"; }
+          case "$H" in
+            6)  acordar ligacoes-lojas.yml ;;
+            7)  acordar avisos-ligacoes.yml; acordar conferir-vendas-movere.yml ;;
+            9)  acordar ligacoes-lojas.yml; acordar avisos-ligacoes.yml ;;
+            12) acordar conferir-vendas-movere.yml ;;
+            13) acordar avisos-ligacoes.yml ;;
+            14) acordar ligacoes-lojas.yml ;;
+            16) acordar avisos-ligacoes.yml ;;
+            17) acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml ;;
+            *)  echo "Nenhum robô para acordar nesta hora." ;;
+          esac
