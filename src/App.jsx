@@ -96,6 +96,7 @@ function parseConcObs(obs){
     return empresa?{empresa,valor,pgto}:null;
   }).filter(Boolean);
 }
+const semAcento=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); // busca de concorrente sem ligar para acento
 const vendeuSemLib=q=>!!(q&&q.vendaMovere&&!q.liberado); // venda no Movere de desconto ainda pendente de liberação
 function fmtDate(d){if(!d)return"-";const[y,m,dd]=d.split("-");return dd+"/"+m+"/"+y;}
 function hasRole(session,role){
@@ -329,6 +330,16 @@ export default function App(){
   const[concPgto,setConcPgto]=useState("");
   const[concShowDrop,setConcShowDrop]=useState(false);
   const[concExtras,setConcExtras]=useState(()=>{try{return JSON.parse(localStorage.getItem("fox_concorrentes")||"[]");}catch{return[];}});
+  // Todas as concorrentes: as padrão + as adicionadas neste navegador + TODAS as que já estão gravadas nos
+  // descontos do banco (assim uma empresa cadastrada uma vez aparece para todos, em qualquer computador).
+  // Sem repetir nomes iguais com maiúscula/acento diferente.
+  const todasEmpresas=useMemo(()=>{
+    const chave=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+    const vistas=new Map();
+    [...CONCORRENTES_PADRAO,...concExtras,...quotes.flatMap(q=>parseConcObs(q.obs).map(c=>c.empresa))]
+      .forEach(e=>{const n=String(e||"").trim();if(n&&!vistas.has(chave(n)))vistas.set(chave(n),n);});
+    return [...vistas.values()].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  },[concExtras,quotes]);
   const[imgModal,setImgModal]=useState(null); // {src, nome}
   const[editModal,setEditModal]=useState(null);
   const[editForm,setEditForm]=useState({cba:"",medida:"",segmento:"",loja:"",valor:"",pgto:"",validade:"",obs:"",erroInterno:false});
@@ -1373,8 +1384,8 @@ export default function App(){
               onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
               style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
             {concDrop1&&concQuery1.length>0&&(()=>{
-              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+              const todas=todasEmpresas;
+              const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery1)));
               if(!sug.length)return null;
               return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
                 {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
@@ -1467,8 +1478,8 @@ export default function App(){
               onFocus={()=>setConcDrop1(true)} onBlur={()=>setTimeout(()=>setConcDrop1(false),180)}
               style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
             {concDrop1&&concQuery1.length>0&&(()=>{
-              const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-              const sug=todas.filter(x=>x.toLowerCase().includes(concQuery1.toLowerCase()));
+              const todas=todasEmpresas;
+              const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery1)));
               if(!sug.length)return null;
               return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
                 {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
@@ -1572,9 +1583,9 @@ export default function App(){
                 autoComplete="off"
               />
               {concShowDrop&&concQuery.length>0&&(()=>{
-                const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-                const sug=todas.filter(x=>x.toLowerCase().includes(concQuery.toLowerCase()));
-                const novaOpc=concQuery.trim()&&!todas.map(x=>x.toLowerCase()).includes(concQuery.trim().toLowerCase());
+                const todas=todasEmpresas;
+                const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery)));
+                const novaOpc=concQuery.trim()&&!todas.map(semAcento).includes(semAcento(concQuery));
                 if(!sug.length&&!novaOpc)return null;
                 return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
                   {sug.map(s=>(
@@ -1957,8 +1968,8 @@ export default function App(){
               <div style={{flex:2,minWidth:150,position:"relative"}}>
                 <input placeholder="Buscar concorrente..." value={editConcQuery} onChange={e=>{setEditConcQuery(e.target.value);setEditConcDrop(true);}} onFocus={()=>setEditConcDrop(true)} onBlur={()=>setTimeout(()=>setEditConcDrop(false),180)} style={{width:"100%",boxSizing:"border-box"}} autoComplete="off"/>
                 {editConcDrop&&editConcQuery.length>0&&(()=>{
-                  const todas=[...CONCORRENTES_PADRAO,...concExtras].filter((v,i,a)=>a.indexOf(v)===i).sort();
-                  const sug=todas.filter(x=>x.toLowerCase().includes(editConcQuery.toLowerCase()));
+                  const todas=todasEmpresas;
+                  const sug=todas.filter(x=>semAcento(x).includes(semAcento(editConcQuery)));
                   if(!sug.length)return null;
                   return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:160,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
                     {sug.map(s=>(<div key={s} onMouseDown={()=>{setEditConcQuery(s);setEditConcDrop(false);}} style={{padding:"7px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
