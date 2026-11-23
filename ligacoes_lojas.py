@@ -54,8 +54,8 @@ MAX_DIAS_IMPORTAR = 7
 INICIO = date(2026, 11, 17)              # primeiras cotações da lista (decisão do TI: os últimos 5 dias)
 DIAS_REVISAR = 5                         # toda rodada confere de novo os últimos 5 dias de cotação
 # Se o cliente comprou e a loja não marcou "Venda ganha" → "Venda ganha televendas"
-ABERTOS = ("pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_perdida")
-SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem virar "agendou"
+ABERTOS = ("pendente", "nao_atende", "retornar", "aguardando_wa", "sem_interesse", "agendou", "venda_perdida")
+SEM_CONTATO = ("pendente", "nao_atende", "retornar", "aguardando_wa")                 # podem virar "agendou"
 ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
 RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0, "divididos": 0}

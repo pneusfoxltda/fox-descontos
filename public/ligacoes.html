@@ -76,7 +76,7 @@ a{color:inherit;}
 /* ── CARTÕES ── */
 .card{background:var(--s1);border:1px solid var(--bd);border-left:4px solid #555;border-radius:10px;padding:14px;margin-bottom:10px;}
 .card.st-pendente{border-left-color:#F39C12;}
-.card.st-nao_atende,.card.st-retornar{border-left-color:#3498DB;}
+.card.st-nao_atende,.card.st-retornar{border-left-color:#3498DB;} .card.st-aguardando_wa{border-left-color:#22C55E;}
 .card.st-sem_interesse{border-left-color:#777;}
 .card.st-agendou{border-left-color:#8B5CF6;}
 .card.st-venda_ganha{border-left-color:#22C55E;}
@@ -171,7 +171,7 @@ body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} bod
 @keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
 .stsel{border:none;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;color-scheme:var(--cs);}
 .stsel:disabled{cursor:default;opacity:.95;}
-.c-pendente{background:#3A2A00;color:#FCD34D;} .c-nao_atende{background:#4A1414;color:#FCA5A5;} .c-retornar{background:#12304A;color:#93C5FD;}
+.c-pendente{background:#3A2A00;color:#FCD34D;} .c-nao_atende{background:#4A1414;color:#FCA5A5;} .c-retornar{background:#12304A;color:#93C5FD;} .c-aguardando_wa{background:#0F3D24;color:#86EFAC;}
 .c-sem_interesse{background:var(--s3);color:var(--tx2);} .c-agendou{background:#2A1F45;color:#C4B5FD;} .c-venda_ganha{background:#0E3A22;color:#86EFAC;}
 .c-venda_perdida{background:#3A0F0F;color:#F87171;} .c-venda_televendas,.c-comprou{background:#06292A;color:#5EEAD4;}
 .quem{font-size:10px;color:var(--tx3);margin-top:3px;}
@@ -248,7 +248,7 @@ input.cel.os.falta{border-color:#F59E0B}
 .tema-nota{font-size:11px;color:var(--tx3);margin-top:12px;line-height:1.5;}
 .tema-pad{background:none;border:none;color:var(--tx2);text-decoration:underline;font-size:12px;cursor:pointer;margin-top:6px;padding:0;}
 /* Modo claro: selos e botões coloridos em tons claros */
-body.claro .c-pendente{background:#FEF3C7;color:#92400E;} body.claro .c-nao_atende{background:#FEE2E2;color:#B91C1C;} body.claro .c-retornar{background:#DBEAFE;color:#1D4ED8;}
+body.claro .c-pendente{background:#FEF3C7;color:#92400E;} body.claro .c-nao_atende{background:#FEE2E2;color:#B91C1C;} body.claro .c-retornar{background:#DBEAFE;color:#1D4ED8;} body.claro .c-aguardando_wa{background:#DCFCE7;color:#15803D;}
 body.claro .c-sem_interesse{background:#EEEEEE;color:#555;} body.claro .c-agendou{background:#EDE9FE;color:#6D28D9;} body.claro .c-venda_ganha{background:#DCFCE7;color:#15803D;}
 body.claro .c-venda_perdida{background:#FEE2E2;color:#B91C1C;} body.claro .c-venda_televendas,body.claro .c-comprou{background:#CCFBF1;color:#0F766E;}
 body.claro .mini.lig,body.claro .bt-lig{background:#DBEAFE;color:#1D4ED8;} body.claro .mini.wa,body.claro .bt-wa{background:#DCFCE7;color:#15803D;}
@@ -403,6 +403,7 @@ const STATUS = {
   pendente:         {nome: "Pendente ligação"},
   nao_atende:       {nome: "Liguei, não atende"},
   retornar:         {nome: "Liguei, retornar depois"},
+  aguardando_wa:    {nome: "Aguardando retorno WhatsApp"},
   sem_interesse:    {nome: "Liguei, sem interesse"},
   agendou:          {nome: "Agendou"},
   venda_ganha:      {nome: "Venda ganha (loja)"},
@@ -414,14 +415,14 @@ const STATUS = {
 // Máximo de tentativas por ligação; depois disso, só pelo WhatsApp (decisão do TI)
 const MAX_TENT = 3;
 const ICONE_WA = '<svg class="ico-wa" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"/></svg>';
-const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha", "venda_perdida"];
+const MANUAIS = ["pendente", "nao_atende", "retornar", "aguardando_wa", "sem_interesse", "agendou", "venda_ganha", "venda_perdida"];
 const FECHADOS = ["venda_ganha", "venda_perdida", "venda_televendas", "comprou"];
 const MOTIVOS_PERDA = ["Preço (achou mais barato)", "Comprou na concorrência", "Desistiu da compra", "Não temos a medida/produto",
   "Prazo de entrega", "Condição de pagamento", "Não compareceu ao agendamento", "Já resolveu o problema", "Outro motivo"];
 const ehTv = s => s === "venda_televendas" || s === "comprou";
 const ABAS = [
   ["pendentes", "Pendentes",          "#F39C12", l => l.status === "pendente"],
-  ["liguei",    "Já liguei",          "#3498DB", l => ["nao_atende", "retornar", "sem_interesse"].includes(l.status)],
+  ["liguei",    "Já liguei",          "#3498DB", l => ["nao_atende", "retornar", "aguardando_wa", "sem_interesse"].includes(l.status)],
   ["agendou",   "Agendou",            "#8B5CF6", l => l.status === "agendou"],
   ["ganha",     "Venda ganha (loja)", "#22C55E", l => l.status === "venda_ganha"],
   ["perdida",   "Venda perdida",      "#EF4444", l => l.status === "venda_perdida"],
@@ -882,7 +883,7 @@ async function historico(id) {
 
 // ── TABELA, GRAVAÇÃO AUTOMÁTICA, DESFAZER, TENTATIVAS, WHATSAPP ──
 const ehTabela = () => window.innerWidth >= 900;
-const CURTO = {pendente: "Pendente ligação", retornar: "Retornar depois", sem_interesse: "Sem interesse", agendou: "Agendou",
+const CURTO = {pendente: "Pendente ligação", retornar: "Retornar depois", aguardando_wa: "Aguardando retorno WhatsApp", sem_interesse: "Sem interesse", agendou: "Agendou",
   venda_ganha: "Venda ganha", venda_perdida: "Venda perdida", venda_televendas: "Venda televendas", comprou: "Venda televendas"};
 let mapaHist = new Map(), abertos = new Set(), salvoId = null, desfazer = null;
 function montarMapaHist() {
@@ -952,7 +953,7 @@ async function gravar(l, novo, ehDesfazer = false) {
   const motivo = st === "venda_perdida" ? (novo.motivo || l.motivo_perda) : null;
   const obs = (novo.obs || "").trim();
   const { error } = await sb.rpc("marcar_ligacao", { p_id: l.id, p_status: st, p_obs: obs || null, p_os: os, p_data: data, p_motivo: motivo });
-  if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); render(); return false; }
+  if (error) { toast(/aguardando_wa|status_valido|Status inválido/i.test(error.message || "") && st === "aguardando_wa" ? "Falta rodar o passo 20 no Supabase para usar \"Aguardando retorno WhatsApp\". Avise o TI." : "Não consegui salvar: " + (error.message || "erro"), false); render(); return false; }
   const quem = perfil.nome || perfil.email, agora = new Date().toISOString();
   Object.assign(l, {status: st, status_em: agora, status_por: quem});
   if (st === "nao_atende" && !ehDesfazer) l.tentativas = Math.max(Number(l.tentativas || 0), tentativas(l.id)) + 1;
@@ -1175,7 +1176,7 @@ async function renderDash() {
     const v = vend[h.quem] || (vend[h.quem] = {nome: h.quem, lojas: new Set(), reg: 0, clientes: new Set(), lig: 0, naoAtende: 0, ganhas: 0, valor: 0, ult: null});
     const l = porId.get(h.ligacao_id);
     v.lojas.add(l.loja); v.reg++; v.clientes.add(h.ligacao_id);
-    if (["nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha"].includes(h.status)) v.lig++;
+    if (["nao_atende", "retornar", "aguardando_wa", "sem_interesse", "agendou", "venda_ganha"].includes(h.status)) v.lig++;
     if (h.status === "nao_atende") v.naoAtende++;
     if (h.status === "venda_ganha" && l.status === "venda_ganha") { v.ganhas++; v.valor += Number(l.valor || 0); }
     v.ult = h.quando;
