@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/png" href="/favicon.png">
+<!-- "Instalar" no celular (ícone na tela inicial) e avisos da Fernanda -->
+<link rel="manifest" href="/ligacoes.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ligações Fox">
 <title>Fox Pneus · Ligações das lojas</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -198,6 +205,16 @@ input.cel.os.falta{border-color:#F59E0B}
 
 /* Cliente que a Fernanda mostrou */
 .fe-destaque td,.card.fe-destaque{outline:2px solid #E6F77A;outline-offset:-2px;background:rgba(230,247,122,.12)!important;transition:background .3s;}
+/* ── TRAVA DOS AVISOS (vendedor) ── */
+.trava-av{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:16px;}
+.trava-cx{background:var(--s1);border:1px solid var(--bd2);border-radius:18px;padding:26px 24px;max-width:440px;width:100%;text-align:center;}
+.trava-cx h2{font-size:19px;margin:12px 0 8px;color:var(--tx);}
+.trava-cx p{font-size:14px;color:var(--tx2);line-height:1.55;margin-bottom:18px;}
+.trava-bt{background:var(--ac);color:#fff;border:none;border-radius:10px;padding:13px 22px;font-size:15px;font-weight:800;cursor:pointer;width:100%;}
+.trava-bt:disabled{opacity:.6;cursor:default;}
+.trava-passos{text-align:left;font-size:13px;color:var(--tx2);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.6;}
+.trava-passos ol{margin:6px 0 6px 18px;} .trava-passos b{color:var(--tx);} .trava-passos small{color:var(--tx3);}
+.trava-sair{background:none;border:none;color:var(--tx3);text-decoration:underline;font-size:12px;margin-top:14px;cursor:pointer;}
 /* ── JANELA DE FÉRIAS ── */
 .fer-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:none;align-items:center;justify-content:center;padding:16px;}
 .fer-modal.on{display:flex;}
@@ -281,6 +298,7 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
     </div>
     <div class="sp"></div>
     <select id="sel-loja" style="display:none" title="Loja"></select>
+    <button class="tema-bt" id="aviso-bt" title="Avisos da Fernanda no computador e no celular" style="display:none">🔔</button>
     <button class="tema-bt" id="tema-bt" title="Cores da tela">🎨 <span class="seta">▾</span></button>
     <div class="user" id="user-nome"></div>
     <button class="sair" id="btn-sair">Sair</button>
@@ -302,6 +320,25 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
       <input type="date" id="fer-data" class="cel" style="width:100%;font-size:15px;padding:9px 10px">
       <label class="fer-sd"><input type="checkbox" id="fer-semdata"> Ainda não sei (só volta quando clicar em "Voltou: ativar")</label>
       <div class="fer-bts"><button class="tema-bt" onclick="fecharFerias()">Cancelar</button><button class="fer-ok" id="fer-ok">Colocar de férias</button></div>
+    </div>
+  </div>
+  <!-- Trava: o vendedor só usa as Ligações com os avisos ligados (computador e Android; iPhone não é cobrado) -->
+  <div class="trava-av" id="trava-av" style="display:none">
+    <div class="trava-cx">
+      <img src="/logo-fox.png" alt="" width="56" height="56">
+      <h2 id="trava-tit">Ligue os avisos da Fernanda para continuar</h2>
+      <p id="trava-txt">Eu te aviso de segunda a sábado, às <b>8h e 10h</b> de manhã e às <b>14h e 16h30</b> à tarde, com os seus clientes do dia. Só números, nada de dados de cliente.</p>
+      <button class="trava-bt" id="trava-bt">🔔 Ligar avisos</button>
+      <div class="trava-passos" id="trava-passos" style="display:none">
+        <b>O navegador está bloqueando os avisos. Para liberar:</b>
+        <ol>
+          <li>Clique no <b>cadeado</b> 🔒 (ou no ⓘ) ao lado do endereço do site, lá em cima.</li>
+          <li>Em <b>Notificações</b>, escolha <b>Permitir</b>.</li>
+          <li>Clique em <b>"Já liberei, tentar de novo"</b>.</li>
+        </ol>
+        <small>No celular Android: toque nos 3 pontinhos ⋮ → ⓘ (informações do site) → Notificações → Permitir.</small>
+      </div>
+      <button class="trava-sair" onclick="sb.auth.signOut().then(() => location.reload())">Sair</button>
     </div>
   </div>
   <div class="aviso-robo" id="aviso-robo" style="display:none"></div>
@@ -418,7 +455,7 @@ function naAgenda(l, f) {
   if (f === "7dias") return d >= h && d <= somaDias(h, 7);
   return d === f;   // um dia escolhido no calendário
 }
-let limite = POR_PAGINA, modo = "lista", periodo = "7";
+let limite = POR_PAGINA, modo = "lista", periodo = "7", atualizadoEm = Date.now();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -534,6 +571,7 @@ async function carregar() {
     }
   } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
   porIdTodas = new Map(todas.map(l => [l.id, l]));
+  atualizadoEm = Date.now();
   montarNomesCotou();
   historicoTodo = null;
   await carregarVendedores();
@@ -998,9 +1036,12 @@ function linhaTabela(l) {
 }
 
 // ── DASHBOARD ──
-const PERIODOS = [["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+const PERIODOS = [["1", "1 dia"], ["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+// "1 dia" = a lista que entrou hoje (o último dia de cotação que chegou), para acompanhar o dia
+const ultimoDiaLista = () => todas.filter(l => !filtro.loja || l.loja === filtro.loja).reduce((m, l) => l.data_cotacao > m ? l.data_cotacao : m, "");
 function inicioPeriodo() {
   const h = hojeISO();
+  if (periodo === "1") return ultimoDiaLista() || h;
   if (periodo === "mes") return h.slice(0, 8) + "01";
   return new Date(new Date(h + "T12:00:00").getTime() - (Number(periodo) - 1) * 864e5).toISOString().slice(0, 10);
 }
@@ -1014,8 +1055,11 @@ async function garantirHistorico() {
 async function renderDash() {
   $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Carregando o dashboard…</div>';
   try { await garantirHistorico(); } catch (e) { $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Não consegui carregar o histórico.</div>'; return; }
-  $("periodos").innerHTML = PERIODOS.map(([v, n]) => `<button class="chip ${v === periodo ? "on" : ""}" data-p="${v}">${n}</button>`).join("");
+  const ud = ultimoDiaLista();
+  $("periodos").innerHTML = PERIODOS.map(([v, n]) => `<button class="chip ${v === periodo ? "on" : ""}" data-p="${v}" ${v === "1" && ud ? `title="Cotações de ${fmtData(ud)} (a lista que entrou hoje)"` : ""}>${n}${v === "1" && ud ? ` <small style="opacity:.7">(${fmtData(ud)})</small>` : ""}</button>`).join("") +
+    `<button class="chip" id="dash-atualizar" title="Buscar os dados mais novos">↻ Atualizar</button><span class="resumo" style="align-self:center;margin:0 0 0 4px">atualizado às ${new Date(atualizadoEm).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit", timeZone: "America/Porto_Velho"})}</span>`;
   document.querySelectorAll(".chip[data-p]").forEach(c => c.onclick = () => { periodo = c.dataset.p; renderDash(); });
+  $("dash-atualizar").onclick = () => { $("dash-atualizar").disabled = true; carregar(); };
 
   const ini = inicioPeriodo();
   const L = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
@@ -1031,7 +1075,7 @@ async function renderDash() {
   const soma = arr => arr.reduce((s, l) => s + Number(l.valor || 0), 0);
   const kpi = (l, v, s) => `<div class="kpi"><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-s">${s}</div></div>`;
   $("kpis").innerHTML = [
-    kpi("Clientes na lista", total, `cotações desde ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
+    kpi("Clientes na lista", total, `cotações ${periodo === "1" ? "de" : "desde"} ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
     kpi("Trabalhados pela loja", pct(tocados.size, total) + "%", `${tocados.size} com algum registro`),
     kpi("Sem nenhum contato", pendSemContato.length, `ainda pendentes · ${fmtR0(soma(pendSemContato))}`),
     kpi("Venda ganha (loja)", ganhas.length, `${fmtR0(soma(ganhas))} · conversão ${pct(ganhas.length, total)}%`),
@@ -1170,6 +1214,7 @@ window.FE_LIG = {
     Object.assign(filtro, {aba: "agendou", agenda: k, busca: ""}); if ($("busca")) $("busca").value = "";
     limite = POR_PAGINA; render(); window.scrollTo({top: 0, behavior: "smooth"});
   },
+  avisos: {estado: () => AVISOS.estado(), ativar: () => AVISOS.ativar().then(r => (botaoAviso(), r)), desativar: () => AVISOS.desativar().then(r => (botaoAviso(), r)), texto: k => AVISOS.TEXTO[k] || AVISOS.TEXTO.erro},
   abrirAba(aba, dia) {
     if (modo !== "lista") trocarModo("lista");
     Object.assign(filtro, {aba, data: dia || "", busca: ""}); if ($("busca")) $("busca").value = "";
@@ -1177,6 +1222,118 @@ window.FE_LIG = {
   },
 };
 const avisarFernanda = () => window.dispatchEvent(new Event("fe-lig"));
+
+// ── AVISOS NO COMPUTADOR E NO CELULAR (notificação push; SQL 17 + robô avisos_ligacoes.py) ──
+// Grátis: o navegador entrega. O aviso só traz números. Cada pessoa liga/desliga no 🔔 ou pela Fernanda.
+const AVISOS = {
+  ehIphone: () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+  instalado: () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true,
+  suportado: () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window,
+  // ativo · desligado · negado · iphone_instalar · nao_suporta
+  async estado() {
+    if (!AVISOS.suportado()) return AVISOS.ehIphone() && !AVISOS.instalado() ? "iphone_instalar" : "nao_suporta";
+    if (Notification.permission === "denied") return "negado";
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      const sub = reg && await reg.pushManager.getSubscription();
+      return sub && Notification.permission === "granted" ? "ativo" : "desligado";
+    } catch (e) { return "desligado"; }
+  },
+  async ativar() {
+    const st = await AVISOS.estado();
+    if (st === "iphone_instalar" || st === "nao_suporta" || st === "negado") return st;
+    const { data: chave, error } = await sb.rpc("push_chave_publica");
+    if (error) return /push_chave_publica|function/i.test(error.message) ? "sem_sql" : "erro";
+    if (!chave) return "sem_chave";
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return "negado";
+    try {
+      const reg = await navigator.serviceWorker.register("/sw-avisos.js", {scope: "/"});
+      await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64paraBytes(chave)});
+      await AVISOS.salvar(sub); botaoAviso.salvo = true;
+      const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
+      reg.showNotification("🦊 Avisos ligados!", {body: `Pronto${nome ? ", " + nome : ""}! Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.`, icon: "/icone-192.png", tag: "fe-lig-teste"});
+      return "ativo";
+    } catch (e) { console.warn("avisos:", e); return "erro"; }
+  },
+  async salvar(sub) {
+    const j = sub.toJSON();
+    const { error } = await sb.rpc("salvar_push", {p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_aparelho: navigator.userAgent.slice(0, 200)});
+    if (error) throw error;
+  },
+  async desativar() {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration("/");
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) { await sb.rpc("remover_push", {p_endpoint: sub.endpoint}); await sub.unsubscribe(); }
+    } catch (e) {}
+    return "desligado";
+  },
+  TEXTO: {
+    ativo: "Avisos ligados neste aparelho. 🔔 Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.",
+    desligado: "Os avisos estão desligados neste aparelho.",
+    negado: "O navegador está bloqueando os avisos deste site. Para liberar: clique no cadeado (ou no ⓘ) ao lado do endereço, em \"Notificações\", escolha \"Permitir\" e tente de novo.",
+    iphone_instalar: "No iPhone os avisos funcionam com a página instalada: toque em Compartilhar (o quadrado com a seta ↑), depois em \"Adicionar à Tela de Início\". Abra pelo ícone da raposa e ligue os avisos de lá.",
+    nao_suporta: "Este navegador não recebe avisos. Use o Chrome (computador ou Android) ou o Safari do iPhone com a página na Tela de Início.",
+    sem_chave: "Os avisos ainda estão sendo preparados. Tente de novo mais tarde (o robô prepara na próxima rodada).",
+    sem_sql: "Os avisos ainda não foram ligados no sistema (falta o passo 17 no Supabase). Avise o TI.",
+    erro: "Não consegui ligar os avisos agora. Tente de novo daqui a pouco.",
+  },
+};
+function b64paraBytes(b64) { const p = "=".repeat((4 - b64.length % 4) % 4), t = atob((b64 + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(t, c => c.charCodeAt(0)); }
+async function botaoAviso() {
+  const bt = $("aviso-bt"); if (!bt || !perfil) return;
+  const st = await AVISOS.estado();
+  bt.style.display = st === "nao_suporta" ? "none" : "";
+  bt.textContent = st === "ativo" ? "🔔" : "🔕";
+  bt.title = st === "ativo" ? "Avisos ligados neste aparelho (clique para desligar)" : "Receber avisos da Fernanda no computador e no celular";
+  bt.classList.toggle("on", st === "ativo");
+  // Já estava ligado: confirma que o aparelho é desta pessoa (outro vendedor pode ter usado antes)
+  if (st === "ativo" && !botaoAviso.salvo) { botaoAviso.salvo = true; try { const reg = await navigator.serviceWorker.getRegistration("/"); const sub = await reg.pushManager.getSubscription(); if (sub) await AVISOS.salvar(sub); } catch (e) {} }
+}
+$("aviso-bt").onclick = async () => {
+  const st = await AVISOS.estado();
+  if (st === "ativo") {
+    if (!confirm("Desligar os avisos da Fernanda neste aparelho?")) return;
+    await AVISOS.desativar(); toast("Avisos desligados neste aparelho."); return botaoAviso();
+  }
+  const r = await AVISOS.ativar();
+  toast(AVISOS.TEXTO[r] || AVISOS.TEXTO.erro, r === "ativo");
+  botaoAviso();
+};
+window.addEventListener("fe-lig", botaoAviso);
+
+// Trava: vendedor no computador ou no Android só usa a lista com os avisos ligados (decisão do TI).
+// Não trava: iPhone, navegador sem avisos, gerente/admin, ou enquanto o sistema de avisos não estiver pronto.
+async function conferirTrava() {
+  if (!perfil || !ehVendedor || AVISOS.ehIphone()) return mostrarTrava(false);
+  const st = await AVISOS.estado();
+  if (st === "ativo" || st === "nao_suporta" || st === "iphone_instalar") return mostrarTrava(false);
+  const { data: chave, error } = await sb.rpc("push_chave_publica");
+  if (error || !chave) return mostrarTrava(false);            // avisos ainda não prontos no sistema
+  mostrarTrava(true, st === "negado");
+}
+function mostrarTrava(on, bloqueado) {
+  $("trava-av").style.display = on ? "" : "none";
+  if (!on) return;
+  const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
+  $("trava-tit").textContent = (nome ? nome + ", l" : "L") + "igue os avisos da Fernanda para continuar";
+  $("trava-passos").style.display = bloqueado ? "" : "none";
+  $("trava-bt").textContent = bloqueado ? "Já liberei, tentar de novo" : "🔔 Ligar avisos";
+}
+$("trava-bt").onclick = async () => {
+  const bt = $("trava-bt"); bt.disabled = true; bt.textContent = "Um instante…";
+  const r = await AVISOS.ativar();
+  bt.disabled = false; botaoAviso();
+  if (r === "ativo") { mostrarTrava(false); toast("Avisos ligados! 🔔 Bom trabalho!"); return; }
+  if (r === "negado") return mostrarTrava(true, true);
+  if (r === "nao_suporta" || r === "iphone_instalar" || r === "sem_chave" || r === "sem_sql") { mostrarTrava(false); toast(AVISOS.TEXTO[r], false); return; }
+  mostrarTrava(true, false); toast(AVISOS.TEXTO.erro, false);
+};
+window.addEventListener("fe-lig", () => { if (!conferirTrava.feito) { conferirTrava.feito = true; conferirTrava(); } });
+
 
 // ── PALETA DE CORES (🎨 no topo) ──
 // Claro / Escuro / Dispositivo + uma cor. Guardado no navegador (localStorage "lig_tema"), sem login.

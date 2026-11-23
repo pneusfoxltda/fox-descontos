@@ -303,6 +303,21 @@ def dias_para_revisar(ultima, dias: list, hoje: date) -> list:
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
 def sb_get(cli, chave, caminho):
+    """GET no Supabase. O banco entrega no máximo 1000 linhas por vez: quando o caminho pede mais
+    (limit > 1000), busca em partes até acabar."""
+    m = _re.search(r"[?&]limit=(\d+)", caminho)
+    if not m or int(m.group(1)) <= 1000:
+        return _sb_get_parte(cli, chave, caminho)
+    base, linhas = _re.sub(r"[?&]limit=\d+", "", caminho), []
+    sep = "&" if "?" in base else "?"
+    while True:
+        parte = _sb_get_parte(cli, chave, f"{base}{sep}limit=1000&offset={len(linhas)}")
+        linhas += parte
+        if len(parte) < 1000:
+            return linhas
+
+
+def _sb_get_parte(cli, chave, caminho):
     r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/{caminho}", headers=cv._sb_headers(chave))
     if r.status_code == 404 or (r.status_code == 400 and "ligacoes" in r.text):
         raise RuntimeError("falta rodar o SQL 12_ligacoes.sql no Supabase")

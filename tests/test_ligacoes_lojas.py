@@ -280,6 +280,19 @@ def test_dia_sem_nenhuma_cotacao_nao_conta_como_importado():
         COT = antigo
     assert codigo == 1 and reg["post_ligacoes"] == [] and "20/11" in reg["rodadas"][-1]["mensagem"]
 
+def test_sb_get_busca_em_partes():
+    pedidos = []
+    def responder(req):
+        pedidos.append(unquote(str(req.url)))
+        off = int(req.url.params.get("offset", 0))
+        n = 1000 if off < 2000 else 345              # 2345 linhas no banco
+        return httpx.Response(200, json=[{"id": off + i} for i in range(n)])
+    with httpx.Client(transport=httpx.MockTransport(responder)) as cli:
+        linhas = ll.sb_get(cli, "k", "ligacoes?select=id&status=in.(pendente)&limit=20000&data_cotacao=gte.2026-11-01")
+    assert len(linhas) == 2345 and len(pedidos) == 3
+    assert all("limit=1000" in p and "limit=20000" not in p for p in pedidos)
+    assert "offset=2000" in pedidos[-1] and "data_cotacao=gte.2026-11-01" in pedidos[-1]
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("test_"):

@@ -107,7 +107,7 @@
     if (curta) return partes.slice(0, 2).join(" ");
     return partes.join("\n\n");
   }
-  const CHIPS = ["Agendados de hoje", "Por onde começo?", "Quantos faltam?", "Quem não atende?", "Meu resumo", "Dica para ligar"];
+  const CHIPS = ["Agendados de hoje", "Por onde começo?", "Quantos faltam?", "Quem não atende?", "Meu resumo", "Dica para ligar", "🔔 Avisos no celular"];
 
   // ── Respostas no chat ──
   function resposta(q) {
@@ -202,6 +202,16 @@
       return true;
     }
     if (tem(/outra dica/)) return resposta("dica");
+    // Avisos no computador e no celular
+    if (tem(/desliga|parar|nao quero/) && tem(/aviso|notifica|lembrete/)) {
+      F.avisos.desativar().then(() => bot("Pronto, desliguei os avisos neste aparelho. Se quiser de volta, é só pedir! 🔕"));
+      return true;
+    }
+    if (tem(/aviso|notifica|lembrete|me avisa|me lembra|celular/)) {
+      bot("Um instante, vou ligar os avisos… Se o navegador perguntar, clique em \"Permitir\". 🔔");
+      F.avisos.ativar().then(r => { bot(F.avisos.texto(r)); if (r === "ativo") chips(CHIPS); });
+      return true;
+    }
     // Como fazer (ajuda da tela)
     if (tem(/como/) && tem(/venda ganha|ganhei|vendi|marcar venda|o\.?s/)) { bot("Para marcar a venda: escolha \"Venda ganha\" no Status E digite o nº da O.S. A venda só é salva com os dois. ✅"); return true; }
     if (tem(/como/) && tem(/agend|marcar visita/)) { bot("Para agendar: escolha a data na coluna \"Data agendamento\". O status muda para \"Agendou\" sozinho. No dia, eu te lembro! 📅"); return true; }
@@ -231,6 +241,15 @@
     const n = numeros();
     if (periodo() !== "noite" && n.agHoje.length > 1) listaClientes(n.agHoje, quemAgendou, 3);
     chips(CHIPS);
+    // Oferece os avisos no computador/celular (uma vez por aparelho, enquanto estiverem desligados)
+    const F = L(); let ofereceu = false; try { ofereceu = !!localStorage.getItem("fe_lig_avisos_oferta"); } catch (e) {}
+    if (F.avisos && !ofereceu) F.avisos.estado().then(st => {
+      if (st !== "desligado" && st !== "iphone_instalar") return;
+      try { localStorage.setItem("fe_lig_avisos_oferta", "1"); } catch (e) {}
+      bot("Quer que eu te avise aqui no " + (/Mobi|Android|iPhone/.test(navigator.userAgent) ? "celular" : "computador") +
+          ", mesmo com a página fechada? 🔔 De segunda a sábado: às 8h e 10h de manhã, às 14h e 16h30 à tarde, só com os seus números.");
+      chips(["Sim, quero receber avisos", ...CHIPS.slice(0, 3)]);
+    });
   }
 
   // ── Balão perto da Fernanda: um aviso por período do dia, para quem está logado ──

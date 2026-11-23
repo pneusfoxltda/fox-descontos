@@ -1,0 +1,46 @@
+name: Avisos das Ligações (computador e celular)
+
+# Manda o aviso da Fernanda para quem ligou os avisos nas Ligações das lojas.
+# Segunda a sábado, horário de Porto Velho (UTC−4), decisão do TI:
+#   8h (bom dia) · 10h (como estão as ligações) · 14h (boa tarde) · 16h30 (reta final)
+# Só números, nada de nome ou telefone de cliente. Sem custo.
+on:
+  schedule:
+    - cron: '0 12,14,18 * * 1-6'
+    - cron: '30 20 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      turno:
+        description: 'Qual aviso mandar'
+        type: choice
+        options: [pelo horário, manha1, manha2, tarde1, tarde2]
+        default: pelo horário
+      teste:
+        description: 'Só mostrar o que faria, sem enviar'
+        type: boolean
+        default: false
+
+concurrency:
+  group: avisos-ligacoes
+  cancel-in-progress: false
+
+jobs:
+  avisos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install httpx cryptography
+
+      - name: Mandar os avisos
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TURNO: ${{ (inputs.turno && inputs.turno != 'pelo horário') && inputs.turno || '' }}
+          DRY_RUN: ${{ inputs.teste && '1' || '' }}
+        run: python avisos_ligacoes.py
