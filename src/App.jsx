@@ -135,6 +135,7 @@ body{background:var(--fx-bg,#0A0A0A);font-family:'Inter',sans-serif;color:var(--
 .logout:hover{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
 .content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100vh;}
 .main{padding:14px 18px;width:100%;box-sizing:border-box;}
+.topo-acoes{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:30px;margin:-6px 0 6px;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--fx-tx0,#fff);}
@@ -881,6 +882,8 @@ export default function App(){
     {/* ── CONTEÚDO ── */}
     <div className="content-wrap">
     <div className="main">
+    {/* Faixa do topo, à direita: o 🎨 da paleta de cores entra aqui (public/paleta.js) */}
+    <div className="topo-acoes" id="topo-acoes"></div>
     {/* DASHBOARD */}
     {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid var(--fx-bd,#1E1E1E)",paddingBottom:14}}>

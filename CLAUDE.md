@@ -58,7 +58,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (foxnet-intranet) e os sistemas (fox-descontos) são endereços diferentes: ao abrir um sistema pelo FOXNET
   a escolha vai no link (`?tema=modo.COR.hora`, a mais nova vale) e sai do endereço. "Voltar ao padrão" =
   cada tela com a sua cor. **Todas as páginas têm o 🎨**: FOXNET e Ligações (paleta própria) e App de
-  descontos, Cadastrar, Consulta, Televendas, /admin e Monitor (`public/paleta.js`, carregado depois do
+  descontos (🎨 no canto de cima à direita, faixa `#topo-acoes` do App), Cadastrar, Consulta, Televendas, /admin e Monitor (`public/paleta.js`, carregado depois do
   tema-comum.js com `data-padrao="modo,#cor"` e `data-antes`/`data-dentro` para o lugar do botão).
   Nessas páginas cada cor fixa virou `var(--fx-PAPEL, cor de sempre)` (fundo bg/s1/s2, borda bd, texto
   tx/tx0/tx2/tx3/tx4, destaque ac/ac2/ac3/acbg, faixa hd/hd2 do Televendas e situação okbg/oktx,
