@@ -455,7 +455,7 @@ function naAgenda(l, f) {
   if (f === "7dias") return d >= h && d <= somaDias(h, 7);
   return d === f;   // um dia escolhido no calendário
 }
-let limite = POR_PAGINA, modo = "lista", periodo = "7";
+let limite = POR_PAGINA, modo = "lista", periodo = "7", atualizadoEm = Date.now();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -571,6 +571,7 @@ async function carregar() {
     }
   } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
   porIdTodas = new Map(todas.map(l => [l.id, l]));
+  atualizadoEm = Date.now();
   montarNomesCotou();
   historicoTodo = null;
   await carregarVendedores();
@@ -1035,9 +1036,12 @@ function linhaTabela(l) {
 }
 
 // ── DASHBOARD ──
-const PERIODOS = [["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+const PERIODOS = [["1", "1 dia"], ["7", "7 dias"], ["15", "15 dias"], ["30", "30 dias"], ["mes", "Este mês"]];
+// "1 dia" = a lista que entrou hoje (o último dia de cotação que chegou), para acompanhar o dia
+const ultimoDiaLista = () => todas.filter(l => !filtro.loja || l.loja === filtro.loja).reduce((m, l) => l.data_cotacao > m ? l.data_cotacao : m, "");
 function inicioPeriodo() {
   const h = hojeISO();
+  if (periodo === "1") return ultimoDiaLista() || h;
   if (periodo === "mes") return h.slice(0, 8) + "01";
   return new Date(new Date(h + "T12:00:00").getTime() - (Number(periodo) - 1) * 864e5).toISOString().slice(0, 10);
 }
@@ -1051,8 +1055,11 @@ async function garantirHistorico() {
 async function renderDash() {
   $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Carregando o dashboard…</div>';
   try { await garantirHistorico(); } catch (e) { $("kpis").innerHTML = '<div class="vazio" style="grid-column:1/-1">Não consegui carregar o histórico.</div>'; return; }
-  $("periodos").innerHTML = PERIODOS.map(([v, n]) => `<button class="chip ${v === periodo ? "on" : ""}" data-p="${v}">${n}</button>`).join("");
+  const ud = ultimoDiaLista();
+  $("periodos").innerHTML = PERIODOS.map(([v, n]) => `<button class="chip ${v === periodo ? "on" : ""}" data-p="${v}" ${v === "1" && ud ? `title="Cotações de ${fmtData(ud)} (a lista que entrou hoje)"` : ""}>${n}${v === "1" && ud ? ` <small style="opacity:.7">(${fmtData(ud)})</small>` : ""}</button>`).join("") +
+    `<button class="chip" id="dash-atualizar" title="Buscar os dados mais novos">↻ Atualizar</button><span class="resumo" style="align-self:center;margin:0 0 0 4px">atualizado às ${new Date(atualizadoEm).toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit", timeZone: "America/Porto_Velho"})}</span>`;
   document.querySelectorAll(".chip[data-p]").forEach(c => c.onclick = () => { periodo = c.dataset.p; renderDash(); });
+  $("dash-atualizar").onclick = () => { $("dash-atualizar").disabled = true; carregar(); };
 
   const ini = inicioPeriodo();
   const L = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
@@ -1068,7 +1075,7 @@ async function renderDash() {
   const soma = arr => arr.reduce((s, l) => s + Number(l.valor || 0), 0);
   const kpi = (l, v, s) => `<div class="kpi"><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-s">${s}</div></div>`;
   $("kpis").innerHTML = [
-    kpi("Clientes na lista", total, `cotações desde ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
+    kpi("Clientes na lista", total, `cotações ${periodo === "1" ? "de" : "desde"} ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
     kpi("Trabalhados pela loja", pct(tocados.size, total) + "%", `${tocados.size} com algum registro`),
     kpi("Sem nenhum contato", pendSemContato.length, `ainda pendentes · ${fmtR0(soma(pendSemContato))}`),
     kpi("Venda ganha (loja)", ganhas.length, `${fmtR0(soma(ganhas))} · conversão ${pct(ganhas.length, total)}%`),

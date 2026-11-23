@@ -223,7 +223,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (cor própria). Guardada no navegador (`localStorage "lig_tema"`), sem login. Padrão = escuro com o
   vermelho Fox (igual a antes). As cores da página são variáveis CSS (`--bg`, `--s1`, `--ac`, `--th`...).
 - **Na lista só ficam os 5 dias de cotação mais recentes** (`DIAS_NA_LISTA`), menos os **agendados**.
-  O **Dashboard usa tudo** (decisão do TI) e tem a "Divisão por vendedor".
+  O **Dashboard usa tudo** (decisão do TI) e tem a "Divisão por vendedor". Períodos: **1 dia** (a lista que
+  entrou hoje = último dia de cotação), 7, 15, 30 dias e Este mês; botão "↻ Atualizar" com a hora da última busca.
 - **`/admin`** (`public/admin.html`, só admin): cadastrar pessoa com função (vendedor / gerente da
   loja / gerente de todas), primeiro nome e loja; lote "Nome; e-mail; LOJA; função" com botão que
   preenche a equipe da Matriz + Jonathan; tabela para mudar função, primeiro nome, loja, férias e
