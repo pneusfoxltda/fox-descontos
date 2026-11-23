@@ -59,6 +59,8 @@ SEM_CONTATO = ("pendente", "nao_atende", "retornar")                 # podem vir
 ROBO_MOVERE, ROBO_KOMMO = "Robô (Movere)", "Robô (Kommo)"
 
 RESUMO = {"inicio": None, "inseridas": 0, "comprou": 0, "agendou": 0, "abertas": 0, "divididos": 0}
+# Detalhes da rodada para o 🩺 Monitor (só contagens e etapas; nunca nome ou telefone de cliente)
+DETALHES = {}
 HORA_ULTIMA_RODADA = 17     # a rodada das 18h (com folga de atraso do GitHub) é a última do dia
 # O dia D só é importado a partir das 6h de D+1: de madrugada o Analytics ainda está carregando o dia
 # (em 21/11, à 1h30, o 20/11 tinha só 3 cotações). A data existe no calendário do Analytics mesmo sem
@@ -333,11 +335,15 @@ def registrar_rodada(ok: bool, mensagem: str = None, teste: bool = False):
     corpo = {"robo": ROBO, "ok": ok, "teste": teste,
              "inicio": (RESUMO["inicio"] or agora).isoformat(), "fim": agora.isoformat(),
              "conferidos": RESUMO["abertas"], "encontrados": RESUMO["comprou"] + RESUMO["agendou"],
-             "mensagem": (mensagem or "")[:300] or None}
+             "mensagem": (mensagem or "")[:300] or None, "detalhes": dict(DETALHES, **{k: v for k, v in RESUMO.items() if k != "inicio"})}
     try:
         with httpx.Client(timeout=20) as cli:
-            cli.post(f"{cv.SUPABASE_URL}/rest/v1/robo_execucoes",
-                     headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            r = cli.post(f"{cv.SUPABASE_URL}/rest/v1/robo_execucoes",
+                         headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            if r.status_code == 400:   # SQL 18 (coluna "detalhes") ainda não rodou: grava sem os detalhes
+                corpo.pop("detalhes")
+                cli.post(f"{cv.SUPABASE_URL}/rest/v1/robo_execucoes",
+                         headers=cv._sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
     except Exception as e:
         print(f"⚠️ Não consegui registrar a rodada: {type(e).__name__}")
 
@@ -375,15 +381,18 @@ def main() -> int:
         # Os últimos dias já importados são conferidos de novo: se o Analytics ainda não tinha o dia
         # inteiro quando foi importado, as cotações que faltaram entram agora (sem repetir as que já estão).
         revisar = dias_para_revisar(ultima, dias, hoje)
+        DETALHES.update(etapa="supabase", dias_importar=[d.isoformat() for d in dias], dias_revisar=[d.isoformat() for d in revisar])
         print(f"📋 Lista aberta (últimos {DIAS_RECONFERIR} dias): {len(abertas)} · "
               f"dias para importar: {', '.join(d.strftime('%d/%m') for d in dias) or 'nenhum'}"
               f" · conferir de novo: {', '.join(d.strftime('%d/%m') for d in revisar) or 'nenhum'}")
 
         agendados, datas_kommo = telefones_kommo(cli, segredos["KOMMO_TOKEN"])
         print(f"📅 Telefones agendados no Kommo: {len(agendados)} · com data: {len(datas_kommo)}")
+        DETALHES.update(etapa="kommo", kommo_agendados=len(agendados), kommo_com_data=len(datas_kommo))
 
         tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"])
         print("🔐 Login no Analytics OK")
+        DETALHES.update(etapa="analytics", analytics_login=True)
 
         # Vendas desde a cotação aberta mais antiga (ou o 1º dia a importar) até hoje
         inicio_vendas = min([date.fromisoformat(l["data_cotacao"]) for l in abertas] + dias + revisar + [hoje])
@@ -393,6 +402,7 @@ def main() -> int:
         if uris_vendas:
             vendas = cv.vendas_por_telefone(cv.relatorio(cli, tt, REL_VENDAS, None, filtro_dias(list(uris_vendas.values()))))
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
+        DETALHES.update(etapa="vendas", vendas_dias=len(uris_vendas), vendas_telefones=len(vendas))
 
         # 1) Importar — só os dias que já existem no Analytics (senão, tenta na próxima rodada)
         agora = datetime.now(cv.TZ_LOJA).replace(tzinfo=None)
@@ -434,6 +444,12 @@ def main() -> int:
             por_loja = {}
             for c in novas:
                 por_loja[c["loja"]] = por_loja.get(c["loja"], 0) + 1
+            # Por dia: quantas cotações vieram do Analytics (para o monitor ver dia vazio ou pela metade)
+            cot_dia = {}
+            for c in cots:
+                cot_dia[c["data"].isoformat()] = cot_dia.get(c["data"].isoformat(), 0) + 1
+            DETALHES.update(etapa="importar", dias_prontos=[d.isoformat() for d in prontos], cotacoes=len(cots),
+                            cotacoes_por_dia=cot_dia, novas=len(novas), fora=motivos, novas_por_loja=por_loja)
             print(f"📥 Cotações em {', '.join(d.strftime('%d/%m') for d in prontos)}: {len(cots)} · "
                   f"novas na lista: {len(novas)} · fora: comprou {motivos['comprou']}, agendou {motivos['agendou']}, "
                   f"telefone repetido {motivos['repetido']}, já importadas {motivos['ja_importada']}, "

@@ -129,7 +129,7 @@ def test_gerente_ve_a_loja_e_quem_falta():
 
 
 # ── Rodada completa com a rede imitada ──
-def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1"):
+def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1", via_rodar=False):
     ap = Aparelho()
     reg = {"push": [], "config": [], "patch": [], "delete": []}
     pub, priv = av.nova_chave()
@@ -137,6 +137,8 @@ def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1"):
     def responder(req: httpx.Request):
         u = unquote(str(req.url))
         if u.startswith(av.SUPABASE_URL):
+            if "/robo_execucoes" in u:
+                reg.setdefault("rodadas", []).append(json.loads(req.content)); return httpx.Response(201)
             if "/push_config" in u:
                 if req.method == "POST":
                     reg["config"].append(json.loads(req.content)); return httpx.Response(201)
@@ -169,7 +171,7 @@ def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1"):
             return datetime(2026, 11, 23, 8, 0, tzinfo=tz)
     dt_real, av.datetime = av.datetime, DT
     try:
-        return av.main(), reg
+        return (av.rodar() if via_rodar else av.main()), reg
     finally:
         av.httpx.Client = original
         av.datetime = dt_real
@@ -197,6 +199,12 @@ def test_modo_teste_nao_envia():
     codigo, reg = _rodar(dry=True)
     assert codigo == 0 and reg["push"] == [] and reg["patch"] == []
 
+
+def test_rodada_fica_registrada_para_o_monitor():
+    codigo, reg = _rodar(via_rodar=True)
+    r = reg["rodadas"][-1]
+    assert codigo == 0 and r["robo"] == "avisos_ligacoes" and r["ok"] is True
+    assert r["detalhes"]["enviados"] == 1 and r["detalhes"]["turno"] == "manha1" and r["detalhes"]["aparelhos"] == 1
 
 if __name__ == "__main__":
     for nome, f in list(globals().items()):

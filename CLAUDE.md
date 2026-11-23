@@ -272,6 +272,24 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - Testes: `python tests/test_ligacoes_lojas.py` e `python tests/test_avisos_ligacoes.py`.
 - `sb_get` busca em partes de 1000 (o banco entrega no máximo 1000 linhas por vez).
 
+## 🩺 Monitor (só o admin) — branch `monitor`
+
+- Página **`/monitor`** (`public/monitor.html`, rewrite no `middleware.js`). Pede o login de admin; o banco
+  só responde ao admin (`monitor_resumo()`, SQL `18_monitor.sql`, que também cria `robo_execucoes.detalhes`).
+- Botão **"🩺 Monitor"** no topo do FOXNET só no navegador do admin: marcado ao entrar no /monitor
+  (`localStorage fox_monitor`); no endereço da intranet, abrir uma vez `foxnet-intranet.vercel.app/?monitor=1`
+  (`?monitor=0` tira). Sem botão "Entrar" na intranet (decisão mantida).
+- Mostra (🟢/🟡/🔴, atualiza a cada 5 min): robôs no GitHub (API pública, últimas rodadas, atraso, erro);
+  passo a passo da última rodada da lista (login no Analytics, vendas 742591, Kommo, cotações por dia,
+  cruzamento e motivos, novos por loja, divisão, reconferência) a partir de `robo_execucoes.detalhes`;
+  clientes por dia (14 dias); lojas (vendedores, férias, sem responsável, divisão desigual, contatos hoje,
+  último contato só de pessoas); avisos no celular; descontos; televendas; páginas no ar; segurança
+  (tabelas sem RLS, regras para quem não está logado, senhas antigas legíveis) e espaço do banco (500 MB).
+- Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).
+  Se o SQL 18 não rodou, gravam sem os detalhes (não quebram). Só contagens: nada de cliente.
+- Próximas etapas combinadas: backup diário trancado com senha (segredo no GitHub), 3 linhas nos
+  Apps Scripts para o monitor ver os e-mails, e anotar erros das telas.
+
 ## Próximos passos (em ordem)
 
 1. ✅ **Trancar o banco (RLS)** — CONCLUÍDO em 21/11/2026. Passos 06, 07 e 08 rodados no
