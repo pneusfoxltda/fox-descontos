@@ -174,8 +174,8 @@ async function entrar(sessao) {
 async function doLogin() {
   const email = $("l-email").value.trim().toLowerCase(), pass = $("l-pass").value, err = $("login-err");
   err.style.display = "none";
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) { err.textContent = "E-mail ou senha incorretos."; err.style.display = "block"; return; }
+  const { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sb, { email, password: pass }) : sb.auth.signInWithPassword({ email, password: pass }));
+  if (error) { err.textContent = error.mensagem || "E-mail ou senha incorretos."; err.style.display = "block"; return; }
   const r = await entrar(data.session);
   if (r && r.erro) { err.textContent = r.erro; err.style.display = "block"; }
 }

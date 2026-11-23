@@ -338,8 +338,8 @@ async function doLogin() {
   const btn = document.getElementById("btn-login");
   btn.textContent = "Entrando..."; btn.disabled = true;
   try {
-    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
-    if (error) { errEl.textContent = "E-mail ou senha incorretos."; errEl.style.display = "block"; }
+    const { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sbAuth, { email, password: pass }) : sbAuth.auth.signInWithPassword({ email, password: pass }));
+    if (error) { errEl.textContent = error.mensagem || "E-mail ou senha incorretos."; errEl.style.display = "block"; }
     else {
       const r = await entrarComSessao(data.session);
       if (r && r.erro) { errEl.textContent = r.erro; errEl.style.display = "block"; }

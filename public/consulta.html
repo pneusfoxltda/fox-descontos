@@ -234,6 +234,8 @@ function getBadge(q) {
   return {lbl:"Pendente liberação", cls:"badge-pend"};
 }
 
+// Proteção contra XSS: todo texto vindo do banco aparece como texto, nunca como código
+function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c])); }
 function renderCards(list, showConc60 = false) {
   if (!list || !list.length) return `<div class="state-nf"><div class="icon">😕</div><h3>Nenhum desconto encontrado</h3><p>Verifique os dados e tente novamente.</p></div>`;
 
@@ -248,27 +250,27 @@ function renderCards(list, showConc60 = false) {
     h += `<div class="quote-card${hasConc?" has-conc":""}">
   <div class="quote-top">
     <div>
-      <div class="quote-num">#${q.numero||""}</div>
+      <div class="quote-num">#${esc(q.numero)}</div>
       <div class="quote-tipo">${q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
     </div>
-    <span class="badge ${b.cls}">${b.lbl}</span>
+    <span class="badge ${b.cls}">${esc(b.lbl)}</span>
   </div>
   ${q.venda_movere && !q.liberado && q.venda_movere_conferido_em ? `<div class="venda-reg">🤖 Venda registrada pelo robô em ${fmtDataHora(q.venda_movere_conferido_em)}</div>` : ""}
   <div class="quote-body">
     <div class="info-grid">
-      <div class="ii"><label>CBA</label><div class="val">${q.cba||""}</div></div>
-      <div class="ii"><label>Produto · Medida</label><div class="val">${q.medida||""}</div></div>
-      ${q.telefone_cliente?`<div class="ii"><label>📱 Telefone do Cliente</label><div class="val blue">${q.telefone_cliente}</div></div>`:""}
+      <div class="ii"><label>CBA</label><div class="val">${esc(q.cba)}</div></div>
+      <div class="ii"><label>Produto · Medida</label><div class="val">${esc(q.medida)}</div></div>
+      ${q.telefone_cliente?`<div class="ii"><label>📱 Telefone do Cliente</label><div class="val blue">${esc(q.telefone_cliente)}</div></div>`:""}
       <div class="ii"><label>Valor Negociado</label><div class="val big">${fmtR(q.valor)}</div></div>
-      <div class="ii"><label>Pagamento / Parcelas</label><div class="val">${q.pgto||""}</div></div>
-      <div class="ii"><label>Validade</label><div class="val ${isExp(q.validade)?"dim":""}">${fmtV(q.validade)}</div></div>
-      <div class="ii"><label>Vendedor</label><div class="val">${q.vendedor||""}</div></div>
-      <div class="ii"><label>Data do Cadastro</label><div class="val">${fmtD(q.criado_em)}</div></div>
+      <div class="ii"><label>Pagamento / Parcelas</label><div class="val">${esc(q.pgto)}</div></div>
+      <div class="ii"><label>Validade</label><div class="val ${isExp(q.validade)?"dim":""}">${esc(fmtV(q.validade))}</div></div>
+      <div class="ii"><label>Vendedor</label><div class="val">${esc(q.vendedor)}</div></div>
+      <div class="ii"><label>Data do Cadastro</label><div class="val">${esc(fmtD(q.criado_em))}</div></div>
     </div>
-    ${obs?`<div class="divider"></div><div class="motivo-box"><label>Motivo / Observações</label><p>${obs}</p></div>`:""}
-    ${hasConc?`<div class="conc-box"><label>📊 Concorrência registrada</label><p>${conc}</p></div>`:""}
+    ${obs?`<div class="divider"></div><div class="motivo-box"><label>Motivo / Observações</label><p>${esc(obs)}</p></div>`:""}
+    ${hasConc?`<div class="conc-box"><label>📊 Concorrência registrada</label><p>${esc(conc)}</p></div>`:""}
   </div>
-  <div class="loja-bar">🏪 <span>${q.loja||""}</span></div>
+  <div class="loja-bar">🏪 <span>${esc(q.loja)}</span></div>
 </div>`;
   }
   return h;
