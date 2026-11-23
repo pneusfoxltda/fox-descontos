@@ -850,6 +850,7 @@ async function salvar(id) {
   const status = $("s-" + id).value, obs = $("o-" + id).value.trim(), os = $("os-" + id).value.trim();
   const dt = $("dt-" + id).value, motivo = $("mp-" + id).value;
   if (status === "venda_ganha" && !os) { toast("Informe o nº da O.S. da venda.", false); $("os-" + id).focus(); return; }
+  if (status === "agendou" && dt && !anoOk(dt)) { toast("Confira o ano da data do agendamento.", false); $("dt-" + id).focus(); return; }
   if (status === "agendou" && !dt) { toast("Informe a data do agendamento.", false); $("dt-" + id).style.display = ""; $("dt-" + id).focus(); return; }
   if (status === "venda_perdida" && !motivo) { toast("Escolha o motivo da venda perdida.", false); $("mp-" + id).style.display = ""; $("mp-" + id).focus(); return; }
   if (status === "venda_perdida" && motivo === "Outro motivo" && !obs) { toast("Escreva qual foi o motivo na observação.", false); $("o-" + id).focus(); return; }
@@ -995,7 +996,9 @@ async function mudouOS(id, v) {
   toast("O.S. anotada. Agora escolha \"Venda ganha\" no Status para salvar a venda.");
   if (sel) sel.focus();
 }
-async function mudouData(id, v) { if (!v) return; await gravar(todas.find(x => x.id === id), {status: "agendou", data: v}); }
+// O navegador avisa a cada número digitado no ano (0002, 0020, 0202...): só salva com o ano completo e razoável
+const anoOk = v => { const a = Number(String(v || "").slice(0, 4)), h = Number(hojeISO().slice(0, 4)); return a >= h - 1 && a <= h + 2; };
+async function mudouData(id, v) { if (!v || !anoOk(v)) return; await gravar(todas.find(x => x.id === id), {status: "agendou", data: v}); }
 async function mudouMotivo(id, v) {
   if (!v) return;
   const an = $("tan-" + id);
