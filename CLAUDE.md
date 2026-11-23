@@ -77,6 +77,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   ou "·". Campo vazio fica em branco (sem "—"). Registros antigos de concorrência gravados
   com "—" (cba, loja, pgto) aparecem em branco no App e na Consulta.
 - **Logo oficial**: raposa vermelha de traços (`public/logo-fox.png`, `public/favicon.png`).
+  **Clicar na raposa de qualquer sistema volta para a intranet** (FOXNET), inclusive nas telas de login
+  (`tema-comum.js`; em produção vai para foxnet-intranet.vercel.app levando a cor escolhida; nos links de teste, /foxnet/).
   A Fernanda usa a mesma raposa em preto, de propósito.
 - **Fernanda**: assistente sem IA externa (palavras-chave), não envia dados para fora.
   `public/fernanda.js` (busca no FOXNET) + `public/fernanda-ajuda.js` (ajuda de cada tela,

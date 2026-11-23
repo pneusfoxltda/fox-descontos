@@ -55,4 +55,27 @@
     noDominioIntranet: () => /^foxnet[.-]/i.test(location.hostname),
   };
   window.addEventListener("storage", e => { if (e.key === CHAVE) avisar(); });
+
+  // ── A raposa (logo) de qualquer sistema volta para a intranet (FOXNET) — decisão do TI ──
+  // Vale em todas as telas que carregam este arquivo, inclusive nas telas de login. No próprio FOXNET a
+  // raposa já leva ao início, então ali não muda nada. Leva a cor escolhida junto (endereços diferentes).
+  const noFoxnet = /^foxnet[.-]/i.test(location.hostname) || /^\/foxnet(\/|$)/.test(location.pathname);
+  if (!noFoxnet) {
+    const RAPOSA = 'img[src$="/logo-fox.png"], .header .logo';
+    const destino = () => location.hostname === "fox-descontos.vercel.app"
+      ? FoxTema.link("https://foxnet-intranet.vercel.app/")
+      : "/foxnet/";                                      // links de teste e computador local: o FOXNET do mesmo endereço
+    const st = document.createElement("style");
+    st.textContent = `${RAPOSA}{cursor:pointer}`;
+    (document.head || document.documentElement).appendChild(st);
+    document.addEventListener("click", e => {
+      const r = e.target && e.target.closest && e.target.closest(RAPOSA);
+      if (!r) return;
+      e.preventDefault(); e.stopPropagation();
+      if (e.ctrlKey || e.metaKey) window.open(destino(), "_blank"); else location.href = destino();
+    }, true);
+    const titulo = () => document.querySelectorAll(RAPOSA).forEach(el => { if (!el.title) el.title = "Voltar para a intranet (FOXNET)"; });
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", titulo); else titulo();
+    setTimeout(titulo, 2500);                              // telas que aparecem depois (App, login)
+  }
 })();
