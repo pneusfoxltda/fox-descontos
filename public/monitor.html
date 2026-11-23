@@ -9,50 +9,52 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0D0D0D;color:#EDEDED;font-family:'Inter',system-ui,sans-serif;min-height:100vh}
-a{color:#7DB8F0}
+body{background:var(--fx-bg,#0D0D0D);color:var(--fx-tx,#EDEDED);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+a{color:var(--fx-intx,#7DB8F0)}
 button{font-family:inherit;cursor:pointer}
 .tela-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.login{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:30px;width:100%;max-width:380px;text-align:center}
-.login img{width:56px;margin-bottom:10px}.login h1{font-size:20px;margin-bottom:4px}.login p{font-size:12px;color:#999;margin-bottom:18px}
-.login input{width:100%;background:#0D0D0D;border:1px solid #3A3A3A;border-radius:8px;color:#fff;font-size:14px;padding:11px 12px;margin-bottom:10px;outline:none}
-.btn{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-weight:700;padding:11px 16px;font-size:14px}
-.btn.cz{background:#262626;border:1px solid #3A3A3A;color:#ddd;font-size:12px;padding:7px 12px}
-.erro{color:#F87171;font-size:13px;margin:6px 0 10px;min-height:18px}
+.login{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);border-radius:14px;padding:30px;width:100%;max-width:380px;text-align:center}
+.login img{width:56px;margin-bottom:10px}.login h1{font-size:20px;margin-bottom:4px}.login p{font-size:12px;color:var(--fx-tx3,#999);margin-bottom:18px}
+.login input{width:100%;background:var(--fx-bg,#0D0D0D);border:1px solid var(--fx-bd,#3A3A3A);border-radius:8px;color:var(--fx-tx0,#fff);font-size:14px;padding:11px 12px;margin-bottom:10px;outline:none}
+.btn{background:var(--fx-ac,#CC1F1F);color:#fff;border:none;border-radius:8px;font-weight:700;padding:11px 16px;font-size:14px}
+.btn.cz{background:var(--fx-s2,#262626);border:1px solid var(--fx-bd,#3A3A3A);color:var(--fx-tx2,#ddd);font-size:12px;padding:7px 12px}
+.erro{color:var(--fx-ertx,#F87171);font-size:13px;margin:6px 0 10px;min-height:18px}
 #app{display:none}
-.top{position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid #222;padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.top img{width:32px}.top h1{font-size:17px}.top small{color:#888;font-size:12px;display:block}
+.top{position:sticky;top:0;z-index:10;background:var(--fx-bg,#111);border-bottom:1px solid var(--fx-bd,#222);padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top img{width:32px}.top h1{font-size:17px}.top small{color:var(--fx-tx3,#888);font-size:12px;display:block}
 .top .sp{flex:1}
 .wrap{max-width:1250px;margin:0 auto;padding:16px}
 .geral{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-.g{flex:1;min-width:150px;border-radius:12px;padding:14px 16px;border:1px solid #2A2A2A;background:#161616}
-.g b{display:block;font-size:28px;font-weight:800}.g span{font-size:12px;color:#aaa}
-.g.vm{border-color:#7F1D1D;background:#2A1212}.g.am{border-color:#78590F;background:#221A06}.g.vd{border-color:#14532D;background:#0C1F14}
+.g{flex:1;min-width:150px;border-radius:12px;padding:14px 16px;border:1px solid var(--fx-bd,#2A2A2A);background:var(--fx-s1,#161616)}
+.g b{display:block;font-size:28px;font-weight:800}.g span{font-size:12px;color:var(--fx-tx3,#aaa)}
+.g.vm{border-color:#7F1D1D;background:var(--fx-erbg,#2A1212)}.g.am{border-color:#78590F;background:var(--fx-avbg,#221A06)}.g.vd{border-color:#14532D;background:var(--fx-okbg,#0C1F14)}
 .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
-.sec{background:#141414;border:1px solid #262626;border-radius:12px;padding:14px 16px}
+.sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:14px 16px}
 .sec.larga{grid-column:1/-1}
 .sec h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.sec .sub{font-size:12px;color:#888;margin:-6px 0 10px;line-height:1.45}
-.it{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid #1F1F1F;font-size:13px}
+.sec .sub{font-size:12px;color:var(--fx-tx3,#888);margin:-6px 0 10px;line-height:1.45}
+.it{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--fx-bd,#1F1F1F);font-size:13px}
 .it:first-of-type{border-top:none}
 .it .s{flex-shrink:0;width:20px;text-align:center}
-.it .t{flex:1;min-width:0}.it .t b{font-weight:700}.it .t small{display:block;color:#999;font-size:11.5px;margin-top:2px;line-height:1.45}
-.it .v{font-weight:700;white-space:nowrap;font-size:12.5px;color:#ddd}
+.it .t{flex:1;min-width:0}.it .t b{font-weight:700}.it .t small{display:block;color:var(--fx-tx3,#999);font-size:11.5px;margin-top:2px;line-height:1.45}
+.it .v{font-weight:700;white-space:nowrap;font-size:12.5px;color:var(--fx-tx2,#ddd)}
 .bol{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.bol i{width:8px;height:8px;border-radius:50%;display:inline-block}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
-th{text-align:left;color:#888;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;padding:6px;border-bottom:1px solid #2A2A2A;white-space:nowrap}
-td{padding:7px 6px;border-bottom:1px solid #1C1C1C;white-space:nowrap}
+th{text-align:left;color:var(--fx-tx3,#888);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;padding:6px;border-bottom:1px solid var(--fx-bd,#2A2A2A);white-space:nowrap}
+td{padding:7px 6px;border-bottom:1px solid var(--fx-bd,#1C1C1C);white-space:nowrap}
 td.r,th.r{text-align:right}
 .barras{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
-.barras div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:#999}
+.barras div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:var(--fx-tx3,#999)}
 .barras i{display:block;width:100%;border-radius:4px 4px 0 0;background:#3B82F6;min-height:2px}
 .barras i.vm{background:#EF4444}.barras i.am{background:#F59E0B}
-.barras em{font-style:normal;color:#ddd;font-weight:700;margin-bottom:2px}
-.prog{height:8px;background:#262626;border-radius:4px;overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:#22C55E}
-.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;background:#262626;color:#bbb;margin:2px 4px 2px 0}
-.nota{font-size:11.5px;color:#888;margin-top:8px;line-height:1.5}
+.barras em{font-style:normal;color:var(--fx-tx2,#ddd);font-weight:700;margin-bottom:2px}
+.prog{height:8px;background:var(--fx-s2,#262626);border-radius:4px;overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:#22C55E}
+.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11px;font-weight:700;background:var(--fx-s2,#262626);color:var(--fx-tx2,#bbb);margin:2px 4px 2px 0}
+.nota{font-size:11.5px;color:var(--fx-tx3,#888);margin-top:8px;line-height:1.5}
 @media(max-width:600px){.grade{grid-template-columns:1fr}.wrap{padding:10px}}
 </style>
+<script src="/tema-comum.js"></script>
+<script src="/paleta.js" data-padrao="escuro,#CC1F1F" data-antes="#bt-sair"></script>
 </head>
 <body>
 
@@ -222,7 +224,7 @@ async function carregar() {
     corpo += item(d.divididos != null ? "vd" : "cz", "Divisão entre os vendedores", d.divididos != null ? `${d.divididos} cliente(s) divididos nesta rodada` : "");
     corpo += item("vd", "Reconferência (comprou / agendou depois)", `${d.comprou || 0} viraram "venda pelo sistema" · ${d.agendou || 0} agendados no Kommo`);
   }
-  html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:#F87171'>deu erro</b>"}` : "", corpo));
+  html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:var(--fx-ertx,#F87171)'>deu erro</b>"}` : "", corpo));
 
   // 3) Lista por dia
   const dias = R.ligacoes_dias || [];
@@ -242,8 +244,8 @@ async function carregar() {
       const desig = l.vendedores > 1 && l.maior - l.menor > Math.max(3, l.maior * 0.25);
       const st = l.vendedores === 0 ? "vm" : l.sem_resp > 0 || desig ? "am" : horas(l.ultimo_contato) > 30 ? "am" : "vd";
       contagem[st]++;
-      return `<tr><td><b>${esc(l.loja)}</b></td><td class="r">${l.vendedores}</td><td class="r">${l.ferias}</td><td class="r">${l.abertos}</td><td class="r" style="${l.sem_resp ? "color:#FBBF24;font-weight:700" : ""}">${l.sem_resp}</td>` +
-        `<td class="r" title="menor e maior quantidade de clientes em aberto por vendedor">${l.menor ?? 0} a ${l.maior ?? 0}${desig ? " ⚠️" : ""}</td><td class="r">${l.contatos_hoje}</td><td>${l.ultimo_contato ? quando(l.ultimo_contato) : "<span style='color:#888'>nenhum ainda</span>"}</td><td>${SINAL[st]}</td></tr>`;
+      return `<tr><td><b>${esc(l.loja)}</b></td><td class="r">${l.vendedores}</td><td class="r">${l.ferias}</td><td class="r">${l.abertos}</td><td class="r" style="${l.sem_resp ? "color:var(--fx-avtx,#FBBF24);font-weight:700" : ""}">${l.sem_resp}</td>` +
+        `<td class="r" title="menor e maior quantidade de clientes em aberto por vendedor">${l.menor ?? 0} a ${l.maior ?? 0}${desig ? " ⚠️" : ""}</td><td class="r">${l.contatos_hoje}</td><td>${l.ultimo_contato ? quando(l.ultimo_contato) : "<span style='color:var(--fx-tx3,#888)'>nenhum ainda</span>"}</td><td>${SINAL[st]}</td></tr>`;
     }).join("") + `</table></div><p class="nota">🔴 loja sem vendedor ativo · 🟡 clientes sem responsável, divisão desigual (⚠️) ou mais de 30 h sem nenhum contato registrado pela loja. Só conta o trabalho de pessoas com o cliente.</p>`;
   html.push(secao("🏪 Lojas: divisão dos clientes e uso", "", corpo, true));
 
@@ -294,7 +296,7 @@ async function carregar() {
 
   // 10) Tabelas
   corpo = `<table><tr><th>Tabela</th><th class="r">Linhas</th><th>Mais recente</th></tr>` + Object.entries(T).sort().map(([k, t]) =>
-    `<tr><td>${esc(k)}</td><td class="r">${t.existe ? (t.linhas ?? "?") : "<span style='color:#888'>não existe</span>"}</td><td>${t.ultima ? quando(t.ultima) : ""}</td></tr>`).join("") + `</table>`;
+    `<tr><td>${esc(k)}</td><td class="r">${t.existe ? (t.linhas ?? "?") : "<span style='color:var(--fx-tx3,#888)'>não existe</span>"}</td><td>${t.ultima ? quando(t.ultima) : ""}</td></tr>`).join("") + `</table>`;
   html.push(secao("🗄️ Tabelas do banco", "", corpo));
 
   $("grade").innerHTML = html.join("");

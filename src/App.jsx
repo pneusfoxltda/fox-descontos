@@ -74,7 +74,10 @@ const FOTOS_VENDEDORES={
   "Sabrina Duarte":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBAUEBAYFBQUGBgYHCQ4JCQgICRINDQoOFRIWFhUSFBQXGiEcFxgfGRQUHScdHyIjJSUlFhwpLCgkKyEkJST/2wBDAQYGBgkICREJCREkGBQYJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCQkJCT/wAARCAB4AHgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6fooooAKiubqCyt5Lm6nit4IlLySyuERFHcseAPrXMfEL4k6J8OdMW51J3nvJ8i0sICDNcsOuM8Ko7ueB7nAr5c8bePPEPxFu/O125UWaNug0yAkW0PoSP+Wjf7TfgBQB7V4t/aX0HTme28L2MviCcZH2kt5FmD7OQWf/AICuPevK9c+NnxC19mB15dJhb/ljpUCxY/7aPuc/mK40Rk1IsNAEd9Pe6u7Sapqeo356s95eyyD8ctj9Ko/2Rom0yEWnHOREdx+lL4hvBYlbJcBjh3OefYe1c/JelkdQxyTnrnn2rSMLq7JbOvs2n0rbNo+rX1oRzm0vJYWX8A1ddofxq+IWgsoTxB/akK/8sNVgWbP/AG0Xa4/M15dpmpOk0bsC208qe4NdGBDcRCa3YsmdpU9UPoaU42Gnc+gfCf7TOiX5S38VafLoMx4+1RsZ7Qn1LAB4/wDgS4969is7y21C1iu7O4hubaZd8c0Lh0kX1DDgivhgoRW14M8b+IPh5em40C7C27tun06bJtbj1yv8Df7a4PrnpUDPtOiuP+HXxP0X4kae8tgWtdQtwPtenzkebbk9DxwyHs44PseK7CgAooooAK5P4k/EKw+HPh5tSuU+0XkzeTY2SthrmbGcZ7KByzdh7kA9PdXUFlbTXVzKkMECNJLI5wqIoyWJ9AATXxt458a3PxG8Uz69N5iWYBh063b/AJYW2cgkdnf77fUD+GgDL1bVtT8S6vc61rN0bvUbo/vJMYVFHSNF/hRew/E5JJpkcPtToos1egtt2OKQEEduT2qcWjBGKpuYAkL6n0rTt7EtjitKHS9wwV60rjseXaZpMvijVGkfP71/mIHT6V6tpHwb0gpGXyzYyQxzzWZ4b0iDRZbySR444opWRHYYxjg8Cu40jW7e4TNpqNtcgf8APNs4rkxGJnzWjokd+Gw0HG8t2Y2s/BbTobRp4MK4GQFPpXndposmm3F3G2NowuPfP/669yXxDY3GLaTWLPzunlGQbvyriPEmkGLVbhkUeXIEYEdD1rSjXk/dkZYihGKvE4eSDHaqzxYrfuLPHas6aAr2rc5Cppmp6j4f1W21jSLtrPUbU5imUZGD1Rh/EjdCp6/XBr61+GHxHsviR4f+2xotrqNswhv7LdkwSYyCPVGHKt3HHUGvkiWPFangvxjefD3xPbeIbUPJEg8q+t1/5ebYnLLj+8v3l9xjuaoD7UoqCwvrbU7K3vrKdLi1uY1mhlQ/LIjDKsPqCKKAPIv2lvFjaf4as/C1tJtn1xybnB5FpHguP+BsUT6Fq+foo8811/xn1pvEHxT1lg+6HTBHpkPtsXfJ/wCPyEf8BrmbePJFICe2g3EcVt2VluI4qvY2+4jiun02xzjipbGgsdMzj5a3bTSM4+Wr+maZnHFdNZaUMD5azcijymfwxqN0txb2MyrcR3EjkSY53MT1PHpU3hbwPPaa3DJq11HLO6/vY4toXOOvygAZ44rZ+JdjqGkalbSae62q3q4MrcKZBwc++NtcPo2nah4imBe4NtNC5DvNelC3+0DjBz2rh967iexSUZRUjpI/hxqFv4hkbS9XSC2ly0iF1Eig/VSSOuMGtjX9GEZjUM7eWnlAt/EBzn9f1rnfEumappf2AaZF5RtjiS8W/M/yMehBUE888cCuz0rT7qbRoprxzLJJlg5GCV7cVpC/Mr9DHEpRg/M4K+0/GeKwbu1xnivRdT07GflrlNRs8Z4rtTPMZx08WCapSJg5rbvIcE8VlzpVknu/7Mviw3eiah4SuZMyaS4ntMnk2spPyj/ckDD2DLRXlnwg1tvD3xR0CfcVhvpH0yfnqsy/J+Uix/nRTA5pr5tXvr7VHbc99eXF0T675WYfoRWjZpkisLw+D/ZNnnr5S5+tdJYryKlgbumQZI4rstItM7eK5rSY8la7fRo1VQzEKAMknoB61nJlI24Ws9Ls2vL+5gtLaIZeaZwiL9Sa5rVf2ifh7oKssN1e6rKvRbO2O0/8DfaP514J8TvHk/jLxDP5U8n9l27eXaQ5+XaODJj+83XPpgVxFzF5wByQRW0cMrXkQ6muh3njD4n3nxC+IcGqt59jp8cfkW1mZdwjTHOccFmPJ47Adq6PTtfsbeELfQ3pmXobaTaJB/SvHLc/ZblJD1QhgT0Psa9f8K2mn+LVhXTp1eYcvGfvRjuSPT3rkxlPls7aHoYGpuk9Ta8QeI01Pw/PaaTFc2irC8s08zl3JCnHPpmuo+EHxOs/Enh2DTNf1SFNZgPlo1wwQ3MeBtO48Fh0I6nANcT8U77SPCuhDw/p8vm6neqPOx1ii7lvQt0A9MmvId2EC9s5rXCUeam3LqYY2r+80PsDV7LG7iuK1a2wTxXkXhv4leJNAEcMepS3Fojbfs1yfMTHoM8r+Br1XTfENr4r0kahboYjkpJExyY2HbPp3FaSpSgc8ZqWhzWoRYJrCuE5NdPqacmudu15NCGzIubx9MMeoREiSymiulI7GN1f/wBloqHWx/xK7zP/ADxf+RoqhGmti2lXd5pjja9jd3FqR6bJWX+QFa9j1FbHxf0U6B8U9cj2FYdR8vVIfcSLtf8A8iRt/wB9Vh2TYxUsDsNJPK0nxM8U/wDCO+C5oYX23eo5to8HlVI+dv8Avnj/AIFUOlS42815v8YdRmufE0dtI/7m3tkEag/3uWP1z+gFEI3kNuyOBeXDZz3xirKHeADWdI2JFyCTnBA9a6STTLSHw5a6p9pk8+cmPyNoIDA8ndnpjtjg9+a60zJoyJII5DtZc59adpd/qHh+9+2aTPPazENH5sEpVgp4I+lKTghqj+TZGVLbjktnoDnjFDimJNoSWW9kneaRvPZyWZmY7ifcnrUqM7AFkK/WkBzUmQFxTSJeo2WYRyDHTIP8xXd/CvWjb6pNpzsfLu4yVH+2vI/TIrzi4l/egcevWtHRtRfTNQtr2M/NBIr49cHkflSkuZNFLTU9q1M8mucuzya2725S4jWWM5R1DKfYjIrBumyTXIjYzL2zfUQlhEMyXkkdqg9TI6p/7NRXX/CfRW8Q/FHw/bbC0VnM2pzcdFhXK5+sjRiimI9Z/aT8KteaFYeKraPdNo8hiuto5NrKQGP/AABwjfQtXkdr4V8RqedA1cf9ucn/AMTX11e2VtqNnPZXkKT21xG0M0TjKyIwwyn2IJFc14A1K50qefwPrE8kt/pUYeyuZTlr+wziOTPd04jk/wBoBv4xRYDwjT/D2vJjOh6oPraSf4Vz/jj4S674lu2v7HTb6O52KrJLbSBZMDjBxwf0r7NoxUtPeLsVFpbq5+cuo/C3x3p1wqT+E9bbnhorOSQfmoNNHgbxkVCnwp4iwucA6dPgZ64+Wv0cxWfrniDSPDNkL7WtRttPtS4j864kCJuPQZPc4rVTa3IaXQ/PUeB/GPQ+EvEP/gtm/wDiaePAXiwnP/CJa+D/ANg2Yf8AstfZHiD48+GrfT2Ph+8tNWvirERrOoWIKQCz/NnHOeOvqK8ytf2l9YtbueJTp9600zMEKuwiJwAoO4HYPp60niLO1jppYJ1I83Ml6tL+vmeCHwN4vz/yKfiD/wAF03/xNOPgXxeR/wAip4g/8F03/wATX274N+K+ieJ9OeWS6t4LiytjPqJEqmK1wcHLg4wcEj0HWuq0XW9M8RWCahpF9BfWchISeB9yMQcHBHXB4q1Vuc8qXK+Vn52T+APGBlBHhDxDwOo06Y/+y1Zg8CeMMAf8Il4gA99Om/8Aia/RjFGKPaMnlPjTTPCviSPRLKOTQtYLrCoObKQEe33e3SoJ/CXiRjx4e1g/9uUv/wATX2lXGeP9Xu7p7bwdolw8OrawjebcRn5tPswcS3Hs3OxPV2B6KazKPPP2aPCb2uman4tuoismpP8AZLTcMEW8THc3/ApN34ItFex6bp1po+nWunWMC29paRLBDEvREUYA/IUUAWa5/wAX+GH8QW1vcWF0LDWtOkNxp19t3eTJjBVx/FE4+V17jkYIBHQUUAY3g/xgniOOezvbY6brlgQl/pztloWPR0P8cTYyrjgjg4IIHR1y3ibwjBr8lvf211LpetWQP2PUrcAyRZ6oyniSJsDcjcHqMEAippfj6XTryHR/GttDo2oytsgu0Ymwvz/0ykP3HP8AzyfDem4c0AdpXjX7WPHwqH/YRt//AGavZa57xx4Y8OeL9Ij0nxPEs1lJcRlIzM0e+XkKAVIJPJ4oA+PfHsF1plzdWl9oGjaLdlY08vSTlSmAWHC8Ep83XJNXtRsvD134V861hgTKnZLG3yR4AwUHVWGepPOMAcmvon4ofC/Q/HVgskd/ZWN1YlYHmkb5P4cLIQQQwypB68jsa8q0X9m++/4SP7Pd6tZxWkeJVuFZJBOw52qnDNj+LJx9a5Zxbkro9/CYmnToy5GveWqldPTTotU97b/meQs97p8l5GHvksbqKFdeFnGCY4GlUqCegc4HpyQD1Ir7q8JroyeGtMXw95P9kC2j+yeV90xbflx+HXvnOea47wz8MPAGgaPf2I+xX41OORry4uJlZ50b5W+YHhc+nRunNdX4Q8M6J4Q0ddH0BGisYXZliNw03lljkgFiSBnJx6k10o8F26G3RRXG6t4+a7vZtF8HWset6rEdk828iysD6zyjqw/55plz/sjmmI0vF/i6HwzbwQQW76jrF8xi0/TYWAkuZAOST/BGvV3PCj3IBqeEPDE2hxXV9qlyl/rupuJtQu1UhWIGFijB5WJASFH1Y8saPDPhGPQ57jU768k1XXbxQt1qMyhWZQciKNRxFED0QfUljzXQ0AFFFFABRRRQAVXvrC01Szmsr+1gu7WZdssE6B0kHoVPBoooA5VPBmseGxnwbr72tsvTSdVVrq0HtG2RLEPYMyj+7VbVNavZ3sz4v8BalIbGdZ4bvR5RfQq4H3tq7ZcexjNFFAGQNZ+DiR6taSahbaNJq1z9ru/tglspTNt27v3oXB5PHTk+taFpf/CGyuo76DxR4eFxEHCStq6MUDrtIAL4Ax0GOMnFFFAGZ/aXwZFsthDqVtqrhVT/AEJpryZtvT/VBiTx9K2dI1u7s0ni8G+A9X2XMvmNcaxL9hgBxgYDlpdo/uiPFFFAFp/B+ueJefGHiF5bZuuk6OGtbY+0kmfNlHtlFP8AdrqdO02y0iyisdOtLeztIRtjggjCIg9Ao4FFFAFmiiigAooooA//2Q==",
 };
 const CONCORRENTES_PADRAO=["Atacado Pneus","GBIM Pneus","Bono Pneus","Camargo Pneus","Espantalho","GP Pneus","Iccap Randon","JK Pneus","Japurá","Morena Pneus","Muniz","Pemaza","Pneu Fácil","Pneu Paulista","Queiroz Pneus","Rei dos Pneus","Rondobras","Shopping dos Pneus","Toyota","Vip Pneus"];
-const RED="#CC1F1F",CARD="#1C1C1C",TEXT="#F0F0F0",MUTED="#888",BORDER="#2E2E2E",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
+// Cores do App: variáveis da paleta (🎨, public/paleta.js) com a cor de sempre como padrão.
+const RED="var(--fx-ac,#CC1F1F)",CARD="var(--fx-s1,#1C1C1C)",TEXT="var(--fx-tx,#F0F0F0)",MUTED="var(--fx-tx3,#888)",BORDER="var(--fx-bd,#2E2E2E)",AMBER="#E0A820",BLUE="#6090E0",GREEN="#4CAF50";
+// Vermelho transparente (antes RED22 e RED44)
+const RED22="color-mix(in srgb, var(--fx-ac,#CC1F1F) 13.3%, transparent)",RED44="color-mix(in srgb, var(--fx-ac,#CC1F1F) 26.7%, transparent)";
 const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -114,82 +117,82 @@ function roleColor(r){return{admin:RED,televendas:BLUE,comercial:AMBER,cadastrar
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0A0A0A;font-family:'Inter',sans-serif;color:#F0F0F0;}
-.wrap{height:100vh;width:100vw;background:#0A0A0A;display:flex;overflow:hidden;position:fixed;top:0;left:0;}
-.sidebar{width:180px;min-height:100vh;background:#111;border-right:1px solid #1E1E1E;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
-.sb-brand{padding:14px 14px 12px;border-bottom:1px solid #1E1E1E;}
+body{background:var(--fx-bg,#0A0A0A);font-family:'Inter',sans-serif;color:var(--fx-tx,#F0F0F0);}
+.wrap{height:100vh;width:100vw;background:var(--fx-bg,#0A0A0A);display:flex;overflow:hidden;position:fixed;top:0;left:0;}
+.sidebar{width:180px;min-height:100vh;background:var(--fx-bg,#111);border-right:1px solid var(--fx-bd,#1E1E1E);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;}
+.sb-brand{padding:14px 14px 12px;border-bottom:1px solid var(--fx-bd,#1E1E1E);}
 .brand-icon{width:40px;height:40px;background:transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;}
-.brand-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#fff;margin-top:8px;}
-.brand-sub{font-size:9px;color:#555;letter-spacing:1.5px;text-transform:uppercase;}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--fx-tx0,#fff);margin-top:8px;}
+.brand-sub{font-size:9px;color:var(--fx-tx4,#555);letter-spacing:1.5px;text-transform:uppercase;}
 .sb-nav{flex:1;padding:12px 0;}
-.tab{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#666;transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
-.tab:hover{color:#F0F0F0;background:#1A1A1A;}
-.tab.active{color:#fff;border-left-color:#CC1F1F;background:#1A1A1A;}
-.tab-dot{width:7px;height:7px;border-radius:50%;background:#333;flex-shrink:0;}.tab.active .tab-dot{background:#CC1F1F;}
-.sb-footer{padding:10px 14px;border-top:1px solid #1E1E1E;}
-.chip{display:flex;align-items:center;gap:8px;background:#161616;border:1px solid #222;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
-.logout{background:transparent;border:1px solid #333;color:#888;border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
-.logout:hover{border-color:#CC1F1F;color:#CC1F1F;}
+.tab{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--fx-tx4,#666);transition:all .15s;border-left:3px solid transparent;white-space:nowrap;}
+.tab:hover{color:var(--fx-tx,#F0F0F0);background:var(--fx-s1,#1A1A1A);}
+.tab.active{color:var(--fx-tx0,#fff);border-left-color:var(--fx-ac,#CC1F1F);background:var(--fx-s1,#1A1A1A);}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:var(--fx-s2,#333);flex-shrink:0;}.tab.active .tab-dot{background:var(--fx-ac,#CC1F1F);}
+.sb-footer{padding:10px 14px;border-top:1px solid var(--fx-bd,#1E1E1E);}
+.chip{display:flex;align-items:center;gap:8px;background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#222);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:8px;}
+.logout{background:transparent;border:1px solid var(--fx-bd,#333);color:var(--fx-tx3,#888);border-radius:6px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .15s;width:100%;justify-content:center;display:flex;align-items:center;gap:6px;}
+.logout:hover{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
 .content-wrap{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;height:100vh;}
 .main{padding:14px 18px;width:100%;box-sizing:border-box;}
 .ph{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
 .ph-icon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#fff;}
-.ph-s{font-size:13px;color:#888;margin-top:3px;line-height:1.5;}
-.sec-t{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff;margin-bottom:4px;}
-.sec-s{font-size:12px;color:#888;margin-bottom:16px;}
-.card{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;padding:22px;margin-bottom:18px;}
-.card-np{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.ph-t{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--fx-tx0,#fff);}
+.ph-s{font-size:13px;color:var(--fx-tx3,#888);margin-top:3px;line-height:1.5;}
+.sec-t{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--fx-tx0,#fff);margin-bottom:4px;}
+.sec-s{font-size:12px;color:var(--fx-tx3,#888);margin-bottom:16px;}
+.card{background:var(--fx-s1,#1C1C1C);border:1px solid var(--fx-bd,#2E2E2E);border-radius:10px;padding:22px;margin-bottom:18px;}
+.card-np{background:var(--fx-s1,#1C1C1C);border:1px solid var(--fx-bd,#2E2E2E);border-radius:10px;overflow:hidden;margin-bottom:18px;}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
 .field{display:flex;flex-direction:column;gap:5px;}
 .field.mb{margin-bottom:14px;}
-label{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;}
-input,select{background:#161616;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:14px;padding:10px 13px;outline:none;transition:border-color .15s;width:100%;}
-input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}select option{background:#1C1C1C;}
+label{font-size:11px;font-weight:700;color:var(--fx-tx3,#888);letter-spacing:1px;text-transform:uppercase;}
+input,select{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#3A3A3A);border-radius:7px;color:var(--fx-tx,#F0F0F0);font-family:'Inter',sans-serif;font-size:14px;padding:10px 13px;outline:none;transition:border-color .15s;width:100%;}
+input:focus,select:focus{border-color:var(--fx-ac,#CC1F1F);}input::placeholder{color:var(--fx-tx4,#444);}select option{background:var(--fx-s1,#1C1C1C);}
 .tipo-row{display:flex;gap:10px;margin-bottom:14px;}
-.tipo-btn{flex:1;background:#161616;border:1px solid #3A3A3A;border-radius:8px;color:#888;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:11px;cursor:pointer;transition:all .15s;text-align:center;}
-.tipo-btn.sel{background:#2E1A1A;border-color:#CC1F1F;color:#fff;}
-.btn-red{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
-.btn-red:hover{background:#E02020;}
-.btn-out{background:transparent;border:1px solid #3A3A3A;color:#888;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
-.btn-out:hover{border-color:#CC1F1F;color:#CC1F1F;}
-.btn-sm{background:transparent;color:#888;border:1px solid #333;border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;padding:5px 11px;cursor:pointer;transition:all .15s;}
-.btn-sm:hover{border-color:#CC1F1F;color:#CC1F1F;}
+.tipo-btn{flex:1;background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#3A3A3A);border-radius:8px;color:var(--fx-tx3,#888);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:11px;cursor:pointer;transition:all .15s;text-align:center;}
+.tipo-btn.sel{background:var(--fx-erbg,#2E1A1A);border-color:var(--fx-ac,#CC1F1F);color:#fff;}
+.btn-red{background:var(--fx-ac,#CC1F1F);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer;transition:background .15s;width:100%;}
+.btn-red:hover{background:var(--fx-ac2,#E02020);}
+.btn-out{background:transparent;border:1px solid var(--fx-bd,#3A3A3A);color:var(--fx-tx3,#888);border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.btn-out:hover{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
+.btn-sm{background:transparent;color:var(--fx-tx3,#888);border:1px solid var(--fx-bd,#333);border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;padding:5px 11px;cursor:pointer;transition:all .15s;}
+.btn-sm:hover{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
 .s-wrap{position:relative;}
 .s-in{font-size:17px;padding:14px 130px 14px 18px;letter-spacing:2px;font-weight:700;}
-.s-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#CC1F1F;color:#fff;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;}
-.s-btn:hover{background:#E02020;}
-.list-row{display:flex;align-items:center;padding:12px 18px;border-bottom:1px solid #2E2E2E;transition:background .12s;gap:10px;}
-.list-row:last-child{border-bottom:none;}.list-row:hover{background:#222;}.list-row.cl{cursor:pointer;}
-.list-num{font-family:'Bebas Neue',sans-serif;font-size:15px;color:#CC1F1F;min-width:88px;letter-spacing:1px;}
-.list-d{font-size:13px;color:#F0F0F0;flex:1;}.list-m{font-size:11px;color:#888;}
-.list-val{font-size:13px;font-weight:700;color:#fff;min-width:88px;text-align:right;}
+.s-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--fx-ac,#CC1F1F);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;}
+.s-btn:hover{background:var(--fx-ac2,#E02020);}
+.list-row{display:flex;align-items:center;padding:12px 18px;border-bottom:1px solid var(--fx-bd,#2E2E2E);transition:background .12s;gap:10px;}
+.list-row:last-child{border-bottom:none;}.list-row:hover{background:var(--fx-s2,#222);}.list-row.cl{cursor:pointer;}
+.list-num{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--fx-ac,#CC1F1F);min-width:88px;letter-spacing:1px;}
+.list-d{font-size:13px;color:var(--fx-tx,#F0F0F0);flex:1;}.list-m{font-size:11px;color:var(--fx-tx3,#888);}
+.list-val{font-size:13px;font-weight:700;color:var(--fx-tx0,#fff);min-width:88px;text-align:right;}
 .badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:3px;letter-spacing:1px;}
-.b-valid{background:#1A2E1A;color:#4CAF50;border:1px solid #2E4A2E;}.b-exp{background:#2E1A1A;color:#CC1F1F;border:1px solid #4A2E2E;}
-.b-tv{background:#1A1E2E;color:#6090E0;border:1px solid #2A3A60;}.b-com{background:#2E2A1A;color:#E0A820;border:1px solid #504020;}
+.b-valid{background:var(--fx-okbg,#1A2E1A);color:#4CAF50;border:1px solid #2E4A2E;}.b-exp{background:var(--fx-erbg,#2E1A1A);color:var(--fx-ac,#CC1F1F);border:1px solid #4A2E2E;}
+.b-tv{background:var(--fx-inbg,#1A1E2E);color:#6090E0;border:1px solid #2A3A60;}.b-com{background:#2E2A1A;color:#E0A820;border:1px solid #504020;}
 .b-os{background:#1E2A1E;color:#60C060;border:1px solid #2A4A2A;}.b-orc{background:#1E1E2E;color:#8080E0;border:1px solid #2A2A50;}
-.b-lib{background:#1A2E1A;color:#4CAF50;border:1px solid #2E4A2E;}.b-pend{background:#2A2000;color:#E0A820;border:1px solid #504020;}
-.rc{background:#1C1C1C;border:1px solid #2E2E2E;border-radius:10px;overflow:hidden;margin-bottom:18px;}
-.rh{background:#CC1F1F;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;}
-.rn{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;}
-.rt{background:rgba(0,0,0,.3);color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px;letter-spacing:1px;}
-.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2E2E2E;}
-.rcell{background:#1C1C1C;padding:16px 20px;}.rcell.full{grid-column:1/-1;}
-.rl{font-size:10px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
-.rv{font-size:14px;font-weight:500;color:#F0F0F0;}.rv-big{font-size:20px;font-weight:700;color:#CC1F1F;}
-.rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:#CC1F1F;font-weight:700;font-size:14px;}
-.warn-bar{background:#2E1A1A;border-top:1px solid #4A2E2E;padding:12px 20px;color:#E57373;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
+.b-lib{background:var(--fx-okbg,#1A2E1A);color:#4CAF50;border:1px solid #2E4A2E;}.b-pend{background:var(--fx-avbg,#2A2000);color:#E0A820;border:1px solid #504020;}
+.rc{background:var(--fx-s1,#1C1C1C);border:1px solid var(--fx-bd,#2E2E2E);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.rh{background:var(--fx-ac,#CC1F1F);padding:18px 22px;display:flex;align-items:center;justify-content:space-between;}
+.rn{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:var(--fx-tx0,#fff);}
+.rt{background:rgba(0,0,0,.3);color:var(--fx-tx0,#fff);font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px;letter-spacing:1px;}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--fx-s2,#2E2E2E);}
+.rcell{background:var(--fx-s1,#1C1C1C);padding:16px 20px;}.rcell.full{grid-column:1/-1;}
+.rl{font-size:10px;font-weight:700;color:var(--fx-tx3,#888);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.rv{font-size:14px;font-weight:500;color:var(--fx-tx,#F0F0F0);}.rv-big{font-size:20px;font-weight:700;color:var(--fx-ac,#CC1F1F);}
+.rv-ok{color:#4CAF50;font-weight:700;font-size:14px;}.rv-exp{color:var(--fx-ac,#CC1F1F);font-weight:700;font-size:14px;}
+.warn-bar{background:var(--fx-erbg,#2E1A1A);border-top:1px solid #4A2E2E;padding:12px 20px;color:var(--fx-ertx,#E57373);font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;}
 .stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;}
-.stat-card{background:#161616;border:1px solid #252525;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
-.stat-lbl{font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:#fff;line-height:1;margin:6px 0 4px;}.stat-sub{font-size:10px;color:#666;margin-top:2px;letter-spacing:.5px;}
-.chart-card{background:#161616;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:10px;}
-.chart-t{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:#fff;}
+.stat-card{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#252525);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
+.stat-lbl{font-size:11px;font-weight:700;color:var(--fx-tx3,#888);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:var(--fx-tx0,#fff);line-height:1;margin:6px 0 4px;}.stat-sub{font-size:10px;color:var(--fx-tx4,#666);margin-top:2px;letter-spacing:.5px;}
+.chart-card{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#222);border-radius:10px;padding:14px;margin-bottom:10px;}
+.chart-t{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;color:var(--fx-tx0,#fff);}
 .filter-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-.empty{text-align:center;padding:40px 20px;color:#888;}
-.divider{border:none;border-top:1px solid #2E2E2E;margin:16px 0;}
-.info-box{background:#1A1A1A;border-left:3px solid #CC1F1F;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#888;line-height:1.6;}
+.empty{text-align:center;padding:40px 20px;color:var(--fx-tx3,#888);}
+.divider{border:none;border-top:1px solid var(--fx-bd,#2E2E2E);margin:16px 0;}
+.info-box{background:var(--fx-s1,#1A1A1A);border-left:3px solid var(--fx-ac,#CC1F1F);border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--fx-tx3,#888);line-height:1.6;}
 @keyframes foxUp{0%{opacity:0;transform:translateY(30px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxIn{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -201,35 +204,35 @@ input:focus,select:focus{border-color:#CC1F1F;}input::placeholder{color:#444;}se
 @keyframes foxUp{0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes foxLeft{0%{opacity:0;transform:translateX(-20px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes foxPop{0%{opacity:0;transform:scale(.5)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
-.toast{position:fixed;bottom:22px;right:22px;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
-.t-ok{background:#2E7D32;}.t-err{background:#CC1F1F;}
+.toast{position:fixed;bottom:22px;right:22px;color:var(--fx-tx0,#fff);padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;z-index:999;animation:pop .25s ease;}
+.t-ok{background:#2E7D32;}.t-err{background:var(--fx-ac,#CC1F1F);}
 @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1001;display:flex;align-items:center;justify-content:center;padding:16px;}
-  .edit-modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:24px;width:100%;max-width:440px;}
-  .edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:#fff;margin-bottom:18px;}
+  .edit-modal{background:var(--fx-s1,#1C1C1C);border:1px solid var(--fx-ac,#CC1F1F);border-radius:12px;padding:24px;width:100%;max-width:440px;}
+  .edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:var(--fx-tx0,#fff);margin-bottom:18px;}
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
-.modal{background:#1C1C1C;border:1px solid #CC1F1F;border-radius:12px;padding:22px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;gap:14px;}
-.modal-t{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:#fff;}
-.exp-table{overflow-x:auto;overflow-y:auto;max-height:58vh;border-radius:8px;border:1px solid #2E2E2E;}
+.modal{background:var(--fx-s1,#1C1C1C);border:1px solid var(--fx-ac,#CC1F1F);border-radius:12px;padding:22px;width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;gap:14px;}
+.modal-t{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:var(--fx-tx0,#fff);}
+.exp-table{overflow-x:auto;overflow-y:auto;max-height:58vh;border-radius:8px;border:1px solid var(--fx-bd,#2E2E2E);}
 .exp-table table{width:100%;border-collapse:collapse;font-size:12px;}
-.exp-table th{background:#CC1F1F;padding:8px 10px;text-align:left;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;}
-.exp-table td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid #333;}
-.exp-table tr:nth-child(even) td{background:#222;}
-.exp-table tr:nth-child(odd) td{background:#1C1C1C;}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0D0D0D;padding:20px;}
-.login-card{background:#161616;border:1px solid #2E2E2E;border-radius:14px;padding:38px 34px;width:100%;max-width:380px;}
+.exp-table th{background:var(--fx-ac,#CC1F1F);padding:8px 10px;text-align:left;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;}
+.exp-table td{padding:6px 10px;white-space:nowrap;border-bottom:1px solid var(--fx-bd,#333);}
+.exp-table tr:nth-child(even) td{background:var(--fx-s2,#222);}
+.exp-table tr:nth-child(odd) td{background:var(--fx-s1,#1C1C1C);}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--fx-bg,#0D0D0D);padding:20px;}
+.login-card{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);border-radius:14px;padding:38px 34px;width:100%;max-width:380px;}
 .login-logo{display:flex;justify-content:center;margin-bottom:22px;}
-.login-t{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px;}
-.login-s{font-size:12px;color:#888;text-align:center;margin-bottom:24px;}
-.login-err{background:#2E1A1A;border:1px solid #4A2E2E;color:#E57373;border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
+.login-t{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--fx-tx0,#fff);text-align:center;margin-bottom:4px;}
+.login-s{font-size:12px;color:var(--fx-tx3,#888);text-align:center;margin-bottom:24px;}
+.login-err{background:var(--fx-erbg,#2E1A1A);border:1px solid #4A2E2E;color:var(--fx-ertx,#E57373);border-radius:7px;padding:10px 14px;font-size:13px;margin-bottom:14px;}
 .login-f{margin-bottom:12px;}
-.login-f label{display:block;font-size:11px;font-weight:700;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
-.login-f input{background:#0D0D0D;border:1px solid #3A3A3A;border-radius:7px;color:#F0F0F0;font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;width:100%;}
-.login-f input:focus{border-color:#CC1F1F;}
-.login-f input::placeholder{color:#444;}
-.btn-login{background:#CC1F1F;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:background .15s;width:100%;margin-top:4px;}
-.btn-login:hover{background:#E02020;}
-.login-hint{font-size:11px;color:#555;text-align:center;margin-top:12px;}
+.login-f label{display:block;font-size:11px;font-weight:700;color:var(--fx-tx3,#888);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.login-f input{background:var(--fx-bg,#0D0D0D);border:1px solid var(--fx-bd,#3A3A3A);border-radius:7px;color:var(--fx-tx,#F0F0F0);font-family:'Inter',sans-serif;font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;width:100%;}
+.login-f input:focus{border-color:var(--fx-ac,#CC1F1F);}
+.login-f input::placeholder{color:var(--fx-tx4,#444);}
+.btn-login{background:var(--fx-ac,#CC1F1F);color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;padding:13px;cursor:pointer;transition:background .15s;width:100%;margin-top:4px;}
+.btn-login:hover{background:var(--fx-ac2,#E02020);}
+.login-hint{font-size:11px;color:var(--fx-tx4,#555);text-align:center;margin-top:12px;}
 `;
 function AnimatedNumber({value, duration=1200}){
   const [display, setDisplay] = useState(0);
@@ -610,7 +613,7 @@ export default function App(){
         "<td>"+escXLS(fmtDataReg(q.criadoEm))+"</td>"+
         "</tr>";
     }).join("");
-    const tableHtmlXLS="<table border=\"1\"><thead><tr>"+headersXLS.map(h=>"<th style=\"background:#CC1F1F;color:#fff;padding:6px 10px;font-weight:bold;\">"+h+"</th>").join("")+"</tr></thead><tbody>"+rowsHtmlXLS+"</tbody></table>";
+    const tableHtmlXLS="<table border=\"1\"><thead><tr>"+headersXLS.map(h=>"<th style=\"background:var(--fx-ac,#CC1F1F);color:#fff;padding:6px 10px;font-weight:bold;\">"+h+"</th>").join("")+"</tr></thead><tbody>"+rowsHtmlXLS+"</tbody></table>";
     const excelHtmlXLS="<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">"+
       "<head><meta charset=\"utf-8\" />"+
       "<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>"+
@@ -801,7 +804,7 @@ export default function App(){
   const ehAdmin=session?.role==="admin";
   const listaConsultar=useMemo(()=>quotesPorStatus.slice(0,limiteLista).map(q=>(
           <div className="list-row cl" key={q._id||q.tipo+q.numero} onClick={()=>acoes.current.clickRow(q)}>
-            <span className="list-num" style={{background:"#CC1F1F",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
+            <span className="list-num" style={{background:"var(--fx-ac,#CC1F1F)",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>
             <div style={{flex:1}}>
               <div className="list-d">{q.medida} · {q.segmento}</div>
               <div className="list-m">{q.loja} · {q.pgto} · val. {fmtDate(q.validade)}</div>
@@ -813,10 +816,10 @@ export default function App(){
               <span className={`badge ${q.liberado?"b-lib":"b-pend"}`}>{q.liberado?"✓ LIB.":"PEND."}</span>
               {q.liberado&&q.liberadorNome&&<span style={{fontSize:9,color:MUTED}}>{q.liberadorNome}</span>}
             </div>
-            <button onClick={e=>acoes.current.doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"#1A2E1A":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+            <button onClick={e=>acoes.current.doLiberar(q,e)} style={{marginLeft:8,background:q.liberado?"var(--fx-okbg,#1A2E1A)":RED,color:"#fff",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
               {q.liberado?"✓":"Liberar"}
             </button>
-            {ehAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))acoes.current.doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"#E57373",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
+            {ehAdmin&&<button onClick={e=>{e.stopPropagation();if(window.confirm("Excluir esta negociação?"))acoes.current.doDel({numero:q.numero,tipo:q.tipo});}} style={{marginLeft:4,background:"transparent",color:"var(--fx-ertx,#E57373)",border:"1px solid rgba(229,115,115,0.3)",borderRadius:6,padding:"5px 10px",fontFamily:"'Inter',sans-serif",fontSize:12,cursor:"pointer",flexShrink:0}}>🗑</button>}
           </div>
   )),[quotesPorStatus,limiteLista,ehAdmin]);
   if(!session&&recuperando)return(<><style>{css}</style><div className="login-wrap"><div className="login-card">
@@ -840,14 +843,14 @@ export default function App(){
       <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(true);setAlterarMsg({txt:"",ok:true});}} style={{color:RED,fontSize:12,fontWeight:700,cursor:"pointer"}}>Alterar senha</span></div>
     </>}
     {showAlterarSenha&&<>
-      <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
+      <div style={{fontSize:13,fontWeight:700,color:"var(--fx-tx3,#888)",marginBottom:14,textAlign:"center",textTransform:"uppercase",letterSpacing:1}}>Alterar Senha</div>
       {alterarMsg.txt&&<div style={{background:alterarMsg.ok?"#0D2010":"#2A0A0A",border:"1px solid "+(alterarMsg.ok?GREEN:RED),borderRadius:8,padding:"10px 14px",fontSize:13,color:alterarMsg.ok?GREEN:RED,marginBottom:12,textAlign:"center"}}>{alterarMsg.txt}</div>}
       <div className="login-f"><label>Seu E-mail</label><input type="email" placeholder="seu@email.com" value={alterarForm.email} onChange={e=>setAlterarForm(f=>({...f,email:e.target.value}))}/></div>
       <div className="login-f"><label>Senha Atual</label><input type="password" placeholder="Senha atual" value={alterarForm.senhaAtual} onChange={e=>setAlterarForm(f=>({...f,senhaAtual:e.target.value}))}/></div>
       <div className="login-f"><label>Nova Senha</label><input type="password" placeholder="Nova senha" value={alterarForm.novaSenha} onChange={e=>setAlterarForm(f=>({...f,novaSenha:e.target.value}))}/></div>
       <div className="login-f"><label>Confirmar Nova Senha</label><input type="password" placeholder="Confirmar" value={alterarForm.confirmar} onChange={e=>setAlterarForm(f=>({...f,confirmar:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&doAlterarSenha()}/></div>
       <button className="btn-login" onClick={doAlterarSenha}>Alterar Senha</button>
-      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"#666",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
+      <div style={{textAlign:"center",marginTop:10}}><span onClick={()=>{setShowAlterarSenha(false);setAlterarForm({email:"",senhaAtual:"",novaSenha:"",confirmar:""});setAlterarMsg({txt:"",ok:true});}} style={{color:"var(--fx-tx4,#666)",fontSize:12,cursor:"pointer"}}>← Voltar ao login</span></div>
     </>}
   </div></div>{toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}</>);
   return(<><style>{css}</style><div className="wrap">
@@ -870,7 +873,7 @@ export default function App(){
       <div className="sb-footer">
         <div className="chip">
           <span style={{fontSize:16}}>{session.role==="admin"?"🛡️":session.role==="televendas"?"📞":session.role==="cadastrar1"?"🔍":session.role==="cadastrar2"?"✏️":"🤝"}</span>
-          <div><div style={{fontSize:12,fontWeight:700,color:"#F0F0F0"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
+          <div><div style={{fontSize:12,fontWeight:700,color:"var(--fx-tx,#F0F0F0)"}}>{session.username}</div><div style={{fontSize:10,color:roleColor(session.role)}}>{roleName(session.role)}</div></div>
         </div>
         <button className="logout" onClick={doLogout}>Sair</button>
       </div>
@@ -880,12 +883,12 @@ export default function App(){
     <div className="main">
     {/* DASHBOARD */}
     {tab==="dashboard"&&(session.role==="admin"||hasRole(session,"gerente"))&&(<div key={dashKey}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid #1E1E1E",paddingBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12,borderBottom:"1px solid var(--fx-bd,#1E1E1E)",paddingBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:4,height:28,background:RED,borderRadius:2}}/>
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA COMERCIAL</div>
-              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>FOX PNEUS · SISTEMA DE DESCONTOS</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>INTELIGÊNCIA COMERCIAL</div>
+              <div style={{fontSize:11,color:"var(--fx-tx4,#555)",letterSpacing:1}}>FOX PNEUS · SISTEMA DE DESCONTOS</div>
             </div>
           </div>
           <button className="btn-out" onClick={()=>exportXLS(filtered.length>0?filtered:quotes)}>⬇ Exportar ({(filtered.length>0?filtered:quotes).length})</button>
@@ -924,9 +927,9 @@ export default function App(){
             <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
           </div>
-          <div className="stat-card" style={{borderTop:"3px solid #8B0000",boxShadow:"inset 0 1px 0 #8B000033"}}>
+          <div className="stat-card" style={{borderTop:"3px solid var(--fx-ac3,#8B0000)",boxShadow:"inset 0 1px 0 #8B000033"}}>
             <div className="stat-lbl" style={{display:"flex",alignItems:"center",gap:4}}>{<svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>}Perdidas</div>
-            <div className="stat-val" style={{color:"#CC4444"}}><AnimatedNumber value={quotes.filter(q=>q.perdida).length}/></div>
+            <div className="stat-val" style={{color:"var(--fx-ertx,#CC4444)"}}><AnimatedNumber value={quotes.filter(q=>q.perdida).length}/></div>
             <div className="stat-sub">cliente foi para concorrência</div>
           </div>
         </div>
@@ -934,19 +937,19 @@ export default function App(){
         {/* Grid: Medidas + Segmentos */}
         <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:10,marginBottom:10}}>
           {/* Ranking Medidas */}
-          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
+          <div className="scroll-anim" style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🏆 Medidas Mais Negociadas</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+              <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
                 {["#","Medida","Qtd","Fechou","%",""].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{mChart.map((m,i)=>{
                 const pct=filtered.length>0?((m.value/filtered.length)*100).toFixed(1):0;
                 const lib=filtered.filter(q=>q.medida===m.name&&q.liberado).length;
-                return(<tr key={m.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
+                return(<tr key={m.name} style={{borderBottom:"1px solid var(--fx-bd,#1C1C1C)",background:i===0?"var(--fx-erbg,#2E1A1A)":"transparent"}}>
                   <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i<3?[RED,"#888","#663300"][i]:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
                   <td style={{padding:"8px 8px",fontWeight:i===0?700:500,color:i===0?RED:TEXT,fontSize:13}}>{m.name}</td>
-                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
+                  <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:RED22,color:RED,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{m.value}</span></td>
                   <td style={{padding:"8px 8px",textAlign:"center"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"1px 8px",fontWeight:700,fontSize:12}}>{lib}</span></td>
                   <td style={{padding:"8px 8px",fontSize:11,color:MUTED}}>{pct}%</td>
                   <td style={{padding:"8px 8px"}}>{(()=>{
@@ -958,7 +961,7 @@ export default function App(){
     const loaded=imgs.map(q=>({...q,anexoBase64:fotoDe(fotos,q)}));
     if(fotos.size)setQuotes(prev=>prev.map(x=>{const b=fotoDe(fotos,x);return b&&!x.anexoBase64?{...x,anexoBase64:b}:x;}));
     setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
-  }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
+  }} style={{background:"var(--fx-inbg,#1A1E2E)",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🖼️ {imgs.length} foto{imgs.length!==1?"s":""}</button>);
   if(semFoto.length>0)return(<button onClick={()=>setGaleriaModal({medida:m.name,imagens:[],semFoto})} style={{background:"#1A1E0E",border:"1px solid #4CAF50",color:"#4CAF50",borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>🏢 {semFoto.length} conc.</button>);
   return(<span style={{color:MUTED,fontSize:11}}></span>);
 })()}</td>
@@ -967,16 +970,16 @@ export default function App(){
             </table>
           </div>
           {/* Ranking Segmentos */}
-          <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:0}}>
+          <div className="scroll-anim" style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:0}}>
             <div className="chart-t">🔖 Por Segmento</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+              <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
                 {["#","Segmento","Total","Fechou","Pend."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{sChart.map((s,i)=>{
                 const lib=filtered.filter(q=>q.segmento===s.name&&q.liberado).length;
                 const pend=filtered.filter(q=>q.segmento===s.name&&!q.liberado&&!isExp(q.validade)).length;
-                return(<tr key={s.name} style={{borderBottom:"1px solid #1C1C1C"}}>
+                return(<tr key={s.name} style={{borderBottom:"1px solid var(--fx-bd,#1C1C1C)"}}>
                   <td style={{padding:"8px 8px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:CC[i%8]+"44",color:CC[i%8],fontSize:9,fontWeight:700}}>{i+1}</span></td>
                   <td style={{padding:"8px 8px",color:TEXT,fontSize:13}}>{s.name}</td>
                   <td style={{padding:"8px 8px",fontWeight:700,color:TEXT}}>{s.value}</td>
@@ -990,10 +993,10 @@ export default function App(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
         <div>
         {/* Ranking Lojas */}
-        <div style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+        <div style={{background:"var(--fx-s1,#161616)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:16}}>
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+            <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
               {["#","Loja","Total","Fechou","Válidos","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
             <tbody>{lChart.map((l,i)=>{
@@ -1003,14 +1006,14 @@ export default function App(){
               const venc=items.filter(q=>isExp(q.validade)&&!q.liberado).length;
               const val=items.reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
               const conv=l.value>0?((lib/l.value)*100).toFixed(0):0;
-              return(<tr key={l.name} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#2E1A1A":"transparent"}}>
+              return(<tr key={l.name} style={{borderBottom:"1px solid var(--fx-bd,#1C1C1C)",background:i===0?"var(--fx-erbg,#2E1A1A)":"transparent"}}>
                 <td style={{padding:"9px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i===0?RED:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
                 <td style={{padding:"9px 10px",color:i===0?RED:TEXT,fontWeight:i===0?700:500,fontSize:13}}>{l.name}</td>
                 <td style={{padding:"9px 10px",fontWeight:700,color:TEXT}}>{l.value}</td>
                 <td style={{padding:"9px 10px"}}><span style={{color:GREEN,fontWeight:700}}>{lib}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontWeight:700}}>{venc}</span></td>
-                <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED+"22",color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED22,color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
               </tr>);})}
             </tbody>
           </table>
@@ -1030,17 +1033,17 @@ export default function App(){
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
-          if(!vList.length)return(<div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
-          return(<div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16}}>
+          if(!vList.length)return(<div style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:16}}><div className="chart-t">👤 Ranking de Vendedores</div><div className="empty" style={{padding:"20px"}}><p style={{color:MUTED}}>Nenhum vendedor registrado ainda. Cadastre descontos com o campo Vendedor preenchido.</p></div></div>);
+          return(<div className="scroll-anim" style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:16}}>
             <div className="chart-t">👤 Ranking de Vendedores · Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>
+              <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
                 {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
                 const barW=Math.max(4,parseInt(conv));
-                return(<tr key={v.nome} style={{borderBottom:"1px solid #1C1C1C",background:i===0?"#1A2E1A":"transparent",animation:"foxLeft .4s ease "+(0.4+i*0.07)+"s both"}}>
+                return(<tr key={v.nome} style={{borderBottom:"1px solid var(--fx-bd,#1C1C1C)",background:i===0?"var(--fx-okbg,#1A2E1A)":"transparent",animation:"foxLeft .4s ease "+(0.4+i*0.07)+"s both"}}>
                   <td style={{padding:"8px 10px"}}>
                     {fotoMap[v.nome]
                       ?<img src={fotoMap[v.nome]} alt={v.nome} style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",border:"2px solid "+(i===0?GREEN:i===1?"#888":i===2?"#8B4513":"#2E2E2E"),display:"block",animation:"foxPop .6s ease "+(0.4+i*0.1)+"s both"}}/>
@@ -1053,13 +1056,13 @@ export default function App(){
                     <div style={{fontWeight:700,color:i===0?GREEN:TEXT,fontSize:14}}>{v.nome}</div>
                     <div style={{fontSize:10,color:MUTED,marginTop:2}}>{i===0?"🏆 Líder":i===1?"🥈 2º lugar":i===2?"🥉 3º lugar":"#"+(i+1)}</div>
                   </td>
-                  <td style={{padding:"10px 10px"}}><span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:RED22,color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
                   <td style={{padding:"10px 10px",minWidth:120}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <div style={{flex:1,height:8,background:"#2E2E2E",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{flex:1,height:8,background:"var(--fx-s2,#2E2E2E)",borderRadius:4,overflow:"hidden"}}>
                         <div style={{width:barW+"%",height:"100%",background:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,borderRadius:4,transition:"width .3s"}}/>
                       </div>
                       <span style={{fontSize:12,fontWeight:700,color:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,minWidth:35}}>{conv}%</span>
@@ -1106,7 +1109,7 @@ export default function App(){
           });
           const medList=Object.values(medMap).sort((a,b)=>b.count-a.count);
           return(
-            <div className="scroll-anim" style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
+            <div className="scroll-anim" style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               <div className="chart-t">🏢 Inteligência de Concorrência</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1.6fr",gap:16,alignItems:"start"}}>
                 {/* LEFT · ranking */}
@@ -1117,15 +1120,15 @@ export default function App(){
                       const isSel=emp.empresa===selEmp;
                       const pct=Math.round((emp.count/ranked[0].count)*100);
                       return(
-                        <div key={emp.empresa} onClick={()=>setConcIntelSel(emp.empresa)} style={{background:isSel?"#1A1E2E":"#161616",border:"1px solid "+(isSel?BLUE:"#2E2E2E"),borderRadius:8,padding:"10px 12px",cursor:"pointer",transition:"all .15s"}}>
+                        <div key={emp.empresa} onClick={()=>setConcIntelSel(emp.empresa)} style={{background:isSel?"var(--fx-inbg,#1A1E2E)":"#161616",border:"1px solid "+(isSel?BLUE:"#2E2E2E"),borderRadius:8,padding:"10px 12px",cursor:"pointer",transition:"all .15s"}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:isSel?6:0}}>
                             <div style={{display:"flex",alignItems:"center",gap:8}}>
                               <span style={{fontSize:11,fontWeight:800,color:i===0?RED:MUTED,minWidth:18}}>#{i+1}</span>
-                              <span style={{fontSize:13,fontWeight:700,color:isSel?"#fff":"#C0C0C0"}}>{emp.empresa}</span>
+                              <span style={{fontSize:13,fontWeight:700,color:isSel?"var(--fx-tx0,#fff)":"#C0C0C0"}}>{emp.empresa}</span>
                             </div>
-                            <span style={{background:isSel?BLUE+"33":RED+"22",color:isSel?BLUE:RED,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:800}}>{emp.count}x</span>
+                            <span style={{background:isSel?BLUE+"33":RED22,color:isSel?BLUE:RED,borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:800}}>{emp.count}x</span>
                           </div>
-                          <div style={{height:4,background:"#2E2E2E",borderRadius:2,overflow:"hidden",marginTop:6}}>
+                          <div style={{height:4,background:"var(--fx-s2,#2E2E2E)",borderRadius:2,overflow:"hidden",marginTop:6}}>
                             <div style={{width:pct+"%",height:"100%",background:i===0?RED:isSel?BLUE:"#3E3E3E",borderRadius:2,transition:"width .4s"}}/>
                           </div>
                         </div>
@@ -1143,7 +1146,7 @@ export default function App(){
                       {medList.map(m=>{
                         const diff=m.valorFox&&m.melhor?m.valorFox-m.melhor:null;
                         return(
-                          <div key={m.medida} style={{background:"#161616",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px"}}>
+                          <div key={m.medida} style={{background:"var(--fx-s1,#161616)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:8,padding:"10px 14px"}}>
                             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
                               <div>
                                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:17,color:AMBER,letterSpacing:1}}>{m.medida}</div>
@@ -1160,7 +1163,7 @@ export default function App(){
                                 <span style={{fontSize:12,fontWeight:700,color:GREEN}}>{m.valorFox?fmtVal(m.valorFox):""}</span>
                                 {diff!==null&&<span style={{fontSize:11,fontWeight:700,color:diff<0?GREEN:diff>0?RED:MUTED,background:(diff<0?GREEN:diff>0?RED:MUTED)+"22",borderRadius:4,padding:"1px 7px"}}>{diff<0?"▼ "+fmtVal(Math.abs(diff))+" mais barato":diff>0?"▲ "+fmtVal(diff)+" mais caro":"= Mesmo preço"}</span>}
                               </div>
-                              <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700}}>Negociado {m.count}x</span>
+                              <span style={{background:RED22,color:RED,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700}}>Negociado {m.count}x</span>
                             </div>
                           </div>
                         );
@@ -1193,14 +1196,14 @@ export default function App(){
           const hojeKey=hoje.toISOString().slice(0,10);
           const hojeCount=rows.find(r=>r.key===hojeKey)?.count||0;
           return(
-            <div className="scroll-anim" style={{background:"#141414",border:"1px solid #222",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
+            <div className="scroll-anim" style={{background:"var(--fx-s1,#141414)",border:"1px solid var(--fx-bd,#222)",borderRadius:10,padding:20,marginBottom:16,marginTop:0}}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <div style={{width:4,height:22,background:RED,borderRadius:2}}/>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff"}}>VOLUME DE NEGOCIAÇÕES</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>VOLUME DE NEGOCIAÇÕES</span>
                 </div>
-                <div style={{display:"flex",gap:6,background:"#0D0D0D",padding:4,borderRadius:8,border:"1px solid #222"}}>
+                <div style={{display:"flex",gap:6,background:"var(--fx-bg,#0D0D0D)",padding:4,borderRadius:8,border:"1px solid var(--fx-bd,#222)"}}>
                   {["semana","mes"].map(p=>(
                     <button key={p} onClick={()=>setVolPeriodo(p)} style={{background:volPeriodo===p?RED:"transparent",color:volPeriodo===p?"#fff":MUTED,border:"none",borderRadius:6,padding:"6px 18px",fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:1,textTransform:"uppercase",transition:"all .2s"}}>
                       {p==="semana"?"7 DIAS":"30 DIAS"}
@@ -1216,15 +1219,15 @@ export default function App(){
                   {label:"Recorde",val:topDia?.count||0,cor:GREEN,icon:"🏆"},
                   {label:"Média/dia",val:media,cor:BLUE,icon:"📈"},
                 ].map((k,i)=>(
-                  <div key={k.label} style={{background:"#0D0D0D",borderRadius:10,padding:"12px 16px",border:"1px solid #1E1E1E",borderTop:"3px solid "+k.cor}}>
+                  <div key={k.label} style={{background:"var(--fx-bg,#0D0D0D)",borderRadius:10,padding:"12px 16px",border:"1px solid var(--fx-bd,#1E1E1E)",borderTop:"3px solid "+k.cor}}>
                     <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{k.icon} {k.label}</div>
-                    <div style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1+(.1+i*.12)+"s both"}}>{k.val}</div>
+                    <div style={{fontSize:28,fontWeight:900,color:"var(--fx-tx0,#fff)",lineHeight:1+(.1+i*.12)+"s both"}}>{k.val}</div>
                     {k.label==="Recorde"&&topDia?.count>0&&<div style={{fontSize:10,color:MUTED,marginTop:3}}>{topDia.label} · {topDia.diaSem}</div>}
                   </div>
                 ))}
               </div>
               {/* Chart area */}
-              <div style={{background:"#0D0D0D",borderRadius:12,border:"1px solid #1E1E1E",overflowX:"auto"}}>
+              <div style={{background:"var(--fx-bg,#0D0D0D)",borderRadius:12,border:"1px solid var(--fx-bd,#1E1E1E)",overflowX:"auto"}}>
                 <div style={{minWidth:volPeriodo==="mes"?rows.length*34+20:0,padding:"16px 16px 0"}}>
                   {/* Bars + grid rows stacked */}
                   {(()=>{
@@ -1235,7 +1238,7 @@ export default function App(){
                         {/* Grid rows behind bars */}
                         <div style={{position:"absolute",top:0,left:0,right:0,height:BAR_H,pointerEvents:"none"}}>
                           {GRID.map(pct=>(
-                            <div key={pct} style={{position:"absolute",left:0,right:0,top:BAR_H-(BAR_H*(pct/100)),borderTop:"1px dashed #1E1E1E"}}>
+                            <div key={pct} style={{position:"absolute",left:0,right:0,top:BAR_H-(BAR_H*(pct/100)),borderTop:"1px dashed var(--fx-bd,#1E1E1E)"}}>
                               <span style={{position:"absolute",right:"100%",paddingRight:4,top:-8,fontSize:9,color:"#333",fontWeight:600,whiteSpace:"nowrap"}}>{Math.round(max*(pct/100))}</span>
                             </div>
                           ))}
@@ -1252,7 +1255,7 @@ export default function App(){
                             return(
                               <div key={r.key} style={{flex:volPeriodo==="semana"?1:"0 0 28px",minWidth:volPeriodo==="semana"?32:28,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:"100%",position:"relative"}}>
                                 {r.count>0&&<div style={{fontSize:volPeriodo==="semana"?13:10,fontWeight:900,color:col,marginBottom:5,textShadow:"0 0 8px "+col,whiteSpace:"nowrap"}}>{r.count}</div>}
-                                <div style={{width:"100%",height:barH,background:r.count===0?"#181818":`linear-gradient(180deg,${col} 0%,${col}BB 100%)`,borderRadius:"4px 4px 0 0",boxShadow:r.count>0?"0 0 14px "+glow+",inset 0 1px 0 rgba(255,255,255,0.12)":"none",position:"relative",overflow:"hidden",transition:"height .4s ease"}}>
+                                <div style={{width:"100%",height:barH,background:r.count===0?"var(--fx-s1,#181818)":`linear-gradient(180deg,${col} 0%,${col}BB 100%)`,borderRadius:"4px 4px 0 0",boxShadow:r.count>0?"0 0 14px "+glow+",inset 0 1px 0 rgba(255,255,255,0.12)":"none",position:"relative",overflow:"hidden",transition:"height .4s ease"}}>
                                   {r.count>0&&<div style={{position:"absolute",inset:"0 0 60% 0",background:"rgba(255,255,255,0.07)",borderRadius:"4px 4px 0 0"}}/>}
                                 </div>
                               </div>
@@ -1260,7 +1263,7 @@ export default function App(){
                           })}
                         </div>
                         {/* Separator line */}
-                        <div style={{height:1,background:"#1E1E1E",margin:"0 0 8px"}}/>
+                        <div style={{height:1,background:"var(--fx-s1,#1E1E1E)",margin:"0 0 8px"}}/>
                         {/* Date labels row */}
                         <div style={{display:"flex",gap:volPeriodo==="semana"?10:4,paddingBottom:volPeriodo==="semana"?6:10}}>
                           {rows.map((r)=>{
@@ -1280,9 +1283,9 @@ export default function App(){
               </div>
               {/* Legend */}
               <div style={{display:"flex",gap:20,marginTop:14,flexWrap:"wrap"}}>
-                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:"#22c55e",boxShadow:"0 0 6px rgba(34,197,94,.4)",display:"inline-block"}}/>Recorde do período</span>
-                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:AMBER,boxShadow:"0 0 6px rgba(245,158,11,.4)",display:"inline-block"}}/>Hoje</span>
-                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#555"}}><span style={{width:12,height:12,borderRadius:3,background:RED,boxShadow:"0 0 6px rgba(204,31,31,.3)",display:"inline-block"}}/>Outros dias</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--fx-tx4,#555)"}}><span style={{width:12,height:12,borderRadius:3,background:"#22c55e",boxShadow:"0 0 6px rgba(34,197,94,.4)",display:"inline-block"}}/>Recorde do período</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--fx-tx4,#555)"}}><span style={{width:12,height:12,borderRadius:3,background:AMBER,boxShadow:"0 0 6px rgba(245,158,11,.4)",display:"inline-block"}}/>Hoje</span>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"var(--fx-tx4,#555)"}}><span style={{width:12,height:12,borderRadius:3,background:RED,boxShadow:"0 0 6px rgba(204,31,31,.3)",display:"inline-block"}}/>Outros dias</span>
               </div>
             </div>
           );
@@ -1310,32 +1313,32 @@ export default function App(){
         const medList=Object.values(medMap).sort((a,b)=>b.concs.length-a.concs.length);
         if(!medList.length)return(<div className="card" style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:12}}>📊</div><div style={{color:MUTED}}>Nenhuma negociação com concorrentes registrada ainda.</div></div>);
         return(<>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--fx-bd,#1E1E1E)"}}>
             <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
-              <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Negociações registradas com dados de concorrentes</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>INTELIGÊNCIA DE CONCORRÊNCIA</div>
+              <div style={{fontSize:11,color:"var(--fx-tx4,#555)",letterSpacing:1}}>Negociações registradas com dados de concorrentes</div>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
             {medList.map(m=>(
-              <div key={m.medida} style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
+              <div key={m.medida} style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:16}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#fff",letterSpacing:1}}>{m.medida}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--fx-tx0,#fff)",letterSpacing:1}}>{m.medida}</div>
                   <div style={{display:"flex",gap:6}}>
-                    <span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.concs.length} reg.</span>
+                    <span style={{background:"var(--fx-inbg,#1A1E2E)",color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.concs.length} reg.</span>
                     {m.imgs.length>0&&<button onClick={async()=>{
                       setGaleriaModal({medida:m.medida,imagens:m.imgs,semFoto:[]});
                       const fotos=await buscarFotos(m.imgs);
                       const loaded=m.imgs.map(q=>({...q,anexoBase64:fotoDe(fotos,q)}));
                       if(fotos.size)setQuotes(prev=>prev.map(x=>{const b=fotoDe(fotos,x);return b&&!x.anexoBase64?{...x,anexoBase64:b}:x;}));
                       setGaleriaModal(prev=>prev?{...prev,imagens:loaded}:prev);
-                    }} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🖼️ {m.imgs.length}</button>}
+                    }} style={{background:"var(--fx-inbg,#1A1E2E)",border:"1px solid "+BLUE,color:BLUE,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🖼️ {m.imgs.length}</button>}
                   </div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {[...new Map(m.concs.map(c=>[c.empresa,c])).values()].slice(0,4).map((c,i)=>(
-                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#111",borderRadius:6,padding:"6px 10px"}}>
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--fx-bg,#111)",borderRadius:6,padding:"6px 10px"}}>
                       <span style={{fontSize:12,color:TEXT,fontWeight:600}}>{c.empresa}</span>
                       <span style={{fontSize:13,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(c.valor)}</span>
                     </div>
@@ -1347,11 +1350,11 @@ export default function App(){
         </>);
       })()}
       {tab==="cadastrar"&&hasRole(session,"cadastrar1")&&!hasRole(session,"televendas")&&!hasRole(session,"cadastrar2")&&(<>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--fx-bd,#1E1E1E)"}}>
         <div style={{width:4,height:28,background:"#9B59B6",borderRadius:2}}/>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>CADASTRAR CONCORRÊNCIA</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre preços da concorrência com comprovante obrigatório</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>CADASTRAR CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"var(--fx-tx4,#555)",letterSpacing:1}}>Registre preços da concorrência com comprovante obrigatório</div>
         </div>
       </div>
       <div className="card" style={{maxWidth:900}}>
@@ -1371,7 +1374,7 @@ export default function App(){
         <div className="field" style={{marginBottom:12}}>
           <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <select value={concForm1.loja||""} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
-            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"var(--fx-ac,#CC1F1F)":"#2E2E2E")}}>
             <option value="">Selecione a loja...</option>
             {LOJAS.map(l=><option key={l}>{l}</option>)}
           </select>
@@ -1387,8 +1390,8 @@ export default function App(){
               const todas=todasEmpresas;
               const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery1)));
               if(!sug.length)return null;
-              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"var(--fx-tx,#F0F0F0)"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
               </div>);
             })()}
           </div>
@@ -1410,7 +1413,7 @@ export default function App(){
         <div className="field mb" style={{marginBottom:16}}>
           <label>📸 Arquivo *{!concForm1.anexo&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
-            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"12px 18px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",flex:1}}>
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"var(--fx-s1,#1C1C1C)",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"12px 18px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",flex:1}}>
               <span style={{fontSize:18}}>{concForm1.anexo?"✅":"📎"}</span>
               <div>
                 <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar arquivo"}</div>
@@ -1436,11 +1439,11 @@ export default function App(){
       </>)}
       {/* ── FORM SIMPLES · Cadastrar (televendas) ── */}
       {tab==="cadastrar"&&hasRole(session,"televendas")&&!hasRole(session,"admin")&&!hasRole(session,"cadastrar2")&&(<>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid #1E1E1E"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:14,borderBottom:"1px solid var(--fx-bd,#1E1E1E)"}}>
         <div style={{width:4,height:28,background:BLUE,borderRadius:2}}/>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"#fff"}}>CADASTRAR CONCORRÊNCIA</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:1}}>Registre o preço do concorrente com comprovante</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>CADASTRAR CONCORRÊNCIA</div>
+          <div style={{fontSize:11,color:"var(--fx-tx4,#555)",letterSpacing:1}}>Registre o preço do concorrente com comprovante</div>
         </div>
       </div>
       <div className="card" style={{maxWidth:900}}>
@@ -1464,7 +1467,7 @@ export default function App(){
         <div className="field" style={{marginBottom:14}}>
           <label>📍 Loja *{!concForm1.loja&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <select value={concForm1.loja||""} onChange={e=>setConcForm1(f=>({...f,loja:e.target.value}))}
-            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"#CC1F1F":"#2E2E2E")}}>
+            style={{width:"100%",border:"1px solid "+(!concForm1.loja?"var(--fx-ac,#CC1F1F)":"#2E2E2E")}}>
             <option value="">Selecione a loja...</option>
             {LOJAS.map(l=><option key={l}>{l}</option>)}
           </select>
@@ -1481,8 +1484,8 @@ export default function App(){
               const todas=todasEmpresas;
               const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery1)));
               if(!sug.length)return null;
-              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+              return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                {sug.map(s=>(<div key={s} onMouseDown={()=>{setConcQuery1(s);setConcForm1(f=>({...f,empresa:s}));setConcDrop1(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"var(--fx-tx,#F0F0F0)"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
               </div>);
             })()}
           </div>
@@ -1506,7 +1509,7 @@ export default function App(){
         <div className="field" style={{marginBottom:18}}>
           <label>📸 Foto/Print do Concorrente *{!concForm1.anexo&&<span style={{color:RED,marginLeft:6,fontSize:11}}>⚠ obrigatório</span>}</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:6}}>
-            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"#1C1C1C",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"14px 20px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",transition:"all .2s",flex:1}}>
+            <label style={{cursor:"pointer",display:"inline-flex",alignItems:"center",gap:8,background:"var(--fx-s1,#1C1C1C)",border:"2px dashed "+(concForm1.anexo?"#4CAF50":"#CC1F1F"),borderRadius:8,padding:"14px 20px",fontSize:13,color:concForm1.anexo?"#4CAF50":"#CC1F1F",transition:"all .2s",flex:1}}>
               <span style={{fontSize:20}}>{concForm1.anexo?"✅":"📎"}</span>
               <div>
                 <div style={{fontWeight:700}}>{concForm1.anexo?concForm1.anexo.nome:"Selecionar imagem"}</div>
@@ -1540,7 +1543,7 @@ export default function App(){
       {tab==="cadastrar"&&(hasRole(session,"admin")||hasRole(session,"cadastrar2"))&&(<>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:22,flexWrap:"wrap",gap:12}}>
         <div className="ph">
-          <div className="ph-icon" style={{background:"#1A1E2E",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
+          <div className="ph-icon" style={{background:"var(--fx-inbg,#1A1E2E)",border:"2px solid "+BLUE}}><span style={{fontSize:24}}>📞</span></div>
           <div><div className="ph-t">Descontos · Cadastrar</div><div className="ph-s">Cadastre o produto aqui: informe o orçamento ou ordem de serviço.<br/>O Comercial consultará pelo número no balcão.</div></div>
         </div>
       </div>
@@ -1587,11 +1590,11 @@ export default function App(){
                 const sug=todas.filter(x=>semAcento(x).includes(semAcento(concQuery)));
                 const novaOpc=concQuery.trim()&&!todas.map(semAcento).includes(semAcento(concQuery));
                 if(!sug.length&&!novaOpc)return null;
-                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:7,zIndex:99,maxHeight:200,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
                   {sug.map(s=>(
-                    <div key={s} onMouseDown={()=>{setConcQuery(s);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>
+                    <div key={s} onMouseDown={()=>{setConcQuery(s);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"var(--fx-tx,#F0F0F0)"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>
                   ))}
-                  {novaOpc&&(<div onMouseDown={()=>{const n=concQuery.trim();const upd=[...concExtras,n];setConcExtras(upd);localStorage.setItem("fox_concorrentes",JSON.stringify(upd));setConcQuery(n);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#6090E0",borderTop:"1px solid #2E2E2E"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>➕ Adicionar "{concQuery.trim()}"</div>)}
+                  {novaOpc&&(<div onMouseDown={()=>{const n=concQuery.trim();const upd=[...concExtras,n];setConcExtras(upd);localStorage.setItem("fox_concorrentes",JSON.stringify(upd));setConcQuery(n);setConcShowDrop(false);}} style={{padding:"8px 12px",cursor:"pointer",fontSize:13,color:"#6090E0",borderTop:"1px solid var(--fx-bd,#2E2E2E)"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>➕ Adicionar "{concQuery.trim()}"</div>)}
                 </div>);
               })()}
             </div>
@@ -1609,11 +1612,11 @@ export default function App(){
           {concAdicionados.length>0&&(
             <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
               {concAdicionados.map((item,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"7px 12px"}}>
-                  <span style={{fontWeight:700,color:"#F0F0F0",fontSize:13,flex:2}}>{item.empresa}</span>
-                  {item.valor&&<span style={{color:"#CC1F1F",fontWeight:700,fontSize:13}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
-                  {item.pgto&&<span style={{color:"#888",fontSize:12}}>{item.pgto}</span>}
-                  <button onClick={()=>setConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:"#888",cursor:"pointer",fontSize:18,lineHeight:1,marginLeft:"auto"}}>×</button>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"var(--fx-s1,#161616)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:7,padding:"7px 12px"}}>
+                  <span style={{fontWeight:700,color:"var(--fx-tx,#F0F0F0)",fontSize:13,flex:2}}>{item.empresa}</span>
+                  {item.valor&&<span style={{color:"var(--fx-ac,#CC1F1F)",fontWeight:700,fontSize:13}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
+                  {item.pgto&&<span style={{color:"var(--fx-tx3,#888)",fontSize:12}}>{item.pgto}</span>}
+                  <button onClick={()=>setConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:"var(--fx-tx3,#888)",cursor:"pointer",fontSize:18,lineHeight:1,marginLeft:"auto"}}>×</button>
                 </div>
               ))}
             </div>
@@ -1623,12 +1626,12 @@ export default function App(){
         <div className="field mb" style={{marginTop:6}}>
           <label>Anexo: imagem ou áudio (opcional)</label>
           <div style={{display:"flex",alignItems:"center",gap:12,marginTop:4}}>
-            <label style={{background:"#161616",border:"1px dashed #3A3A3A",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
+            <label style={{background:"var(--fx-s1,#161616)",border:"1px dashed var(--fx-bd,#3A3A3A)",borderRadius:8,padding:"10px 18px",cursor:"pointer",color:MUTED,fontSize:13,fontWeight:500,transition:"all .15s",textTransform:"none",letterSpacing:0}} onMouseEnter={e=>{e.currentTarget.style.borderColor=RED;e.currentTarget.style.color="#F0F0F0";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="#3A3A3A";e.currentTarget.style.color=MUTED;}}>
               📎 Selecionar arquivo
               <input data-fe="anexo" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a" style={{display:"none"}} onChange={handleAnexo}/>
             </label>
             {anexo&&(
-              <div style={{display:"flex",alignItems:"center",gap:8,background:"#1A2E1A",border:"1px solid #2E4A2E",borderRadius:7,padding:"6px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,background:"var(--fx-okbg,#1A2E1A)",border:"1px solid #2E4A2E",borderRadius:7,padding:"6px 14px"}}>
                 <span style={{fontSize:16}}>{anexo.tipo.startsWith("audio")?"🎵":"🖼️"}</span>
                 <span style={{fontSize:12,color:"#4CAF50",fontWeight:600}}>{anexo.nome}</span>
                 <button onClick={()=>setAnexo(null)} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
@@ -1637,11 +1640,11 @@ export default function App(){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,marginTop:4}}>
-          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",padding:"8px 14px",background:form.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(form.erroInterno?"#CC1F1F":"#2E2E2E"),borderRadius:8,transition:"all .2s"}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",padding:"8px 14px",background:form.erroInterno?"#2A1A1A":"#161616",border:"1px solid "+(form.erroInterno?"var(--fx-ac,#CC1F1F)":"#2E2E2E"),borderRadius:8,transition:"all .2s"}}>
             <input type="checkbox" checked={form.erroInterno} onChange={e=>setForm(f=>({...f,erroInterno:e.target.checked}))} style={{width:15,height:15,accentColor:"#CC1F1F",cursor:"pointer"}}/>
-            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"#CC1F1F":"#888"}}>⚠️ Erro interno: não contabilizar no Dashboard</span>
+            <span style={{fontSize:12,fontWeight:700,color:form.erroInterno?"var(--fx-ac,#CC1F1F)":"#888"}}>⚠️ Erro interno: não contabilizar no Dashboard</span>
           </label>
-          {form.erroInterno&&<span style={{fontSize:11,color:"#888",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
+          {form.erroInterno&&<span style={{fontSize:11,color:"var(--fx-tx3,#888)",fontStyle:"italic"}}>Esta negociação não aparecerá nas análises.</span>}
         </div>
         <button data-fe="salvar" className="btn-red" onClick={doAdd} style={{marginTop:6}}>Salvar Desconto Autorizado</button>
       </div>
@@ -1673,20 +1676,20 @@ export default function App(){
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
             <span className="rt">{isExp(result.validade)?"⚠ EXPIRADO":"✓ VÁLIDO"}</span>
-            {vendeuSemLib(result)&&<span style={{background:"#0E2A1F",color:"#4ADE80",border:"1px solid #22C55E",borderRadius:6,padding:"5px 12px",fontSize:12,fontWeight:800,letterSpacing:.5}}>✅ VENDA CONCLUÍDA (MOVERE){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}</span>}
+            {vendeuSemLib(result)&&<span style={{background:"var(--fx-okbg,#0E2A1F)",color:"var(--fx-oktx,#4ADE80)",border:"1px solid #22C55E",borderRadius:6,padding:"5px 12px",fontSize:12,fontWeight:800,letterSpacing:.5}}>✅ VENDA CONCLUÍDA (MOVERE){result.vendaMovereEm?" · "+fmtDate(result.vendaMovereEm):""}</span>}
             <span className={`badge ${result.tipo==="os"?"b-os":"b-orc"}`}>{result.tipo==="os"?"Ordem de Serviço":"Orçamento"}</span>
-              {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"#fff",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
+              {!result.liberado&&<button onClick={()=>doEdit(result)} style={{background:"rgba(0,0,0,0.4)",color:"var(--fx-tx0,#fff)",border:"1px solid rgba(255,255,255,0.4)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>✏ Editar</button>}
               {session.role==="admin"&&!result.perdida&&(
-                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"#f87171",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}><svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>Perdida</button>
+                <button onClick={()=>{setPerdidaModal(result);setMotivoInput("");}} style={{background:"rgba(139,0,0,.25)",color:"var(--fx-ertx,#f87171)",border:"1px solid rgba(139,0,0,.6)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}><svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>Perdida</button>
               )}
               {result.perdida&&!vendeuSemLib(result)&&(
-                <div style={{background:"#1A0000",border:"1px solid #8B0000",borderRadius:7,padding:"6px 12px",marginTop:4}}>
-                  <div style={{fontSize:9,color:"#CC4444",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}><svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Negociação Perdida</div>
-                  <div style={{fontSize:12,color:"#F0F0F0",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
+                <div style={{background:"#1A0000",border:"1px solid var(--fx-ac3,#8B0000)",borderRadius:7,padding:"6px 12px",marginTop:4}}>
+                  <div style={{fontSize:9,color:"var(--fx-ertx,#CC4444)",fontWeight:800,textTransform:"uppercase",letterSpacing:1}}><svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Negociação Perdida</div>
+                  <div style={{fontSize:12,color:"var(--fx-tx,#F0F0F0)",marginTop:2}}>{result.motivoPerda||"Motivo não informado"}</div>
                 </div>
               )}
-              {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"#E57373",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
-              {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"#fff",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
+              {session.role==="admin"&&<button onClick={()=>{if(window.confirm("Excluir esta negociação? Esta ação não pode ser desfeita.")){doDel({numero:result.numero,tipo:result.tipo});setResult(null);setSearch("");}}} style={{background:"rgba(0,0,0,0.5)",color:"var(--fx-ertx,#E57373)",border:"1px solid rgba(229,115,115,0.5)",borderRadius:6,padding:"5px 14px",fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",marginTop:4}}>🗑 Excluir</button>}
+              {result.anexoBase64&&session.role==="admin"&&<span style={{background:"rgba(0,0,0,0.35)",color:"var(--fx-tx0,#fff)",borderRadius:5,padding:"3px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{result.anexoTipo&&result.anexoTipo.startsWith("audio")?"🎵":"🖼️"} {result.anexoTipo&&result.anexoTipo.startsWith("audio")?"Áudio anexado":"Imagem anexada"}</span>}
             {(!result.liberado||(result.liberado&&session.role==="admin"))&&<button onClick={()=>doLiberar(result,null)} style={{background:result.liberado?"rgba(0,0,0,.5)":"rgba(0,0,0,.5)",color:result.liberado?GREEN:"#fff",border:"2px solid "+(result.liberado?GREEN:"rgba(255,255,255,.5)"),borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",marginTop:4}}>
               {result.liberado?"✓ LIBERADO · Remover":"Liberar Desconto"}
             </button>}
@@ -1727,7 +1730,7 @@ export default function App(){
                   title="Clique para ver em tela cheia"
                 />
                 <div style={{display:"flex",gap:10,marginTop:10}}>
-                  <button onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>🔍 Tela cheia</button>
+                  <button onClick={()=>setImgModal({src:result.anexoBase64,nome:result.anexoNome})} style={{background:"var(--fx-inbg,#1A1E2E)",border:"1px solid "+BLUE,color:BLUE,borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>🔍 Tela cheia</button>
                   <a href={result.anexoBase64} download={result.anexoNome} style={{background:RED,color:"#fff",borderRadius:7,padding:"7px 16px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>⬇ Baixar</a>
                 </div>
               </div>
@@ -1744,12 +1747,12 @@ export default function App(){
           const conc=parseConcObs(result.obs);
           if(!conc.length)return null;
           return(
-            <div style={{background:"#0D0D0D",border:"1px solid #CC1F1F44",borderRadius:10,padding:"14px 18px",margin:"0 0 0 0"}}>
+            <div style={{background:"var(--fx-bg,#0D0D0D)",border:"1px solid #CC1F1F44",borderRadius:10,padding:"14px 18px",margin:"0 0 0 0"}}>
               <div style={{fontSize:10,color:RED,fontWeight:800,textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>🏢 Concorrentes nesta negociação</div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {conc.map((item,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"#161616",borderRadius:8,padding:"10px 14px"}}>
-                    <span style={{fontSize:14,fontWeight:700,color:"#E0E0E0"}}>{item.empresa}</span>
+                  <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--fx-s1,#161616)",borderRadius:8,padding:"10px 14px"}}>
+                    <span style={{fontSize:14,fontWeight:700,color:"var(--fx-tx,#E0E0E0)"}}>{item.empresa}</span>
                     <div style={{textAlign:"right"}}>
                       {item.valor>0&&<div style={{fontSize:16,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(item.valor)}</div>}
                       {item.pgto&&<div style={{fontSize:11,color:MUTED}}>{item.pgto}</div>}
@@ -1761,9 +1764,9 @@ export default function App(){
           );
         })()}
         {isExp(result.validade)&&!result.liberado&&<div className="warn-bar"><span>⚠</span>Desconto fora do prazo. Contate o setor de Descontos antes de aplicar.</div>}
-          {result.liberado&&<div style={{background:"#1A2E1A",borderTop:"1px solid #2E4A2E",padding:"13px 22px",color:"#4CAF50",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
+          {result.liberado&&<div style={{background:"var(--fx-okbg,#1A2E1A)",borderTop:"1px solid #2E4A2E",padding:"13px 22px",color:"#4CAF50",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:8}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"#888",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
+            Venda liberada por <strong style={{marginLeft:4}}>{result.liberadorNome}</strong>{result.liberadoEm&&<span style={{color:"var(--fx-tx3,#888)",fontWeight:400,marginLeft:6}}>· {new Date(result.liberadoEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>}
           </div>}
       </div>)}
       {notFound&&<div className="card" style={{marginBottom:16}}><div className="empty"><span style={{fontSize:32,opacity:.2}}>🔍</span><p style={{color:RED,fontWeight:700,marginBottom:6}}>Não encontrado</p><p>Verifique o número com o cliente.</p></div></div>}
@@ -1833,7 +1836,7 @@ export default function App(){
           <div className="field"><label>Permissões</label>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
                 {NIVEIS.map(([v,ic,nm])=>[v,ic+" "+nm]).map(([val,lbl])=>(
-                  <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"#1A1E2E":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"#fff":"#888",transition:"all .15s"}}>
+                  <label key={val} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"6px 10px",background:newUser.roles.includes(val)?"var(--fx-inbg,#1A1E2E)":"#161616",border:"1px solid "+(newUser.roles.includes(val)?BLUE:"#2E2E2E"),borderRadius:6,fontSize:12,color:newUser.roles.includes(val)?"var(--fx-tx0,#fff)":"#888",transition:"all .15s"}}>
                     <input type="checkbox" checked={newUser.roles.includes(val)} onChange={e=>setNewUser(f=>({...f,roles:e.target.checked?[...f.roles,val]:f.roles.filter(r=>r!==val)}))} style={{accentColor:BLUE,cursor:"pointer"}}/>
                     {lbl}
                   </label>
@@ -1847,14 +1850,14 @@ export default function App(){
       <p className="sec-t" style={{marginBottom:4}}>Usuários ({users.length})</p>
       {users.length===0?(<div className="card"><div className="empty"><span style={{fontSize:32,opacity:.2}}>👥</span><p>Nenhum usuário.</p></div></div>):(<>
         {/* Permission matrix header */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 96px",gap:0,background:"#0D0D0D",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid #2E2E2E",borderBottom:"none"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 96px",gap:0,background:"var(--fx-bg,#0D0D0D)",borderRadius:"10px 10px 0 0",padding:"8px 14px",border:"1px solid var(--fx-bd,#2E2E2E)",borderBottom:"none"}}>
           <div style={{fontSize:10,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>Colaborador</div>
           {NIVEIS.map(([,icon,lbl])=>[icon,lbl]).map(([icon,lbl])=>(
             <div key={lbl} style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase",lineHeight:1.3}}>{icon}<br/>{lbl}</div>
           ))}
           <div style={{textAlign:"center",fontSize:9,color:MUTED,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}></div>
         </div>
-        <div className="card-np" style={{borderRadius:"0 0 10px 10px",border:"1px solid #2E2E2E"}}>{users.map(u=>{
+        <div className="card-np" style={{borderRadius:"0 0 10px 10px",border:"1px solid var(--fx-bd,#2E2E2E)"}}>{users.map(u=>{
           const has=r=>(u.funcoes||[]).includes(r);
           return(
           <div key={u.email} style={{display:"grid",gridTemplateColumns:"1fr repeat(4,80px) 96px",gap:0,padding:"10px 14px",borderBottom:"1px solid #1A1A1A",alignItems:"center",opacity:u.ativo===false?.45:1}}>
@@ -1862,8 +1865,8 @@ export default function App(){
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <label style={{cursor:"pointer",flexShrink:0,position:"relative"}} title="Clique para trocar a foto">
                 {u.foto
-                  ?<img src={u.foto} alt={u.nome} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid #333",display:"block"}}/>
-                  :<div style={{width:34,height:34,borderRadius:"50%",background:"#1C1C1C",border:"2px solid #333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"#888"}}>{(u.nome||u.email)[0].toUpperCase()}</div>
+                  ?<img src={u.foto} alt={u.nome} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid var(--fx-bd,#333)",display:"block"}}/>
+                  :<div style={{width:34,height:34,borderRadius:"50%",background:"var(--fx-s1,#1C1C1C)",border:"2px solid var(--fx-bd,#333)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:"var(--fx-tx3,#888)"}}>{(u.nome||u.email)[0].toUpperCase()}</div>
                 }
                 <div style={{position:"absolute",bottom:-2,right:-2,background:RED,borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"#fff",fontWeight:700}}>+</div>
                 <input type="file" accept="image/*" style={{display:"none"}} onChange={async e=>{
@@ -1882,7 +1885,7 @@ export default function App(){
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:TEXT}}>{u.nome}</div>
                 <div style={{fontSize:10,color:MUTED}}>{u.email}{u.ativo===false?" · desativado":""}</div>
-                <select value={u.loja||""} onChange={e=>doMudarLoja(u,e.target.value)} title="Loja (Ligações das lojas)" style={{marginTop:4,background:"#0D0D0D",color:u.loja?"#fff":MUTED,border:"1px solid #333",borderRadius:5,fontSize:10,padding:"2px 4px"}}>
+                <select value={u.loja||""} onChange={e=>doMudarLoja(u,e.target.value)} title="Loja (Ligações das lojas)" style={{marginTop:4,background:"var(--fx-bg,#0D0D0D)",color:u.loja?"var(--fx-tx0,#fff)":MUTED,border:"1px solid var(--fx-bd,#333)",borderRadius:5,fontSize:10,padding:"2px 4px"}}>
                   <option value="">📞 sem loja</option>{LOJAS_LIGACOES.map(l=><option key={l} value={l}>📞 {l}</option>)}
                 </select>
               </div>
@@ -1905,7 +1908,7 @@ export default function App(){
             {/* Remove button */}
             <div style={{display:"flex",justifyContent:"center"}}>
               <div style={{display:"flex",gap:6,flexDirection:"column"}}>
-                <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"#1A1E2E",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
+                <button onClick={()=>{setAdminSenhaModal({email:u.email,nome:u.nome});setAdminNovaSenha("");}} style={{background:"var(--fx-inbg,#1A1E2E)",border:"1px solid "+BLUE,color:BLUE,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🔑 Senha</button>
                 <button className="btn-sm" onClick={()=>doDelUser(u.email)} style={{padding:"4px 10px",fontSize:11}}>{u.ativo===false?"Ativar":"Desativar"}</button>
               </div>
             </div>
@@ -1914,8 +1917,8 @@ export default function App(){
         })}</div>
       </>)}
       <div className="info-box" style={{marginTop:16}}><strong style={{color:TEXT}}>Senhas:</strong> ninguém vê a senha de ninguém. Se alguém esquecer, clique em <strong style={{color:BLUE}}>🔑 Senha</strong>: a pessoa recebe um e-mail para criar uma nova. Para tirar o acesso, use <strong style={{color:RED}}>Desativar</strong>.</div>
-      <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:20,marginTop:20}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#fff",marginBottom:4}}>👤 Gerenciar Vendedores</div>
+      <div style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:20,marginTop:20}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--fx-tx0,#fff)",marginBottom:4}}>👤 Gerenciar Vendedores</div>
         <div style={{fontSize:11,color:MUTED,marginBottom:16}}>Adicione ou remova vendedores sem precisar mexer no código</div>
         <div style={{display:"flex",gap:10,marginBottom:16}}>
           <input placeholder="Nome do novo vendedor..." value={novoVendedor} onChange={e=>setNovoVendedor(e.target.value)}
@@ -1926,7 +1929,7 @@ export default function App(){
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
           {vendedores.map(v=>(
-            <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"#111",border:"1px solid #2E2E2E",borderRadius:20,padding:"6px 14px"}}>
+            <div key={v} style={{display:"flex",alignItems:"center",gap:6,background:"var(--fx-bg,#111)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:20,padding:"6px 14px"}}>
               <span style={{fontSize:13,fontWeight:600,color:TEXT}}>{v}</span>
               <button onClick={()=>{if(!window.confirm(`Remover "${v}"?`))return;saveVendedores(vendedores.filter(x=>x!==v));}}
                 style={{background:"transparent",border:"none",color:RED,cursor:"pointer",fontSize:16,lineHeight:1,padding:0,fontWeight:700}}>×</button>
@@ -1941,10 +1944,10 @@ export default function App(){
       <div onClick={()=>setImgModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2000,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16,cursor:"zoom-out"}}>
         <div style={{position:"absolute",top:16,right:20,display:"flex",gap:12}}>
           <a href={imgModal.src} download={imgModal.nome} onClick={e=>e.stopPropagation()} style={{background:RED,color:"#fff",borderRadius:8,padding:"9px 22px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:7}}>⬇ Baixar</a>
-          <button onClick={()=>setImgModal(null)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✕ Fechar</button>
+          <button onClick={()=>setImgModal(null)} style={{background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✕ Fechar</button>
         </div>
-        <img src={imgModal.src} alt={imgModal.nome} onClick={e=>e.stopPropagation()} style={{maxWidth:"94vw",maxHeight:"88vh",borderRadius:10,border:"1px solid #3A3A3A",objectFit:"contain"}}/>
-        <div style={{color:"#888",fontSize:12,marginTop:10}}>{imgModal.nome}</div>
+        <img src={imgModal.src} alt={imgModal.nome} onClick={e=>e.stopPropagation()} style={{maxWidth:"94vw",maxHeight:"88vh",borderRadius:10,border:"1px solid var(--fx-bd,#3A3A3A)",objectFit:"contain"}}/>
+        <div style={{color:"var(--fx-tx3,#888)",fontSize:12,marginTop:10}}>{imgModal.nome}</div>
       </div>
     )}
     {editModal&&(
@@ -1962,7 +1965,7 @@ export default function App(){
             <div className="field"><label>Observações</label><input placeholder="Motivo / obs" value={editForm.obs} onChange={e=>setEditForm(f=>({...f,obs:e.target.value}))}/></div>
           </div>
           {/* Concorrentes no edit */}
-          <div style={{borderTop:"1px solid #2E2E2E",paddingTop:14,marginBottom:14}}>
+          <div style={{borderTop:"1px solid var(--fx-bd,#2E2E2E)",paddingTop:14,marginBottom:14}}>
             <div style={{fontSize:11,color:MUTED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>🏢 Concorrentes</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:8}}>
               <div style={{flex:2,minWidth:150,position:"relative"}}>
@@ -1971,8 +1974,8 @@ export default function App(){
                   const todas=todasEmpresas;
                   const sug=todas.filter(x=>semAcento(x).includes(semAcento(editConcQuery)));
                   if(!sug.length)return null;
-                  return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:7,zIndex:99,maxHeight:160,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
-                    {sug.map(s=>(<div key={s} onMouseDown={()=>{setEditConcQuery(s);setEditConcDrop(false);}} style={{padding:"7px 12px",cursor:"pointer",fontSize:13,color:"#F0F0F0"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
+                  return(<div style={{position:"absolute",top:"100%",left:0,right:0,background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:7,zIndex:99,maxHeight:160,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.6)"}}>
+                    {sug.map(s=>(<div key={s} onMouseDown={()=>{setEditConcQuery(s);setEditConcDrop(false);}} style={{padding:"7px 12px",cursor:"pointer",fontSize:13,color:"var(--fx-tx,#F0F0F0)"}} onMouseEnter={e=>e.currentTarget.style.background="#2E2E2E"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>{s}</div>))}
                   </div>);
                 })()}
               </div>
@@ -1983,8 +1986,8 @@ export default function App(){
             {editConcAdicionados.length>0&&(
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                 {editConcAdicionados.map((item,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#161616",border:"1px solid #2E2E2E",borderRadius:7,padding:"6px 10px"}}>
-                    <span style={{fontWeight:700,color:"#F0F0F0",fontSize:12,flex:2}}>{item.empresa}</span>
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"var(--fx-s1,#161616)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:7,padding:"6px 10px"}}>
+                    <span style={{fontWeight:700,color:"var(--fx-tx,#F0F0F0)",fontSize:12,flex:2}}>{item.empresa}</span>
                     {item.valor&&<span style={{color:RED,fontWeight:700,fontSize:12}}>{parseFloat(item.valor).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</span>}
                     {item.pgto&&<span style={{color:MUTED,fontSize:11}}>{item.pgto}</span>}
                     <button onClick={()=>setEditConcAdicionados(a=>a.filter((_,j)=>j!==i))} style={{background:"transparent",border:"none",color:MUTED,cursor:"pointer",fontSize:16,marginLeft:"auto"}}>×</button>
@@ -2012,7 +2015,7 @@ export default function App(){
             <div className="modal-t">Dados Exportados · {exportRows.length} registro(s)</div>
             <button className="btn-red" style={{width:"auto",padding:"7px 18px"}} onClick={()=>setShowExport(false)}>Fechar</button>
           </div>
-          <div style={{fontSize:11,color:MUTED,background:"#161616",borderRadius:6,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontSize:11,color:MUTED,background:"var(--fx-s1,#161616)",borderRadius:6,padding:"8px 12px",display:"flex",alignItems:"center",gap:8}}>
             Selecione toda a tabela, copie (Ctrl+C) e cole direto no Excel ou Google Planilhas.
           </div>
           <div className="exp-table">
@@ -2033,10 +2036,10 @@ export default function App(){
         <div onClick={e=>e.stopPropagation()} style={{width:"100%",maxWidth:1100}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#fff",letterSpacing:2}}>🖼️ Comprovantes · {galeriaModal.medida}</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--fx-tx0,#fff)",letterSpacing:2}}>🖼️ Comprovantes · {galeriaModal.medida}</div>
               <div style={{fontSize:12,color:MUTED,marginTop:2}}>{galeriaModal.imagens.length} imagem{galeriaModal.imagens.length!==1?"ns":""} · {(galeriaModal.semFoto||[]).length} sem foto com concorrentes</div>
             </div>
-            <button onClick={()=>setGaleriaModal(null)} style={{background:"#2E2E2E",border:"none",color:"#fff",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+            <button onClick={()=>setGaleriaModal(null)} style={{background:"var(--fx-s2,#2E2E2E)",border:"none",color:"var(--fx-tx0,#fff)",borderRadius:8,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}}>
             {galeriaModal.imagens.map((q,i)=>{
@@ -2045,15 +2048,15 @@ export default function App(){
               const isConc=q.tipo==="conc";
               const copyNum=()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});};
               return(
-              <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid "+(isConc?"#9B59B644":"#2E2E2E"),display:"flex",flexDirection:"column"}}>
+              <div key={q.numero+i} style={{background:"var(--fx-s1,#1C1C1C)",borderRadius:10,overflow:"hidden",border:"1px solid "+(isConc?"#9B59B644":"#2E2E2E"),display:"flex",flexDirection:"column"}}>
                 {/* Header */}
-                <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{background:"var(--fx-s1,#141414)",borderBottom:"1px solid var(--fx-bd,#2E2E2E)",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div>
                     {isConc
                       ?<><div style={{fontSize:9,color:"#9B59B6",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>🔍 Inteligência de Concorrência</div>
                         <div style={{fontSize:11,color:MUTED,marginTop:2}}>por {q.negociadorNome} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div></>
                       :<><div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
-                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div></>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--fx-tx0,#fff)",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div></>
                     }
                   </div>
                   {!isConc&&<button onClick={copyNum} title="Copiar número" style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}>
@@ -2063,8 +2066,8 @@ export default function App(){
                 {/* Imagem */}
                 {q.anexoBase64
                   ?<img src={q.anexoBase64} alt={q.anexoNome} onClick={()=>setImgModal({src:q.anexoBase64,nome:q.anexoNome})} style={{width:"100%",height:180,objectFit:"cover",display:"block",cursor:"zoom-in"}} title="Clique para ampliar"/>
-                  :<div style={{width:"100%",height:180,background:"#111",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8}}>
-                    <div style={{width:28,height:28,border:"3px solid #2E2E2E",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
+                  :<div style={{width:"100%",height:180,background:"var(--fx-bg,#111)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <div style={{width:28,height:28,border:"3px solid var(--fx-bd,#2E2E2E)",borderTopColor:BLUE,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>
                     <div style={{fontSize:11,color:MUTED}}>Carregando imagem...</div>
                   </div>
                 }
@@ -2074,7 +2077,7 @@ export default function App(){
                     ?<div style={{marginBottom:8}}>
                       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
                         <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 8px",fontSize:12,fontWeight:700}}>{q.medida}</span>
-                        <span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span>
+                        <span style={{background:RED22,color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{q.segmento}</span>
                       </div>
                     </div>
                     :<div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div>
@@ -2086,11 +2089,11 @@ export default function App(){
                   </div>}
                   {/* Concorrentes abaixo do preço */}
                   {conc.length>0&&(
-                    <div style={{borderTop:"1px solid #2E2E2E",paddingTop:8,marginTop:4}}>
+                    <div style={{borderTop:"1px solid var(--fx-bd,#2E2E2E)",paddingTop:8,marginTop:4}}>
                       <div style={{fontSize:9,color:RED,fontWeight:800,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
                       {conc.map((item,ci)=>(
                         <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?5:0}}>
-                          <span style={{fontSize:12,color:"#D0D0D0",fontWeight:600}}>{item.empresa}</span>
+                          <span style={{fontSize:12,color:"var(--fx-tx2,#D0D0D0)",fontWeight:600}}>{item.empresa}</span>
                           <div style={{textAlign:"right"}}>
                             {item.valor>0&&<div style={{fontSize:13,fontWeight:800,color:"#FF6B6B"}}>{fmtVal(item.valor)}</div>}
                             {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
@@ -2113,11 +2116,11 @@ export default function App(){
                   const conc=parseConcObs(q.obs);
                   const isCopied=copiedNum===q.numero;
                   return(
-                    <div key={q.numero+i} style={{background:"#1C1C1C",borderRadius:10,overflow:"hidden",border:"1px solid #2E3E2E"}}>
-                      <div style={{background:"#141414",borderBottom:"1px solid #2E2E2E",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div key={q.numero+i} style={{background:"var(--fx-s1,#1C1C1C)",borderRadius:10,overflow:"hidden",border:"1px solid #2E3E2E"}}>
+                      <div style={{background:"var(--fx-s1,#141414)",borderBottom:"1px solid var(--fx-bd,#2E2E2E)",padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                         <div>
                           <div style={{fontSize:9,color:MUTED,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>{q.tipo==="os"?"Ordem de Serviço":"Orçamento"}</div>
-                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
+                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--fx-tx0,#fff)",letterSpacing:2,lineHeight:1.1}}>#{q.numero}</div>
                         </div>
                         <button onClick={()=>{navigator.clipboard.writeText(q.numero).then(()=>{setCopiedNum(q.numero);setTimeout(()=>setCopiedNum(null),2000);});}} style={{background:isCopied?GREEN+"22":"#1A1E2E",border:"1px solid "+(isCopied?GREEN:BLUE),color:isCopied?GREEN:BLUE,borderRadius:7,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>
                           {isCopied?"✓ Copiado!":"📋 Copiar"}
@@ -2126,11 +2129,11 @@ export default function App(){
                       <div style={{padding:"10px 12px"}}>
                         <div style={{fontSize:11,color:MUTED,marginBottom:8}}>{q.loja} · {q.criadoEm?new Date(q.criadoEm).toLocaleDateString("pt-BR"):""}</div>
                         {conc.length>0&&(
-                          <div style={{background:"#0D0D0D",border:"1px solid "+RED+"44",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+                          <div style={{background:"var(--fx-bg,#0D0D0D)",border:"1px solid "+RED44,borderRadius:8,padding:"8px 10px",marginBottom:8}}>
                             <div style={{fontSize:9,color:RED,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>🏢 Concorrentes</div>
                             {conc.map((item,ci)=>(
                               <div key={ci} style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:ci<conc.length-1?6:0}}>
-                                <span style={{fontSize:12,color:"#E0E0E0",fontWeight:700}}>{item.empresa}</span>
+                                <span style={{fontSize:12,color:"var(--fx-tx,#E0E0E0)",fontWeight:700}}>{item.empresa}</span>
                                 <div style={{textAlign:"right"}}>
                                   <div style={{fontSize:14,fontWeight:800,color:RED}}>{item.valor?fmtVal(item.valor):""}</div>
                                   {item.pgto&&<div style={{fontSize:9,color:MUTED}}>{item.pgto}</div>}
@@ -2155,74 +2158,74 @@ export default function App(){
     )}
     {perdidaModal&&(
       <div onClick={()=>setPerdidaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #8B0000",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#f87171",letterSpacing:1,marginBottom:6}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Marcar como Perdida</div>
-          <div style={{fontSize:13,color:"#888",marginBottom:20}}>Orçamento <strong style={{color:"#fff"}}>#{perdidaModal.numero}</strong> · {perdidaModal.medida}</div>
+        <div onClick={e=>e.stopPropagation()} style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-ac3,#8B0000)",borderRadius:12,padding:"28px",maxWidth:440,width:"100%"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--fx-ertx,#f87171)",letterSpacing:1,marginBottom:6}}><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg> Marcar como Perdida</div>
+          <div style={{fontSize:13,color:"var(--fx-tx3,#888)",marginBottom:20}}>Orçamento <strong style={{color:"var(--fx-tx0,#fff)"}}>#{perdidaModal.numero}</strong> · {perdidaModal.medida}</div>
           <div style={{marginBottom:16}}>
-            <label style={{fontSize:11,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
+            <label style={{fontSize:11,color:"var(--fx-tx3,#888)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:8}}>Motivo da perda *</label>
             <input
               type="text"
               placeholder="Ex: Cliente fechou na Pemaza por R$ 280,00"
               value={motivoInput}
               onChange={e=>setMotivoInput(e.target.value)}
               onKeyDown={e=>e.key==="Enter"&&motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())}
-              style={{width:"100%",boxSizing:"border-box",background:"#0D0D0D",border:"1px solid #8B0000",borderRadius:8,padding:"10px 14px",color:"#fff",fontSize:13,outline:"none"}}
+              style={{width:"100%",boxSizing:"border-box",background:"var(--fx-bg,#0D0D0D)",border:"1px solid var(--fx-ac3,#8B0000)",borderRadius:8,padding:"10px 14px",color:"var(--fx-tx0,#fff)",fontSize:13,outline:"none"}}
               autoFocus
             />
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setPerdidaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"#8B0000":"#3E1A1A",color:motivoInput.trim()?"#fff":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>Confirmar Perda</button>
+            <button onClick={()=>setPerdidaModal(null)} style={{flex:1,background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>motivoInput.trim()&&doPerdida(perdidaModal,motivoInput.trim())} style={{flex:2,background:motivoInput.trim()?"var(--fx-ac3,#8B0000)":"#3E1A1A",color:motivoInput.trim()?"var(--fx-tx0,#fff)":"#888",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .2s"}}>Confirmar Perda</button>
           </div>
         </div>
       </div>
     )}
     {showConcAviso&&(
       <div onClick={()=>setShowConcAviso(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:12,padding:"28px 28px",maxWidth:420,width:"100%",textAlign:"center"}}>
           <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:8}}>Nenhum concorrente adicionado</div>
-          <p style={{fontSize:13,color:"#888",marginBottom:24,lineHeight:1.6}}>Você não informou nenhum concorrente nessa negociação. Tem certeza que deseja salvar assim? Se foi um <strong style={{color:"#fff"}}>erro interno</strong>, marque a opção correspondente antes de salvar.</p>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--fx-tx0,#fff)",letterSpacing:1,marginBottom:8}}>Nenhum concorrente adicionado</div>
+          <p style={{fontSize:13,color:"var(--fx-tx3,#888)",marginBottom:24,lineHeight:1.6}}>Você não informou nenhum concorrente nessa negociação. Tem certeza que deseja salvar assim? Se foi um <strong style={{color:"var(--fx-tx0,#fff)"}}>erro interno</strong>, marque a opção correspondente antes de salvar.</p>
           <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-            <button onClick={()=>setShowConcAviso(false)} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Voltar e adicionar</button>
-            <button onClick={()=>{setShowConcAviso(false);doAdd(true);}} style={{background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar mesmo assim</button>
+            <button onClick={()=>setShowConcAviso(false)} style={{background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>← Voltar e adicionar</button>
+            <button onClick={()=>{setShowConcAviso(false);doAdd(true);}} style={{background:"var(--fx-ac,#CC1F1F)",color:"#fff",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Salvar mesmo assim</button>
           </div>
         </div>
       </div>
     )}
     {showExportDateModal&&exportDataPendente&&(
       <div onClick={()=>setShowExportDateModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #CC1F1F",borderRadius:14,padding:"28px 32px",maxWidth:460,width:"100%",boxShadow:"0 8px 40px #000"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fff",letterSpacing:1,marginBottom:4}}>📊 Gerar Planilha · {exportDataPendente.statusLabel}</div>
-          <div style={{fontSize:13,color:"#888",marginBottom:20,lineHeight:1.5}}>
-            Filtre por <strong style={{color:"#fff"}}>data de registro</strong> da negociação.<br/>
+        <div onClick={e=>e.stopPropagation()} style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-ac,#CC1F1F)",borderRadius:14,padding:"28px 32px",maxWidth:460,width:"100%",boxShadow:"0 8px 40px #000"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--fx-tx0,#fff)",letterSpacing:1,marginBottom:4}}>📊 Gerar Planilha · {exportDataPendente.statusLabel}</div>
+          <div style={{fontSize:13,color:"var(--fx-tx3,#888)",marginBottom:20,lineHeight:1.5}}>
+            Filtre por <strong style={{color:"var(--fx-tx0,#fff)"}}>data de registro</strong> da negociação.<br/>
             <span style={{fontSize:11}}>Deixe em branco para exportar todos os {exportDataPendente.data.length} registros.</span>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
             <div>
-              <label style={{display:"block",fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data inicial</label>
-              <input type="date" value={exportDateFiltro.de} onChange={e=>setExportDateFiltro(f=>({...f,de:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"#111",border:"1px solid #3A3A3A",borderRadius:8,color:"#fff",padding:"10px 12px",fontSize:14}}/>
+              <label style={{display:"block",fontSize:11,fontWeight:700,color:"var(--fx-tx3,#888)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data inicial</label>
+              <input type="date" value={exportDateFiltro.de} onChange={e=>setExportDateFiltro(f=>({...f,de:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"var(--fx-bg,#111)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:8,color:"var(--fx-tx0,#fff)",padding:"10px 12px",fontSize:14}}/>
             </div>
             <div>
-              <label style={{display:"block",fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data final</label>
-              <input type="date" value={exportDateFiltro.ate} onChange={e=>setExportDateFiltro(f=>({...f,ate:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"#111",border:"1px solid #3A3A3A",borderRadius:8,color:"#fff",padding:"10px 12px",fontSize:14}}/>
+              <label style={{display:"block",fontSize:11,fontWeight:700,color:"var(--fx-tx3,#888)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>📅 Data final</label>
+              <input type="date" value={exportDateFiltro.ate} onChange={e=>setExportDateFiltro(f=>({...f,ate:e.target.value}))} style={{width:"100%",boxSizing:"border-box",background:"var(--fx-bg,#111)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:8,color:"var(--fx-tx0,#fff)",padding:"10px 12px",fontSize:14}}/>
             </div>
           </div>
           {(exportDateFiltro.de||exportDateFiltro.ate)&&(()=>{
             let preview=exportDataPendente.data;
             if(exportDateFiltro.de)preview=preview.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)>=exportDateFiltro.de);
             if(exportDateFiltro.ate)preview=preview.filter(q=>q.criadoEm&&q.criadoEm.slice(0,10)<=exportDateFiltro.ate);
-            return(<div style={{background:"#0D1117",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6090E0"}}>
+            return(<div style={{background:"#0D1117",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6090E0"}}>
               🔍 {preview.length} registro(s) encontrados para o período selecionado
             </div>);
           })()}
-          <div style={{background:"#0D0D0D",border:"1px solid #2E2E2E",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:11,color:"#666"}}>
-            <strong style={{color:"#999",display:"block",marginBottom:4}}>📋 Colunas na planilha:</strong>
+          <div style={{background:"var(--fx-bg,#0D0D0D)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:11,color:"var(--fx-tx4,#666)"}}>
+            <strong style={{color:"var(--fx-tx3,#999)",display:"block",marginBottom:4}}>📋 Colunas na planilha:</strong>
             Nº Orçamento · CBA · Valor com Desconto · Forma de Pagamento · Validade · Observações · Concorrência · Valor Concorrência · Pgto Concorrência · Loja · Vendedor · Data de Registro
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={()=>{doExportConsultaXLS(exportDataPendente.data,exportDataPendente.statusLabel,exportDateFiltro);setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:2,background:"#CC1F1F",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:.5}}>⬇️ Baixar Planilha Excel</button>
+            <button onClick={()=>{setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:1,background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={()=>{doExportConsultaXLS(exportDataPendente.data,exportDataPendente.statusLabel,exportDateFiltro);setShowExportDateModal(false);setExportDataPendente(null);}} style={{flex:2,background:"var(--fx-ac,#CC1F1F)",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:.5}}>⬇️ Baixar Planilha Excel</button>
           </div>
         </div>
       </div>
@@ -2230,43 +2233,43 @@ export default function App(){
     {toast&&<div className={`toast ${toast.ok?"t-ok":"t-err"}`}>{toast.msg}</div>}
     {/* Modal alterar senha pelo admin */}
     {adminSenhaModal&&<div onClick={()=>setAdminSenhaModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#1C1C1C",border:"1px solid #3A3A3A",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#fff",letterSpacing:1,marginBottom:4}}>🔑 Nova senha por e-mail</div>
+      <div onClick={e=>e.stopPropagation()} style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#3A3A3A)",borderRadius:12,padding:"28px",maxWidth:400,width:"100%"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--fx-tx0,#fff)",letterSpacing:1,marginBottom:4}}>🔑 Nova senha por e-mail</div>
         <div style={{fontSize:13,color:MUTED,marginBottom:20}}>{adminSenhaModal.nome} · {adminSenhaModal.email}</div>
-        <div style={{fontSize:13,color:"#ccc",lineHeight:1.6,marginBottom:20}}>Vamos enviar um e-mail para <strong style={{color:"#fff"}}>{adminSenhaModal.email}</strong> com um link para a pessoa criar uma senha nova. Por segurança, o admin não define nem vê a senha de ninguém.</div>
+        <div style={{fontSize:13,color:"var(--fx-tx2,#ccc)",lineHeight:1.6,marginBottom:20}}>Vamos enviar um e-mail para <strong style={{color:"var(--fx-tx0,#fff)"}}>{adminSenhaModal.email}</strong> com um link para a pessoa criar uma senha nova. Por segurança, o admin não define nem vê a senha de ninguém.</div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
+          <button onClick={()=>setAdminSenhaModal(null)} style={{flex:1,background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Cancelar</button>
           <button onClick={doAdminAlterarSenha} style={{flex:2,background:RED,color:"#fff",border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer"}}>Enviar e-mail</button>
         </div>
       </div>
     </div>}
     {/* Logs tab view */}
     {tab==="logs"&&session.role==="admin"&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📋 Logs · Acessos e Consultas</div>
+      <div style={{background:"var(--fx-bg,#111)",borderBottom:"1px solid var(--fx-bd,#2E2E2E)",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>📋 Logs · Acessos e Consultas</div>
         <div style={{fontSize:11,color:MUTED,marginTop:2}}>{logs.length} registro(s)</div></div>
         <div style={{display:"flex",gap:10}}>
           {logs.length>0&&<button onClick={async()=>{if(!window.confirm("Limpar TODOS os logs?"))return;try{const h={"apikey":SUPA_KEY,"Authorization":"Bearer "+tokenAtual(),"Content-Type":"application/json"};await fetch(SUPA_URL+"/rest/v1/logs_consulta?id=neq.00000000-0000-0000-0000-000000000000",{method:"DELETE",headers:h});setLogs([]);toast_("Logs limpos! 🗑️");}catch(e){toast_("Erro.",false);}}} style={{background:"#2A0A0A",border:"1px solid "+RED,color:RED,borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🗑️ Limpar</button>}
-          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          <button onClick={()=>setTab("dashboard")} style={{background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:20}}>
         {logs.length===0?<div style={{textAlign:"center",color:MUTED,padding:"40px",fontSize:14}}>Nenhum log ainda.</div>:
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-          <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["Data/Hora","Ação","Termo Buscado","Loja","IP","Dispositivo / Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>{["Data/Hora","Ação","Termo Buscado","Loja","IP","Dispositivo / Status"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>{logs.map((l,i)=>{
             const isAcesso=l.email&&l.email.includes("Acesso");
             const dispositivo=l.motivo&&l.motivo.includes("Mobile")?"📱 Mobile":l.motivo&&l.motivo.includes("Desktop")?"🖥️ Desktop":"";
             const motivoSemDisp=l.motivo?l.motivo.replace(/ \| (📱 Mobile|🖥️ Desktop)/,"").trim():null;
             return(<tr key={i} style={{borderBottom:"1px solid #1A1A1A",background:isAcesso?"#0D0D1A":l.sucesso?"transparent":"#1A0000"}}>
-            <td style={{padding:"10px 12px",color:"#888",fontSize:11,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
+            <td style={{padding:"10px 12px",color:"var(--fx-tx3,#888)",fontSize:11,whiteSpace:"nowrap"}}>{new Date(l.created_at).toLocaleString("pt-BR")}</td>
             <td style={{padding:"10px 12px",fontWeight:600,color:isAcesso?"#7B68EE":l.sucesso?TEXT:RED,whiteSpace:"nowrap"}}>{l.email||""}</td>
             <td style={{padding:"10px 12px",color:BLUE,fontWeight:700}}>{l.medida||<span style={{color:MUTED}}></span>}</td>
             <td style={{padding:"10px 12px",color:MUTED,fontSize:12}}>{l.loja||""}</td>
             <td style={{padding:"10px 12px",color:MUTED,fontSize:11}}>{l.ip||""}</td>
             <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
               <span style={{marginRight:6,fontSize:12}}>{dispositivo}</span>
-              {l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>✅</span>:<span style={{background:RED+"22",color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>❌ {motivoSemDisp||"Sem resultado"}</span>}
+              {l.sucesso?<span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>✅</span>:<span style={{background:RED22,color:RED,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>❌ {motivoSemDisp||"Sem resultado"}</span>}
             </td>
           </tr>);})}</tbody>
         </table>}
@@ -2284,37 +2287,37 @@ export default function App(){
       const emailStats={};const lojaStats={};
       logs.filter(l=>l.sucesso).forEach(l=>{emailStats[l.email]=(emailStats[l.email]||0)+1;if(l.loja)lojaStats[l.loja]=(lojaStats[l.loja]||0)+1;});
       return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:2500,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{background:"#111",borderBottom:"1px solid #2E2E2E",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"#fff"}}>📊 Atividade da Plataforma</div>
+        <div style={{background:"var(--fx-bg,#111)",borderBottom:"1px solid var(--fx-bd,#2E2E2E)",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:2,color:"var(--fx-tx0,#fff)"}}>📊 Atividade da Plataforma</div>
           <div style={{fontSize:11,color:MUTED,marginTop:2}}>Visão geral de uso por usuário e consulta pública</div></div>
-          <button onClick={()=>setTab("dashboard")} style={{background:"#2E2E2E",color:"#fff",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
+          <button onClick={()=>setTab("dashboard")} style={{background:"var(--fx-s2,#2E2E2E)",color:"var(--fx-tx0,#fff)",border:"none",borderRadius:8,padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕ Fechar</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:20}}>
-          <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16,marginBottom:20}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",marginBottom:14}}>👥 ATIVIDADE POR USUÁRIO</div>
+          <div style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:16,marginBottom:20}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--fx-tx0,#fff)",marginBottom:14}}>👥 ATIVIDADE POR USUÁRIO</div>
             <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-              <thead><tr style={{borderBottom:"1px solid #2E2E2E"}}>{["","Usuário","Perfil","Negociações","Logins","Último Acesso"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>{["","Usuário","Perfil","Negociações","Logins","Último Acesso"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,textTransform:"uppercase",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
               <tbody>{statsList.map((u,i)=>{const ua=u.ultimoAcesso;const online=ua&&(new Date()-new Date(ua))<15*60*1000;
                 return(<tr key={u.email} style={{borderBottom:"1px solid #1A1A1A",background:online?"#0D1A0D":"transparent"}}>
                   <td style={{padding:"10px 12px",textAlign:"center"}}><div style={{width:10,height:10,borderRadius:"50%",background:online?"#4CAF50":"#444",display:"inline-block",boxShadow:online?"0 0 8px #4CAF50":"none"}}/></td>
                   <td style={{padding:"10px 12px"}}><div style={{fontWeight:700,color:TEXT,fontSize:13}}>{u.nome}</div><div style={{fontSize:10,color:MUTED}}>{u.email}</div>{online&&<div style={{fontSize:10,color:"#4CAF50",fontWeight:700}}>● Online</div>}</td>
                   <td style={{padding:"10px 12px"}}><span style={{background:u.tipo==="publico"?"#1A1A2E":roleColor(u.role)+"22",color:u.tipo==="publico"?"#7B68EE":roleColor(u.role),borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{u.tipo==="publico"?"🔗 Consulta Pública":roleName(u.role)}</span></td>
-                  <td style={{padding:"10px 12px"}}><span style={{background:RED+"22",color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"":u.negociacoes}</span></td>
-                  <td style={{padding:"10px 12px"}}><span style={{background:"#1A1E2E",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:RED22,color:u.tipo==="publico"?MUTED:RED,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.tipo==="publico"?"":u.negociacoes}</span></td>
+                  <td style={{padding:"10px 12px"}}><span style={{background:"var(--fx-inbg,#1A1E2E)",color:BLUE,borderRadius:4,padding:"2px 10px",fontWeight:700}}>{u.logins}{u.tipo==="publico"&&<span style={{fontSize:10,color:MUTED}}> pesq.</span>}</span></td>
                   <td style={{padding:"10px 12px",color:ua?TEXT:MUTED,fontSize:12}}>{ua?new Date(ua).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Nunca"}</td>
                 </tr>);})}</tbody>
             </table></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📧 PESQUISAS POR E-MAIL</div>
+            <div style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--fx-tx0,#fff)",marginBottom:12}}>📧 PESQUISAS POR E-MAIL</div>
               {Object.entries(emailStats).sort((a,b)=>b[1]-a[1]).map(([email,cnt],i)=>(<div key={email} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
                 <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {email}</span>
                 <span style={{background:BLUE+"22",color:BLUE,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
               </div>))}
             </div>
-            <div style={{background:"#1C1C1C",border:"1px solid #2E2E2E",borderRadius:10,padding:16}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",marginBottom:12}}>📍 PESQUISAS POR LOJA</div>
+            <div style={{background:"var(--fx-s1,#1C1C1C)",border:"1px solid var(--fx-bd,#2E2E2E)",borderRadius:10,padding:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--fx-tx0,#fff)",marginBottom:12}}>📍 PESQUISAS POR LOJA</div>
               {Object.entries(lojaStats).sort((a,b)=>b[1]-a[1]).map(([loja,cnt],i)=>(<div key={loja} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1A1A1A"}}>
                 <span style={{fontSize:12,color:TEXT,fontWeight:600}}>#{i+1} {loja}</span>
                 <span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontSize:12,fontWeight:700}}>{cnt}x</span>
