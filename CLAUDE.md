@@ -99,6 +99,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
     1ª rodada e fica em `push_config` (sem regra de acesso: só a chave de serviço lê). iPhone: precisa
     "Adicionar à Tela de Início" (`ligacoes.webmanifest`, ícones `icone-192/512.png`). Service worker:
     `public/sw-avisos.js`. No /admin, coluna "🔔 Avisos". Tocar no aviso abre as Ligações (passa pela trava de IP).
+    **Trava** (decisão do TI): o **vendedor** no computador ou no Android só usa as Ligações com os avisos
+    ligados (tela por cima com "🔔 Ligar avisos"; se bloqueou no navegador, mostra o passo a passo).
+    Não trava: **iPhone** (não cobrar), navegador sem avisos, gerente/Jonathan/admin, e enquanto o
+    sistema de avisos não estiver pronto (sem SQL 17 ou sem a chave). `conferirTrava()` no ligacoes.html.
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
