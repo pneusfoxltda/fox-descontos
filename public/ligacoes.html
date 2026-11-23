@@ -725,15 +725,20 @@ function daLojaEData(ignorarData = false) {
     (ignorarData || !filtro.data || l.data_cotacao === filtro.data));
 }
 
-function visiveis() {
-  const aba = ABAS.find(a => a[0] === filtro.aba);
+// Mesmos filtros da lista (busca, quem cotou, responsável), sem a aba: a lista e os números das abas batem
+function filtrados(ag) {
   const b = norm(filtro.busca.trim()), bd = dig(filtro.busca);
-  const ag = filtro.aba === "agendou";
-  const lista = daLojaEData(!!b || ag).filter(l => aba[3](l))
-    .filter(l => !ag || naAgenda(l, filtro.agenda))
+  return daLojaEData(!!b || ag)
     .filter(l => !filtro.operador || l.operador === filtro.operador)
     .filter(l => !filtro.resp || (filtro.resp === "-" ? !l.responsavel_id : l.responsavel_id === filtro.resp))
     .filter(l => !b || norm(l.cliente).includes(b) || norm(l.cotacao).includes(b) || (bd.length >= 3 && dig(l.telefone).includes(bd)));
+}
+
+function visiveis() {
+  const aba = ABAS.find(a => a[0] === filtro.aba);
+  const ag = filtro.aba === "agendou";
+  const lista = filtrados(ag).filter(l => aba[3](l))
+    .filter(l => !ag || naAgenda(l, filtro.agenda));
   if (ag) lista.sort((x, y) => (x.agendado_para || "9999").localeCompare(y.agendado_para || "9999"));
   return lista;
 }
@@ -764,10 +769,10 @@ function render() {
 }
 
 function renderAbasELista(daLoja) {
-  const base = daLojaEData();
+  const base = filtrados(false), todosDias = filtrados(true);
   $("abas").innerHTML = ABAS.map(([id, nome, cor, f]) => {
     const on = filtro.aba === id;
-    const n = (id === "agendou" ? daLoja : base).filter(f).length;   // Agendou conta todos os dias
+    const n = (id === "agendou" ? todosDias : base).filter(f).length;   // Agendou conta todos os dias; com busca, todas as abas contam os 5 dias
     return `<button class="aba ${on ? "on" : ""}" data-a="${id}" style="${on ? `background:${cor}22;border-color:${cor};` : ""}">${nome} (${n})</button>`;
   }).join("");
   document.querySelectorAll(".aba").forEach(a => a.onclick = () => { filtro.aba = a.dataset.a; limite = POR_PAGINA; render(); });
