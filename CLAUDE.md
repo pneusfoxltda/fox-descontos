@@ -57,8 +57,15 @@ vendas para o televendas; `apps-script/` tem o do painel).
   abertas mudam na hora). Guardado em `localStorage "fox_tema"` {modo, cor, em}. O FOXNET
   (foxnet-intranet) e os sistemas (fox-descontos) são endereços diferentes: ao abrir um sistema pelo FOXNET
   a escolha vai no link (`?tema=modo.COR.hora`, a mais nova vale) e sai do endereço. "Voltar ao padrão" =
-  cada tela com a sua cor. Hoje usam: FOXNET e Ligações. Faltam: App de descontos, Cadastrar, Consulta,
-  Televendas e /admin (cores fixas no código; precisam ser convertidas para variáveis).
+  cada tela com a sua cor. **Todas as páginas têm o 🎨**: FOXNET e Ligações (paleta própria) e App de
+  descontos, Cadastrar, Consulta, Televendas, /admin e Monitor (`public/paleta.js`, carregado depois do
+  tema-comum.js com `data-padrao="modo,#cor"` e `data-antes`/`data-dentro` para o lugar do botão).
+  Nessas páginas cada cor fixa virou `var(--fx-PAPEL, cor de sempre)` (fundo bg/s1/s2, borda bd, texto
+  tx/tx0/tx2/tx3/tx4, destaque ac/ac2/ac3/acbg, faixa hd/hd2 do Televendas e situação okbg/oktx,
+  avbg/avtx, inbg/intx, erbg/ertx): sem escolha nenhuma --fx-* existe e a página fica **idêntica** (conferido
+  ponto a ponto nas 7 páginas). Padrões: Televendas claro azul-marinho (#0F1F3D); as outras escuras vermelho Fox.
+  No App, RED/CARD/TEXT/MUTED/BORDER são variáveis e RED+"22"/"44" viraram RED22/RED44 (color-mix).
+  Cor nova escrita no código dessas páginas: use `var(--fx-..., #cor)` para seguir a paleta.
 - **Domínio da intranet**: qualquer host que comece com `foxnet` mostra só o FOXNET;
   outros caminhos redirecionam para `https://fox-descontos.vercel.app`.
   `foxnet.vercel.app` é de outra empresa; `foxnet.foxpneu.com.br` foi desistido.

@@ -10,189 +10,189 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:#f4f6f9;color:#1a2332;font-family:'Inter',sans-serif;min-height:100vh;}
+body{background:var(--fx-bg,#f4f6f9);color:var(--fx-tx,#1a2332);font-family:'Inter',sans-serif;min-height:100vh;}
 
 /* ── Header ── */
-.header{background:#0f1f3d;padding:14px 24px;display:flex;align-items:center;gap:12px;}
-.logo{width:40px;height:40px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;}
+.header{background:var(--fx-hd,#0f1f3d);padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{width:40px;height:40px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--fx-s1,#fff);}
 .brand{color:#fff;font-weight:700;font-size:16px;}
 .brand small{display:block;font-size:11px;color:#8899bb;font-weight:400;}
 .header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
 .sync-info{font-size:11px;color:#8899bb;text-align:right;}
-.btn-refresh{background:#1e3a6e;border:none;color:#8fb3ff;font-size:11px;border-radius:6px;padding:6px 12px;cursor:pointer;transition:.15s;}
-.btn-refresh:hover{background:#2a4d8f;color:#fff;}
+.btn-refresh{background:var(--fx-hd2,#1e3a6e);border:none;color:#8fb3ff;font-size:11px;border-radius:6px;padding:6px 12px;cursor:pointer;transition:.15s;}
+.btn-refresh:hover{background:var(--fx-hd2,#2a4d8f);color:#fff;}
 
 /* ── Container ── */
 .container{max-width:1100px;margin:0 auto;padding:20px 16px;}
 
 /* ── Título ── */
 .page-header{margin-bottom:16px;}
-.page-title{font-size:22px;font-weight:800;color:#0f1f3d;}
-.page-title span{color:#CC1F1F;}
-.page-meta{font-size:12px;color:#7a8ba0;margin-top:3px;}
+.page-title{font-size:22px;font-weight:800;color:var(--fx-tx,#0f1f3d);}
+.page-title span{color:var(--fx-ac,#CC1F1F);}
+.page-meta{font-size:12px;color:var(--fx-tx3,#7a8ba0);margin-top:3px;}
 
 /* ── Metas ── */
 .metas-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
-.meta-btn{background:#fff;border:2px solid #dde3ec;border-radius:8px;padding:8px 16px;cursor:pointer;transition:.15s;text-align:center;}
-.meta-btn:hover{border-color:#0f1f3d;}
-.meta-btn.active{background:#0f1f3d;border-color:#0f1f3d;color:#fff;}
+.meta-btn{background:var(--fx-s1,#fff);border:2px solid var(--fx-bd,#dde3ec);border-radius:8px;padding:8px 16px;cursor:pointer;transition:.15s;text-align:center;}
+.meta-btn:hover{border-color:var(--fx-hd,#0f1f3d);}
+.meta-btn.active{background:var(--fx-hd,#0f1f3d);border-color:var(--fx-hd,#0f1f3d);color:#fff;}
 .meta-btn .meta-label{font-size:11px;font-weight:600;opacity:.7;}
 .meta-btn .meta-valor{font-size:14px;font-weight:800;}
 .meta-btn.active .meta-label{opacity:.8;}
 
 /* ── KPIs ── */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
-.kpi{background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px #0001;}
-.kpi-label{font-size:11px;font-weight:600;color:#7a8ba0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
-.kpi-valor{font-size:22px;font-weight:800;color:#0f1f3d;}
-.kpi-valor.vermelho{color:#CC1F1F;}
-.kpi-valor.verde{color:#16a34a;}
-.kpi-sub{font-size:11px;color:#9aabb8;margin-top:4px;}
-.progress-bar{height:6px;background:#e2e8f0;border-radius:3px;margin-top:8px;overflow:hidden;}
-.progress-fill{height:100%;border-radius:3px;background:#CC1F1F;transition:width .6s;}
+.kpi{background:var(--fx-s1,#fff);border-radius:10px;padding:14px 16px;border:1px solid var(--fx-bd,#e2e8f0);box-shadow:0 1px 3px #0001;}
+.kpi-label{font-size:11px;font-weight:600;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-valor{font-size:22px;font-weight:800;color:var(--fx-tx,#0f1f3d);}
+.kpi-valor.vermelho{color:var(--fx-ac,#CC1F1F);}
+.kpi-valor.verde{color:var(--fx-oktx,#16a34a);}
+.kpi-sub{font-size:11px;color:var(--fx-tx4,#9aabb8);margin-top:4px;}
+.progress-bar{height:6px;background:var(--fx-s2,#e2e8f0);border-radius:3px;margin-top:8px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;background:var(--fx-ac,#CC1F1F);transition:width .6s;}
 .progress-fill.verde{background:#16a34a;}
 
 /* ── Tabela ── */
-.table-wrap{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px #0001;}
+.table-wrap{background:var(--fx-s1,#fff);border-radius:12px;border:1px solid var(--fx-bd,#e2e8f0);overflow:hidden;box-shadow:0 1px 3px #0001;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
-thead tr{background:#0f1f3d;color:#fff;}
+thead tr{background:var(--fx-hd,#0f1f3d);color:#fff;}
 th{padding:15px 12px;font-weight:700;font-size:15px;text-align:center !important;letter-spacing:.3px;vertical-align:middle;}
 thead th:first-child{text-align:center !important;}
 .th-dias{background:#e85d04;color:#fff;text-align:center;}
 thead tr:last-child th{background:#e85d04;color:#fff;font-size:13px;padding:8px 12px;}
-tbody tr{border-bottom:1px solid #f0f4f8;transition:.1s;}
+tbody tr{border-bottom:1px solid var(--fx-bd,#f0f4f8);transition:.1s;}
 tbody tr:last-child{border-bottom:none;}
-tbody tr:hover{background:#f8fafc;}
+tbody tr:hover{background:var(--fx-bg,#f8fafc);}
 tbody tr.total-row{font-weight:700;}
-tbody tr.row-verde{background:#bbf7d0;}
-tbody tr.row-verde:hover{background:#a7f3d0 !important;}
-tbody tr.row-vermelho{background:#fecaca;}
-tbody tr.row-vermelho:hover{background:#fca5a5 !important;}
-tbody tr.total-row.row-verde{background:#bbf7d0 !important;}
-tbody tr.total-row.row-vermelho{background:#fecaca !important;}
-td{padding:11px 12px;text-align:center;color:#1a2332;}
+tbody tr.row-verde{background:var(--fx-okbg,#bbf7d0);}
+tbody tr.row-verde:hover{background:var(--fx-okbg,#a7f3d0) !important;}
+tbody tr.row-vermelho{background:var(--fx-erbg,#fecaca);}
+tbody tr.row-vermelho:hover{background:var(--fx-erbg,#fca5a5) !important;}
+tbody tr.total-row.row-verde{background:var(--fx-okbg,#bbf7d0) !important;}
+tbody tr.total-row.row-vermelho{background:var(--fx-erbg,#fecaca) !important;}
+td{padding:11px 12px;text-align:center;color:var(--fx-tx,#1a2332);}
 td:first-child{text-align:left;font-weight:700;}
-td.verde{color:#16a34a;font-weight:700;}
-td.vermelho{color:#CC1F1F;font-weight:700;}
-td.dia-col{color:#374151;font-size:12px;}
-td.meta-col{color:#6b7280;}
+td.verde{color:var(--fx-oktx,#16a34a);font-weight:700;}
+td.vermelho{color:var(--fx-ac,#CC1F1F);font-weight:700;}
+td.dia-col{color:var(--fx-tx2,#374151);font-size:12px;}
+td.meta-col{color:var(--fx-tx3,#6b7280);}
 
 /* ── Badge % ── */
 .pct-badge{display:inline-block;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:700;}
-.pct-badge.verde{background:#dcfce7;color:#16a34a;}
-.pct-badge.amarelo{background:#fef9c3;color:#b45309;}
-.pct-badge.vermelho{background:#fee2e2;color:#CC1F1F;}
+.pct-badge.verde{background:var(--fx-okbg,#dcfce7);color:var(--fx-oktx,#16a34a);}
+.pct-badge.amarelo{background:#fef9c3;color:var(--fx-avtx,#b45309);}
+.pct-badge.vermelho{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F);}
 
 /* ── Filtro de data ── */
 .filtro-data-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.filtro-data-label{font-size:12px;font-weight:600;color:#7a8ba0;text-transform:uppercase;letter-spacing:.4px;}
-.filtro-data-btn{background:#fff;border:2px solid #dde3ec;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#0f1f3d;display:flex;align-items:center;gap:8px;transition:.15s;}
-.filtro-data-btn:hover{border-color:#0f1f3d;}
-.filtro-data-btn.ativo{border-color:#CC1F1F;color:#CC1F1F;}
-.filtro-data-clear{background:none;border:none;cursor:pointer;font-size:11px;color:#9aabb8;padding:4px 6px;border-radius:4px;}
-.filtro-data-clear:hover{color:#CC1F1F;}
+.filtro-data-label{font-size:12px;font-weight:600;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.4px;}
+.filtro-data-btn{background:var(--fx-s1,#fff);border:2px solid var(--fx-bd,#dde3ec);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--fx-tx,#0f1f3d);display:flex;align-items:center;gap:8px;transition:.15s;}
+.filtro-data-btn:hover{border-color:var(--fx-hd,#0f1f3d);}
+.filtro-data-btn.ativo{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
+.filtro-data-clear{background:none;border:none;cursor:pointer;font-size:11px;color:var(--fx-tx4,#9aabb8);padding:4px 6px;border-radius:4px;}
+.filtro-data-clear:hover{color:var(--fx-ac,#CC1F1F);}
 
 /* ── Calendário popup ── */
-.cal-popup{display:none;position:absolute;z-index:200;background:#fff;border:1px solid #dde3ec;border-radius:12px;box-shadow:0 8px 32px #0002;padding:16px;min-width:280px;}
-.cal-mes-btn{background:#f0f4f8;border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;color:#0f1f3d;cursor:pointer;margin-bottom:12px;text-align:center;transition:.15s;border:none;width:100%;display:block;}
-.cal-mes-btn:hover{background:#0f1f3d;color:#fff;}
+.cal-popup{display:none;position:absolute;z-index:200;background:var(--fx-s1,#fff);border:1px solid var(--fx-bd,#dde3ec);border-radius:12px;box-shadow:0 8px 32px #0002;padding:16px;min-width:280px;}
+.cal-mes-btn{background:var(--fx-bg,#f0f4f8);border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;color:var(--fx-tx,#0f1f3d);cursor:pointer;margin-bottom:12px;text-align:center;transition:.15s;border:none;width:100%;display:block;}
+.cal-mes-btn:hover{background:var(--fx-hd,#0f1f3d);color:#fff;}
 .cal-popup.aberto{display:block;}
 .cal-popup-wrap{position:relative;}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.cal-nav{background:none;border:1px solid #dde3ec;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;color:#0f1f3d;display:flex;align-items:center;justify-content:center;transition:.1s;}
-.cal-nav:hover{background:#0f1f3d;color:#fff;}
+.cal-nav{background:none;border:1px solid var(--fx-bd,#dde3ec);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--fx-tx,#0f1f3d);display:flex;align-items:center;justify-content:center;transition:.1s;}
+.cal-nav:hover{background:var(--fx-hd,#0f1f3d);color:#fff;}
 .cal-nav:disabled{opacity:.3;cursor:not-allowed;}
-.cal-titulo{font-size:14px;font-weight:700;color:#0f1f3d;}
+.cal-titulo{font-size:14px;font-weight:700;color:var(--fx-tx,#0f1f3d);}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.cal-dow{font-size:10px;font-weight:700;color:#9aabb8;text-align:center;padding:4px 0;text-transform:uppercase;}
-.cal-dia{font-size:13px;font-weight:500;color:#1a2332;text-align:center;padding:7px 4px;border-radius:6px;cursor:pointer;transition:.1s;}
-.cal-dia:hover:not(.cal-dia-vazio):not(.cal-dia-disabled){background:#e8f0fe;color:#0f1f3d;}
-.cal-dia.cal-dia-hoje{font-weight:800;color:#CC1F1F;}
-.cal-dia.cal-dia-sel{background:#0f1f3d;color:#fff !important;font-weight:700;}
+.cal-dow{font-size:10px;font-weight:700;color:var(--fx-tx4,#9aabb8);text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-dia{font-size:13px;font-weight:500;color:var(--fx-tx,#1a2332);text-align:center;padding:7px 4px;border-radius:6px;cursor:pointer;transition:.1s;}
+.cal-dia:hover:not(.cal-dia-vazio):not(.cal-dia-disabled){background:#e8f0fe;color:var(--fx-tx,#0f1f3d);}
+.cal-dia.cal-dia-hoje{font-weight:800;color:var(--fx-ac,#CC1F1F);}
+.cal-dia.cal-dia-sel{background:var(--fx-hd,#0f1f3d);color:#fff !important;font-weight:700;}
 .cal-dia.cal-dia-disabled{color:#d1d5db;cursor:not-allowed;pointer-events:none;}
 .cal-dia.cal-dia-vazio{cursor:default;}
-.cal-dia-futuros{font-size:10px;color:#9aabb8;text-align:center;margin-top:8px;}
-.cal-dia.cal-dia-range-start{background:#CC1F1F !important;color:#fff !important;font-weight:700;}
-.cal-dia.cal-dia-in-range{background:#fee2e2;color:#CC1F1F !important;}
+.cal-dia-futuros{font-size:10px;color:var(--fx-tx4,#9aabb8);text-align:center;margin-top:8px;}
+.cal-dia.cal-dia-range-start{background:var(--fx-ac,#CC1F1F) !important;color:#fff !important;font-weight:700;}
+.cal-dia.cal-dia-in-range{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F) !important;}
 
 /* ── Legenda ── */
-.legenda{display:flex;gap:20px;padding:10px 12px;background:#f8fafc;font-size:11px;color:#7a8ba0;border-top:1px solid #e2e8f0;}
+.legenda{display:flex;gap:20px;padding:10px 12px;background:var(--fx-bg,#f8fafc);font-size:11px;color:var(--fx-tx3,#7a8ba0);border-top:1px solid var(--fx-bd,#e2e8f0);}
 .leg-item{display:flex;align-items:center;gap:5px;}
 .leg-dot{width:8px;height:8px;border-radius:50%;}
 
 /* ── Loading / Error ── */
-.loading{text-align:center;padding:60px;color:#9aabb8;}
-.spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#CC1F1F;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+.loading{text-align:center;padding:60px;color:var(--fx-tx4,#9aabb8);}
+.spinner{width:32px;height:32px;border:3px solid var(--fx-bd,#e2e8f0);border-top-color:var(--fx-ac,#CC1F1F);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.erro{background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:#CC1F1F;font-size:13px;text-align:center;}
+.erro{background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:var(--fx-ac,#CC1F1F);font-size:13px;text-align:center;}
 
 /* ── Modal ── */
 .modal-bg{display:none;position:fixed;inset:0;background:#0008;z-index:100;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
-.modal{background:#fff;border-radius:14px;padding:24px;width:480px;box-shadow:0 20px 60px #0003;}
-.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;color:#0f1f3d;}
+.modal{background:var(--fx-s1,#fff);border-radius:14px;padding:24px;width:480px;box-shadow:0 20px 60px #0003;}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--fx-tx,#0f1f3d);}
 .modal-grid{display:grid;gap:10px;margin-bottom:16px;}
 .modal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.modal-row label{font-size:13px;color:#374151;flex:1;}
-.modal-row input{width:130px;border:1px solid #d1d5db;border-radius:6px;padding:8px 10px;font-size:14px;text-align:right;}
-.modal-row input:focus{outline:none;border-color:#0f1f3d;}
+.modal-row label{font-size:13px;color:var(--fx-tx2,#374151);flex:1;}
+.modal-row input{width:130px;border:1px solid var(--fx-bd,#d1d5db);border-radius:6px;padding:8px 10px;font-size:14px;text-align:right;}
+.modal-row input:focus{outline:none;border-color:var(--fx-hd,#0f1f3d);}
 .modal-btns{display:flex;gap:10px;}
 .modal-btns button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
-.btn-ok{background:#0f1f3d;color:#fff;}
-.btn-cancel{background:#f1f5f9;color:#374151;}
-.btn-editar-meta{background:none;border:1px solid #d1d5db;border-radius:6px;color:#6b7280;font-size:11px;padding:5px 10px;cursor:pointer;margin-left:8px;}
-.btn-editar-meta:hover{border-color:#0f1f3d;color:#0f1f3d;}
+.btn-ok{background:var(--fx-hd,#0f1f3d);color:#fff;}
+.btn-cancel{background:var(--fx-bg,#f1f5f9);color:var(--fx-tx2,#374151);}
+.btn-editar-meta{background:none;border:1px solid var(--fx-bd,#d1d5db);border-radius:6px;color:var(--fx-tx3,#6b7280);font-size:11px;padding:5px 10px;cursor:pointer;margin-left:8px;}
+.btn-editar-meta:hover{border-color:var(--fx-hd,#0f1f3d);color:var(--fx-tx,#0f1f3d);}
 
 /* ── Modal feriados ── */
-.modal-section-title{font-size:11px;font-weight:700;color:#7a8ba0;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;}
+.modal-section-title{font-size:11px;font-weight:700;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;}
 .modal-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
-.modal-cal-dow{font-size:9px;font-weight:700;color:#9aabb8;text-align:center;padding:4px 0;text-transform:uppercase;}
+.modal-cal-dow{font-size:9px;font-weight:700;color:var(--fx-tx4,#9aabb8);text-align:center;padding:4px 0;text-transform:uppercase;}
 .modal-cal-dia{font-size:12px;text-align:center;padding:6px 3px;border-radius:5px;line-height:1;}
-.modal-cal-dia.util{cursor:pointer;background:#f0f4f8;color:#1a2332;font-weight:600;}
+.modal-cal-dia.util{cursor:pointer;background:var(--fx-bg,#f0f4f8);color:var(--fx-tx,#1a2332);font-weight:600;}
 .modal-cal-dia.util:hover{background:#dde6f5;}
-.modal-cal-dia.feriado{background:#fee2e2;color:#CC1F1F;font-weight:700;cursor:pointer;}
+.modal-cal-dia.feriado{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F);font-weight:700;cursor:pointer;}
 .modal-cal-dia.dom{color:#d1d5db;font-size:11px;}
 .modal-cal-dia.vazio{background:none;}
-.modal-du-info{font-size:11px;color:#7a8ba0;margin-top:4px;margin-bottom:16px;}
+.modal-du-info{font-size:11px;color:var(--fx-tx3,#7a8ba0);margin-top:4px;margin-bottom:16px;}
 
 /* ── Modal Clientes (drill-down) ── */
 #modal-clientes .modal{width:580px;max-width:calc(100vw - 32px);}
 .cli-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.cli-modal-header h3{margin:0;font-size:14px;color:#0f1f3d;}
-.cli-modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:#9aabb8;line-height:1;padding:0 4px;}
-.cli-modal-close:hover{color:#CC1F1F;}
+.cli-modal-header h3{margin:0;font-size:14px;color:var(--fx-tx,#0f1f3d);}
+.cli-modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:var(--fx-tx4,#9aabb8);line-height:1;padding:0 4px;}
+.cli-modal-close:hover{color:var(--fx-ac,#CC1F1F);}
 .cli-scroll{overflow-y:auto;max-height:420px;}
 
 /* ── Período info banner ── */
-.periodo-banner{background:#fff8e7;border:1px solid #fde68a;border-radius:8px 8px 0 0;padding:10px 16px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px;}
+.periodo-banner{background:#fff8e7;border:1px solid #fde68a;border-radius:8px 8px 0 0;padding:10px 16px;font-size:12px;color:var(--fx-avtx,#92400e);display:flex;align-items:center;gap:8px;}
 
 /* ── Scroll hint (mobile) ── */
-.scroll-hint{display:none;text-align:center;font-size:11px;color:#9aabb8;padding:6px 0 2px;letter-spacing:.3px;}
+.scroll-hint{display:none;text-align:center;font-size:11px;color:var(--fx-tx4,#9aabb8);padding:6px 0 2px;letter-spacing:.3px;}
 
 /* ── Modal login ── */
 #modal-login .modal{width:360px;max-width:calc(100vw - 32px);}
 .login-input{width:100%;padding:10px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:.15s;box-sizing:border-box;}
-.login-input:focus{border-color:#0f1f3d;}
-.btn-login{width:100%;background:#0f1f3d;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;}
-.btn-login:hover{background:#1e3a6e;}
-.login-erro{display:none;color:#CC1F1F;font-size:13px;margin:0;text-align:center;padding:6px 0;}
+.login-input:focus{border-color:var(--fx-hd,#0f1f3d);}
+.btn-login{width:100%;background:var(--fx-hd,#0f1f3d);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-login:hover{background:var(--fx-hd2,#1e3a6e);}
+.login-erro{display:none;color:var(--fx-ac,#CC1F1F);font-size:13px;margin:0;text-align:center;padding:6px 0;}
 
 /* ── Modal usuários (admin) ── */
 #modal-usuarios .modal{width:480px;max-width:calc(100vw - 32px);}
-.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border-radius:8px;margin-bottom:6px;}
-.user-row .user-name{font-size:14px;font-weight:600;color:#0f1f3d;}
-.user-row .user-pass{font-size:12px;color:#9aabb8;}
-.btn-del-user{background:none;border:none;cursor:pointer;color:#9aabb8;font-size:16px;padding:4px 6px;border-radius:4px;}
-.btn-del-user:hover{color:#CC1F1F;background:#fee2e2;}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--fx-bg,#f8fafc);border-radius:8px;margin-bottom:6px;}
+.user-row .user-name{font-size:14px;font-weight:600;color:var(--fx-tx,#0f1f3d);}
+.user-row .user-pass{font-size:12px;color:var(--fx-tx4,#9aabb8);}
+.btn-del-user{background:none;border:none;cursor:pointer;color:var(--fx-tx4,#9aabb8);font-size:16px;padding:4px 6px;border-radius:4px;}
+.btn-del-user:hover{color:var(--fx-ac,#CC1F1F);background:var(--fx-erbg,#fee2e2);}
 .add-user-form{display:flex;gap:8px;margin-top:12px;}
 .add-user-form input{flex:1;padding:9px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;}
-.add-user-form input:focus{border-color:#0f1f3d;}
-.btn-add-user{background:#0f1f3d;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.add-user-form input:focus{border-color:var(--fx-hd,#0f1f3d);}
+.btn-add-user{background:var(--fx-hd,#0f1f3d);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
 
 /* ── Export button ── */
-.btn-export{background:#fff;border:1.5px solid #d1dce6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:.15s;}
-.btn-export:hover{border-color:#0f1f3d;color:#0f1f3d;}
-.export-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:6px;}
+.btn-export{background:var(--fx-s1,#fff);border:1.5px solid #d1dce6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--fx-tx2,#374151);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-export:hover{border-color:var(--fx-hd,#0f1f3d);color:var(--fx-tx,#0f1f3d);}
+.export-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--fx-bg,#f8fafc);border-top:1px solid var(--fx-bd,#e2e8f0);flex-wrap:wrap;gap:6px;}
 
 @media(max-width:768px){
   /* Header compacto */
@@ -236,6 +236,8 @@ td.meta-col{color:#6b7280;}
   .modal{width:calc(100vw - 32px);padding:18px;}
 }
 </style>
+<script src="/tema-comum.js"></script>
+<script src="/paleta.js" data-padrao="claro,#0F1F3D" data-dentro=".header-right"></script>
 </head>
 <body>
 
@@ -311,13 +313,13 @@ td.meta-col{color:#6b7280;}
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <button class="cal-nav" onclick="navegarMesModal(-1)" title="Mês anterior" style="flex-shrink:0;">‹</button>
-      <h3 style="margin:0;font-size:15px;color:#0f1f3d;text-align:center;">Configurações · <span id="modal-mes-label"></span></h3>
+      <h3 style="margin:0;font-size:15px;color:var(--fx-tx,#0f1f3d);text-align:center;">Configurações · <span id="modal-mes-label"></span></h3>
       <button class="cal-nav" onclick="navegarMesModal(1)" title="Próximo mês" style="flex-shrink:0;">›</button>
     </div>
     <div class="modal-section-title">Metas mensais (R$)</div>
     <div class="modal-grid" id="modal-inputs"></div>
-    <div class="modal-section-title">Feriados / dias não úteis <span id="modal-du-label" style="font-size:11px;font-weight:400;color:#9aabb8;"></span></div>
-    <div style="font-size:11px;color:#9aabb8;margin-bottom:8px;">Clique em um dia útil (seg–sáb) para marcar como feriado</div>
+    <div class="modal-section-title">Feriados / dias não úteis <span id="modal-du-label" style="font-size:11px;font-weight:400;color:var(--fx-tx4,#9aabb8);"></span></div>
+    <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:8px;">Clique em um dia útil (seg–sáb) para marcar como feriado</div>
     <div id="modal-cal-feriados" class="modal-cal"></div>
     <div class="modal-du-info" id="modal-du-info"></div>
     <div class="modal-btns">
@@ -345,10 +347,10 @@ td.meta-col{color:#6b7280;}
 <div class="modal-bg" id="modal-login">
   <div class="modal" style="width:360px;max-width:calc(100vw - 32px);">
     <div class="cli-modal-header" style="margin-bottom:8px;">
-      <h3 style="margin:0;font-size:15px;color:#0f1f3d;">🔒 Acesso restrito</h3>
+      <h3 style="margin:0;font-size:15px;color:var(--fx-tx,#0f1f3d);">🔒 Acesso restrito</h3>
       <button class="cli-modal-close" onclick="fecharLogin()">✕</button>
     </div>
-    <p style="font-size:12px;color:#9aabb8;margin:0 0 18px;">Área de clientes protegida. Entre com o mesmo e-mail e senha do App de descontos.</p>
+    <p style="font-size:12px;color:var(--fx-tx4,#9aabb8);margin:0 0 18px;">Área de clientes protegida. Entre com o mesmo e-mail e senha do App de descontos.</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <input id="login-user" type="email" class="login-input" placeholder="E-mail do FOXNET (ex.: nome@redefox.com.br)" autocomplete="username">
       <input id="login-pass" type="password" class="login-input" placeholder="Senha" autocomplete="current-password"
@@ -363,17 +365,17 @@ td.meta-col{color:#6b7280;}
 <div class="modal-bg" id="modal-usuarios">
   <div class="modal" style="width:480px;max-width:calc(100vw - 32px);">
     <div class="cli-modal-header" style="margin-bottom:16px;">
-      <h3 style="margin:0;font-size:15px;color:#0f1f3d;">👥 Gerenciar usuários</h3>
+      <h3 style="margin:0;font-size:15px;color:var(--fx-tx,#0f1f3d);">👥 Gerenciar usuários</h3>
       <button class="cli-modal-close" onclick="fecharUsuarios()">✕</button>
     </div>
-    <p style="font-size:12px;color:#9aabb8;margin:0 0 12px;">Usuários com acesso à área de clientes e exportação.</p>
+    <p style="font-size:12px;color:var(--fx-tx4,#9aabb8);margin:0 0 12px;">Usuários com acesso à área de clientes e exportação.</p>
     <div id="lista-usuarios"></div>
     <div class="add-user-form">
       <input id="novo-user" type="text" placeholder="Usuário" autocomplete="off">
       <input id="novo-pass" type="password" placeholder="Senha" autocomplete="off">
       <button class="btn-add-user" onclick="adicionarUsuario()">+ Adicionar</button>
     </div>
-    <p id="user-msg" style="font-size:12px;margin-top:8px;color:#16a34a;display:none;"></p>
+    <p id="user-msg" style="font-size:12px;margin-top:8px;color:var(--fx-oktx,#16a34a);display:none;"></p>
   </div>
 </div>
 
@@ -834,14 +836,14 @@ function renderDia(rows) {
     const v    = data.valor;
     const qtdCli = hasNomeCli ? data.clientes.length : (data.qtdClientes || '');
     const qtdIt  = data.qtdItens || '';
-    const rowClick = hasDetail ? `style="border-bottom:1px solid #f0f4f8;cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"` : 'style="border-bottom:1px solid #f0f4f8;"';
-    const tdCli = (hasQtdCli || hasNomeCli) ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#374151;">${qtdCli}</td>` : '';
-    const tdIt  = hasQtdIt ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:#374151;">${qtdIt}</td>` : '';
+    const rowClick = hasDetail ? `style="border-bottom:1px solid var(--fx-bd,#f0f4f8);cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"` : 'style="border-bottom:1px solid var(--fx-bd,#f0f4f8);"';
+    const tdCli = (hasQtdCli || hasNomeCli) ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:var(--fx-tx2,#374151);">${qtdCli}</td>` : '';
+    const tdIt  = hasQtdIt ? `<td style="padding:14px 12px;font-size:14px;text-align:center;color:var(--fx-tx2,#374151);">${qtdIt}</td>` : '';
     return `
     <tr ${rowClick}>
-      <td style="padding:14px 16px;font-size:15px;font-weight:800;color:#1a2332;text-align:left;">${op.nome.toUpperCase()}</td>
+      <td style="padding:14px 16px;font-size:15px;font-weight:800;color:var(--fx-tx,#1a2332);text-align:left;">${op.nome.toUpperCase()}</td>
       ${tdCli}${tdIt}
-      <td style="padding:14px 16px;font-size:15px;font-weight:700;color:#1a2332;text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db"></span>'}</td>
+      <td style="padding:14px 16px;font-size:15px;font-weight:700;color:var(--fx-tx,#1a2332);text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db"></span>'}</td>
     </tr>`;
   }).join('');
 
@@ -857,7 +859,7 @@ function renderDia(rows) {
   <div class="table-wrap" style="margin-top:16px;">
     <table style="font-size:14px;">
       <thead>
-        <tr style="background:#0f1f3d;">
+        <tr style="background:var(--fx-hd,#0f1f3d);">
           <th style="padding:14px 16px;text-align:left;font-size:14px;color:#fff;">Vendedor</th>
           ${thCli}${thIt}
           <th style="padding:14px 16px;text-align:right;font-size:14px;color:#fff;">Faturamento do dia</th>
@@ -865,7 +867,7 @@ function renderDia(rows) {
       </thead>
       <tbody>
         ${linhas}
-        <tr style="background:#0f1f3d;font-weight:800;${hasDetail?'cursor:pointer;':''}"
+        <tr style="background:var(--fx-hd,#0f1f3d);font-weight:800;${hasDetail?'cursor:pointer;':''}"
             ${hasDetail ? `onclick="abrirSetor()" title="Ver todos os clientes do setor"` : ''}>
           <td style="padding:14px 16px;font-size:15px;text-align:left;color:#fff;">TOTAL DO DIA${hasDetail ? ' &nbsp;<span style="font-size:12px;opacity:.7;">🏢 Setor</span>' : ''}</td>
           ${tdTotCli}${tdTotIt}
@@ -875,7 +877,7 @@ function renderDia(rows) {
     </table>
     ${rowsDia.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas nesta data.</div>' : ''}
     <div class="export-bar">
-      ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
+      ${hasDetail ? '<p style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin:0;"></p>'}
       <button class="btn-export" onclick="exportarXLSX(null)">⬇ Exportar Excel</button>
     </div>
   </div>`;
@@ -926,12 +928,12 @@ function renderPeriodo(rows) {
     const data = porOp[op.codigo];
     const v    = data.valor;
     const rowClick = hasDetail
-      ? `style="border-bottom:1px solid #f0f4f8;cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"`
-      : 'style="border-bottom:1px solid #f0f4f8;"';
+      ? `style="border-bottom:1px solid var(--fx-bd,#f0f4f8);cursor:pointer;" onclick="abrirClientes('${op.codigo}','${op.nome.replace(/'/g,"\\'")}')"`
+      : 'style="border-bottom:1px solid var(--fx-bd,#f0f4f8);"';
     return `
     <tr ${rowClick}>
-      <td style="padding:16px 16px;font-size:15px;font-weight:800;color:#1a2332;text-align:left;">${op.nome.toUpperCase()}</td>
-      <td style="padding:16px 16px;font-size:16px;font-weight:700;color:#1a2332;text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db"></span>'}</td>
+      <td style="padding:16px 16px;font-size:15px;font-weight:800;color:var(--fx-tx,#1a2332);text-align:left;">${op.nome.toUpperCase()}</td>
+      <td style="padding:16px 16px;font-size:16px;font-weight:700;color:var(--fx-tx,#1a2332);text-align:right;">${v > 0 ? brl(v) : '<span style="color:#d1d5db"></span>'}</td>
     </tr>`;
   }).join('');
 
@@ -942,14 +944,14 @@ function renderPeriodo(rows) {
     </div>
     <table style="font-size:14px;">
       <thead>
-        <tr style="background:#0f1f3d;">
+        <tr style="background:var(--fx-hd,#0f1f3d);">
           <th style="padding:14px 16px;text-align:left;font-size:14px;color:#fff;">Vendedor</th>
           <th style="padding:14px 16px;text-align:right;font-size:14px;color:#fff;">Faturamento no período</th>
         </tr>
       </thead>
       <tbody>
         ${linhas}
-        <tr style="background:#0f1f3d;font-weight:800;${hasDetail?'cursor:pointer;':''}"
+        <tr style="background:var(--fx-hd,#0f1f3d);font-weight:800;${hasDetail?'cursor:pointer;':''}"
             ${hasDetail ? `onclick="abrirSetor()" title="Ver todos os clientes do setor"` : ''}>
           <td style="padding:16px 16px;font-size:15px;text-align:left;color:#fff;font-weight:800;">TOTAL DO PERÍODO${hasDetail ? ' &nbsp;<span style="font-size:12px;opacity:.7;">🏢 Setor</span>' : ''}</td>
           <td style="padding:16px 16px;font-size:17px;text-align:right;color:#fff;font-weight:800;">${brl(total)}</td>
@@ -958,7 +960,7 @@ function renderPeriodo(rows) {
     </table>
     ${rowsPer.length === 0 ? '<div class="erro" style="margin:16px">Sem vendas registradas neste período.</div>' : ''}
     <div class="export-bar">
-      ${hasDetail ? '<p style="font-size:11px;color:#9aabb8;margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:#9aabb8;margin:0;"></p>'}
+      ${hasDetail ? '<p style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin:0;">💡 Clique na linha do vendedor (ou no total) para ver os clientes</p>' : '<p style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin:0;"></p>'}
       <button class="btn-export" onclick="exportarXLSX(null)">⬇ Exportar Excel</button>
     </div>
   </div>`;
@@ -1097,7 +1099,7 @@ function render(rows) {
     </div>
     <div class="kpi">
       <div class="kpi-label">Faturamento do setor</div>
-      <div class="kpi-valor" style="color:#9aabb8;font-size:16px;">Aguardando dados</div>
+      <div class="kpi-valor" style="color:var(--fx-tx4,#9aabb8);font-size:16px;">Aguardando dados</div>
       <div class="kpi-sub">sync ainda não executado</div>
     </div>
   ` : `
@@ -1162,17 +1164,17 @@ function render(rows) {
       `<td class="dia-col" style="font-size:13px">${op.porDia[d] ? brl(op.porDia[d]) : ''}</td>`
     ).join('');
     const fatCol = semDados
-      ? `<td style="font-size:14px;color:#9aabb8;font-weight:500">aguardando</td>`
-      : `<td style="font-size:15px;font-weight:700;color:#1a2332">${brl(op.totalMes)}</td>`;
+      ? `<td style="font-size:14px;color:var(--fx-tx4,#9aabb8);font-weight:500">aguardando</td>`
+      : `<td style="font-size:15px;font-weight:700;color:var(--fx-tx,#1a2332)">${brl(op.totalMes)}</td>`;
     const precisaCol = semDados
-      ? `<td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaOp)}/dia</td>`
-      : `<td style="font-size:13px;font-weight:600;color:#1a2332">${brl(op.precisaRestante)}</td>`;
+      ? `<td style="font-size:13px;font-weight:600;color:var(--fx-tx,#1a2332)">${brl(op.precisaOp)}/dia</td>`
+      : `<td style="font-size:13px;font-weight:600;color:var(--fx-tx,#1a2332)">${brl(op.precisaRestante)}</td>`;
     const pctCol = semDados
-      ? `<td style="color:#9aabb8;font-size:13px;"></td>`
+      ? `<td style="color:var(--fx-tx4,#9aabb8);font-size:13px;"></td>`
       : `<td style="text-align:center"><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td>`;
     return `
     <tr class="${rowClass}">
-      <td style="font-size:16px;font-weight:800;color:#1a2332">${op.nome.toUpperCase()}</td>
+      <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">${op.nome.toUpperCase()}</td>
       <td class="meta-col" style="font-size:15px;font-weight:700">${brl(op.metaOp)}</td>
       ${diasCols}
       ${fatCol}
@@ -1183,12 +1185,12 @@ function render(rows) {
 
   // Banner de aviso quando sem dados
   const bannerSemDados = ehMesAtualSemDados
-    ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
+    ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--fx-avtx,#92400e);display:flex;align-items:center;gap:10px;">
         ⏳ <div><strong>${MESES_NOME[mes-1]} ${ano}</strong> · Aguardando dados do mês.<br>
-        <span style="font-size:12px;color:#b45309;">As vendas aparecerão aqui após a primeira sincronização com o Movere.</span></div>
+        <span style="font-size:12px;color:var(--fx-avtx,#b45309);">As vendas aparecerão aqui após a primeira sincronização com o Movere.</span></div>
       </div>`
     : (ehMesPassadoSemDados
-      ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:#6b7280;">
+      ? `<div style="background:var(--fx-bg,#f8fafc);border:1px solid var(--fx-bd,#e2e8f0);border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--fx-tx3,#6b7280);">
           📭 Sem vendas registradas para <strong>${MESES_NOME[mes-1]} ${ano}</strong>.
         </div>`
       : '');
@@ -1220,26 +1222,26 @@ function render(rows) {
       <tbody>
         ${linhas}
         <tr class="total-row ${semDados?'':Math.round(pctMeta)>=pctDesejado?'row-verde':'row-vermelho'}">
-          <td style="font-size:16px;font-weight:800;color:#1a2332">TOTAL SETOR</td>
+          <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">TOTAL SETOR</td>
           <td class="meta-col">${brl(metaSetorTotal)}</td>
           ${colDiasTotals}
           ${semDados
-            ? `<td style="font-size:14px;color:#9aabb8;font-weight:500">aguardando</td>`
+            ? `<td style="font-size:14px;color:var(--fx-tx4,#9aabb8);font-weight:500">aguardando</td>`
             : `<td>${brl(totalMes)}</td>`}
           ${semDados
-            ? `<td style="font-size:13px;font-weight:700;color:#1a2332">${brl(metaSetorTotal/duTotal)}/dia</td>`
+            ? `<td style="font-size:13px;font-weight:700;color:var(--fx-tx,#1a2332)">${brl(metaSetorTotal/duTotal)}/dia</td>`
             : `<td>${brl(precisaPorDia)}</td>`}
           ${semDados
-            ? `<td style="color:#9aabb8;"></td>`
+            ? `<td style="color:var(--fx-tx4,#9aabb8);"></td>`
             : `<td><span class="pct-badge ${Math.round(pctMeta)>=pctDesejado?'verde':'vermelho'}">${pct(pctMeta)}</span></td>`}
         </tr>
       </tbody>
     </table>
     ${!semDados ? `<div class="legenda">
       <div class="leg-item"><span class="leg-dot" style="background:#16a34a"></span> No ritmo (% atingido ≥ % desejado do dia)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#CC1F1F"></span> Abaixo do ritmo</div>
+      <div class="leg-item"><span class="leg-dot" style="background:var(--fx-ac,#CC1F1F)"></span> Abaixo do ritmo</div>
       <span style="margin-left:auto">Ordenado pelo maior % atingido</span>
-    </div>` : `<div style="padding:10px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#9aabb8;">${duTotal} dias úteis em ${MESES_NOME[mes-1]} · ${duRestantes} dias restantes</div>`}
+    </div>` : `<div style="padding:10px 12px;background:var(--fx-bg,#f8fafc);border-top:1px solid var(--fx-bd,#e2e8f0);font-size:11px;color:var(--fx-tx4,#9aabb8);">${duTotal} dias úteis em ${MESES_NOME[mes-1]} · ${duRestantes} dias restantes</div>`}
   </div>`;
 }
 
@@ -1353,7 +1355,7 @@ function renderModal() {
       <label>${op.nome}</label>
       <div style="display:flex;flex-direction:column;gap:4px;">
         <input type="number" id="inp-${op.codigo}" value="${metasMod[op.codigo]||0}" step="10000" oninput="previewMetas()" style="width:100%;">
-        <div id="prev-${op.codigo}" style="font-size:11px;color:#9aabb8;padding:0 2px;">
+        <div id="prev-${op.codigo}" style="font-size:11px;color:var(--fx-tx4,#9aabb8);padding:0 2px;">
           Meta 2: ${brl((metasMod[op.codigo]||0)*1.1)} &nbsp;·&nbsp; Meta 3: ${brl((metasMod[op.codigo]||0)*1.2)}
         </div>
       </div>
@@ -1495,7 +1497,7 @@ function renderListaUsuarios() {
   const usuarios = getUsuarios();
   const el = document.getElementById('lista-usuarios');
   if(!usuarios.length) {
-    el.innerHTML = '<p style="font-size:13px;color:#9aabb8;padding:8px 0;">Nenhum usuário cadastrado.</p>';
+    el.innerHTML = '<p style="font-size:13px;color:var(--fx-tx4,#9aabb8);padding:8px 0;">Nenhum usuário cadastrado.</p>';
     return;
   }
   el.innerHTML = usuarios.map((u, i) => `
@@ -1552,23 +1554,23 @@ function _mostrarSetor() {
     const sorted = [...allClientes].sort((a,b) => b.valor - a.valor);
     const hasData = sorted.some(c => c.data);
     const linhas = sorted.map(c => `<tr>
-      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo||''}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome||''}</td>
-      <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
-      ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : ''}</td>` : ''}
+      <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);color:var(--fx-tx4,#9aabb8);font-size:12px;">${c.codigo||''}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);font-weight:600;color:var(--fx-tx,#1a2332);font-size:13px;">${c.nome||''}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);text-align:right;font-weight:700;color:var(--fx-tx,#1a2332);font-size:13px;">${brl(c.valor)}</td>
+      ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);color:var(--fx-tx4,#9aabb8);font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : ''}</td>` : ''}
     </tr>`).join('');
     document.getElementById('modal-cli-content').innerHTML = `
       <table style="width:100%;border-collapse:collapse;">
-        <thead><tr style="background:#0f1f3d;">
+        <thead><tr style="background:var(--fx-hd,#0f1f3d);">
           <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Código</th>
           <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Cliente</th>
           <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;">Valor</th>
           ${hasData ? '<th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;">Data</th>' : ''}
         </tr></thead>
         <tbody>${linhas}</tbody>
-        <tfoot><tr style="background:#f0f4f8;">
-          <td colspan="2" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total · ${sorted.length} cliente${sorted.length!==1?'s':''}</td>
-          <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalValor)}</td>
+        <tfoot><tr style="background:var(--fx-bg,#f0f4f8);">
+          <td colspan="2" style="padding:10px 12px;font-weight:700;font-size:13px;color:var(--fx-tx,#1a2332);">Total · ${sorted.length} cliente${sorted.length!==1?'s':''}</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:var(--fx-tx,#1a2332);">${brl(totalValor)}</td>
           ${hasData ? '<td></td>' : ''}
         </tr></tfoot>
       </table>`;
@@ -1576,13 +1578,13 @@ function _mostrarSetor() {
     document.getElementById('modal-cli-content').innerHTML = `
       <div style="text-align:center;padding:28px 16px;">
         <div style="font-size:36px;margin-bottom:10px;">🏢</div>
-        <p style="font-size:15px;font-weight:700;color:#0f1f3d;">${totalCli} clientes no setor</p>
-        ${totalItens?`<p style="margin-top:4px;color:#6b7280;font-size:13px;">${totalItens} itens vendidos</p>`:''}
-        <p style="margin-top:10px;font-size:18px;font-weight:800;color:#1a2332;">${brl(totalValor)}</p>
+        <p style="font-size:15px;font-weight:700;color:var(--fx-tx,#0f1f3d);">${totalCli} clientes no setor</p>
+        ${totalItens?`<p style="margin-top:4px;color:var(--fx-tx3,#6b7280);font-size:13px;">${totalItens} itens vendidos</p>`:''}
+        <p style="margin-top:10px;font-size:18px;font-weight:800;color:var(--fx-tx,#1a2332);">${brl(totalValor)}</p>
       </div>`;
   } else {
     document.getElementById('modal-cli-content').innerHTML = `
-      <div style="text-align:center;padding:24px 16px;color:#9aabb8;">
+      <div style="text-align:center;padding:24px 16px;color:var(--fx-tx4,#9aabb8);">
         <p style="font-size:13px;">Detalhes de clientes não disponíveis.</p>
       </div>`;
   }
@@ -1870,10 +1872,10 @@ function _mostrarClientes(codigo, nomeOp) {
     const hasData = clientes.some(c => c.data);
     const linhas = clientes.map(c => `
       <tr>
-        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:12px;">${c.codigo || ''}</td>
-        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;font-weight:600;color:#1a2332;font-size:13px;">${c.nome || ''}</td>
-        <td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;text-align:right;font-weight:700;color:#1a2332;font-size:13px;">${brl(c.valor)}</td>
-        ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid #f0f4f8;color:#9aabb8;font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : ''}</td>` : ''}
+        <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);color:var(--fx-tx4,#9aabb8);font-size:12px;">${c.codigo || ''}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);font-weight:600;color:var(--fx-tx,#1a2332);font-size:13px;">${c.nome || ''}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);text-align:right;font-weight:700;color:var(--fx-tx,#1a2332);font-size:13px;">${brl(c.valor)}</td>
+        ${hasData ? `<td style="padding:9px 12px;border-bottom:1px solid var(--fx-bd,#f0f4f8);color:var(--fx-tx4,#9aabb8);font-size:11px;">${c.data ? c.data.slice(8,10)+'/'+c.data.slice(5,7) : ''}</td>` : ''}
       </tr>`).join('');
 
     const totalV = clientes.reduce((a,c) => a + c.valor, 0);
@@ -1881,7 +1883,7 @@ function _mostrarClientes(codigo, nomeOp) {
     document.getElementById('modal-cli-content').innerHTML = `
       <table style="width:100%;border-collapse:collapse;">
         <thead>
-          <tr style="background:#0f1f3d;">
+          <tr style="background:var(--fx-hd,#0f1f3d);">
             <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Código</th>
             <th style="padding:10px 12px;text-align:left;font-size:12px;color:#fff;font-weight:700;">Cliente</th>
             <th style="padding:10px 12px;text-align:right;font-size:12px;color:#fff;font-weight:700;">Valor</th>
@@ -1890,9 +1892,9 @@ function _mostrarClientes(codigo, nomeOp) {
         </thead>
         <tbody>${linhas}</tbody>
         <tfoot>
-          <tr style="background:#f0f4f8;">
-            <td colspan="${hasData ? 3 : 2}" style="padding:10px 12px;font-weight:700;font-size:13px;color:#1a2332;">Total · ${clientes.length} cliente${clientes.length!==1?'s':''}</td>
-            <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:#1a2332;">${brl(totalV)}</td>
+          <tr style="background:var(--fx-bg,#f0f4f8);">
+            <td colspan="${hasData ? 3 : 2}" style="padding:10px 12px;font-weight:700;font-size:13px;color:var(--fx-tx,#1a2332);">Total · ${clientes.length} cliente${clientes.length!==1?'s':''}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:800;font-size:14px;color:var(--fx-tx,#1a2332);">${brl(totalV)}</td>
             ${hasData ? '<td></td>' : ''}
           </tr>
         </tfoot>
@@ -1903,15 +1905,15 @@ function _mostrarClientes(codigo, nomeOp) {
     document.getElementById('modal-cli-content').innerHTML = `
       <div style="text-align:center;padding:28px 16px;">
         <div style="font-size:36px;margin-bottom:10px;">👥</div>
-        <p style="font-size:15px;font-weight:700;color:#0f1f3d;">${data.qtdClientes} cliente${data.qtdClientes!==1?'s':''}</p>
-        ${data.qtdItens ? `<p style="margin-top:4px;color:#6b7280;font-size:13px;">${data.qtdItens} itens vendidos</p>` : ''}
-        <p style="margin-top:10px;font-size:18px;font-weight:800;color:#1a2332;">${brl(data.valor)}</p>
+        <p style="font-size:15px;font-weight:700;color:var(--fx-tx,#0f1f3d);">${data.qtdClientes} cliente${data.qtdClientes!==1?'s':''}</p>
+        ${data.qtdItens ? `<p style="margin-top:4px;color:var(--fx-tx3,#6b7280);font-size:13px;">${data.qtdItens} itens vendidos</p>` : ''}
+        <p style="margin-top:10px;font-size:18px;font-weight:800;color:var(--fx-tx,#1a2332);">${brl(data.valor)}</p>
       </div>`;
 
   } else {
     // Sem dados de cliente
     document.getElementById('modal-cli-content').innerHTML = `
-      <div style="text-align:center;padding:28px 16px;color:#9aabb8;">
+      <div style="text-align:center;padding:28px 16px;color:var(--fx-tx4,#9aabb8);">
         <div style="font-size:36px;margin-bottom:10px;">📋</div>
         <p style="font-size:13px;">Detalhes de clientes não disponíveis.</p>
       </div>`;
