@@ -56,6 +56,40 @@
   };
   window.addEventListener("storage", e => { if (e.key === CHAVE) avisar(); });
 
+  // ── Limite de tentativas de login (todas as telas de login) — decisão do TI ──
+  // 5 senhas erradas seguidas no mesmo e-mail → espera de 5 min; se errar de novo: 15 min, depois 30 min.
+  // Guardado neste navegador. No servidor, o Supabase também limita as tentativas por internet
+  // (todos de uma loja saem pela mesma internet, por isso lá o limite não é baixo).
+  const TENT = "fox_login_tentativas", MAX = 5, ESPERA = [5, 15, 30];
+  const lerT = () => { try { return JSON.parse(localStorage.getItem(TENT) || "{}"); } catch (e) { return {}; } };
+  const gravarT = t => { try { localStorage.setItem(TENT, JSON.stringify(t)); } catch (e) {} };
+  window.FoxLogin = {
+    // Igual a cli.auth.signInWithPassword({email, password}); o erro traz "mensagem" pronta para a tela
+    async entrar(cli, cred) {
+      const email = String((cred && cred.email) || "").trim().toLowerCase(), t = lerT(), e = t[email] || {n: 0, b: 0, ate: 0};
+      if (e.ate > Date.now()) {
+        const min = Math.ceil((e.ate - Date.now()) / 60000);
+        return {data: {}, error: {message: "travado", travado: true,
+          mensagem: `Muitas tentativas erradas. Por segurança, espere ${min} minuto${min > 1 ? "s" : ""} e tente de novo. Esqueceu a senha? Fale com o TI.`}};
+      }
+      const r = await cli.auth.signInWithPassword(cred);
+      if (!r.error) { delete t[email]; gravarT(t); return r; }
+      const st = r.error.status, msg = String(r.error.message || "");
+      if (st === 429 || /rate limit|too many/i.test(msg)) {
+        r.error.mensagem = "Muitas tentativas nesta internet. Espere alguns minutos e tente de novo.";
+        return r;
+      }
+      if (st === 400 || /invalid login|credentials/i.test(msg)) {
+        e.n++;
+        if (e.n >= MAX) { e.ate = Date.now() + ESPERA[Math.min(e.b, ESPERA.length - 1)] * 60000; e.b++; e.n = 0;
+          r.error.mensagem = `Senha errada ${MAX} vezes. Por segurança, este e-mail ficou travado por ${ESPERA[Math.min(e.b - 1, ESPERA.length - 1)]} minutos. Esqueceu a senha? Fale com o TI.`; }
+        else r.error.mensagem = "E-mail ou senha incorretos." + (MAX - e.n <= 2 ? ` Atenção: mais ${MAX - e.n} tentativa${MAX - e.n > 1 ? "s" : ""} errada${MAX - e.n > 1 ? "s" : ""} e o acesso fica travado por alguns minutos.` : "");
+        t[email] = e; gravarT(t);
+      }
+      return r;
+    },
+  };
+
   // ── A raposa (logo) de qualquer sistema volta para a intranet (FOXNET) — decisão do TI ──
   // Vale em todas as telas que carregam este arquivo, inclusive nas telas de login. No próprio FOXNET a
   // raposa já leva ao início, então ali não muda nada. Leva a cor escolhida junto (endereços diferentes).

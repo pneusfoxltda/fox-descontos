@@ -525,11 +525,11 @@ async function doLogin() {
   if (!email || !pass) { err.textContent = "Informe e-mail e senha."; err.style.display = "block"; return; }
   btn.disabled = true; btn.textContent = "Entrando...";
   try {
-    let { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    let { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sb, { email, password: pass }) : sb.auth.signInWithPassword({ email, password: pass }));
     // Primeira senha = e-mail em minúsculas: aceita também se a pessoa digitou com maiúsculas
-    if (error && pass !== pass.toLowerCase() && pass.trim().toLowerCase() === email)
+    if (error && !error.travado && pass !== pass.toLowerCase() && pass.trim().toLowerCase() === email)
       ({ data, error } = await sb.auth.signInWithPassword({ email, password: email }));
-    if (error) { err.textContent = "E-mail ou senha incorretos."; err.style.display = "block"; }
+    if (error) { err.textContent = error.mensagem || "E-mail ou senha incorretos."; err.style.display = "block"; }
     else { const r = await entrar(data.session); if (r && r.erro) { err.textContent = r.erro; err.style.display = "block"; } }
   } catch (e) { err.textContent = "Erro ao conectar. Tente novamente."; err.style.display = "block"; }
   btn.disabled = false; btn.textContent = "Entrar";

@@ -299,6 +299,21 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - Próximas etapas combinadas: backup diário trancado com senha (segredo no GitHub), 3 linhas nos
   Apps Scripts para o monitor ver os e-mails, e anotar erros das telas.
 
+## 🛡️ Segurança (os 8 ataques comuns de sistemas feitos com IA) — conferido em 23/11/2026
+
+- ✅ Rotas expostas (RLS confere o dono), chaves expostas (só a anon no histórico do repositório),
+  banco aberto (Monitor: 0 tabelas sem RLS), SQL injection (tudo pelo PostgREST/RPC com parâmetros),
+  prompt injection (Fernanda sem IA externa), pacotes (poucos e conhecidos; `npm audit` 0).
+- **XSS**: todo texto do banco/Movere entra na tela com `esc()` (Consulta, Televendas, Ligações, /admin,
+  Monitor; o App é React). Cabeçalhos de segurança em `vercel.json` (nosniff, SAMEORIGIN, Referrer-Policy,
+  Permissions-Policy, CSP `frame-ancestors 'self'; object-src 'none'; base-uri 'self'`). Texto novo na tela: use `esc()`.
+- **Limite de tentativas de login** (`FoxLogin.entrar` em `tema-comum.js`, usado nas 6 telas de login):
+  5 senhas erradas seguidas no mesmo e-mail travam 5 min (depois 15 e 30); aviso a partir da 3ª.
+  O Supabase também limita por internet (deixar o padrão: todos de uma loja saem pela mesma internet).
+- Ponto fraco conhecido: senha inicial = e-mail. O Monitor lista quem ainda não trocou (🔴 após 3 dias).
+- Pendentes: apagar senhas antigas (`usuarios`, `usuarios_televendas`) e tirar o "👥 Usuários" antigo do
+  Televendas; Dependabot; travar versões dos pacotes dos robôs.
+
 ## Próximos passos (em ordem)
 
 1. ✅ **Trancar o banco (RLS)** — CONCLUÍDO em 21/11/2026. Passos 06, 07 e 08 rodados no

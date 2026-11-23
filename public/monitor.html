@@ -131,8 +131,9 @@ async function entrar(sessao) {
 }
 $("l-entrar").onclick = async () => {
   $("l-erro").textContent = "";
-  const { data, error } = await sb.auth.signInWithPassword({email: $("l-email").value.trim().toLowerCase(), password: $("l-senha").value});
-  if (error) { $("l-erro").textContent = "E-mail ou senha incorretos."; return; }
+  const cred = {email: $("l-email").value.trim().toLowerCase(), password: $("l-senha").value};
+  const { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sb, cred) : sb.auth.signInWithPassword(cred));
+  if (error) { $("l-erro").textContent = error.mensagem || "E-mail ou senha incorretos."; return; }
   entrar(data.session);
 };
 $("l-senha").addEventListener("keydown", e => { if (e.key === "Enter") $("l-entrar").click(); });
@@ -172,10 +173,12 @@ async function paginas() {
 async function carregar() {
   $("bt-atualizar").disabled = true; $("atualizado").textContent = "Carregando…";
   contagem = {vd: 0, am: 0, vm: 0};
-  const [resumo, gh, pags] = await Promise.all([
+  const [resumo, gh, pags, senhaInicial] = await Promise.all([
     sb.rpc("monitor_resumo"),
     Promise.all(ROBOS.map(r => rodadasGithub(r.arq))),
     paginas(),
+    // Quem ainda entra com a senha inicial (= o próprio e-mail): o admin lê todos os perfis
+    sb.from("perfis").select("nome,apelido,loja,criado_em").eq("trocar_senha", true).eq("ativo", true).order("loja"),
   ]);
   $("bt-atualizar").disabled = false;
   if (resumo.error) {
@@ -290,6 +293,14 @@ async function carregar() {
     const n = (R.senhas_usuarios || 0) + (R.senhas_televendas || 0);
     corpo += item(n ? "am" : "vd", "Senhas antigas legíveis (tabelas usuarios / usuarios_televendas)", n ? "passo 2 dos próximos passos: apagar essas senhas" : "nenhuma", n);
   }
+  // Senha inicial ainda não trocada: é a mais fácil de adivinhar (o próprio e-mail)
+  if (senhaInicial && !senhaInicial.error) {
+    const sp = senhaInicial.data || [], velhos = sp.filter(p => horas(p.criado_em) > 72);
+    corpo += item(velhos.length ? "vm" : sp.length ? "am" : "vd", "Ainda com a senha inicial (o próprio e-mail)",
+      sp.length ? `peça para entrarem e criarem a senha. Há mais de 3 dias: ${velhos.length}<br>` +
+        sp.map(p => `<span class="tag" title="cadastrado ${quando(p.criado_em)}">${esc(p.apelido || p.nome)}${p.loja ? " · " + esc(p.loja) : ""}</span>`).join("") : "todos já criaram a senha própria", sp.length);
+  }
+  corpo += item("vd", "Limite de tentativas de login", "5 senhas erradas seguidas no mesmo e-mail travam por 5 min (depois 15 e 30 min); o Supabase também limita por internet");
   const mb = (R.banco_bytes || 0) / 1048576;
   corpo += item(mb > 400 ? "vm" : mb > 300 ? "am" : "vd", "Espaço do banco (plano grátis: 500 MB)", `<div class="prog"><i style="width:${Math.min(100, mb / 5).toFixed(1)}%"></i></div>`, mb.toFixed(1) + " MB");
   html.push(secao("🔒 Supabase: segurança e espaço", "", corpo));

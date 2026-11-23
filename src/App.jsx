@@ -643,8 +643,8 @@ export default function App(){
     const email=loginForm.email.trim().toLowerCase(),senha=loginForm.pass;
     if(!email||!senha){setLoginErr("Informe e-mail e senha.");return;}
     setLoginErr("");
-    const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
-    if(error){setLoginErr("E-mail ou senha incorretos.");return;}
+    const {data,error}=await (window.FoxLogin?window.FoxLogin.entrar(sb,{email,password:senha}):sb.auth.signInWithPassword({email,password:senha}));
+    if(error){setLoginErr(error.mensagem||"E-mail ou senha incorretos.");return;}
     const s=await entrarComSessao(data.session);if(!s)return;
     setTab(destinoInicial(s));registrarLogin(s.email,s.username);
   };
