@@ -256,6 +256,21 @@ def rodar() -> int:
     return codigo
 
 
+def ja_enviado(cli, chave, turno: str, hoje: date) -> bool:
+    """Já houve rodada de verdade (não teste) deste turno hoje? (lê o registro das rodadas)"""
+    inicio_dia = datetime(hoje.year, hoje.month, hoje.day, tzinfo=TZ_LOJA).astimezone(timezone.utc).isoformat()
+    try:
+        r = cli.get(f"{SUPABASE_URL}/rest/v1/robo_execucoes", headers=sb_headers(chave), params={
+            "select": "detalhes", "robo": "eq.avisos_ligacoes", "ok": "eq.true", "teste": "eq.false",
+            "inicio": f"gte.{inicio_dia}", "limit": "50"})
+        if r.status_code != 200:
+            return False
+        return any((x.get("detalhes") or {}).get("turno") == turno and not (x.get("detalhes") or {}).get("repetido")
+                   for x in r.json())
+    except httpx.HTTPError:
+        return False
+
+
 # ── Principal ─────────────────────────────────────────────────────────────────
 def main() -> int:
     chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
@@ -282,6 +297,12 @@ def main() -> int:
                          json={"id": 1, "chave_publica": publica, "chave_privada": privada}).raise_for_status()
             print("🔑 Chave dos avisos criada (agora as pessoas já podem ligar os avisos)")
 
+        # O mesmo aviso (turno) não sai duas vezes no dia: o robô pode ser acordado pelo despertador
+        # (Sync Televendas) e também pelo horário agendado do GitHub, que às vezes chega atrasado.
+        if not dry and ja_enviado(cli, chave, turno, hoje):
+            print(f"✅ O aviso '{turno}' de hoje já foi enviado. Nada a fazer.")
+            DETALHES.update(turno=turno, repetido=True)
+            return 0
         inscs = sb_get(cli, chave, "push_inscricoes?select=id,perfil_id,endpoint,p256dh,auth,falhas")
         print(f"📱 Aparelhos com aviso: {len(inscs)}")
         DETALHES.update(turno=turno, aparelhos=len(inscs), chave_pronta=True)

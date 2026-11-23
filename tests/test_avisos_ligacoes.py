@@ -129,7 +129,7 @@ def test_gerente_ve_a_loja_e_quem_falta():
 
 
 # ── Rodada completa com a rede imitada ──
-def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1", via_rodar=False):
+def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1", via_rodar=False, ja=()):
     ap = Aparelho()
     reg = {"push": [], "config": [], "patch": [], "delete": []}
     pub, priv = av.nova_chave()
@@ -138,6 +138,8 @@ def _rodar(conf_existe=True, status_push=201, dry=False, turno="manha1", via_rod
         u = unquote(str(req.url))
         if u.startswith(av.SUPABASE_URL):
             if "/robo_execucoes" in u:
+                if req.method == "GET":
+                    return httpx.Response(200, json=[{"detalhes": {"turno": t}} for t in ja])
                 reg.setdefault("rodadas", []).append(json.loads(req.content)); return httpx.Response(201)
             if "/push_config" in u:
                 if req.method == "POST":
@@ -205,6 +207,12 @@ def test_rodada_fica_registrada_para_o_monitor():
     r = reg["rodadas"][-1]
     assert codigo == 0 and r["robo"] == "avisos_ligacoes" and r["ok"] is True
     assert r["detalhes"]["enviados"] == 1 and r["detalhes"]["turno"] == "manha1" and r["detalhes"]["aparelhos"] == 1
+
+def test_mesmo_aviso_nao_sai_duas_vezes_no_dia():
+    codigo, reg = _rodar(ja=("manha1",))
+    assert codigo == 0 and reg["push"] == []            # o "bom dia" de hoje já tinha saído
+    codigo, reg = _rodar(ja=("manha1",), turno="manha2")
+    assert codigo == 0 and len(reg["push"]) == 1        # o próximo turno sai normalmente
 
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
