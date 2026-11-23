@@ -254,6 +254,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **Medida do pneu** (`ligacoes.medida`, SQL `14_ligacoes_medida.sql`).
 - **Nome do cliente** aparece sem o telefone que às vezes vem junto do Movere (`nomeCli`: tira
   sequências com 8+ dígitos; só na tela, o dado no banco não muda).
+  **Corrigir o nome** pela tela: ✏️ ao lado do nome (vendedor responsável, gerente da loja, admin),
+  `renomear_cliente` (SQL `21_editar_nome_cliente.sql`); fica no histórico como "Nome corrigido" e não conta
+  como trabalho no Dashboard. O robô não sobrescreve (só insere clientes novos).
 - **Histórico** na tela: só **admin** e **gerente da loja** (o gerente de todas as lojas não vê a
   coluna; o histórico só alimenta o Dashboard dele). Decisão do TI.
 - **Paleta de cores** (🎨 ▾ no topo das Ligações): Claro / Escuro / Dispositivo + 15 cores + conta-gotas
