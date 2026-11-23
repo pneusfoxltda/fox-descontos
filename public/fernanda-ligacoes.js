@@ -41,7 +41,7 @@
     const fizHoje = meus.filter(l => String(l.status_em || "").slice(0, 10) === hoje && F.ehMeu(l));
     const ganhas = meus.filter(l => l.status === "venda_ganha");
     const sistema = meus.filter(l => F.ehTv(l.status));
-    const trabalhados = meus.filter(l => l.status !== "pendente" && !(F.ehRobo(l.status_por) && !l.obs)).length;
+    const trabalhados = meus.filter(l => l.status !== "pendente" && !F.ehRobo(l.status_por)).length;   // robô (Movere/Kommo) não conta
     return {meus, deOntem, deOntemFalta: deOntem.filter(l => l.status === "pendente"), semContato, agHoje, agAtras, agSemData,
             naoAtende, retornar, fizHoje, ganhas, sistema, trabalhados,
             valorAberto: meus.filter(l => ABERTO.includes(l.status)).reduce((t, l) => t + Number(l.valor || 0), 0)};

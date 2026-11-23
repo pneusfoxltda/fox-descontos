@@ -183,6 +183,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Robô nunca dá ponto ao vendedor**: o que o robô muda (venda achada no Movere, agendado no Kommo)
   aparece como "🤖 Sistema (Movere)" / "🤖 Sistema (Kommo)", é atualizado na própria linha (não exclui),
   e no Dashboard fica na coluna "🤖 Venda pelo sistema" (fora das "Vendas ganhas" do vendedor).
+  **Dashboard só conta trabalho de pessoas com o cliente** (`ehSistema` no ligacoes.html): ficam fora
+  do "Trabalhados", "Sem contato", tentativas e ranking os registros dos robôs (Movere/Analytics, Kommo),
+  a "Divisão automática", a troca de responsável e as férias (decisão do TI). Não é preciso apagar dados.
 - **Dias da cotação em ordem crescente** (19/11, 20/11, 21/11, "Os N dias"), decisão do TI.
 - **Divisão automática** (`distribuir_ligacoes`): clientes sem responsável são divididos por igual
   entre os vendedores ativos (não férias) da loja, maiores valores primeiro; a sobra roda

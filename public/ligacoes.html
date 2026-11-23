@@ -424,6 +424,11 @@ const ABAS = [
 const DIAS = 31;
 const POR_PAGINA = 50;
 const ehRobo = quem => String(quem || "").startsWith("Robô");
+// Registro do histórico que NÃO é trabalho com o cliente: robôs (Movere/Analytics, Kommo), a divisão
+// automática, a troca de responsável e as férias. O Dashboard e as tentativas só contam o contato real
+// feito por vendedor ou gerente (decisão do TI).
+const ehSistema = h => ehRobo(h.quem) || /^divis[aã]o autom/i.test(String(h.quem || "")) ||
+  /^Responsável: /.test(String(h.obs || "")) || / de férias/.test(String(h.obs || ""));
 // Quem mudou o status. Mudança do robô aparece como "🤖 Sistema (Movere)" ou "🤖 Sistema (Kommo)":
 // não conta ponto para o vendedor (o Dashboard de vendedores só conta registros de pessoas).
 const quemFez = l => ehRobo(l.status_por) ? "🤖 Sistema" + (/kommo/i.test(l.status_por) ? " (Kommo)" : /movere/i.test(l.status_por) ? " (Movere)" : "")
@@ -867,7 +872,7 @@ function montarMapaHist() {
   (historicoTodo || []).forEach(h => (mapaHist.get(h.ligacao_id) || mapaHist.set(h.ligacao_id, []).get(h.ligacao_id)).push(h));
 }
 const histDe = id => mapaHist.get(id) || [];
-const tentativas = id => Math.max(histDe(id).filter(h => h.status === "nao_atende" && !ehRobo(h.quem)).length,
+const tentativas = id => Math.max(histDe(id).filter(h => h.status === "nao_atende" && !ehSistema(h)).length,
                                   Number((porIdTodas.get(id) || {}).tentativas || 0));
 function nomeStatus(l) {
   const n = (STATUS[l.status] || STATUS.pendente).nome.replace("Liguei, não atende", "Não atendeu");
@@ -1064,7 +1069,7 @@ async function renderDash() {
   const ini = inicioPeriodo();
   const L = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
   const porId = new Map(L.map(l => [l.id, l]));
-  const H = historicoTodo.filter(h => porId.has(h.ligacao_id) && !ehRobo(h.quem));   // só registros de pessoas
+  const H = historicoTodo.filter(h => porId.has(h.ligacao_id) && !ehSistema(h));   // só o trabalho de pessoas com o cliente
   const tocados = new Set(H.map(h => h.ligacao_id));
   const primeiro = new Map(); H.forEach(h => { if (!primeiro.has(h.ligacao_id)) primeiro.set(h.ligacao_id, h.quando); });
 
