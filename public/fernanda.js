@@ -53,7 +53,7 @@ const FE_REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html"
 const FE_NO_FOXNET = !!document.getElementById("tiles") || location.pathname.replace(/index\.html$/,"").replace(/\/+$/,"/") === "/foxnet/";
 function feGo(h){
   const id=h.replace("#/","");
-  if(FE_REAL[id]) { location.href=FE_REAL[id]; return; }
+  if(FE_REAL[id]) { location.href=(window.FoxTema&&FoxTema.noDominioIntranet())?FoxTema.link(FE_REAL[id]):FE_REAL[id]; return; }
   if(FE_NO_FOXNET) location.hash=h; else location.href="/foxnet/"+h;
 }
 function feMenu(i){ if(FE_NO_FOXNET && typeof filtrar==="function"){ filtrar("ia"); return; } location.href="/foxnet/"; }

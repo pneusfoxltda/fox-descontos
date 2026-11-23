@@ -94,7 +94,7 @@ export function ehDominioFoxnet(hostname) {
 export function ehDaIntranet(caminho) {
   return caminho === '/' || caminho === '/foxnet' || caminho.startsWith('/foxnet/') ||
     caminho === '/fernanda.js' || caminho === '/fernanda-ajuda.js' || caminho.startsWith('/vendor/') || caminho === '/favicon.svg' ||
-    caminho === '/favicon.png' || caminho === '/logo-fox.png';
+    caminho === '/favicon.png' || caminho === '/logo-fox.png' || caminho === '/tema-comum.js';
 }
 
 function encaminhar(url, request) {
