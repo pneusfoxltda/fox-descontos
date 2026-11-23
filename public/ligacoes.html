@@ -165,6 +165,8 @@ body.modo-tabela .datas{padding-bottom:2px;} body.modo-tabela .tl td{padding:6px
 body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} body.modo-tabela .cel.mt{max-width:150px;} body.modo-tabela .cel.an{width:170px;} body.modo-tabela .abas{margin:8px 0;} body.modo-tabela .busca{margin-bottom:8px;}
 .mini{display:inline-block;margin-left:6px;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none;}
 .mini.lig{background:#1E3A5F;color:#BFDBFE;} .mini.wa{background:#0F3D24;color:#86EFAC;}
+.mini.wa,.bt-wa{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;} .ico-wa{flex-shrink:0;}
+.mini.lig.off{opacity:.35;cursor:not-allowed;filter:grayscale(1);}
 .mini.wa.forte,.bt-wa.forte{background:#16A34A;color:#fff;box-shadow:0 0 0 2px #22C55E55;animation:pulsa 1.6s infinite;}
 @keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
 .stsel{border:none;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;color-scheme:var(--cs);}
@@ -407,7 +409,11 @@ const STATUS = {
   venda_perdida:    {nome: "Venda perdida"},
   venda_televendas: {nome: "Venda ganha televendas"},
   comprou:          {nome: "Venda ganha televendas"},
+  anotacao:         {nome: "Anotação"},
 };
+// Máximo de tentativas por ligação; depois disso, só pelo WhatsApp (decisão do TI)
+const MAX_TENT = 3;
+const ICONE_WA = '<svg class="ico-wa" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"/></svg>';
 const MANUAIS = ["pendente", "nao_atende", "retornar", "sem_interesse", "agendou", "venda_ganha", "venda_perdida"];
 const FECHADOS = ["venda_ganha", "venda_perdida", "venda_televendas", "comprou"];
 const MOTIVOS_PERDA = ["Preço (achou mais barato)", "Comprou na concorrência", "Desistiu da compra", "Não temos a medida/produto",
@@ -821,8 +827,8 @@ function cartao(l) {
       <div class="val">${fmtR(l.valor)}</div>
     </div>
     ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
-      <a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>
-      ${wa ? `<a class="bt bt-wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp${forte ? " (tente aqui)" : ""}</a>` : ""}</div>` : ""}
+      ${tentativas(l.id) >= MAX_TENT && !FECHADOS.includes(l.status) ? `<span class="bt bt-lig" style="opacity:.4" title="Já foram ${tentativas(l.id)} tentativas">📞 ${tentativas(l.id)} tentativas</span>` : `<a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>`}
+      ${wa ? `<a class="bt bt-wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener">${ICONE_WA}WhatsApp${forte ? " (tente aqui)" : ""}</a>` : ""}</div>` : ""}
     <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
     ${editavel ? `<div class="acao">
       <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${
@@ -854,7 +860,11 @@ async function salvar(id) {
   if (status === "venda_perdida" && !motivo) { toast("Escolha o motivo da venda perdida.", false); $("mp-" + id).style.display = ""; $("mp-" + id).focus(); return; }
   if (status === "venda_perdida" && motivo === "Outro motivo" && !obs) { toast("Escreva qual foi o motivo na observação.", false); $("o-" + id).focus(); return; }
   const l = todas.find(x => x.id === id);
-  if (l) await gravar(l, { status, os, data: dt, motivo, obs });
+  if (!l) return;
+  if (status === "nao_atende" && tentativas(id) >= MAX_TENT) { toast(`Já foram ${MAX_TENT} tentativas por ligação. Agora tente pelo WhatsApp.`, false); return; }
+  // Mesmo status de antes e só a observação mudou: é anotação, não é uma nova ligação
+  if (status === l.status && status !== "nao_atende" && obs && !["venda_ganha", "agendou", "venda_perdida"].includes(status)) { await anotar(l, obs); return; }
+  await gravar(l, { status, os, data: dt, motivo, obs });
 }
 
 async function historico(id) {
@@ -944,6 +954,7 @@ async function gravar(l, novo, ehDesfazer = false) {
   if (error) { toast("Não consegui salvar: " + (error.message || "erro"), false); render(); return false; }
   const quem = perfil.nome || perfil.email, agora = new Date().toISOString();
   Object.assign(l, {status: st, status_em: agora, status_por: quem});
+  if (st === "nao_atende" && !ehDesfazer) l.tentativas = Math.max(Number(l.tentativas || 0), tentativas(l.id)) + 1;
   setTimeout(avisarFernanda, 0);
   if (obs) l.obs = obs;
   if (os) l.os_venda = os; if (data) l.agendado_para = data; if (motivo) l.motivo_perda = motivo;
@@ -975,6 +986,8 @@ function toastDesfazer(msg) {
 // Regras automáticas da tabela
 async function mudouStatus(id, v) {
   const l = todas.find(x => x.id === id);
+  if (v === "nao_atende_mais") v = "nao_atende";
+  if (v === "nao_atende" && tentativas(id) >= MAX_TENT) { toast(`Já foram ${MAX_TENT} tentativas por ligação. Agora tente pelo WhatsApp (mensagem ou ligação pelo WhatsApp).`, false); render(); return; }
   if (v === "venda_ganha") {
     const os = ($("tos-" + id) || {}).value || osEsperando.get(id) || "";
     if (os.trim()) { osEsperando.delete(id); return gravar(l, {status: "venda_ganha", os: os.trim()}); }
@@ -1010,7 +1023,26 @@ async function mudouAnotacao(id, v) {
   }
   if (!v.trim() || v.trim() === (l.obs || "")) return;
   if (!MANUAIS.includes(l.status)) return;
-  await gravar(l, {status: l.status, obs: v});
+  await anotar(l, v.trim());
+}
+// Grava só a anotação: não conta como ligação nem muda o status (SQL 19)
+async function anotar(l, obs) {
+  const { error } = await sb.rpc("anotar_ligacao", { p_id: l.id, p_obs: obs });
+  if (error) {
+    if (/anotar_ligacao|function|schema cache/i.test(error.message || "")) {   // SQL 19 ainda não rodou
+      if (l.status === "nao_atende") { toast("Falta rodar o passo 19 no Supabase para salvar a anotação sem contar ligação. Avise o TI.", false); render(); return false; }
+      return gravar(l, {status: l.status, obs});
+    }
+    toast("Não consegui salvar a anotação: " + error.message, false); render(); return false;
+  }
+  const quem = perfil.nome || perfil.email, h = {ligacao_id: l.id, quando: new Date().toISOString(), quem, status: "anotacao", obs};
+  l.obs = obs;
+  if (historicoTodo) historicoTodo.push(h);
+  (mapaHist.get(l.id) || mapaHist.set(l.id, []).get(l.id)).push(h);
+  salvoId = l.id; setTimeout(() => { if (salvoId === l.id) salvoId = null; }, 4000);
+  toast("Anotação salva 📝 (não conta como ligação)");
+  render();
+  return true;
 }
 function abrirHist(id) { abertos.has(id) ? abertos.delete(id) : abertos.add(id); render(); }
 
@@ -1022,13 +1054,14 @@ function tabela(lista) {
 function linhaTabela(l) {
   const id = l.id, ed = podeEditar(l), fechado = FECHADOS.includes(l.status), dis = (!ed || fechado) ? "disabled" : "";
   const d = dig(l.telefone), wa = linkWa(l), t = tentativas(id), forte = t >= 2 && !fechado;
-  const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("");
+  const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("") +
+    (l.status === "nao_atende" && t < MAX_TENT ? `<option value="nao_atende_mais">📞 Liguei de novo, não atendeu (${t + 1}ª tentativa)</option>` : "");
   const hs = histDe(id), dias = Math.max(0, Math.round((new Date(hojeISO() + "T12:00:00") - new Date(l.data_cotacao + "T12:00:00")) / 864e5));
   const quem = l.status_em ? `<div class="quem">${esc(quemFez(l))} · ${fmtQuando(l.status_em)}</div>` : "";
   const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
     <td class="fx1">${esc(l.cotacao)}</td>
     <td class="fx2">${esc(nomeCli(l))}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
-    <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span><a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp com mensagem pronta"}">WA</a>` : ""}` : ""}</td>
+    <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span>${t >= MAX_TENT && !fechado ? `<span class="mini lig off" title="Já foram ${t} tentativas por ligação: agora tente pelo WhatsApp (mensagem ou ligação)">📞</span>` : `<a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>`}${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp com mensagem pronta"}">${ICONE_WA}WA</a>` : ""}` : ""}</td>
     <td>${esc(cotou(l))}</td>
     <td>${celulaResp(l)}</td>
     <td class="r">${fmtR(l.valor)}</td>

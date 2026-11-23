@@ -240,7 +240,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Formato planilha** (computador ≥ 900 px): tabela com as colunas da planilha do TI. Salva sozinho
   ao mudar a célula, com "↶ Desfazer" por 8 s. **Regras automáticas**: data → Agendou; motivo →
   Venda perdida; "Outro motivo" exige a Anotação; O.S. sozinha fica anotada até escolher "Venda ganha".
-  Tentativas "Não atendeu (2x)"; da 2ª em diante o WhatsApp fica em destaque.
+  Tentativas "Não atendeu (2x)"; da 2ª em diante o WhatsApp fica em destaque. Nova tentativa: opção "📞 Liguei de novo,
+  não atendeu" no Status. **Máximo de 3 tentativas por ligação** (`MAX_TENT`, decisão do TI): depois o 📞 fica apagado e
+  só vale o WhatsApp. **Anotação não conta como ligação** (`anotar_ligacao`, SQL `19_anotacao_sem_tentativa.sql`, que
+  também corrigiu as tentativas a mais gravadas antes; cópia em `ligacoes_historico_ajuste_19`). Botão WA com o símbolo do WhatsApp.
   Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
   **WhatsApp**: primeiro nome do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
