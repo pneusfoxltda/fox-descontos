@@ -166,6 +166,7 @@ body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} bod
 .mini{display:inline-block;margin-left:6px;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none;}
 .mini.lig{background:#1E3A5F;color:#BFDBFE;} .mini.wa{background:#0F3D24;color:#86EFAC;}
 .mini.wa,.bt-wa{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;} .ico-wa{flex-shrink:0;}
+.ed-nome{background:none;border:none;cursor:pointer;font-size:12px;padding:0 0 0 5px;opacity:.45;vertical-align:middle;} .ed-nome:hover{opacity:1;}
 .mini.lig.off{opacity:.35;cursor:not-allowed;filter:grayscale(1);}
 .mini.wa.forte,.bt-wa.forte{background:#16A34A;color:#fff;box-shadow:0 0 0 2px #22C55E55;animation:pulsa 1.6s infinite;}
 @keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
@@ -411,6 +412,7 @@ const STATUS = {
   venda_televendas: {nome: "Venda ganha televendas"},
   comprou:          {nome: "Venda ganha televendas"},
   anotacao:         {nome: "Anotação"},
+  nome_cliente:     {nome: "Nome corrigido"},
 };
 // Máximo de tentativas por ligação; depois disso, só pelo WhatsApp (decisão do TI)
 const MAX_TENT = 3;
@@ -436,7 +438,7 @@ const ehRobo = quem => String(quem || "").startsWith("Robô");
 // automática, a troca de responsável e as férias. O Dashboard e as tentativas só contam o contato real
 // feito por vendedor ou gerente (decisão do TI).
 const ehSistema = h => ehRobo(h.quem) || /^divis[aã]o autom/i.test(String(h.quem || "")) ||
-  /^Responsável: /.test(String(h.obs || "")) || / de férias/.test(String(h.obs || ""));
+  /^Responsável: /.test(String(h.obs || "")) || / de férias/.test(String(h.obs || "")) || h.status === "nome_cliente";
 // Quem mudou o status. Mudança do robô aparece como "🤖 Sistema (Movere)" ou "🤖 Sistema (Kommo)":
 // não conta ponto para o vendedor (o Dashboard de vendedores só conta registros de pessoas).
 const quemFez = l => ehRobo(l.status_por) ? "🤖 Sistema" + (/kommo/i.test(l.status_por) ? " (Kommo)" : /movere/i.test(l.status_por) ? " (Movere)" : "")
@@ -822,7 +824,7 @@ function cartao(l) {
   const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
-      <div><div class="cli">${esc(nomeCli(l) || "Cliente sem nome")}</div>
+      <div><div class="cli">${esc(nomeCli(l) || "Cliente sem nome")}${podeEditar(l) ? `<button class="ed-nome" onclick="editarNome(${l.id})" title="Corrigir o nome do cliente">✏️</button>` : ""}</div>
         <div class="meta">${l.medida ? "🛞 " + esc(l.medida) + " · " : ""}Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · Cotou: " + esc(cotou(l)) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div>
         ${(ehAdmin || ehGerente) ? `<div class="meta">Responsável: ${celulaResp(l)}</div>` : ""}</div>
       <div class="val">${fmtR(l.valor)}</div>
@@ -1029,6 +1031,26 @@ async function mudouAnotacao(id, v) {
   if (!MANUAIS.includes(l.status)) return;
   await anotar(l, v.trim());
 }
+// Corrigir o nome do cliente (SQL 21). Não conta como ligação nem como trabalho no Dashboard.
+async function editarNome(id) {
+  const l = porIdTodas.get(id) || todas.find(x => x.id === id); if (!l) return;
+  const novo = prompt("Nome correto do cliente:", nomeCli(l) || "");
+  if (novo === null) return;
+  const nome = novo.replace(/\s+/g, " ").trim();
+  if (nome.length < 2) { toast("Escreva o nome do cliente.", false); return; }
+  if (nome === (l.cliente || "").trim()) return;
+  const { error } = await sb.rpc("renomear_cliente", { p_id: id, p_nome: nome });
+  if (error) {
+    toast(/renomear_cliente|function|schema cache/i.test(error.message || "") ? "Falta rodar o passo 21 no Supabase para corrigir nomes. Avise o TI." : "Não consegui corrigir o nome: " + error.message, false);
+    return;
+  }
+  const h = {ligacao_id: id, quando: new Date().toISOString(), quem: perfil.apelido || perfil.nome, status: "nome_cliente", obs: `Nome: ${l.cliente || "(sem nome)"} → ${nome}`};
+  l.cliente = nome;
+  if (historicoTodo) historicoTodo.push(h);
+  (mapaHist.get(id) || mapaHist.set(id, []).get(id)).push(h);
+  toast("Nome corrigido ✏️");
+  render();
+}
 // Grava só a anotação: não conta como ligação nem muda o status (SQL 19)
 async function anotar(l, obs) {
   const { error } = await sb.rpc("anotar_ligacao", { p_id: l.id, p_obs: obs });
@@ -1064,7 +1086,7 @@ function linhaTabela(l) {
   const quem = l.status_em ? `<div class="quem">${esc(quemFez(l))} · ${fmtQuando(l.status_em)}</div>` : "";
   const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
     <td class="fx1">${esc(l.cotacao)}</td>
-    <td class="fx2">${esc(nomeCli(l))}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
+    <td class="fx2">${esc(nomeCli(l))}${ed ? `<button class="ed-nome" onclick="editarNome(${id})" title="Corrigir o nome do cliente">✏️</button>` : ""}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
     <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span>${t >= MAX_TENT && !fechado ? `<span class="mini lig off" title="Já foram ${t} tentativas por ligação: agora tente pelo WhatsApp (mensagem ou ligação)">📞</span>` : `<a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>`}${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp com mensagem pronta"}">${ICONE_WA}WA</a>` : ""}` : ""}</td>
     <td>${esc(cotou(l))}</td>
     <td>${celulaResp(l)}</td>
