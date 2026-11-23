@@ -803,6 +803,7 @@ export default function App(){
   const acoes=useRef({});
   acoes.current={clickRow,doLiberar,doDel};
   const ehAdmin=session?.role==="admin";
+  useEffect(()=>{ if(ehAdmin&&window.FoxTema&&window.FoxTema.admin) window.FoxTema.admin(); },[ehAdmin]); // botão 🩺 Monitor no FOXNET
   const listaConsultar=useMemo(()=>quotesPorStatus.slice(0,limiteLista).map(q=>(
           <div className="list-row cl" key={q._id||q.tipo+q.numero} onClick={()=>acoes.current.clickRow(q)}>
             <span className="list-num" style={{background:"var(--fx-ac,#CC1F1F)",color:"#fff",padding:"6px 10px",borderRadius:6,textAlign:"center",minWidth:88,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,letterSpacing:"1.5px"}}>#{q.numero}</span>

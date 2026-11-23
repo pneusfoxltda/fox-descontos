@@ -165,6 +165,7 @@ async function entrar(sessao) {
   if (!sessao) return null;
   const { data: p } = await sb.from("perfis").select("nome,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
   if (!p || !p.ativo || !(p.funcoes || []).includes("admin")) { await sb.auth.signOut(); return {erro: "Esta página é só do administrador."}; }
+  if (window.FoxTema && FoxTema.admin) FoxTema.admin();   // botão 🩺 Monitor no FOXNET deste navegador
   $("login-screen").style.display = "none";
   $("main-screen").style.display = "block";
   $("ts-user").textContent = "Admin · " + (p.nome || p.email);

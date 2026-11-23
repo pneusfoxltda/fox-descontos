@@ -1455,7 +1455,7 @@ async function entrarTV(sessao) {
   if(!p || !p.ativo || !funcoes.some(f => NIVEIS_TV.includes(f))) { await sbAuth.auth.signOut(); return null; }
   sessionStorage.setItem('fox_tv_auth', '1');
   sessionStorage.setItem('fox_tv_auth_user', p.nome || p.email);
-  if(funcoes.includes('admin')) { sessionStorage.setItem('fox_tv_auth_admin', '1'); mostrarBotoesAdmin(); }
+  if(funcoes.includes('admin')) { sessionStorage.setItem('fox_tv_auth_admin', '1'); if(window.FoxTema&&FoxTema.admin) FoxTema.admin(); mostrarBotoesAdmin(); }
   else sessionStorage.removeItem('fox_tv_auth_admin');
   return true;
 }
