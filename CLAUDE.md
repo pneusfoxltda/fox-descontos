@@ -364,7 +364,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
   televendas). Registro público só com contagens. `DRY_RUN=1` testa sem gravar.
 - **🛞 Pneus** (pedido do TI, 24/11/2026; coluna ao lado de "Clientes mês", na loja e no vendedor): mais uma 553 por loja
   só com as famílias de pneu (`FAMILIAS_PNEUS`: DUNLOP, FAMÍLIA PASSEIO PIRELLI, MULTIMARCAS CAR, PASSEIO BRIDGESTONE,
-  PNEUS IMPORTADOS CAR) → pneus vendidos no mês (`pneus`) e em quantas vendas (`pneus_vendas`). A rodada passa a
+  PNEUS IMPORTADOS CAR) → pneus vendidos no mês (`pneus`) e em quantas vendas (`pneus_vendas`). Conferido em 25/11/2026 com a regra do TI
+  ("pneu = item com medida no nome", ex.: 175/75R14, 185/65R15, 205/60R17, LT265/70R16, 31X10.50R15) no Analytics, item por
+  item: **igual nas 8 lojas** (nenhum item de pneu fora dessas famílias e nenhum item dessas famílias sem medida). O filtro
+  de aros da 553 NÃO serve (deu números negativos). A rodada passa a
   levar ≈ 20 min. SQL **`27_varejo_pneus_metas.sql`**: colunas de pneus + metas de nov/2026 (total R$ 4.500.000;
   MATRIZ 800 mil, C.AUTO PVH 680, JI-PARANA 680, CACOAL 620, PARINTINS 530, XAPURI 480, ARIQUEMES 410, C.AUTO VLH 300).
   Sem o SQL 27 o robô grava sem os pneus (não quebra).
