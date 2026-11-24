@@ -11,8 +11,8 @@ jobs:
 
       - name: Instala dependências
         run: |
-          pip install playwright beautifulsoup4 httpx --break-system-packages 2>/dev/null || \
-          pip install playwright beautifulsoup4 httpx
+          pip install playwright beautifulsoup4 httpx holidays --break-system-packages 2>/dev/null || \
+          pip install playwright beautifulsoup4 httpx holidays
           playwright install chromium
           playwright install-deps chromium
 
@@ -20,7 +20,7 @@ jobs:
         env:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+        run: python3 ${{ github.ref_name == 'varejo-553' && 'diagnostico_553.py' || 'teste_movere.py' }}
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
