@@ -13,8 +13,10 @@
    Também explica a filosofia (consciência gratuita, perguntar, medo × ambição, "desvender", escada de
    valor, estrada/carro/piloto), o protocolo de atendimento e os diferenciais da Fox.
 
-   Regras da Fox mantidas nas respostas modelo (decisão do TI): nunca prometer pneu separado nem
-   horário reservado (o estoque pode acabar); combinar o DIA da visita, sem "reservar box".
+   Regras da Fox nas respostas modelo (decisão do TI, 24/11/2026): nunca prometer pneu separado nem
+   travar box/horário (pode não dar para cumprir); combinar o DIA da visita. A Fox NÃO faz entrega.
+   Preço só fica garantido pela DATA DA COTAÇÃO: até 7 dias se a cotação foi do televendas, 3 dias se foi da loja.
+   Módulo 2 (follow-up por ligação, resgate no WhatsApp, escada de condições, cobrir orçamento).
    Sem travessão nos textos da tela.
    ═════════════════════════════════════════════════════════════════════════ */
 (function () {
@@ -56,7 +58,7 @@
     {id: "cartao", grupo: "adiamento", nome: "Vou esperar o cartão virar",
      re: /(cartao (virar|fechar)|semana que vem|mes que vem|dia do pagamento|salario|quando (eu )?receber|fim do mes)/,
      cliente: ["Vou esperar o cartão virar semana que vem.", "Só consigo no mês que vem, quando receber."],
-     modelo: ["Perfeito! Só um cuidado: essa condição é a de hoje e o estoque dessa medida gira rápido, então não consigo te garantir o mesmo preço nem o pneu na semana que vem. Se quiser, já parcelamos no cartão de hoje e você ainda ganha a montagem gratuita e o checklist preventivo completo. Qual dia fica melhor para você passar aqui na Fox Pneus?",
+     modelo: ["Perfeito! Só um cuidado: o valor do seu orçamento fica garantido até [data: 3 dias da cotação na loja, 7 dias se foi pelo televendas]; depois disso o preço pode mudar, e o estoque gira rápido. Se quiser, já parcelamos no cartão de hoje (até 4x sem juros) e você ainda ganha a montagem gratuita e o checklist preventivo completo. Qual dia fica melhor para você passar aqui na Fox Pneus?",
               "Entendo! Uma opção: parcelar no cartão de hoje, aí a primeira parcela já cai depois do seu pagamento. E você ainda leva montagem gratuita e checklist completo. Quer que eu simule as parcelas?"]},
     {id: "dois", grupo: "quebragalho", nome: "Vou trocar só dois pneus agora",
      re: /((so|somente|apenas) (dois|2|um|1) pneus?|um par|so o par|os outros dois depois)/,
@@ -113,8 +115,18 @@
      cliente: ["Estou muito corrido hoje, não posso ficar sem carro.", "Não tenho tempo de ficar na loja."],
      modelo: ["Na Fox Pneus a gente agiliza para não travar o seu dia: você combina o melhor horário comigo e a gente já deixa tudo organizado. Fazemos a montagem gratuita, o checklist completo e os serviços enquanto você toma um café no ar-condicionado. Fica melhor vir logo às 8h ou no horário do almoço?",
               "Entendo a correria! Me diz o melhor horário para você e eu já deixo tudo organizado para ser rápido. Cedinho ou no almoço?"]},
+    {id: "manda_wpp", grupo: "ligacao", nome: "Na ligação: \"me manda no WhatsApp\"",
+     re: /(me manda (no|pelo) (whats|zap|wpp)|manda (no|pelo) (whats|zap|wpp)|(pode|so) mandar (no|pelo) (whats|zap)|nao posso falar agora)/,
+     cliente: ["Ah, me manda no WhatsApp que eu vejo depois.", "Agora não posso falar, me manda por mensagem."],
+     modelo: ["Olha, eu só preciso de 30 segundos! Tenho uma notícia boa sobre o seu orçamento, pode ser? Jogo rápido, não vou tomar seu tempo… (Se insistir:) Mando agora mesmo! E já deixo a loja avisada do seu orçamento. Para qual dia fica melhor a sua vinda na loja, [dia A] ou [dia B]?",
+              "Claro, te mando agora! Só pra eu já deixar tudo certo: você pretende passar na loja ainda essa semana, [dia A] ou [dia B]? (Regra: nunca desligue sem tentar cravar um dia.)"]},
+    {id: "ml_ligacao", grupo: "ligacao", nome: "Na ligação: \"vi mais barato / no Mercado Livre\"",
+     re: /(mercado livre|vi (mais )?barato|achei (mais )?barato).*(ligac|ligando|telefone)|cobrir (o )?orcamento|cobre (o )?orcamento|voces cobrem/,
+     cliente: ["Ah, mas eu vi esse pneu mais barato no Mercado Livre.", "Achei mais barato em outro lugar, vocês cobrem?"],
+     modelo: ["Quanto te passaram e de qual marca? (anote na hora) Me dá 30 segundos na linha que eu vejo agora mesmo com o meu gerente. (Volte NA MESMA ligação com a contraproposta, sem pedir print para depois.) Consegui! O gerente libera cobrir esse valor, com montagem gratuita e checklist completo, para você vir na loja. Fica melhor hoje à tarde ou amanhã de manhã?",
+              "Ótimo você me falar! Me passa o valor e a marca que eu levo agora pro meu gerente. Se ele aprovar, você vem quando: [dia A] ou [dia B]? (Cobrir orçamento sempre com o gerente e com o dia da visita combinado.)"]},
   ];
-  const GRUPO_NOME = {preco: "Preço / internet / concorrência", adiamento: "Adiamento (\"mês que vem\")", alinhamento: "Recusa de alinhamento/balanceamento",
+  const GRUPO_NOME = {ligacao: "Ligação de follow-up", preco: "Preço / internet / concorrência", adiamento: "Adiamento (\"mês que vem\")", alinhamento: "Recusa de alinhamento/balanceamento",
     oleo: "Recusa de troca de óleo/filtro", marca: "Desconfiança de marca importada", desconfianca: "Medo de \"empurroterapia\"",
     terceiro: "Decisão de outra pessoa", tempo: "Falta de tempo", quebragalho: "Só 1 ou 2 pneus"};
 
@@ -135,10 +147,12 @@
   const OBJ_POR_PRODUTO = {pneu: ["internet", "concorrente", "caro", "pesquisar", "rodar", "cartao", "dois", "marca", "empurrar", "terceiro", "tempo"],
     alinhamento: ["alinhar", "balancear", "alinhou", "caro", "tempo", "empurrar"], oleo: ["oleo_tempo", "completar", "filtro", "caro", "tempo", "pesquisar"],
     revisao: ["empurrar", "caro", "terceiro", "tempo", "cartao", "pesquisar"]};
-  const CANAIS = ["WhatsApp", "Balcão/telefone"];
+  const CANAIS = ["WhatsApp", "Balcão/telefone", "Ligação de follow-up"];
 
   function novoCenario() {
-    const [prod, tipo] = sorteia(PRODUTOS), [perfil, fala] = sorteia(PERFIS), idObj = sorteia(OBJ_POR_PRODUTO[tipo]), o = OBJ.find(x => x.id === idObj), canal = sorteia(CANAIS);
+    const [prod, tipo] = sorteia(PRODUTOS), [perfil, fala] = sorteia(PERFIS), canal = sorteia(CANAIS);
+    // Na ligação de follow-up também aparecem as objeções de telefone (Módulo 2)
+    const idObj = sorteia(canal.startsWith("Ligação") && tipo === "pneu" ? [...OBJ_POR_PRODUTO[tipo], "manda_wpp", "ml_ligacao", "manda_wpp"] : OBJ_POR_PRODUTO[tipo]), o = OBJ.find(x => x.id === idObj);
     let frase = sorteia(o.cliente).replace("{p}", prod);
     if (canal === "WhatsApp") frase = frase.replace(/\.$/, "").replace(/^./, c => c.toLowerCase()).replace(/você/g, "vc").replace(/está/g, "tá");
     return {prod, perfil, fala, obj: o, canal, frase};
@@ -198,6 +212,16 @@
 
   // ══════════════════════ CONHECIMENTO (filosofia, protocolo, diferenciais) ══════════════════════
   const SABER = [
+    {re: /escada (de )?(condic|parcel|preco)|condic(ao|oes) (posso|que posso|especial)|niveis? de (condic|parcel)|quantas vezes (posso|da pra) parcel|parcelamento|21x|8x|4x/,
+     txt: "🪜 Escada de condições Fox (libere aos poucos, nunca tudo na primeira mensagem):\n· Autoridade: 30 anos de tradição + 5 anos de garantia de fábrica.\n· Benefícios: montagem gratuita, checklist completo, rodízio gratuito e desconto na avaliação do pneu usado.\n· Nível 1 (padrão): até 4x sem juros (ou 3x mantendo o valor à vista).\n· Nível 2 (campanha): até 8x com 5% de desconto, para quem marca a visita na loja em até 48 h.\n· Nível 3: até 21x no cartão (pequeno acréscimo da operadora), bom para serviços combinados.\n· Nível 4 (cartada final): cobrir o orçamento da concorrência, com validação do gerente e visita combinada.\n\n🏅 Regra de ouro: condição especial não se dá de graça. Toda liberação do gerente pede uma contrapartida: o cliente combinar o DIA da visita na loja.\n⏳ Preço garantido pela data da cotação: até 7 dias (televendas) ou 3 dias (loja). Nunca travar box nem separar pneu. A Fox não faz entrega."},
+    {re: /(validade|vale ate|segurar|garantir|manter) (o |do )?(preco|valor|orcamento)|quanto tempo (vale|dura) (o )?(orcamento|preco)|orcamento vence/,
+     txt: "⏳ Validade do preço: conta da DATA DA COTAÇÃO. Cotação do televendas: até 7 dias. Cotação da loja: só 3 dias. Depois disso, confirme o preço atual antes de prometer. E nunca prometa pneu separado nem box travado: pode não dar para cumprir."},
+    {re: /(roteiro|script|como (fazer|faco) (a |uma )?liga|follow ?-?up|resgat(ar|e) (o |de )?orcamento|ligar para (o )?cliente|abordagem (na|por) ligac)/,
+     txt: null, roteiro: true},
+    {re: /(mensagem de resgate|cliente sumiu|cliente nao responde|vacuo|resgatar (no|pelo) whats|chamar de novo no whats|reativar cliente)/,
+     txt: "💬 Resgate pelo WhatsApp (visita em 48 h):\n1️⃣ Curiosidade (curta): \"[Nome], olha só… Tenho uma condição especial aqui sobre o seu orçamento. Quer ouvir?\"\n2️⃣ Depois do \"sim\": \"Para quem vier na loja em até 48 horas, a Fox Pneus libera o parcelamento em até 8x com desconto + montagem gratuita e checklist preventivo! Te explico melhor ou já combinamos o dia da sua visita?\"\n\n(Não prometa box travado nem pneu separado. O preço vale pela data da cotação: 7 dias televendas, 3 dias loja.)"},
+    {re: /cobrir (o )?orcamento|cobre (o )?orcamento|politica de cobrir|cartada final/,
+     txt: "🥊 Cobrir orçamento da concorrência (cartada final):\n1. Pergunte na hora: \"Quanto te passaram e de qual marca?\" e anote.\n2. \"Me dá 30 segundos na linha que eu vejo agora com o meu gerente.\"\n3. Volte NA MESMA ligação com a contraproposta (não peça print para depois).\n4. Sempre com a validação do gerente e o dia da visita combinado."},
     {re: /(diferenc|vantage|beneficio|armas?).*(fox|loja)|por que (comprar|fechar) (na|com a) fox|montagem gratuita|checklist/,
      txt: "🏆 Armas de fechamento da Fox Pneus:\n1. Montagem gratuita: comprando os pneus com a gente, a montagem é por conta da Fox.\n2. Checklist preventivo completo gratuito: fechando o serviço, o cliente ganha uma inspeção técnica completa e transparente do carro.\n\nRegra: nunca trate como algo banal. Use para anular objeção de preço (internet/concorrente), gerar reciprocidade, quebrar a desconfiança e trazer o cliente para o box."},
     {re: /protocolo|passo a passo (do |de )?atendimento|como (devo )?atender|roteiro (de )?(atendimento|venda)|etapas da venda/,
@@ -217,6 +241,32 @@
     {re: /guerra de preco|cliente (achou|acha) caro|so quer (saber )?(o )?preco|dar desconto/,
      txt: "💰 Não entre em guerra de preço: quando o cliente achar caro, compare custo por quilômetro rodado, segurança e garantia, e use as armas da Fox (montagem gratuita + checklist), antes de pensar em desconto."},
   ];
+
+  // ══════════════════════ ROTEIRO DE LIGAÇÃO (Módulo 2) ══════════════════════
+  // Nas Ligações, monta o roteiro com o cliente de maior valor sem contato (nome, medida, dia da cotação,
+  // validade do preço: os clientes da lista são cotações do televendas = 7 dias).
+  const fmtD = iso => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "";
+  const somaDias = (iso, d) => new Date(new Date(iso + "T12:00:00").getTime() + d * 864e5).toISOString().slice(0, 10);
+  function roteiro() {
+    const F = window.FE_LIG; let cli = "[Nome]", med = "[medida]", dia = "[dia X]", eu = "[Seu Nome]", cargo = "executivo(a)", validade = "";
+    if (F && F.pronto && F.pronto()) {
+      const e = F.eu(); if (e.nome) eu = e.nome;
+      cargo = e.artigo === "o" ? "executivo" : e.artigo === "a" ? "executiva" : "executivo(a)";
+      const l = (F.meus() || []).filter(x => x.status === "pendente").sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0))[0];
+      if (l) {
+        cli = F.primeiro(F.nomeCli(l)) || cli; med = l.medida || med; dia = "dia " + fmtD(l.data_cotacao);
+        const ate = somaDias(l.data_cotacao, 7), venceu = ate < F.hoje();
+        validade = venceu ? `\n\n⚠️ A cotação de ${cli} é de ${fmtD(l.data_cotacao)}: o preço garantido (7 dias) venceu em ${fmtD(ate)}. Confirme o valor atual com o gerente antes de ligar.`
+                          : `\n\n⏳ Preço garantido até ${fmtD(ate)} (7 dias da cotação do televendas).`;
+      }
+    }
+    return `📞 Roteiro de ligação (resgate de orçamento)${cli !== "[Nome]" ? ": " + cli + ", o de maior valor sem contato" : ""}\n\n` +
+      `A) Abertura: "Fala, ${cli}! Tudo bem? Aqui é ${eu}, ${cargo} da Fox Pneus. Tá lembrado de mim? Você fez um orçamento do pneu ${med} no nosso WhatsApp no ${dia}, certo?"\n` +
+      `   Se pedir para mandar no WhatsApp: "Eu só preciso de 30 segundos! Tenho uma notícia boa sobre o seu orçamento…" Se insistir: "Mando agora! Para qual dia fica melhor sua vinda na loja, [dia A] ou [dia B]?" (nunca desligue sem tentar um dia)\n\n` +
+      `B) Descobrir o que trava: "Quero entender o que preciso fazer para te ajudar a fechar esses pneus aqui com a gente. Você me ajuda? O que está te impedindo de fechar comigo hoje?"\n` +
+      `   Dúvida/benefício → montagem gratuita + checklist gratuito + rodízio gratuito. Concorrência → cobrir orçamento (com o gerente).\n\n` +
+      `C) Oferta com prazo: "Te liguei porque consegui com meu gerente uma condição especial: o [marca] sai por R$ [valor] cada, em até 4x sem juros, com montagem gratuita, checklist preventivo e 5 anos de garantia. Esse valor vale até [data da validade]. Fica melhor passar hoje à tarde ou amanhã de manhã?"` + validade;
+  }
 
   // ══════════════════════ CONVERSA ══════════════════════
   let modo = null, cenario = null;
@@ -270,7 +320,9 @@
       if (modo === "rapida") { bot("Não reconheci essa objeção. Tente com outras palavras, ex.: \"achou caro\", \"vai pesquisar\", \"não quer trocar o filtro\"."); return true; }
     }
     // Conhecimento
-    if (!naTelaDeCadastro || /\?/.test(q)) for (const s of SABER) if (s.re.test(n) && (/(venda|vender|cliente|atendimento|fox|fechar|fechamento|objecao|gatilho|desvender|consciencia|protocolo|escada|piloto|preco|montagem|checklist|diferencia)/.test(n))) { bot(s.txt); chips(["🎯 Treinar vendas", "📋 Protocolo de atendimento"]); return true; }
+    if (!naTelaDeCadastro || /\?/.test(q)) for (const s of SABER) if (s.re.test(n) && (s.roteiro || /(venda|vender|cliente|atendimento|fox|fechar|fechamento|objecao|gatilho|desvender|consciencia|protocolo|escada|piloto|preco|valor|orcamento|montagem|checklist|diferencia|parcel|condic|whats|ligac|cobrir|\d+x)/.test(n))) {
+      bot(s.roteiro ? roteiro() : s.txt); chips(["🎯 Treinar vendas", "📞 Roteiro de ligação", "🪜 Escada de condições"]); return true;
+    }
     if (/(dica|dicas) de venda|como vender (mais|melhor)|vender mais/.test(n)) {
       bot("💡 Dicas de venda Fox:\n· Pergunte antes de orçar (uso, urgência, jogo ou par).\n· Eduque sobre o risco antes do preço.\n· Use as armas: montagem gratuita + checklist completo gratuito.\n· Pneu nunca anda sozinho: ofereça alinhamento, balanceamento e óleo.\n· Cliente decidiu? Pare de argumentar e feche com duas opções de dia.\n\nQuer treinar agora?"); chips(MENU); return true;
     }

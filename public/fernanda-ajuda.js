@@ -1,8 +1,9 @@
 /* ════════════════════════════════════════════════════════════════════════
    FERNANDA · ajuda de cada tela (carregada pelo fernanda.js)
 
-   Funciona 100% no navegador, sem IA externa: nada do que a pessoa escreve
-   ou envia sai do computador. Os leitores de PDF (pdf.js) e de imagem
+   Funciona no navegador, sem IA externa. Os arquivos (PDF e imagem) nunca saem do computador;
+   o TEXTO digitado no chat fica registrado para o Monitor do TI (SQL 25, telefones escondidos,
+   fernanda.js → feRegistrar). Os leitores de PDF (pdf.js) e de imagem
    (Tesseract) são baixados só quando alguém manda um arquivo.
 
    · Cadastrar desconto (/cadastrardescontos.html e aba Cadastrar do App):
@@ -741,7 +742,7 @@
   window.feAjuda = function (q) {
     const n = N(q);
     if (/quem (e|eh) (voce|vc)|qual (e )?(o )?seu nome|voce e (uma )?(ia|robo)/.test(n)) {
-      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, explico tudo sobre pneus (medida, segmentos, quando trocar…), treino vendas (simulação com nota, objeções, auditoria de conversa), preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
+      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, explico tudo sobre pneus (medida, segmentos, quando trocar…), treino vendas (simulação com nota, objeções, auditoria de conversa), preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nOs arquivos (PDF e imagem) ficam só no seu computador. O que você escreve aqui o TI acompanha para me deixar cada vez melhor (telefones ficam escondidos). 🔒");
       return true;
     }
     // Treinadora de vendas (fernanda-vendas.js): simulação, auditoria, objeções. Vem antes: no meio de um
