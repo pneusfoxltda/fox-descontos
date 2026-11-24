@@ -162,7 +162,7 @@ a{color:inherit;}
 body.modo-tabela #v-lista{max-width:none;padding:10px 14px 0;}
 body.modo-tabela .tabwrap{max-height:calc(100vh - 215px);}
 body.modo-tabela .datas{padding-bottom:2px;} body.modo-tabela .tl td{padding:6px 8px;} body.modo-tabela .tl th{padding:9px 8px;}
-body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} body.modo-tabela .cel.mt{max-width:150px;} body.modo-tabela .cel.an{width:170px;} body.modo-tabela .abas{margin:8px 0;} body.modo-tabela .busca{margin-bottom:8px;}
+body.modo-tabela .cel.os{width:76px;} body.modo-tabela .cel.dt{width:118px;padding:5px 4px;} body.modo-tabela .cel.mt{field-sizing:content;min-width:60px;max-width:170px;} body.modo-tabela .cel.an{field-sizing:content;min-width:110px;max-width:240px;} body.modo-tabela select.cel.resp{field-sizing:content;min-width:0;max-width:130px;} body.modo-tabela .tl th{white-space:normal;line-height:1.2;}  /* títulos em 2 linhas: colunas do tamanho do conteúdo */ body.modo-tabela .abas{margin:8px 0;} body.modo-tabela .busca{margin-bottom:8px;}
 .mini{display:inline-block;margin-left:6px;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none;}
 .mini.lig{background:#1E3A5F;color:#BFDBFE;} .mini.wa{background:#0F3D24;color:#86EFAC;}
 .mini.wa,.bt-wa{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;} .ico-wa{flex-shrink:0;}
@@ -175,6 +175,7 @@ body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} bod
 @keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
 .stsel{border:none;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;color-scheme:var(--cs);}
 .stsel:disabled{cursor:default;opacity:.95;}
+body.modo-tabela .stsel{field-sizing:content;max-width:230px;padding-right:24px;}  /* a coluna Status fica do tamanho do texto (sobra espaço) */
 .c-pendente{background:#3A2A00;color:#FCD34D;} .c-nao_atende{background:#4A1414;color:#FCA5A5;} .c-retornar{background:#12304A;color:#93C5FD;} .c-aguardando_wa{background:#0F3D24;color:#86EFAC;}
 .c-sem_interesse{background:var(--s3);color:var(--tx2);} .c-agendou{background:#2A1F45;color:#C4B5FD;} .c-venda_ganha{background:#0E3A22;color:#86EFAC;}
 .c-venda_perdida{background:#3A0F0F;color:#F87171;} .c-venda_televendas,.c-comprou{background:#06292A;color:#5EEAD4;}
@@ -495,6 +496,8 @@ const dig = s => String(s || "").replace(/\D/g, "");
 const nomeCli = l => String((l && l.cliente) || "").replace(/\+?\(?\d[\d\s().\/-]*\d/g, m => dig(m).length >= 8 ? " " : m)
   .replace(/\s+/g, " ").replace(/[\s\-–·,:;\/]+$/, "").replace(/^[\s\-–·,:;\/]+/, "").trim();
 const fmtData = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
+// Na planilha: "23/11" (o ano só aparece se não for o ano atual), para a coluna ficar estreita
+const fmtDataCurta = d => { if (!d) return ""; const [a, m, dd] = String(d).slice(0, 10).split("-"); return a === String(new Date().getFullYear()) ? `${dd}/${m}` : `${dd}/${m}/${a}`; };
 const fmtDataLonga = iso => { const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m + "/" + a; };
 const fmtQuando = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}).replace(",", " às");
 const fmtR = v => (v == null || v === "") ? "" : Number(v).toLocaleString("pt-BR", {style: "currency", currency: "BRL"});
@@ -1150,7 +1153,7 @@ function linhaTabela(l) {
     <td>${esc(cotou(l))}</td>
     <td>${celulaResp(l)}</td>
     <td class="r">${fmtR(l.valor)}</td>
-    <td>${fmtDataLonga(l.data_cotacao)}<div class="quem">${dias ? "há " + dias + " dia" + (dias > 1 ? "s" : "") : "hoje"}</div></td>
+    <td title="${fmtDataLonga(l.data_cotacao)}">${fmtDataCurta(l.data_cotacao)}<div class="quem">${dias ? "há " + dias + " dia" + (dias > 1 ? "s" : "") : "hoje"}</div></td>
     <td><select id="tst-${id}" class="stsel c-${esc(l.status)}" ${dis} onchange="mudouStatus(${id}, this.value)">${opcoes}</select>${quem}</td>
     <td>${travado || !ed ? `<span class="txt-fixo">${esc(l.os_venda || "")}</span>` : `<input id="tos-${id}" class="cel os ${l.status === "venda_ganha" && l.os_venda ? "ok" : osEsperando.has(id) ? "falta" : ""}" value="${esc(osEsperando.get(id) || (l.status === "venda_ganha" ? l.os_venda || "" : ""))}" placeholder="Nº O.S." maxlength="30" onchange="mudouOS(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}</td>
     <td>${travado || !ed ? `<span class="txt-fixo">${l.agendado_para ? fmtDataLonga(l.agendado_para) : ""}</span>` : `<input id="tdt-${id}" type="date" class="cel dt ${l.status === "agendou" && l.agendado_para ? (atrasado(l) ? "atr" : "ok") : ""}" value="${l.status === "agendou" ? l.agendado_para || "" : ""}" onchange="mudouData(${id}, this.value)" title="${atrasado(l) ? "Agendamento atrasado: dê o resultado" : "Data do agendamento"}">${atrasado(l) ? '<div class="quem" style="color:#F87171">⚠️ atrasado</div>' : ""}`}</td>
