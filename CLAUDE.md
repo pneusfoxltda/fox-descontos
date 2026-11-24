@@ -26,7 +26,7 @@ Hospedagem: **Vercel** (projeto `fox-descontos`, plano Hobby, publica a branch `
 Banco e login: **Supabase** (projeto `dxwkiaxpygibzmwzvcuz`).
 **Horário dos robôs**: o horário agendado do GitHub atrasa horas ou pula (23/11: a rodada das 7h não
 aconteceu). O `sync-televendas.yml` é disparado de fora, em ponto (seg–sáb, :45), e no fim acorda os
-outros (job `acordar-robos`, pela hora de Porto Velho): 6h45 Ligações · 7h45 Avisos + Vendas Movere ·
+outros (job `acordar-robos`, pela hora de Porto Velho em que o Sync COMEÇOU, não a de quando terminou; em 24/11 ele passou das 7h e pulou as Ligações): 6h45 Ligações · 7h45 Avisos + Vendas Movere ·
 9h45 Ligações + Avisos · 12h45 Vendas · 13h45 Avisos · 14h45 Ligações · 16h45 Avisos · 17h45 Ligações + Vendas.
 Os crons de cada robô ficam como reserva (e valem no domingo). Avisos não repetem o turno no dia (`ja_enviado`).
 Robôs: GitHub Actions `sync-televendas.yml` (Movere → Supabase, de hora em hora) e

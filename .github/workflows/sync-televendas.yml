@@ -90,8 +90,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          H=$(TZ=America/Porto_Velho date +%-H)
-          echo "Hora em Porto Velho: ${H}h"
+          # A hora de quando o despertador COMEÇOU (não a de quando terminou): o Sync às vezes passa da hora cheia
+          # (24/11: começou 6h45, terminou depois das 7h e o robô das Ligações das 6h45 não foi acordado).
+          INICIO=$(gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null || true)
+          if [ -n "$INICIO" ]; then H=$(TZ=America/Porto_Velho date -d "$INICIO" +%-H); else H=$(TZ=America/Porto_Velho date -d '-40 min' +%-H); fi
+          echo "Começou às ${INICIO:-?} · hora em Porto Velho: ${H}h"
           acordar() { echo "→ acordando $1"; gh workflow run "$1" --repo "$REPO" --ref main || echo "⚠️ não consegui acordar $1"; }
           case "$H" in
             6)  acordar ligacoes-lojas.yml ;;
