@@ -60,11 +60,12 @@
 
   // Botões de ação para um cliente: ver na lista, ligar, WhatsApp
   function botoesCliente(l, extra) {
-    const F = L(), wa = F.linkWa(l), tel = l.telefone ? F.linkTel(l) : "";
+    const F = L(), wa = F.linkWa(l), wa2 = F.linkWa2 ? F.linkWa2(l) : "", tel = l.telefone ? F.linkTel(l) : "";
     return `<div class="fe-lig-cli"><b>${esc(cli(l))}</b><small>${esc(extra || "")}</small><span>` +
       `<button onclick="FE_LIG.abrirCliente(${l.id})">Ver na lista</button>` +
       (tel ? `<a href="${esc(tel)}">📞 Ligar</a>` : "") +
-      (wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : "") + `</span></div>`;
+      (wa ? `<a href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : "") +
+      (wa2 ? `<a href="${esc(wa2)}" target="_blank" rel="noopener" title="2ª mensagem: endereço e mapa da loja">📍 Endereço</a>` : "") + `</span></div>`;
   }
   function listaClientes(lista, extra, max = 5) {
     if (!lista.length) return;
@@ -237,7 +238,9 @@
   // ── Boas-vindas ao abrir a conversa ──
   function boasVindas() {
     if (!L() || !L().pronto()) { bot("Oi! Aqui é a Fernanda. 🦊 Entre com o seu e-mail que eu te ajudo com as ligações."); return; }
-    bot(mensagemDoPeriodo(false));
+    // A mensagem do robô dos avisos (a mesma do computador/celular) vale mais que a conta feita aqui
+    if (ultimoRobo) bot((ultimoRobo.titulo ? ultimoRobo.titulo + "\n\n" : "") + ultimoRobo.texto);
+    else bot(mensagemDoPeriodo(false));
     const n = numeros();
     if (periodo() !== "noite" && n.agHoje.length > 1) listaClientes(n.agHoje, quemAgendou, 3);
     chips(CHIPS);
@@ -247,16 +250,37 @@
       if (st !== "desligado" && st !== "iphone_instalar") return;
       try { localStorage.setItem("fe_lig_avisos_oferta", "1"); } catch (e) {}
       bot("Quer que eu te avise aqui no " + (/Mobi|Android|iPhone/.test(navigator.userAgent) ? "celular" : "computador") +
-          ", mesmo com a página fechada? 🔔 De segunda a sábado: às 8h e 10h de manhã, às 14h e 16h30 à tarde, só com os seus números.");
+          ", mesmo com a página fechada? 🔔 De segunda a sábado, 2 vezes de manhã e 2 à tarde, só com os seus números.");
       chips(["Sim, quero receber avisos", ...CHIPS.slice(0, 3)]);
     });
   }
 
+  // ── Mensagens do robô dos avisos (as mesmas do computador/celular), guardadas no banco (SQL 23) ──
+  // Quem está com a página aberta recebe também aqui, na raposa: a cada 5 minutos a Fernanda confere se chegou
+  // mensagem nova (manhã, meio da manhã, tarde, fim do dia).
+  let ultimoRobo = null;
+  async function conferirRobo() {
+    const F = L(); if (!F || !F.pronto() || !F.avisoRobo) return false;
+    const m = await F.avisoRobo(); if (!m) return false;
+    ultimoRobo = m;
+    const eu = F.eu(), chave = `fe_lig_robo_${eu.id || eu.email}_${F.hoje()}_${m.turno}`;
+    let ja = false; try { ja = !!localStorage.getItem(chave); } catch (e) {}
+    if (ja) return true;
+    const bub = document.getElementById("feBub"), painel = document.getElementById("fePanel");
+    const txt = (m.titulo ? m.titulo + " " : "") + m.texto;
+    if (painel && painel.classList.contains("on")) { bot((m.titulo ? m.titulo + "\n\n" : "") + m.texto); chips(CHIPS); }
+    else if (bub) { const fx = bub.querySelector(".fx"); bub.textContent = ""; if (fx) bub.appendChild(fx); bub.appendChild(document.createTextNode(txt)); bub.style.display = ""; }
+    try { localStorage.setItem(chave, "1"); localStorage.setItem(chaveAviso(), "1"); } catch (e) {}
+    return true;
+  }
+  setInterval(conferirRobo, 5 * 60 * 1000);
+
   // ── Balão perto da Fernanda: um aviso por período do dia, para quem está logado ──
   function chaveAviso() { const F = L(), eu = F.eu(); return `fe_lig_aviso_${eu.id || eu.email}_${F.hoje()}_${periodo()}`; }
-  function mostrarBalao(force) {
+  async function mostrarBalao(force) {
     const F = L(), bub = document.getElementById("feBub"), painel = document.getElementById("fePanel");
     if (!F || !F.pronto() || !bub) return;
+    if (!force && await conferirRobo()) return;          // já tem a mensagem do robô de hoje
     const chave = chaveAviso();
     let ja = false; try { ja = !!localStorage.getItem(chave); } catch (e) {}
     if (ja && !force) return;
