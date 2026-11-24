@@ -241,8 +241,13 @@
     const tel = telefoneDoTexto(t, true); if (tel) d.telefone = tel;
     // valor com desconto (sem confundir com o valor do concorrente)
     const semConc = n.replace(/concorr\w*[^;\n]*/g, "");
+    // número que NÃO é parcela (4x), data (30/11), prazo (7 dias) nem medida
+    const NUM = "(\\d[\\d.]*(?:,\\d{1,2})?)(?![\\d.,]*\\s*(?:x\\b|vezes|\\/|dias?\\b|r\\s*\\d))";
     m = semConc.match(/valor(?:\s*(?:com desconto|negociado|final|do desconto|de venda))?\s*(?:e|de|:|=)?\s*(?:r\$\s*)?(\d[\d.]*(?:,\d{1,2})?)/) ||
-        semConc.match(/\bpor\s*r\$\s*(\d[\d.]*(?:,\d{1,2})?)/);
+        semConc.match(/\bpor\s*r\$\s*(\d[\d.]*(?:,\d{1,2})?)/) ||
+        semConc.match(/r\$\s*(\d[\d.]*(?:,\d{1,2})?)/) ||
+        semConc.match(new RegExp(NUM + "\\s*(?:reais|real|conto|contos|pila)\\b")) ||
+        semConc.match(new RegExp("\\b(?:vai ser|vai sair|vai ficar|vai fechar|fica|ficou|sai|saiu|fechar|fechou|fechado|preco|desconto para)\\s*(?:em|por|a|de|para)?\\s*(?:r\\$\\s*)?" + NUM));
     if (m) d.valor = numBR(m[1]);
     m = semConc.match(/(?:forma de pagamento|pagamento|pgto|pagar)\s*[:=]?\s*([^,;\n]+)/);
     const pg = pgtoDoTexto(m ? m[1] : (/\b(a vista|avista|pix|\d{1,2}\s*x)\b/.test(semConc) ? semConc : ""));
@@ -481,6 +486,18 @@
       return true;
     }
     const d = lerMensagem(q);
+    // Vendedor escrito sem a palavra "vendedor" ("SABRINA, produto vai ser 245 reais…"): procura o nome na lista
+    if (!d.vendedor) {
+      const sel = tela.el("vendedor");
+      if (sel && sel.options) {
+        const pal = new Set(N(q).split(/[^a-z]+/));
+        const op = [...sel.options].filter(o => o.value).find(o => {
+          const p = N(o.textContent).split(/\s+/)[0];
+          return p.length >= 3 && p !== "fernanda" && pal.has(p);
+        });
+        if (op) d.vendedor = op.textContent.trim();
+      }
+    }
     const temDados = Object.keys(d).length > 0;
     if (temDados) {
       const r = await preencher(tela, d);
