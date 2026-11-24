@@ -123,10 +123,18 @@ vendas para o televendas; `apps-script/` tem o do painel).
     1ª rodada e fica em `push_config` (sem regra de acesso: só a chave de serviço lê). iPhone: precisa
     "Adicionar à Tela de Início" (`ligacoes.webmanifest`, ícones `icone-192/512.png`). Service worker:
     `public/sw-avisos.js`. No /admin, coluna "🔔 Avisos". Tocar no aviso abre as Ligações (passa pela trava de IP).
-    **Trava** (decisão do TI): o **vendedor** no computador ou no Android só usa as Ligações com os avisos
-    ligados (tela por cima com "🔔 Ligar avisos"; se bloqueou no navegador, mostra o passo a passo).
-    Não trava: **iPhone** (não cobrar), navegador sem avisos, gerente/Jonathan/admin, e enquanto o
+    **Trava** (decisão do TI, 24/11/2026: vale para **todos**: vendedor, gerente da loja, Jonathan e admin): no
+    computador ou no Android só usa as Ligações com os avisos ligados (tela por cima com "🔔 Ligar avisos", logo
+    depois de criar a senha; se bloqueou no navegador, mostra o passo a passo).
+    Não trava: **iPhone** (não cobrar), navegador sem avisos, e enquanto o
     sistema de avisos não estiver pronto (sem SQL 17 ou sem a chave). `conferirTrava()` no ligacoes.html.
+    **Fernanda coordenadora** (`montar_aviso` no `avisos_ligacoes.py`, decisão do TI 24/11/2026), 4 turnos
+    (manha1 7h45, manha2 9h45, tarde1 13h45, tarde2 = fim do dia 16h45): vendedor (quantos recebeu hoje, o de maior
+    valor com valor e nº da cotação, quantos faltam, "mudar a estratégia", até as 17h, resumo do dia); gerente da
+    loja (cada vendedor: quem falou com quantos, quem não falou com nenhum, quem não entrou hoje, para cobrar);
+    Jonathan/admin (lojas sem nenhum contato com o nome do gerente, lojas abaixo de 30%, resumo da rede).
+    **Nunca nome nem telefone de cliente.** A mesma mensagem fica em `avisos_fernanda` (SQL `23_avisos_fernanda.sql`,
+    cada um lê só as suas, 15 dias) e a raposa mostra na página (`FE_LIG.avisoRobo`, confere a cada 5 min).
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
@@ -250,7 +258,11 @@ vendas para o televendas; `apps-script/` tem o do painel).
   "Venda perdida" e "Agendou" (salva sozinho, como planilha). Só o que o robô marcou (Venda televendas) fica travado.
   Ao sair de um status, o dado dele sai junto (O.S., data do agendamento, motivo): `marcar_ligacao` do SQL `22_status_livre.sql`.
   Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
-  **WhatsApp**: primeiro nome do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
+  **WhatsApp em 2 mensagens** (texto do TI, 24/11/2026): botão WA = mensagem 1 ("Olá, {cliente}! Aqui é {vendedor},
+  da Fox Pneus {loja}. Vi que você fez um orçamento ontem/antes de ontem/no dia X do pneu {medida}… o que falta para
+  fecharmos…"); botão 📍 = mensagem 2 com endereço e link do mapa da loja (`ENDERECO_LOJA`; PARINTINS = Manaus,
+  XAPURI = Rio Branco, C.AUTO VLH = Vilhena), pisca depois da 1ª. O link do WhatsApp só leva 1 mensagem e
+  precisa do clique em enviar: envio automático só com a API oficial do WhatsApp Business (paga) ou pelo Kommo.
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
 - **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead e grava em
   `agendado_para` quando a lista está sem data ou com data mais antiga.
