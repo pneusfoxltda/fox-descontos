@@ -1,0 +1,44 @@
+name: Resultados Varejo (rotina 553)
+
+# Grava o "Resultado Varejo - Geral" da página /resultados: rotina 553 do Movere, loja por loja, no mês e hoje,
+# e a conferência com o Analytics (a setinha vermelha). Acordado pelo sync-televendas de hora em hora
+# (seg–sáb, 7h45 às 17h45 de Porto Velho). O cron abaixo fecha o dia às 19h10 e serve de reserva.
+on:
+  schedule:
+    - cron: '10 23 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: 'Só mostrar o que faria, sem gravar nada'
+        type: boolean
+        default: false
+
+concurrency:
+  group: resultados-varejo
+  cancel-in-progress: false
+
+jobs:
+  varejo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: |
+          pip install playwright beautifulsoup4 httpx holidays cryptography
+          playwright install --with-deps chromium
+
+      - name: Rotina 553 → banco
+        env:
+          MOVERE_USER: ${{ secrets.MOVERE_USER }}
+          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          DRY_RUN: ${{ inputs.teste && '1' || '' }}
+        run: python resultados_varejo.py

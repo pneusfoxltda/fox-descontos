@@ -342,6 +342,32 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - Testes: `python tests/test_ligacoes_lojas.py` e `python tests/test_avisos_ligacoes.py`.
 - `sb_get` busca em partes de 1000 (o banco entrega no máximo 1000 linhas por vez).
 
+## 🏆 Resultados Fox Pneus — branch `resultados-fox`
+
+- Página **`/resultados`** (`public/resultados.html`, rewrite no `middleware.js`; bloco "Resultados Fox Pneus" no FOXNET).
+  Pede o login (o mesmo das Ligações e do App; qualquer perfil **ativo** lê; decisão: o repositório é público, sem
+  login qualquer um leria os números com a chave anon). Abas: **Resultado Televendas** (abre `/televendas.html`),
+  **Resultado Varejo · Geral**, **Atacado** e **Truck** ("em breve", decisão do TI 24/11/2026).
+- **Varejo** (decisão do TI: base = **rotina 553**, com o dia de hoje): Vendido hoje, no mês, meta, falta (e por dia,
+  contando seg–sáb), ticket médio; **ranking das lojas** (hoje, clientes, mês, meta, %, falta, clientes, ticket, itens);
+  clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
+  (`varejo_metas`). Sem metas, mostra "sem meta".
+- **Seta vermelha lá embaixo** (pedido do TI): a 553 até ontem (mês − hoje) comparada com o Analytics
+  "Jonathan - Faturamento Varejo" (1111480), por loja, com os motivos: **REVENDA** (o Analytics tira, a 553 não tem o
+  filtro) com o código do cliente, nota, dia e vendedor; o que sobrar vira "Diferença sem explicação automática".
+  Tudo batendo: "✅ Conferido com o Analytics".
+- Robô **`resultados_varejo.py`** (workflow `resultados-varejo.yml`): acordado pelo sync-televendas **7h45 às 17h45**
+  (seg–sáb) + cron 19h10. Gera a 553 **loja por loja** (assim os vendedores somam a loja), mês e hoje (≈ 15 min).
+  Filtros em `varejo_filtros.py`: 8 lojas, 13 tabelas de preço (`TABELAS_VAREJO`; ATACADO, ATACADO PREMIUM, AMAGGI e
+  GK fora), 11 famílias, **"Frete compõe valores totais"** marcado (assim bate com o Analytics). O Movere lembra os
+  filtros do login: o `sync_televendas.py` limpa lojas/tabelas/famílias/frete antes de cada relatório (não afetar o
+  televendas). Registro público só com contagens. `DRY_RUN=1` testa sem gravar.
+- SQL **`26_resultados_varejo.sql`**: `varejo_lojas`, `varejo_vendedores` (periodo `mes`/`hoje`), `varejo_conferencia`,
+  `varejo_metas`, `perfil_ativo()`. Testes: `python tests/test_resultados_varejo.py`.
+- Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo; ARIQUEMES −1.266,00 = devolução REVENDA (cliente
+  239846, nota 1301); C.AUTO PVH +516,77 era REVENDA e o segmento foi corrigido no Movere. Segmento REVENDA não existe
+  como filtro na 553 (procurado nas 21 listas).
+
 ## 🩺 Monitor (só o admin) — branch `monitor`
 
 - Página **`/monitor`** (`public/monitor.html`, rewrite no `middleware.js`). Pede o login de admin; o banco
@@ -388,10 +414,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
 3. Remontar **liberação, consultas e relatórios** com as ideias do TI (ele vai trazer).
    Ideias já sugeridas: recusar com motivo, histórico de quem liberou, aviso ao vendedor,
    alçada do gerente, relatórios por período/loja/vendedor/concorrente.
-4. **Resultados** (aba principal desejada): Resultado Rede Fox (vendido hoje / mês),
-   Resultado por loja → vendedores da loja, Resultado televendas. Fazer **junto com o TI**.
-   Fonte provável: o mesmo caminho do `sync_televendas.py` (Movere, de hora em hora).
-   Só depois do banco trancado (dados sensíveis).
+4. **Resultados** — Varejo feito (ver "🏆 Resultados Fox Pneus"). Futuro: Atacado e Truck.
 5. **Ligações das lojas** no FOXNET — feito (ver seção acima). Depois de um tempo em paralelo,
    o TI decide se desliga as planilhas.
 6. Opcional: e-mail da empresa (SMTP) no Supabase para "esqueci minha senha".
