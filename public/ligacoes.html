@@ -979,7 +979,7 @@ function mensagemWa(l) {
   // Mensagem 1 (texto do TI, 24/11/2026). A 2ª mensagem, com o endereço, sai pelo botão 📍.
   return `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? art + quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}.\n\n` +
     `Vi que você fez um orçamento ${quandoFoi(l.data_cotacao)}${l.medida ? " do pneu " + l.medida : ""} com a gente. ` +
-    `Gostaria de saber o que falta para fecharmos o pneu que precisa? E se ficou alguma dúvida?`;
+    `Gostaria de saber o que faltou para fecharmos o pneu que precisa? E se ficou alguma dúvida?`;
 }
 function linkWa(l) {
   const d = dig(l.telefone); if (d.length < 10) return "";
