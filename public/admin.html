@@ -42,7 +42,7 @@ a{color:inherit;}
 .sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:18px;margin-bottom:16px;}
 .sec h3{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1.5px;color:var(--fx-tx0,#fff);margin-bottom:4px;}
 .sec .sub{font-size:12px;color:var(--fx-tx3,#999);margin-bottom:14px;line-height:1.5;}
-.linha5{display:grid;grid-template-columns:1.3fr .8fr 1.4fr 1.1fr 1fr auto;gap:10px;align-items:end;}
+.linha5{display:grid;grid-template-columns:1.3fr .8fr .55fr 1.4fr 1.1fr 1fr auto;gap:10px;align-items:end;}
 @media(max-width:900px){.linha5{grid-template-columns:1fr;}}
 .tbl input.ap{background:var(--fx-bg,#0D0D0D);color:var(--fx-tx0,#fff);border:1px solid var(--fx-bd,#333);border-radius:6px;padding:5px 6px;font-size:12px;width:100px;}
 textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical;}
@@ -100,10 +100,12 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
         <b>Vendedor da loja</b>: vê só os clientes dele (os clientes da loja são divididos por igual entre os vendedores ativos).
         <b>Gerente da loja</b>: vê todos da loja dele, o Dashboard e o histórico, troca o responsável e coloca vendedor de férias.
         <b>Gerente de todas as lojas</b>: vê tudo de todas as lojas, só para acompanhar.<br>
-        O <b>primeiro nome</b> é como a pessoa aparece na coluna Responsável (ex.: Felipe, Vithoria).</div>
+        O <b>primeiro nome</b> é como a pessoa aparece na coluna Responsável (ex.: Felipe, Vithoria).
+        <b>Aqui é…</b>: como a pessoa se apresenta na mensagem do WhatsApp ("Aqui é <b>o</b> Gilcimar" / "Aqui é <b>a</b> Sabrina"). Em branco: "Aqui é Gilcimar".</div>
       <div class="linha5">
         <div class="campo"><label>Nome completo</label><input id="v-nome" placeholder="Nome da pessoa"></div>
         <div class="campo"><label>Primeiro nome</label><input id="v-apelido" placeholder="Ex.: Felipe" maxlength="20"></div>
+        <div class="campo"><label title="Como a pessoa se apresenta na mensagem do WhatsApp">Aqui é…</label><select id="v-artigo"><option value="">(sem)</option><option value="o">o</option><option value="a">a</option></select></div>
         <div class="campo"><label>E-mail</label><input id="v-email" type="email" placeholder="nome@redefox.com.br"></div>
         <div class="campo"><label>Função</label><select id="v-funcao"></select></div>
         <div class="campo"><label>Loja</label><select id="v-loja"></select></div>
@@ -200,7 +202,7 @@ function lerFuncao(txt) {
   return null;
 }
 
-let sql15 = true, avisosPorPerfil = {};
+let sql15 = true, sql24 = false, avisosPorPerfil = {};
 async function carregar() {
   let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias,ferias_ate").order("nome");
   if (error && /ferias_ate/.test(error.message)) ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome"));   // passo 16 ainda não rodou
@@ -211,6 +213,10 @@ async function carregar() {
   }
   if (error) { toast("Não consegui carregar os acessos: " + error.message, false); return; }
   perfis = data || [];
+  // "Aqui é o / a" (SQL 24): busca à parte para não atrapalhar se o passo 24 ainda não rodou
+  const art = await sb.from("perfis").select("id,artigo");
+  sql24 = !art.error;
+  if (sql24) { const m = new Map((art.data || []).map(x => [x.id, x.artigo])); perfis.forEach(p => p.artigo = m.get(p.id) || null); }
   // Quem ligou os avisos da Fernanda (SQL 17): quantos aparelhos cada pessoa tem
   avisosPorPerfil = {};
   const av = await sb.from("push_inscricoes").select("perfil_id,ultimo_envio");
@@ -230,13 +236,14 @@ async function soltarClientes(p) {
 }
 
 // Cria (ou atualiza) o acesso. Senha inicial = e-mail, troca obrigatória no 1º acesso.
-async function criarAcesso({nome, email, loja, funcao, apelido}) {
+async function criarAcesso({nome, email, loja, funcao, apelido, artigo}) {
   email = email.trim().toLowerCase(); nome = nome.trim();
   apelido = (apelido || "").trim() || primeiroNome(nome);
   if (!nome || !emailOk(email)) return {erro: "nome ou e-mail inválido"};
   if ((funcao === "vendedor" || funcao === "gerente") && !loja) return {erro: "escolha a loja"};
   const campos = camposDaFuncao(funcao, loja || null);
   if (sql15) campos.apelido = apelido; else { delete campos.papel_ligacoes; }
+  if (sql24 && (artigo === "o" || artigo === "a")) campos.artigo = artigo;
   const existente = perfis.find(p => (p.email || "").toLowerCase() === email);
   if (existente) {
     const mudouDivisao = funcaoDe(existente) === "vendedor" && (funcao !== "vendedor" || loja !== existente.loja);
@@ -260,9 +267,9 @@ async function dividirAgora(silencioso) {
 }
 
 async function cadastrarVendedor() {
-  const nome = $("v-nome").value, email = $("v-email").value, loja = $("v-loja").value, funcao = $("v-funcao").value, apelido = $("v-apelido").value;
+  const nome = $("v-nome").value, email = $("v-email").value, loja = $("v-loja").value, funcao = $("v-funcao").value, apelido = $("v-apelido").value, artigo = $("v-artigo").value;
   $("btn-vend").disabled = true;
-  const r = await criarAcesso({nome, email, loja, funcao, apelido});
+  const r = await criarAcesso({nome, email, loja, funcao, apelido, artigo});
   $("btn-vend").disabled = false;
   logar("log-vend", r.erro ? "er" : "ok", `${r.erro ? "✗" : "✓"} ${esc(nome)} &lt;${esc(email)}&gt; · ${esc(nomeFuncao(funcao))}${loja && funcao !== "gerente_todas" ? " · " + esc(loja) : ""} · ${esc(r.erro || r.ok)}`);
   if (!r.erro) { $("v-nome").value = ""; $("v-email").value = ""; $("v-apelido").value = ""; await carregar(); if (funcao === "vendedor") await dividirAgora(true); }
@@ -380,10 +387,11 @@ function renderTabela() {
   const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes)
     .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "") + " " + (p.apelido || "")).includes(b))
     .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || funcaoDe(c).localeCompare(funcaoDe(a)) || (a.nome || "").localeCompare(c.nome || ""));
-  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th><th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +
+  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th>${sql24 ? '<th title="Como se apresenta no WhatsApp: Aqui é o… / Aqui é a…">Aqui é</th>' : ""}<th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +
     (lista.length ? lista.map(p => { const f = funcaoDe(p); return `<tr>
       <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
       <td>${sql15 ? `<input class="ap" data-id="${p.id}" value="${esc(p.apelido || primeiroNome(p.nome))}" maxlength="20">` : esc(primeiroNome(p.nome))}</td>
+      ${sql24 ? `<td><select data-id="${p.id}" class="s-artigo"><option value="" ${!p.artigo ? "selected" : ""}>(sem)</option><option value="o" ${p.artigo === "o" ? "selected" : ""}>o</option><option value="a" ${p.artigo === "a" ? "selected" : ""}>a</option></select></td>` : ""}
       <td>${esc(p.email)}</td>
       <td><select data-id="${p.id}" class="s-funcao">${FUNCOES.map(([v, n]) => `<option value="${v}" ${v === f ? "selected" : ""}>${n}</option>`).join("")}</select></td>
       <td>${f === "gerente_todas" ? '<span class="tag cz">todas</span>' : `<select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select>`}</td>
@@ -391,7 +399,7 @@ function renderTabela() {
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
       <td>${avisosPorPerfil[p.id] ? `<span class="tag vd" title="${avisosPorPerfil[p.id].ult ? "último aviso: " + new Date(avisosPorPerfil[p.id].ult).toLocaleString("pt-BR") : "ainda sem aviso enviado"}">ligado · ${avisosPorPerfil[p.id].n} aparelho(s)</span>` : '<span class="tag cz">desligado</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
-    </tr>`; }).join("") : `<tr><td colspan="9" style="color:var(--fx-tx4,#777);padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
+    </tr>`; }).join("") : `<tr><td colspan="${sql24 ? 10 : 9}" style="color:var(--fx-tx4,#777);padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
   const pe = id => perfis.find(p => p.id === id);
   document.querySelectorAll(".s-funcao").forEach(s => s.onchange = () => {
     const p = pe(s.dataset.id), f = s.value;
@@ -407,6 +415,10 @@ function renderTabela() {
   document.querySelectorAll(".ap").forEach(i => i.onchange = () => {
     const v = i.value.trim(); if (!v) { renderTabela(); return; }
     mudar(pe(i.dataset.id), {apelido: v}, "Primeiro nome: " + v + " (vale para os próximos clientes; os já divididos mantêm o nome antigo até trocar)");
+  });
+  document.querySelectorAll(".s-artigo").forEach(s => s.onchange = () => {
+    const p = pe(s.dataset.id), v = s.value || null, n = p.apelido || primeiroNome(p.nome);
+    mudar(p, {artigo: v}, `WhatsApp: "Aqui é ${v ? v + " " : ""}${n}"`);
   });
   document.querySelectorAll(".c-ferias").forEach(c => c.onchange = () => mudarFerias(pe(c.dataset.id), c.checked));
   document.querySelectorAll(".c-ativo").forEach(c => c.onchange = () => {

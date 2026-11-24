@@ -517,6 +517,8 @@ async function entrar(sessao) {
   ehVendedor = !ehAdmin && !ehGerente;
   if (!p.loja && !veTodas) { await sb.auth.signOut(); return {erro: "Seu usuário ainda não tem loja definida. Peça ao TI para colocar a sua loja."}; }
   perfil = p;
+  // "Aqui é o / a" no WhatsApp (SQL 24), buscado à parte: sem o passo 24 a tela funciona igual
+  sb.from("perfis").select("artigo").eq("id", sessao.user.id).maybeSingle().then(r => { if (!r.error && r.data) perfil.artigo = r.data.artigo; }, () => {});
   if (p.trocar_senha) { mostrar("senha-screen"); setTimeout(() => $("s-nova").focus(), 50); return {ok: true}; }
   await abrirSistema();
   return {ok: true};
@@ -955,7 +957,9 @@ function diaDoAgendamento(iso) {
 function mensagemWa(l) {
   // Nunca prometer pneu separado nem horário reservado (o estoque pode acabar).
   const quem = nomeDoEmail(), loja = NOME_LOJA[l.loja] || l.loja || "";
-  const oi = `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. 😊\n`;
+  // "Aqui é o Gilcimar" / "Aqui é a Sabrina": o admin escolhe no /admin (SQL 24); sem escolha, sem artigo
+  const art = perfil && (perfil.artigo === "o" || perfil.artigo === "a") ? perfil.artigo + " " : "";
+  const oi = `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? art + quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}. 😊\n`;
   const pneu = l.medida ? "os pneus " + l.medida : "o seu orçamento";
   if (l.status === "agendou") {
     if (!l.agendado_para)          // agendado pelo Kommo, sem data na lista
@@ -968,7 +972,7 @@ function mensagemWa(l) {
       `Estamos te esperando! Posso confirmar sua presença? Se quiser, te mando a localização da loja.`;
   }
   // Mensagem 1 (texto do TI, 24/11/2026). A 2ª mensagem, com o endereço, sai pelo botão 📍.
-  return `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}.\n\n` +
+  return `Olá${l.cliente ? ", " + primeiro(l.cliente) : ""}! Aqui é ${quem ? art + quem + ", " : ""}da Fox Pneus${loja ? " " + loja : ""}.\n\n` +
     `Vi que você fez um orçamento ${quandoFoi(l.data_cotacao)}${l.medida ? " do pneu " + l.medida : ""} com a gente. ` +
     `Gostaria de saber o que falta para fecharmos o pneu que precisa? E se ficou alguma dúvida?`;
 }
