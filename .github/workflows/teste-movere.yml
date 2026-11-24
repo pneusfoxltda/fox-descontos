@@ -20,7 +20,10 @@ jobs:
         env:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 ${{ github.ref_name == 'varejo-553' && 'diagnostico_listas.py' || 'teste_movere.py' }}
+          DATA_INI: '01/11/2026'
+          DATA_FIM: '21/11/2026'
+          SO_B: '1'
+        run: python3 ${{ github.ref_name == 'varejo-553' && 'varejo_teste.py' || 'teste_movere.py' }}
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()

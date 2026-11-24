@@ -110,7 +110,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
     toks = [" ".join(d.get_text(" ", strip=True).split()) for d in BeautifulSoup(melhor, "html.parser").find_all(["div", "td"]) if not d.find(["div", "td"])]
     toks = [t for t in toks if t]
     i = next((k for k, t in enumerate(toks) if t.startswith("Resumo por")), 0)
-    r["_tokens"] = toks[max(0, i - 40):i + 700]
+    r["_tokens"] = toks[max(0, i - 40):i + 60]
     r["_tags"] = sorted({t.name for t in BeautifulSoup(melhor, "html.parser").find_all(True)})[:40]
     return r
 
@@ -118,13 +118,17 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
 async def main():
     hoje = datetime.now(timezone(timedelta(hours=-4))).date()
     ini, fim = hoje.replace(day=1).strftime("%d/%m/%Y"), hoje.strftime("%d/%m/%Y")
+    ini, fim = os.environ.get("DATA_INI") or ini, os.environ.get("DATA_FIM") or fim   # conferência com um período fechado
     print(f"🧪 Teste do Varejo · {ini} a {fim} (nada é gravado; resultado trancado)")
     async with async_playwright() as pw:
         b = await pw.chromium.launch(headless=True)
         page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1400, "height": 2400})).new_page()
         await login(page)
         out = {"periodo": [ini, fim]}
-        for nome, tab, fam in (("A_como_pdf", ["VAREJO"], []), ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO)):
+        cenarios = (("A_como_pdf", ["VAREJO"], []), ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO))
+        if os.environ.get("SO_B"):
+            cenarios = cenarios[1:]
+        for nome, tab, fam in cenarios:
             print(f"\n▶ Cenário {nome}")
             try:
                 out[nome] = await gerar(page, ini, fim, tab, fam)
