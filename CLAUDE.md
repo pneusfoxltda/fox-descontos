@@ -128,11 +128,13 @@ vendas para o televendas; `apps-script/` tem o do painel).
     depois de criar a senha; se bloqueou no navegador, mostra o passo a passo).
     Não trava: **iPhone** (não cobrar), navegador sem avisos, e enquanto o
     sistema de avisos não estiver pronto (sem SQL 17 ou sem a chave). `conferirTrava()` no ligacoes.html.
-    **Fernanda coordenadora** (`montar_aviso` no `avisos_ligacoes.py`, decisão do TI 24/11/2026), 4 turnos
+    **Fernanda coordenadora** (`montar_aviso` no `avisos_ligacoes.py`, decisão do TI 24/11/2026): **sempre 4 mensagens por
+    dia para cada pessoa** (só não manda para quem não tem cliente na lista), 4 turnos
     (manha1 7h45, manha2 9h45, tarde1 13h45, tarde2 = fim do dia 16h45): vendedor (quantos recebeu hoje, o de maior
     valor com valor e nº da cotação, quantos faltam, "mudar a estratégia", até as 17h, resumo do dia); gerente da
     loja (cada vendedor: quem falou com quantos, quem não falou com nenhum, quem não entrou hoje, para cobrar);
-    Jonathan/admin (lojas sem nenhum contato com o nome do gerente, lojas abaixo de 30%, resumo da rede).
+    Jonathan/admin (resumo de todas as lojas "falaram com / receberam", lojas sem contato com o nome do gerente,
+    abaixo de 30%, resumo da rede).
     **Nunca nome nem telefone de cliente.** A mesma mensagem fica em `avisos_fernanda` (SQL `23_avisos_fernanda.sql`,
     cada um lê só as suas, 15 dias) e a raposa mostra na página (`FE_LIG.avisoRobo`, confere a cada 5 min).
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão

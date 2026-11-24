@@ -219,8 +219,16 @@ def _linhas_vendedores(meus: list, vendedores: list, hoje: date, dia) -> list:
     return [t for _, _, t in sorted(out)]
 
 
+def _lista_nomes(nomes: list) -> str:
+    return nomes[0] if len(nomes) == 1 else ", ".join(nomes[:-1]) + " e " + nomes[-1]
+
+
 def montar_aviso(turno: str, p: dict, ligs: list, hoje: date, ctx: dict = None):
-    """Mensagem da Fernanda para uma pessoa (ou None quando não há nada para dizer).
+    """Mensagem da Fernanda para uma pessoa. São SEMPRE 4 por dia (decisão do TI, 24/11/2026):
+      · vendedor: lembrete dos clientes dele e, no fim do dia, como foi o dia dele (para ficar ciente);
+      · gerente da loja: aviso sobre os vendedores dele;
+      · Jonathan (gerente de todas) e admin: resumo de tudo o que está acontecendo nas lojas.
+    Só não manda para quem não tem nenhum cliente na lista (ou está de férias / desativado).
     Vai no aviso do computador/celular e aparece na raposa da página das Ligações.
     Fala o nome dos vendedores e das lojas, mas NUNCA nome ou telefone de cliente."""
     ctx = ctx or {}
@@ -229,72 +237,66 @@ def montar_aviso(turno: str, p: dict, ligs: list, hoje: date, ctx: dict = None):
         return None
     dia = dia_da_lista(ligs, hoje)
     oi = f", {nome}" if nome else ""
-    vocativo = f"{nome}, " if nome else ""
     ativos_hoje = ctx.get("ativos_hoje") or set()
     vendedores = ctx.get("vendedores") or []
-    titulo = corpo = None
+    saud = {"manha1": "Bom dia", "manha2": "Oi", "tarde1": "Boa tarde", "tarde2": "Fim do dia"}[turno]
+    titulo = f"🦊 {saud}{oi}!" if turno != "tarde2" else f"🦊 Fim do dia{oi}"
 
+    def resumo_dia(n):   # "X ligações, X mensagens no WhatsApp, X agendamentos e X vendas"
+        return (f"{plural(n['ligou'], 'ligação', 'ligações')} sem agendar, {plural(n['msg'], 'mensagem', 'mensagens')} no WhatsApp esperando retorno, "
+                f"{plural(n['agend'], 'agendamento', 'agendamentos')}, {plural(n['ganha'], 'venda', 'vendas')} e {plural(n['perdida'], 'venda perdida', 'vendas perdidas')}")
+
+    # ── VENDEDOR: os clientes dele ──
     if pap == "vendedor":
-        n = numeros([l for l in ligs if l.get("responsavel_id") == p["id"]], hoje, dia)
-        ag = f" 📅 Hoje tem {plural(n['ag_hoje'], 'cliente agendado', 'clientes agendados')} para vir na loja." if n["ag_hoje"] else ""
-        atras = f" ⚠️ {plural(n['ag_atras'], 'agendamento passou', 'agendamentos passaram')} da data sem resultado." if n["ag_atras"] else ""
+        meus = [l for l in ligs if l.get("responsavel_id") == p["id"]]
+        if not meus:
+            return None
+        n = numeros(meus, hoje, dia)
+        ag = f" 📅 Hoje tem {plural(n['ag_hoje'], 'cliente agendado', 'clientes agendados')} para vir na loja: confirme pelo WhatsApp!" if n["ag_hoje"] else ""
+        atras = f" ⚠️ {plural(n['ag_atras'], 'agendamento passou', 'agendamentos passaram')} da data: ligue e dê o resultado." if n["ag_atras"] else ""
         top = n["top"]
-        maior = f" Que tal começar agora ligando (ou mandando mensagem) para o de maior valor: {reais(top['valor'])}, cotação {top.get('cotacao')}?" if top else ""
+        maior = f" O de maior valor é {reais(top['valor'])} (cotação {top.get('cotacao')})." if top and n["pend_todos"] else ""
         if turno == "manha1":
-            if not (n["dia"] or n["pend_todos"] or n["ag_hoje"]):
-                return None
-            titulo = f"🦊 Bom dia{oi}!"
-            corpo = ((f"Te mandamos {plural(n['dia'], 'cliente', 'clientes')} hoje." if n["dia"] else
-                      f"Você tem {plural(n['pend_todos'], 'cliente esperando contato', 'clientes esperando contato')}.") + maior +
-                     (f" E ainda tem {plural(n['antigos'], 'cliente', 'clientes')} de dias anteriores sem contato." if n["dia"] and n["antigos"] else "") +
+            corpo = ((f"Te mandamos {plural(n['dia'], 'cliente', 'clientes')} hoje." if n["dia"] else "Hoje não chegou cliente novo para você.") +
+                     (f" Que tal começar agora ligando (ou mandando mensagem)?{maior}" if n["pend_todos"] else "") +
+                     (f" Ainda tem {plural(n['antigos'], 'cliente', 'clientes')} de dias anteriores sem contato." if n["antigos"] else "") +
                      ag + atras + " Tenha um excelente dia, conto contigo: vamos vender muito juntos! 💪")
         elif turno == "manha2":
-            if not (n["pend_todos"] or n["ag_hoje"]):
-                return None
-            titulo = f"🦊 {vocativo}como estão as ligações?"
-            partes = []
             if n["pend"]:
-                partes.append(f"Ainda {'está pendente' if n['pend'] == 1 else 'estão pendentes'} {plural(n['pend'], 'cliente', 'clientes')} de hoje. Aconteceu algo?")
+                corpo = f"Ainda {'está pendente' if n['pend'] == 1 else 'estão pendentes'} {plural(n['pend'], 'cliente', 'clientes')} de hoje. Aconteceu algo?"
             elif n["pend_todos"]:
-                partes.append(f"Ainda {faltam(n['pend_todos'])} sem contato.")
-            if n["falou"] and not n["agend"] and not n["ganha"]:
-                partes.append("Ainda não conseguimos nenhum agendamento: vamos mudar a estratégia?")
-            partes.append("Ligue primeiro; se o cliente atender, registre e me conte na Anotação o que houve, que eu te ajudo no próximo contato.")
-            corpo = " ".join(partes) + ag
-        elif turno == "tarde1":
-            if not (n["pend_todos"] or n["nao"] or n["ag_hoje"] or n["ag_atras"]):
-                return None
-            titulo = f"🦊 Boa tarde{oi}!"
-            if n["dia"]:
-                corpo = (f"Dos {n['dia']} clientes de hoje, você já falou com {n['falou']}" +
-                         (f" e ainda {faltam(n['pend'])}." if n["pend"] else ". 👏"))
+                corpo = f"Os de hoje já tiveram contato 👏, mas ainda {faltam(n['pend_todos'])} de dias anteriores."
             else:
-                corpo = f"Ainda {faltam(n['pend_todos'])} sem contato."
-            corpo += (" Você tem até as 17h: quanto mais rápido, mais chance de virar venda. Bora?" if n["pend_todos"] else "") + \
-                     (f" {plural(n['nao'], 'não atendeu', 'não atenderam')}: tente pelo WhatsApp." if n["nao"] else "") + ag + atras
-        else:  # tarde2 = fim do dia
-            if not n["dia"] and not n["pend_todos"]:
-                return None
-            titulo = f"🦊 Fim do dia{oi}"
-            corpo = (f"Hoje ficou assim: ligamos para {plural(n['ligou'], 'cliente', 'clientes')}, " +
-                     f"{plural(n['agend'], 'agendamento', 'agendamentos')}, {plural(n['msg'], 'mensagem', 'mensagens')} no WhatsApp esperando retorno" +
-                     f" e {plural(n['ganha'], 'venda', 'vendas')}." +
-                     (f" Ainda {faltam(n['pend_todos'])} sem contato: é agora ou nunca!" if n["pend_todos"] else " Todos tiveram contato. 👏") +
-                     " Amanhã vamos com tudo converter mais clientes em vendas. Se precisar de ajuda, me avise! 💪")
+                corpo = "Você já falou com todos os seus clientes. Mandou bem! 👏"
+            if n["falou"] and not n["agend"] and not n["ganha"]:
+                corpo += " Ainda não conseguimos nenhum agendamento: vamos mudar a estratégia?"
+            corpo += (" Ligue primeiro; se o cliente atender, registre e me conte na Anotação o que houve, que eu te ajudo no próximo contato." +
+                      (f" {plural(n['nao'], 'cliente não atendeu', 'clientes não atenderam')}: tente pelo WhatsApp." if n["nao"] else "") + ag)
+        elif turno == "tarde1":
+            corpo = ((f"Dos {n['dia']} clientes de hoje, você já falou com {n['falou']}" + (f" e ainda {faltam(n['pend'])}." if n["pend"] else ". 👏")) if n["dia"] else
+                     (f"Ainda {faltam(n['pend_todos'])} sem contato." if n["pend_todos"] else "Todos os seus clientes já tiveram contato. 👏"))
+            corpo += ((" Você tem até as 17h: quanto mais rápido, mais chance de virar venda. Bora?" if n["pend_todos"] else " Agora é hora de retomar quem não atendeu e confirmar os agendados.") +
+                      (f" {plural(n['nao'], 'não atendeu', 'não atenderam')}: tente pelo WhatsApp." if n["nao"] else "") + ag + atras)
+        else:   # fim do dia: como foi o dia dele
+            corpo = (f"Hoje ficou assim: você falou com {n['falou']} dos {plural(n['dia'], 'cliente', 'clientes')} de hoje ({resumo_dia(n)})." if n["dia"] else
+                     f"Hoje ficou assim: {resumo_dia(n)}.") + \
+                    (f" Ainda {faltam(n['pend_todos'])} sem contato: é agora ou nunca!" if n["pend_todos"] else " Todos tiveram contato. 👏") + \
+                    " Amanhã vamos com tudo converter mais clientes em vendas. Se precisar de ajuda, me avise! 💪"
 
+    # ── GERENTE DA LOJA: os vendedores dele ──
     elif pap == "gerente":
         loja = p.get("loja")
         meus = [l for l in ligs if l.get("loja") == loja]
+        if not meus:
+            return None
         n = numeros(meus, hoje, dia)
         vs = [v for v in vendedores if v.get("loja") == loja and v.get("ativo", True) and not v.get("ferias")]
         linhas = _linhas_vendedores(meus, vs, hoje, dia)
-        lista_v = " · ".join(linhas[:6])
+        lista_v = " · ".join(linhas[:8])
         sumidos = [nome_curto(v) for v in vs if nome_historico(v) not in ativos_hoje and
                    any(l.get("responsavel_id") == v["id"] and l["status"] == "pendente" for l in meus)]
+        cobrar = f" {_lista_nomes(sumidos)} ainda não {'entrou' if len(sumidos) == 1 else 'entraram'} hoje no sistema de ligações." if sumidos else ""
         if turno == "manha1":
-            if not (n["dia"] or n["pend_todos"]):
-                return None
-            titulo = f"🦊 Bom dia{oi}!"
             div = {}
             for l in meus:
                 if l.get("data_cotacao") == dia and l.get("responsavel_id"):
@@ -302,81 +304,67 @@ def montar_aviso(turno: str, p: dict, ligs: list, hoje: date, ctx: dict = None):
             nomes = {v["id"]: nome_curto(v) for v in vendedores}
             divisao = ", ".join(f"{nomes.get(i, '?')} {c}" for i, c in sorted(div.items(), key=lambda x: -x[1]))
             corpo = ((f"Sua loja recebeu hoje {plural(n['dia'], 'cliente', 'clientes')}" + (f" ({divisao})" if divisao else "") + "." if n["dia"] else
-                      f"Sua loja tem {plural(n['pend_todos'], 'cliente esperando contato', 'clientes esperando contato')}.") +
-                     " Vamos começar cedo com os vendedores? Quanto mais rápido o contato, mais vendas para a meta da loja! 💪" +
-                     (f" 📅 {plural(n['ag_hoje'], 'agendado', 'agendados')} para hoje." if n["ag_hoje"] else ""))
+                      "Hoje não chegou cliente novo para a sua loja.") +
+                     (f" Ainda tem {plural(n['antigos'], 'cliente', 'clientes')} de dias anteriores sem contato." if n["antigos"] else "") +
+                     (f" 📅 {plural(n['ag_hoje'], 'cliente agendado', 'clientes agendados')} para vir hoje." if n["ag_hoje"] else "") +
+                     " Vamos começar cedo com os vendedores? Quanto mais rápido o contato, mais vendas para a meta da loja! 💪")
         elif turno == "manha2":
-            if not n["pend_todos"]:
-                return None
-            titulo = f"🦊 Oi{oi}! Como estão as ligações?"
             if n["dia"] and not n["falou"]:
                 corpo = f"Os vendedores ainda não entraram em contato com nenhum dos {n['dia']} clientes de hoje. Vamos agir, temos que vender muito para a meta da loja!"
             else:
-                corpo = (f"Até agora: {lista_v}." if lista_v else f"Ainda {faltam(n['pend_todos'])} sem contato.") + \
-                        " Vamos falar com os vendedores? Temos que vender muito para a meta da loja!"
+                corpo = (f"Como estão os vendedores: {lista_v}." if lista_v else f"Ainda {faltam(n['pend_todos'])} sem contato." if n["pend_todos"] else "Todos os clientes já tiveram contato. 👏") + \
+                        (" Vamos falar com quem está atrasado? Temos que vender muito para a meta da loja!" if n["pend_todos"] else "")
+            corpo += cobrar
         elif turno == "tarde1":
-            if not (n["pend_todos"] or n["ag_atras"]):
-                return None
-            titulo = f"🦊 Boa tarde{oi}! Tudo bem por aí?"
-            corpo = ("Que tal falarmos de novo com os vendedores? " +
-                     (f"Os clientes de hoje estão assim: {lista_v}." if lista_v else f"Ainda {faltam(n['pend_todos'])} sem contato.") +
-                     " Eles têm até as 17h: quanto mais rápido, mais chance de converter em venda." +
+            corpo = ("Tudo bem por aí? Que tal falarmos de novo com os vendedores? " +
+                     (f"Os clientes de hoje estão assim: {lista_v}." if lista_v else f"Ainda {faltam(n['pend_todos'])} sem contato." if n["pend_todos"] else "Todos os clientes já tiveram contato. 👏") +
+                     (" Eles têm até as 17h: quanto mais rápido, mais chance de converter em venda." if n["pend_todos"] else "") + cobrar +
                      (f" ⚠️ {plural(n['ag_atras'], 'agendamento atrasado', 'agendamentos atrasados')} sem resultado." if n["ag_atras"] else ""))
         else:
-            if not (n["dia"] or n["pend_todos"]):
-                return None
-            titulo = f"🦊 Fim do dia{oi}"
-            corpo = (f"Hoje finalizamos assim: {plural(n['ligou'], 'ligação', 'ligações')}, {plural(n['msg'], 'mensagem', 'mensagens')} no WhatsApp esperando retorno, " +
-                     f"{plural(n['agend'], 'agendamento', 'agendamentos')} e {plural(n['ganha'], 'venda', 'vendas')}." +
-                     (f" {' e '.join(sumidos[:3]) if len(sumidos) <= 2 else ', '.join(sumidos[:-1]) + ' e ' + sumidos[-1]} não {'entrou' if len(sumidos) == 1 else 'entraram'} hoje no sistema de ligações: vamos cobrar?" if sumidos else "") +
+            corpo = (f"Hoje finalizamos assim: {resumo_dia(n)}." +
+                     (f" Por vendedor: {lista_v}." if lista_v else "") +
+                     (f" {_lista_nomes(sumidos)} não {'entrou' if len(sumidos) == 1 else 'entraram'} hoje no sistema de ligações: vamos cobrar?" if sumidos else "") +
                      (f" Ainda dá tempo de converter os {n['pend_todos']} que faltam. Conto contigo!" if n["pend_todos"] else " Todos os clientes tiveram contato. 👏"))
 
-    else:  # gerente de todas as lojas (Jonathan) e admin
-        lojas = sorted({l["loja"] for l in ligs if l.get("loja")})
+    # ── JONATHAN (gerente de todas as lojas) e ADMIN: resumo de tudo nas lojas ──
+    else:
+        if not ligs:
+            return None
         gerentes = ctx.get("gerentes") or {}
-        por_loja = []
-        for lj in lojas:
-            nl = numeros([l for l in ligs if l.get("loja") == lj], hoje, dia)
-            if nl["dia"]:
-                por_loja.append((lj, nl))
         n = numeros(ligs, hoje, dia)
+        por_loja = []
+        for lj in sorted({l["loja"] for l in ligs if l.get("loja")}):
+            nl = numeros([l for l in ligs if l.get("loja") == lj], hoje, dia)
+            if nl["dia"] or nl["pend_todos"]:
+                por_loja.append((lj, nl))
+        pct = lambda nl: round(100 * nl["falou"] / nl["dia"]) if nl["dia"] else 100
         ger = lambda lj: f" (gerente: {gerentes[lj]})" if gerentes.get(lj) else ""
-        zerados = [lj for lj, nl in por_loja if not nl["falou"]]
-        fracos = sorted([(nl["falou"] / nl["dia"], lj) for lj, nl in por_loja if nl["falou"] and nl["falou"] / nl["dia"] < 0.3])
+        ordem = sorted(por_loja, key=lambda x: (pct(x[1]), -x[1]["dia"]))
+        quadro = " · ".join(f"{lj} {nl['falou']}/{nl['dia']} ({pct(nl)}%)" for lj, nl in ordem if nl["dia"])
+        zerados = [lj for lj, nl in por_loja if nl["dia"] and not nl["falou"]]
+        fracos = [lj for lj, nl in por_loja if nl["dia"] and nl["falou"] and pct(nl) < 30]
+        alerta = ((f" 🚨 A loja {zerados[0]}{ger(zerados[0])} ainda não falou com nenhum cliente." if len(zerados) == 1 else
+                   " 🚨 Ainda não falaram com nenhum cliente: " + ", ".join(lj + ger(lj) for lj in zerados) + ".") if zerados else "") + \
+                 (" Abaixo de 30%: " + ", ".join(lj + ger(lj) for lj in fracos) + "." if fracos else "")
         if turno == "manha1":
-            if not n["dia"] and not n["pend_todos"]:
-                return None
-            titulo = f"🦊 Bom dia{oi}!"
             corpo = ((f"Hoje as lojas receberam {plural(n['dia'], 'cliente', 'clientes')}: " +
-                      ", ".join(f"{lj} {nl['dia']}" for lj, nl in sorted(por_loja, key=lambda x: -x[1]['dia'])) + "." if n["dia"] else
-                      f"As lojas têm {plural(n['pend_todos'], 'cliente esperando contato', 'clientes esperando contato')}.") +
+                      ", ".join(f"{lj} {nl['dia']}" for lj, nl in sorted(por_loja, key=lambda x: -x[1]['dia']) if nl["dia"]) + "." if n["dia"] else
+                      "Hoje não chegou cliente novo para as lojas.") +
+                     (f" Ainda tem {plural(n['antigos'], 'cliente', 'clientes')} de dias anteriores sem contato." if n["antigos"] else "") +
+                     (f" 📅 {plural(n['ag_hoje'], 'cliente agendado', 'clientes agendados')} para vir hoje nas lojas." if n["ag_hoje"] else "") +
                      " Bora cobrar os gerentes cedo? Quanto mais rápido o contato, mais vendas! 💪")
         elif turno in ("manha2", "tarde1"):
-            if not (zerados or fracos or n["pend_todos"]):
-                return None
-            titulo = f"🦊 Opa{oi}!" if turno == "manha2" else f"🦊 Boa tarde{oi}!"
-            partes = []
-            if zerados:
-                partes.append(("A loja " + zerados[0] + ger(zerados[0]) + " ainda não falou com nenhum cliente." if len(zerados) == 1 else
-                               "Ainda não falaram com nenhum cliente: " + ", ".join(lj + ger(lj) for lj in zerados) + "."))
-            if fracos:
-                partes.append("Abaixo de 30%: " + ", ".join(f"{lj} {round(p * 100)}%" for p, lj in fracos) + ".")
-            if not partes:
-                partes.append(f"A rede já falou com {n['falou']} dos {n['dia']} clientes de hoje" + (f" e ainda {faltam(n['pend_todos'])} sem contato." if n["pend_todos"] else ". 👏"))
-            partes.append("Que tal uma mensagem para os gerentes cobrarem os vendedores?" if zerados or fracos else "Bom trabalho das lojas!")
-            corpo = " ".join(partes)
+            corpo = ((f"Como estão as lojas (falaram com / receberam): {quadro}." if quadro else f"Ainda {faltam(n['pend_todos'])} sem contato nas lojas.") +
+                     alerta +
+                     (f" Na rede: {n['falou']} de {n['dia']} com contato, {plural(n['agend'], 'agendamento', 'agendamentos')} e {plural(n['ganha'], 'venda', 'vendas')} até agora." if n["dia"] else "") +
+                     (" Que tal uma mensagem para os gerentes cobrarem os vendedores?" if zerados or fracos else " Bom trabalho das lojas, vamos manter o ritmo!"))
+            if turno == "manha2":
+                titulo = f"🦊 Opa{oi}!"
         else:
-            if not n["dia"]:
-                return None
-            titulo = f"🦊 Fim do dia{oi}"
-            pct = round(100 * n["falou"] / n["dia"]) if n["dia"] else 0
-            piores = sorted(por_loja, key=lambda x: x[1]["falou"] / x[1]["dia"])[:3]
-            corpo = (f"Hoje a rede ficou assim: {n['falou']} de {n['dia']} clientes com contato ({pct}%), " +
-                     f"{plural(n['agend'], 'agendamento', 'agendamentos')}, {plural(n['msg'], 'mensagem', 'mensagens')} no WhatsApp e {plural(n['ganha'], 'venda', 'vendas')} pela loja." +
-                     (" Lojas que menos ligaram: " + ", ".join(f"{lj} {round(100 * nl['falou'] / nl['dia'])}%" for lj, nl in piores) + "." if piores else "") +
+            corpo = ((f"Hoje a rede ficou assim: {n['falou']} de {n['dia']} clientes com contato ({pct(n)}%), " if n["dia"] else "Hoje a rede ficou assim: ") +
+                     f"{resumo_dia(n)}." + (f" Por loja: {quadro}." if quadro else "") + alerta +
+                     (f" Ainda {faltam(n['pend_todos'])} sem contato nas lojas." if n["pend_todos"] else "") +
                      " Vale cobrar os gerentes amanhã cedo.")
-    if not corpo:
-        return None
     return {"titulo": titulo, "corpo": corpo.strip(), "url": LINK, "tag": "fe-lig-" + turno}
 
 

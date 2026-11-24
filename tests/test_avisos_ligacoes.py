@@ -97,17 +97,26 @@ CTX = {"vendedores": [FEL, MAR, OUT], "gerentes": {"MATRIZ": "Wagner", "CACOAL":
 def test_avisos_do_vendedor():
     a = av.montar_aviso("manha1", FEL, LIGS, HOJE, CTX)
     assert a["titulo"] == "🦊 Bom dia, Felipe!"
-    assert "Te mandamos 3 clientes hoje" in a["corpo"] and "R$ 3.370,68, cotação 950001" in a["corpo"]
+    assert "Te mandamos 3 clientes hoje" in a["corpo"] and "O de maior valor é R$ 3.370,68 (cotação 950001)" in a["corpo"]
     assert "1 cliente agendado" in a["corpo"] and "1 agendamento passou" in a["corpo"] and "conto contigo" in a["corpo"]
     a = av.montar_aviso("manha2", FEL, LIGS, HOJE, CTX)
-    assert "Felipe, como estão" in a["titulo"] and "estão pendentes 2 clientes de hoje. Aconteceu algo?" in a["corpo"]
+    assert a["titulo"] == "🦊 Oi, Felipe!" and "estão pendentes 2 clientes de hoje. Aconteceu algo?" in a["corpo"]
     assert "nenhum agendamento: vamos mudar a estratégia?" in a["corpo"] and "me conte na Anotação" in a["corpo"]
     a = av.montar_aviso("tarde1", FEL, LIGS, HOJE, CTX)
     assert a["titulo"] == "🦊 Boa tarde, Felipe!" and "Dos 3 clientes de hoje, você já falou com 1 e ainda faltam 2 clientes" in a["corpo"]
     assert "até as 17h" in a["corpo"] and "1 não atendeu: tente pelo WhatsApp" in a["corpo"]
     a = av.montar_aviso("tarde2", FEL, LIGS, HOJE, CTX)
-    assert "Fim do dia" in a["titulo"] and "ligamos para 1 cliente" in a["corpo"] and "Se precisar de ajuda, me avise" in a["corpo"]
-    assert a["url"].endswith("/ligacoes.html")
+    assert a["titulo"] == "🦊 Fim do dia, Felipe" and "você falou com 1 dos 3 clientes de hoje (1 ligação sem agendar" in a["corpo"]
+    assert "Se precisar de ajuda, me avise" in a["corpo"] and a["url"].endswith("/ligacoes.html")
+
+
+def test_sempre_4_mensagens_por_dia():
+    tudo_feito = [L(1, "u-fel", "venda_ganha"), L(2, "u-fel", "sem_interesse")]
+    for p in (FEL, WAG, JON):
+        for t in ("manha1", "manha2", "tarde1", "tarde2"):
+            assert av.montar_aviso(t, p, LIGS, HOJE, CTX), (p["id"], t)
+            assert av.montar_aviso(t, p, tudo_feito, HOJE, CTX), (p["id"], t)     # mesmo com tudo feito, avisa (parabeniza)
+    assert "Mandou bem" in av.montar_aviso("manha2", FEL, tudo_feito, HOJE, CTX)["corpo"]
 
 
 def test_sem_dados_de_cliente():
@@ -117,11 +126,9 @@ def test_sem_dados_de_cliente():
             assert a is None or ("Zuleica" not in json.dumps(a) and "9999" not in json.dumps(a))
 
 
-def test_sem_nada_a_avisar_nao_manda():
-    tudo_feito = [L(1, "u-fel", "venda_ganha"), L(2, "u-fel", "sem_interesse")]
-    assert av.montar_aviso("manha2", FEL, tudo_feito, HOJE, CTX) is None
-    assert av.montar_aviso("tarde1", FEL, tudo_feito, HOJE, CTX) is None
+def test_sem_clientes_nao_manda():
     assert av.montar_aviso("manha1", FEL, [], HOJE, CTX) is None
+    assert av.montar_aviso("manha1", FEL, [L(1, "u-mar", "pendente")], HOJE, CTX) is None   # nenhum cliente é dele
 
 
 def test_ferias_e_desativado_nao_recebem():
@@ -134,10 +141,12 @@ def test_gerente_cobra_cada_vendedor():
     assert "Sua loja recebeu hoje 4 clientes (Felipe 3, Marcos 1)" in a["corpo"]
     a = av.montar_aviso("manha2", WAG, LIGS, HOJE, CTX)
     assert "Marcos ainda não falou com nenhum (1)" in a["corpo"] and "Felipe falou com 1 (faltam 2 clientes)" in a["corpo"]
+    assert "Marcos ainda não entrou hoje no sistema de ligações" in a["corpo"]
     a = av.montar_aviso("manha2", LUC, LIGS, HOJE, CTX)
     assert "ainda não entraram em contato com nenhum dos 2 clientes de hoje" in a["corpo"]
     a = av.montar_aviso("tarde2", WAG, LIGS, HOJE, CTX)
-    assert "Marcos não entrou hoje no sistema de ligações: vamos cobrar?" in a["corpo"] and "Felipe" not in a["corpo"].split("vamos cobrar")[0].split("vendas.")[1]
+    assert "Marcos não entrou hoje no sistema de ligações: vamos cobrar?" in a["corpo"] and "Felipe não entrou" not in a["corpo"]
+    assert "Por vendedor: Marcos ainda não falou com nenhum (1) · Felipe falou com 1" in a["corpo"]
 
 
 def test_jonathan_cobra_as_lojas():
@@ -145,9 +154,9 @@ def test_jonathan_cobra_as_lojas():
     assert "Hoje as lojas receberam 6 clientes: MATRIZ 4, CACOAL 2" in a["corpo"]
     a = av.montar_aviso("manha2", JON, LIGS, HOJE, CTX)
     assert a["titulo"] == "🦊 Opa, Jonathan!" and "A loja CACOAL (gerente: Luciana) ainda não falou com nenhum cliente" in a["corpo"]
-    assert "MATRIZ 25%" in a["corpo"]
+    assert "CACOAL 0/2 (0%) · MATRIZ 1/4 (25%)" in a["corpo"] and "Abaixo de 30%: MATRIZ (gerente: Wagner)" in a["corpo"]
     a = av.montar_aviso("tarde2", JON, LIGS, HOJE, CTX)
-    assert "1 de 6 clientes com contato (17%)" in a["corpo"] and "Lojas que menos ligaram: CACOAL 0%" in a["corpo"]
+    assert "1 de 6 clientes com contato (17%)" in a["corpo"] and "Por loja: CACOAL 0/2 (0%)" in a["corpo"]
 
 
 def test_robo_nao_conta_como_contato():
