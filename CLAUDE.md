@@ -246,6 +246,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   também corrigiu as tentativas a mais gravadas antes; cópia em `ligacoes_historico_ajuste_19`). Botão WA com o símbolo do WhatsApp.
   Status **"Aguardando retorno WhatsApp"** (`aguardando_wa`, SQL `20_aguardando_whatsapp.sql`): em aberto como "Retornar
   depois" (aba Já liguei, divisão, férias, Monitor, robôs). O SQL 20 acrescenta o status nas funções que já estão no banco.
+  **Status livre** (decisão do TI): o vendedor muda qualquer status a qualquer hora, inclusive sair de "Venda ganha",
+  "Venda perdida" e "Agendou" (salva sozinho, como planilha). Só o que o robô marcou (Venda televendas) fica travado.
+  Ao sair de um status, o dado dele sai junto (O.S., data do agendamento, motivo): `marcar_ligacao` do SQL `22_status_livre.sql`.
   Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
   **WhatsApp**: primeiro nome do vendedor + medida do pneu + "ontem/hoje/no dia" + convite para vir à loja.
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
