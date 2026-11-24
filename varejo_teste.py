@@ -103,6 +103,13 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
         return {"erro": "relatório não veio", "filtros": marcados, "log": log}
     r = ler_resumos(melhor)
     r["filtros"] = marcados
+    # Para ajustar a leitura: o texto dos quadros de resumo (vai TRANCADO; o modo resumo não lista clientes)
+    from bs4 import BeautifulSoup
+    toks = [" ".join(d.get_text(" ", strip=True).split()) for d in BeautifulSoup(melhor, "html.parser").find_all(["div", "td"]) if not d.find(["div", "td"])]
+    toks = [t for t in toks if t]
+    i = next((k for k, t in enumerate(toks) if t.startswith("Resumo por")), 0)
+    r["_tokens"] = toks[max(0, i - 40):i + 700]
+    r["_tags"] = sorted({t.name for t in BeautifulSoup(melhor, "html.parser").find_all(True)})[:40]
     return r
 
 
