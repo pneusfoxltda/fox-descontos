@@ -384,7 +384,7 @@ async function mudarFerias(p, ferias) {
 
 function renderTabela() {
   const b = norm($("f-busca").value);
-  const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes)
+  const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes || (p.funcoes || []).includes("admin"))   // o admin também aparece (para escolher o "Aqui é o/a")
     .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "") + " " + (p.apelido || "")).includes(b))
     .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || funcaoDe(c).localeCompare(funcaoDe(a)) || (a.nome || "").localeCompare(c.nome || ""));
   $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th>${sql24 ? '<th title="Como se apresenta no WhatsApp: Aqui é o… / Aqui é a…">Aqui é</th>' : ""}<th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +

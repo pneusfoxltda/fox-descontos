@@ -289,7 +289,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Ao sair de um status, o dado dele sai junto (O.S., data do agendamento, motivo): `marcar_ligacao` do SQL `22_status_livre.sql`.
   Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
   **WhatsApp em 2 mensagens** (texto do TI, 24/11/2026): botão WA = mensagem 1 ("Olá, {cliente}! Aqui é {vendedor},
-  da Fox Pneus {loja}. Vi que você fez um orçamento ontem/antes de ontem/no dia X do pneu {medida}… o que falta para
+  da Fox Pneus {loja}. Vi que você fez um orçamento ontem/antes de ontem/no dia X do pneu {medida}… o que faltou para
   fecharmos…"; "Aqui é **o** Gilcimar / **a** Sabrina" pela coluna "Aqui é" do /admin, `perfis.artigo`, SQL `24_artigo_o_a.sql`;
   sem escolha fica sem artigo: o sistema NÃO adivinha pelo nome); botão (ícone do WhatsApp + alfinete de localização, meio a meio) = mensagem 2 com endereço e link do mapa da loja (`ENDERECO_LOJA`; PARINTINS = Manaus,
   XAPURI = Rio Branco, C.AUTO VLH = Vilhena), pisca depois da 1ª. O link do WhatsApp só leva 1 mensagem e
