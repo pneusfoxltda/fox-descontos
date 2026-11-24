@@ -23,7 +23,9 @@ jobs:
           DATA_INI: '01/11/2026'
           DATA_FIM: '21/11/2026'
           SO_B: '1'
-        run: python3 ${{ github.ref_name == 'varejo-553' && 'varejo_teste.py' || 'teste_movere.py' }}
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+        run: python3 ${{ github.ref_name == 'varejo-553' && 'analytics_varejo_diag.py' || 'teste_movere.py' }}
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
