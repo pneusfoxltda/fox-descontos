@@ -741,9 +741,11 @@
   window.feAjuda = function (q) {
     const n = N(q);
     if (/quem (e|eh) (voce|vc)|qual (e )?(o )?seu nome|voce e (uma )?(ia|robo)/.test(n)) {
-      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
+      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, explico tudo sobre pneus (medida, segmentos, quando trocar…), preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
       return true;
     }
+    // Conhecimento de pneus (fernanda-pneus.js): medida, segmentos, troca, DOT, etiqueta, run-flat…
+    if (window.fePneus && window.fePneus.resposta(q)) return true;
     if (respostaConta(q)) return true;
     // Tela das Ligações: a Fernanda conhece os clientes da pessoa (fernanda-ligacoes.js)
     if (/\/ligacoes/.test(location.pathname) && window.feLig && window.feLig.resposta(q)) return true;
@@ -830,6 +832,8 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montar); else montar();
   // Ligações das lojas: carrega a parte da Fernanda que conhece os clientes da pessoa
   if (/\/ligacoes/.test(location.pathname)) { const s = document.createElement("script"); s.src = "/fernanda-ligacoes.js"; s.defer = true; document.head.appendChild(s); }
+  // Conhecimento de pneus (estudo da Fox): em todas as telas
+  { const s = document.createElement("script"); s.src = "/fernanda-pneus.js"; s.defer = true; document.head.appendChild(s); }
 
   // Para testes
   window.FE_AJUDA_TESTE = { lerOrcamento, prepararImagem, textoDoPdf, montarLinhas, lerMensagem, numBR, dataDoTexto, medidaDoTexto, segmentoDoTexto, pgtoDoTexto, lojaDoTexto };
