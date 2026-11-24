@@ -362,6 +362,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   GK fora), 11 famílias, **"Frete compõe valores totais"** marcado (assim bate com o Analytics). O Movere lembra os
   filtros do login: o `sync_televendas.py` limpa lojas/tabelas/famílias/frete antes de cada relatório (não afetar o
   televendas). Registro público só com contagens. `DRY_RUN=1` testa sem gravar.
+- **🛞 Pneus** (pedido do TI, 24/11/2026; coluna ao lado de "Clientes mês", na loja e no vendedor): mais uma 553 por loja
+  só com as famílias de pneu (`FAMILIAS_PNEUS`: DUNLOP, FAMÍLIA PASSEIO PIRELLI, MULTIMARCAS CAR, PASSEIO BRIDGESTONE,
+  PNEUS IMPORTADOS CAR) → pneus vendidos no mês (`pneus`) e em quantas vendas (`pneus_vendas`). A rodada passa a
+  levar ≈ 20 min. SQL **`27_varejo_pneus_metas.sql`**: colunas de pneus + metas de nov/2026 (total R$ 4.500.000;
+  MATRIZ 800 mil, C.AUTO PVH 680, JI-PARANA 680, CACOAL 620, PARINTINS 530, XAPURI 480, ARIQUEMES 410, C.AUTO VLH 300).
+  Sem o SQL 27 o robô grava sem os pneus (não quebra).
 - SQL **`26_resultados_varejo.sql`**: `varejo_lojas`, `varejo_vendedores` (periodo `mes`/`hoje`), `varejo_conferencia`,
   `varejo_metas`, `perfil_ativo()`. Testes: `python tests/test_resultados_varejo.py`.
 - Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo; ARIQUEMES −1.266,00 = devolução REVENDA (cliente

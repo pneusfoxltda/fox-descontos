@@ -63,6 +63,18 @@ def linhas_vendedores(r: dict, loja: str) -> list:
     return list(out.values())
 
 
+def juntar_pneus(mes: dict, loja: str, lj_pneus: dict, vd_pneus: list):
+    """Põe nas linhas do mês a quantidade de pneus (itens) e em quantas vendas, da loja e de cada vendedor."""
+    for l in mes["lojas"]:
+        if l["loja"] == loja:
+            l["pneus"], l["pneus_vendas"] = lj_pneus["itens"], lj_pneus["clientes"]
+    pv = {v["cod"]: v for v in vd_pneus}
+    for v in mes["vend"]:
+        if v["loja"] == loja:
+            x = pv.get(v["cod"])
+            v["pneus"], v["pneus_vendas"] = (x["itens"], x["clientes"]) if x else (0.0, 0)
+
+
 def iso_analytics(d: str) -> str:
     """'11/13/2026' (Analytics) → '2026-11-13'."""
     try:
@@ -99,7 +111,7 @@ async def ler_553(hoje: date) -> dict:
     from playwright.async_api import async_playwright
     from sync_televendas import login
     from varejo_teste import gerar
-    from varejo_filtros import LOJAS_VAREJO, TABELAS_VAREJO, FAMILIAS_VAREJO
+    from varejo_filtros import LOJAS_VAREJO, TABELAS_VAREJO, FAMILIAS_VAREJO, FAMILIAS_PNEUS
     os.environ["FRETE"] = "1"   # "Frete compõe valores totais" (assim bate com o Analytics)
     ini, fim = hoje.replace(day=1).strftime("%d/%m/%Y"), hoje.strftime("%d/%m/%Y")
     res = {"mes": {"lojas": [], "vend": []}, "hoje": {"lojas": [], "vend": []}, "erros": []}
@@ -135,6 +147,23 @@ async def ler_553(hoje: date) -> dict:
                     res["erros"].append(f"{periodo} {loja}: soma dos vendedores diferente")
                 res[periodo]["lojas"].append(lj)
                 res[periodo]["vend"].extend(vd)
+        # Coluna "Pneus" (mês): o mesmo relatório só com as famílias de pneu → pneus vendidos e em quantas vendas
+        for cod, loja in LOJAS_VAREJO.items():
+            print(f"▶ pneus · {loja}")
+            r = None
+            for tentativa in (1, 2):
+                try:
+                    r = await gerar(page, ini, fim, TABELAS_VAREJO, FAMILIAS_PNEUS, [loja])
+                    if "erro" not in r:
+                        break
+                except Exception as e:
+                    r = {"erro": type(e).__name__}
+                print(f"   ⚠️ tentativa {tentativa} sem relatório")
+            if not r or "erro" in r:
+                res["erros"].append(f"pneus {loja}")
+                continue
+            juntar_pneus(res["mes"], loja, linha_loja(r, loja, cod), linhas_vendedores(r, loja))
+            print("   pneus lidos")
         await b.close()
     return res
 
@@ -170,6 +199,17 @@ def ler_analytics(hoje: date) -> tuple:
 
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
+def _post(cli, url, headers, rows):
+    """Grava; se o SQL 27 (colunas de pneus) ainda não rodou, grava sem os pneus."""
+    chaves = {k for x in rows for k in x}               # o banco exige as mesmas colunas em todas as linhas
+    rows = [{k: x.get(k) for k in chaves} for x in rows]
+    r = cli.post(url, headers=headers, json=rows)
+    if r.status_code == 400 and "pneus" in r.text:
+        print("⚠️ Falta rodar o SQL 27 (pneus): gravando sem a coluna Pneus")
+        r = cli.post(url, headers=headers, json=[{k: v for k, v in x.items() if not k.startswith("pneus")} for x in rows])
+    r.raise_for_status()
+
+
 def gravar(cli, chave, hoje: date, res: dict, conf: dict):
     H = cv._sb_headers(chave, {"Prefer": "resolution=merge-duplicates,return=minimal"})
     url = f"{cv.SUPABASE_URL}/rest/v1"
@@ -179,15 +219,14 @@ def gravar(cli, chave, hoje: date, res: dict, conf: dict):
         if not lojas:
             continue
         rows = [dict(l, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora) for l in lojas]
-        r = cli.post(f"{url}/varejo_lojas?on_conflict=mes,periodo,loja", headers=H, json=rows)
-        r.raise_for_status()
+        _post(cli, f"{url}/varejo_lojas?on_conflict=mes,periodo,loja", H, rows)
         # vendedores: troca os da loja inteira (quem saiu da lista some)
         for l in lojas:
             cli.delete(f"{url}/varejo_vendedores?mes=eq.{mes}&periodo=eq.{periodo}&loja=eq.{l['loja']}",
                        headers=cv._sb_headers(chave)).raise_for_status()
         vend = [dict(v, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora) for v in res[periodo]["vend"]]
         if vend:
-            cli.post(f"{url}/varejo_vendedores?on_conflict=mes,periodo,loja,cod", headers=H, json=vend).raise_for_status()
+            _post(cli, f"{url}/varejo_vendedores?on_conflict=mes,periodo,loja,cod", H, vend)
     if conf:
         ontem = (hoje - timedelta(days=1)).isoformat()
         rows = [{"mes": mes, "loja": k, "ate": ontem, "atualizado_em": agora, **v} for k, v in conf.items()]
