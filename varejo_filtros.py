@@ -1,0 +1,88 @@
+"""
+Filtros do dashboard do VAREJO na rotina 553 do Movere (decisão do TI, 24/11/2026).
+Usado pelo robô do Varejo e pelo diagnóstico. As listas do Movere (Estabelecimentos, Famílias de Itens,
+Tabela de Preço) são "digita e escolhe" (select2): o robô digita cada nome e clica na opção, como uma pessoa.
+"""
+import unicodedata
+
+LOJAS_VAREJO = {  # código do estabelecimento no Movere → nome
+    "1": "MATRIZ", "5": "JI-PARANA", "6": "CACOAL", "8": "C.AUTO PVH",
+    "9": "C.AUTO VLH", "11": "ARIQUEMES", "101": "XAPURI", "201": "PARINTINS",
+}
+FAMILIAS_VAREJO = [
+    "DUNLOP", "FAMÍLIA PASSEIO PIRELLI", "LUBRIFICANTES REPOSIÇÃO", "MERCADORIAS EM GERAL FDL",
+    "MERCADORIAS EM GERAL REPOSIÇÃO", "MULTIMARCAS CAR", "PASSEIO BRIDGESTONE", "PECAS FDL",
+    "PECAS REPOSICAO", "PNEUS IMPORTADOS CAR", "SERVICOS PRESTADOS",
+]
+TABELAS_VAREJO = [
+    "COLABORADORES", "CP 1", "CP 2", "CP 3", "CP 4", "CP 5", "CP SEM DEFINIÇÃO", "CTR",
+    "FROTAS LEVE", "FROTAS TICKET LOG", "Não Atribuído", "RECAPAGEM DIFERENCIADA", "VAREJO",
+]
+CAMPOS = {  # componente do Movere (id) → o que marcar
+    "cEstabelecimentos": list(LOJAS_VAREJO.values()),
+    "cFamiliaItens": FAMILIAS_VAREJO,
+    "cTabelaPreco": TABELAS_VAREJO,
+}
+
+
+def norm(s: str) -> str:
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().upper()
+    return " ".join(s.replace(":", " ").split())
+
+
+# Acha a caixa "digita e escolhe" de um componente pelo campo escondido dele
+JS_CAIXA = r"""(comp) => {
+  const h = document.querySelector('[id$="' + comp + '_hiddenFieldRegistrosSelecionados"]');
+  if (!h) return null;
+  let w = h.parentElement;
+  for (let i = 0; i < 6 && w && !w.querySelector('select.caixaTextoPesquisaDeMultiplaSelecao'); i++) w = w.parentElement;
+  if (!w) return null;
+  const sel = w.querySelector('select.caixaTextoPesquisaDeMultiplaSelecao');
+  const cont = w.querySelector('.select2-container');
+  if (cont && !cont.id) cont.id = 'fx-' + comp;
+  return {hidden: h.value, escolhidos: [...w.querySelectorAll('.select2-selection__choice')].map(c => c.title || c.innerText.replace('×', '').trim()),
+          opcoes: [...sel.options].map(o => o.value + '=' + o.text.trim()).slice(0, 40), html: w.outerHTML.slice(0, 1500)};
+}"""
+
+
+async def marcar_lista(page, comp: str, nomes: list, log=print) -> dict:
+    """Marca cada nome na lista "digita e escolhe" do componente. Devolve {'ok': [...], 'faltou': [...], 'hidden': '...'}."""
+    info = await page.evaluate(JS_CAIXA, comp)
+    if not info:
+        return {"ok": [], "faltou": list(nomes), "hidden": "", "erro": "componente não encontrado"}
+    ja = {norm(x).split(" ", 1)[-1] if norm(x)[:1].isdigit() else norm(x) for x in info["escolhidos"]}
+    ok, faltou = [], []
+    for nome in nomes:
+        alvo = norm(nome)
+        if any(alvo == j or alvo in j for j in ja):
+            ok.append(nome); continue
+        await page.click(f"#fx-{comp} .select2-selection")
+        campo = page.locator(f"#fx-{comp} .select2-search__field")
+        await campo.fill("")
+        await campo.type(nome.split()[0] if len(nome) > 14 else nome, delay=40)
+        achou = False
+        for _ in range(24):  # até ~6 s esperando a lista do Movere
+            await page.wait_for_timeout(250)
+            itens = await page.evaluate("""() => [...document.querySelectorAll('.select2-results__option')]
+                .map((e, i) => ({i, t: (e.innerText || '').trim()}))""")
+            cand = [x for x in itens if x["t"] and "Procurando" not in x["t"] and "Nenhum" not in x["t"]]
+            if not cand:
+                continue
+            esc = next((x for x in cand if norm(x["t"]) == alvo or norm(x["t"]).endswith(" " + alvo) or norm(x["t"]).split(" ", 1)[-1] == alvo), None)
+            if esc is None:
+                esc = next((x for x in cand if alvo in norm(x["t"])), None)
+            if esc is not None:
+                await page.locator(".select2-results__option").nth(esc["i"]).click()
+                achou = True
+                log(f"     ✔ {nome}  ← '{esc['t']}'")
+            else:
+                log(f"     ✖ {nome}: opções vistas = {[x['t'] for x in cand][:8]}")
+            break
+        if not achou:
+            faltou.append(nome)
+            await page.keyboard.press("Escape")
+        else:
+            ok.append(nome)
+        await page.wait_for_timeout(200)
+    info2 = await page.evaluate(JS_CAIXA, comp)
+    return {"ok": ok, "faltou": faltou, "hidden": info2["hidden"] if info2 else "", "escolhidos": info2["escolhidos"] if info2 else []}

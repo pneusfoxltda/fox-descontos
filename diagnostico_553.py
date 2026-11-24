@@ -79,8 +79,22 @@ async def main():
                     print(f"       {op}")
             elif c.get("opcoes"):
                 print(f"       ({len(c['opcoes'])} opções)")
+        # Etapa 2: marca os filtros do Varejo nas listas "digita e escolhe" e confere o que ficou gravado
+        from varejo_filtros import CAMPOS, JS_CAIXA, marcar_lista
+        print("\n🧪 Teste dos filtros do Varejo (não gera relatório):")
+        info = await page.evaluate(JS_CAIXA, "cFamiliaItens")
+        print("   estrutura da lista (Famílias):", (info or {}).get("html", "")[:900].replace("\n", " "))
+        for comp, nomes in CAMPOS.items():
+            print(f"\n   ▶ {comp}: marcando {len(nomes)}")
+            try:
+                r = await marcar_lista(page, comp, nomes)
+                print(f"   → marcados {len(r['ok'])}/{len(nomes)} · faltou: {r['faltou']} · gravado no campo escondido: '{r['hidden']}'")
+                print(f"   → na tela: {r.get('escolhidos')}")
+            except Exception as e:
+                print(f"   ❌ {type(e).__name__}: {str(e)[:200]}")
+        await page.screenshot(path="screenshot_filtros_553.png", full_page=True)
         print("\n🧩 Listas com caixinhas:")
-        for w in dados["widgets"]:
+        for w in dados["widgets"][:6]:
             print(f"   rótulo='{w['rotulo']}' id='{w['id']}' classes='{w['classes']}'")
         await browser.close()
     print("\n✅ Diagnóstico pronto (nenhuma venda foi lida).")
