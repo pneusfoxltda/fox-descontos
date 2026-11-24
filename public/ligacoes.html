@@ -934,14 +934,19 @@ const ENDERECO_LOJA = {
   "XAPURI":     ["Via Chico Mendes, nº 1473 - Vila do DNER", "https://maps.app.goo.gl/gDpSa2qPz4VSDRxk7"],
   "PARINTINS":  ["Av. Tarumã, nº 700 - Praça 14", "https://maps.app.goo.gl/um4ZbD6pmZmKV8Jj7"],
 };
+// Endereço direto do WhatsApp (api.whatsapp.com). O atalho wa.me, ao redirecionar, estragava os emojis
+// (📍 e 👇 chegavam como "�" para o cliente); os acentos passavam normais.
+function waUrl(num, texto) {
+  return "https://api.whatsapp.com/send?phone=55" + num + "&text=" + encodeURIComponent(texto);
+}
 function mensagemWa2(l) {
   const e = ENDERECO_LOJA[l.loja]; if (!e) return "";
-  return `*Nosso endereço:*\n\n📍${e[0]}\n\n*Link do maps:*👇\n${e[1]}`;
+  return `*Nosso endereço:*\n\n📍 ${e[0]}\n\n*Link do maps:* 👇🏼\n${e[1]}`;
 }
 function linkWa2(l) {
   const d = dig(l.telefone), m = mensagemWa2(l); if (d.length < 10 || !m) return "";
   const num = d.length > 11 && d.startsWith("55") ? d.slice(2) : d;
-  return "https://wa.me/55" + num + "?text=" + encodeURIComponent(m);
+  return waUrl(num, m);
 }
 // Depois da 1ª mensagem, o botão 📍 (2ª mensagem) fica piscando naquele cliente
 const waMandou = new Set();
@@ -979,7 +984,7 @@ function mensagemWa(l) {
 function linkWa(l) {
   const d = dig(l.telefone); if (d.length < 10) return "";
   const num = d.length > 11 && d.startsWith("55") ? d.slice(2) : d;
-  return "https://wa.me/55" + num + "?text=" + encodeURIComponent(mensagemWa(l));
+  return waUrl(num, mensagemWa(l));
 }
 
 // Grava o status (e o que ele exige). Mostra "Desfazer" por alguns segundos.
