@@ -130,7 +130,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
     `public/sw-avisos.js`. No /admin, coluna "🔔 Avisos". Tocar no aviso abre as Ligações (passa pela trava de IP).
     **Trava** (decisão do TI, 24/11/2026: vale para **todos**: vendedor, gerente da loja, Jonathan e admin): no
     computador ou no Android só usa as Ligações com os avisos ligados (tela por cima com "🔔 Ligar avisos", logo
-    depois de criar a senha; se bloqueou no navegador, mostra o passo a passo).
+    depois de criar a senha; se bloqueou no navegador, mostra o passo a passo e o botão "Já liberei, atualizar a página":
+    o Edge/Chrome só aplicam a liberação do cadeado depois de recarregar; com a permissão já dada, liga sozinho; sininho
+    riscado 🔕 do Edge = "dispensado", com a dica).
     Não trava: **iPhone** (não cobrar), navegador sem avisos, e enquanto o
     sistema de avisos não estiver pronto (sem SQL 17 ou sem a chave). `conferirTrava()` no ligacoes.html.
     **Fernanda coordenadora** (`montar_aviso` no `avisos_ligacoes.py`, decisão do TI 24/11/2026): **sempre 4 mensagens por

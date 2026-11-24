@@ -341,8 +341,9 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
         <ol>
           <li>Clique no <b>cadeado</b> 🔒 (ou no ⓘ) ao lado do endereço do site, lá em cima.</li>
           <li>Em <b>Notificações</b>, escolha <b>Permitir</b>.</li>
-          <li>Clique em <b>"Já liberei, tentar de novo"</b>.</li>
+          <li>Clique em <b>"Já liberei, atualizar a página"</b> (aqui embaixo, ou no botão <b>Atualizar</b> da faixa que o navegador mostra lá em cima). A liberação só vale depois de atualizar a página.</li>
         </ol>
+        <small id="trava-sino" style="display:none">Apareceu um <b>sininho riscado 🔕</b> na barra de endereço? Clique nele e escolha <b>Permitir</b> (o navegador escondeu a pergunta).<br></small>
         <small>No celular Android: toque nos 3 pontinhos ⋮ → ⓘ (informações do site) → Notificações → Permitir.</small>
       </div>
       <button class="trava-sair" onclick="sb.auth.signOut().then(() => location.reload())">Sair</button>
@@ -1376,6 +1377,7 @@ const AVISOS = {
     if (error) return /push_chave_publica|function/i.test(error.message) ? "sem_sql" : "erro";
     if (!chave) return "sem_chave";
     const perm = await Notification.requestPermission();
+    if (perm === "default") return "dispensado";     // fechou a pergunta, ou o navegador (Edge) escondeu num sininho 🔕
     if (perm !== "granted") return "negado";
     try {
       const reg = await navigator.serviceWorker.register("/sw-avisos.js", {scope: "/"});
@@ -1384,7 +1386,7 @@ const AVISOS = {
       if (!sub) sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64paraBytes(chave)});
       await AVISOS.salvar(sub); botaoAviso.salvo = true;
       const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
-      reg.showNotification("🦊 Avisos ligados!", {body: `Pronto${nome ? ", " + nome : ""}! Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.`, icon: "/icone-192.png", tag: "fe-lig-teste"});
+      reg.showNotification("🦊 Avisos ligados!", {body: `Pronto${nome ? ", " + nome : ""}! Vou te avisar de segunda a sábado, 2 vezes de manhã e 2 à tarde.`, icon: "/icone-192.png", tag: "fe-lig-teste"});
       return "ativo";
     } catch (e) { console.warn("avisos:", e); return "erro"; }
   },
@@ -1402,7 +1404,8 @@ const AVISOS = {
     return "desligado";
   },
   TEXTO: {
-    ativo: "Avisos ligados neste aparelho. 🔔 Vou te avisar de segunda a sábado às 8h, 10h, 14h e 16h30.",
+    ativo: "Avisos ligados neste aparelho. 🔔 Vou te avisar de segunda a sábado, 2 vezes de manhã e 2 à tarde.",
+    dispensado: "O navegador não mostrou (ou fechou) a pergunta dos avisos. Se apareceu um sininho riscado 🔕 na barra de endereço, clique nele e escolha \"Permitir\".",
     desligado: "Os avisos estão desligados neste aparelho.",
     negado: "O navegador está bloqueando os avisos deste site. Para liberar: clique no cadeado (ou no ⓘ) ao lado do endereço, em \"Notificações\", escolha \"Permitir\" e tente de novo.",
     iphone_instalar: "No iPhone os avisos funcionam com a página instalada: toque em Compartilhar (o quadrado com a seta ↑), depois em \"Adicionar à Tela de Início\". Abra pelo ícone da raposa e ligue os avisos de lá.",
@@ -1443,9 +1446,17 @@ async function conferirTrava() {
   if (st === "ativo" || st === "nao_suporta" || st === "iphone_instalar") return mostrarTrava(false);
   const { data: chave, error } = await sb.rpc("push_chave_publica");
   if (error || !chave) return mostrarTrava(false);            // avisos ainda não prontos no sistema
-  mostrarTrava(true, st === "negado");
+  // Já liberou no cadeado e atualizou a página: liga sozinho, sem perguntar de novo
+  mostrarTrava(true, st === "negado");                         // a trava aparece antes (nunca fica liberado sem avisos)
+  if (st === "desligado" && window.Notification && Notification.permission === "granted") {
+    $("trava-bt").textContent = "Ligando os avisos…";
+    const r = await Promise.race([AVISOS.ativar(), new Promise(ok => setTimeout(() => ok("demorou"), 15000))]);
+    botaoAviso();
+    if (r === "ativo") { mostrarTrava(false); toast("Avisos ligados! 🔔 Bom trabalho!"); return; }
+    mostrarTrava(true, false);
+  }
 }
-function mostrarTrava(on, bloqueado) {
+function mostrarTrava(on, bloqueado, sino) {
   $("trava-av").style.display = on ? "" : "none";
   if (!on) return;
   const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
@@ -1453,15 +1464,21 @@ function mostrarTrava(on, bloqueado) {
   $("trava-txt").innerHTML = "Eu te aviso de segunda a sábado, <b>2 vezes de manhã e 2 à tarde</b>, " +
     (ehVendedor ? "com os seus clientes do dia" : gerenteLoja ? "com os números da sua loja e de cada vendedor" : "com os números de cada loja") +
     ". Os avisos aparecem no computador (ou celular) e aqui comigo, na raposa. Só números, nada de dados de cliente.";
-  $("trava-passos").style.display = bloqueado ? "" : "none";
-  $("trava-bt").textContent = bloqueado ? "Já liberei, tentar de novo" : "🔔 Ligar avisos";
+  $("trava-passos").style.display = bloqueado || sino ? "" : "none";
+  $("trava-sino").style.display = sino ? "" : "none";
+  mostrarTrava.bloqueado = !!bloqueado;
+  // Bloqueado no navegador: a liberação no cadeado só vale depois de atualizar a página (Edge e Chrome)
+  $("trava-bt").textContent = bloqueado ? "Já liberei, atualizar a página" : sino ? "🔔 Tentar de novo" : "🔔 Ligar avisos";
 }
 $("trava-bt").onclick = async () => {
-  const bt = $("trava-bt"); bt.disabled = true; bt.textContent = "Um instante…";
+  const bt = $("trava-bt");
+  if (mostrarTrava.bloqueado && window.Notification && Notification.permission === "denied") { bt.textContent = "Atualizando…"; location.reload(); return; }
+  bt.disabled = true; bt.textContent = "Um instante…";
   const r = await AVISOS.ativar();
   bt.disabled = false; botaoAviso();
   if (r === "ativo") { mostrarTrava(false); toast("Avisos ligados! 🔔 Bom trabalho!"); return; }
   if (r === "negado") return mostrarTrava(true, true);
+  if (r === "dispensado") return mostrarTrava(true, false, true);
   if (r === "nao_suporta" || r === "iphone_instalar" || r === "sem_chave" || r === "sem_sql") { mostrarTrava(false); toast(AVISOS.TEXTO[r], false); return; }
   mostrarTrava(true, false); toast(AVISOS.TEXTO.erro, false);
 };
