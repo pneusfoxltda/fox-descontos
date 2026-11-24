@@ -112,5 +112,7 @@ function encaminhar(url, request) {
   if (caminho === '/admin') return rewrite(new URL('/admin.html', request.url));
   // 🩺 Monitor do sistema (só o admin; a página pede o login e o banco só responde ao admin)
   if (caminho === '/monitor') return rewrite(new URL('/monitor.html', request.url));
+  // 🏆 Resultados Fox Pneus (Televendas, Varejo · Geral; Atacado e Truck no futuro). Pede o login.
+  if (caminho === '/resultados') return rewrite(new URL('/resultados.html', request.url));
   return next();
 }

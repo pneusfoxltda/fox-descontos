@@ -172,7 +172,7 @@ footer{margin:40px 10px 0;color:var(--mut);font-size:12px;display:flex;justify-c
 <script src="/foxnet/frases.js"></script>
 <script>
 /* Fase 1: módulos internos abrem as páginas que já existem (cada uma com o seu login). */
-const REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/descontos", televendas:"/televendas.html", ligacoes:"/ligacoes.html"};
+const REAL = {consulta:"/consulta.html", cadastrar:"/cadastrardescontos.html", descontos:"/descontos", televendas:"/televendas.html", ligacoes:"/ligacoes.html", resultados:"/resultados"};
 const EXT = {
   movereCot:"https://foxpneus.moveresoftware.com/foxpneus/Rotinas/000/Rotina11.aspx",
   movere:"https://foxpneus.moveresoftware.com/foxpneus/default.aspx",
@@ -224,6 +224,7 @@ const SIS = [
   {id:"oleo",      t:"Busca de Óleo", c:"Óleo",           ic:"🛢️", cat:"lojas",      bg:["#E0F2FE","#93C5FD"], url:EXT.oleo},
   {id:"calc",      t:"Calculadora de Medidas", c:"Medidas",  ic:"📐", cat:"lojas",      bg:["#EDE9FE","#C4B5FD"], url:EXT.calc},
   {id:"ligacoes",  t:"Ligações das lojas", c:"Ligações",      ic:"📞", cat:"lojas",      bg:["#E0F7F1","#7FDCC2"], go:"#/ligacoes"},
+  {id:"resultados",t:"Resultados Fox Pneus", c:"Resultados",  ic:"🏆", cat:"lojas",      bg:["#FFF0D1","#FFC861"], go:"#/resultados"},
   {id:"academy",   t:"Bridgestone Academy",     c:"Academy",  ic:"🎓", cat:"treinamentos", bg:["#E8EEF9","#A9BCE6"], url:EXT.academy},
   {id:"appfox",    t:"App Fox", c:"App Fox",                 ic:"🚀", cat:"sistemas",   bg:["#FCE7F3","#F9A8D4"], url:EXT.appfox},
   {id:"chatgpt",   t:"ChatGPT", c:"ChatGPT",                 ic:"🤖", cat:"ia",         bg:["#D1FAE5","#6EE7B7"], url:EXT.gpt},

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>FOXNET · Resultados Fox Pneus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fx-bg,#0D0D0D);color:var(--fx-tx,#EDEDED);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+a{color:var(--fx-intx,#7DB8F0)}
+button{font-family:inherit;cursor:pointer}
+.tela-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);border-radius:14px;padding:30px;width:100%;max-width:380px;text-align:center}
+.login img{width:56px;margin-bottom:10px}.login h1{font-size:20px;margin-bottom:4px}.login p{font-size:12px;color:var(--fx-tx3,#999);margin-bottom:18px}
+.login input{width:100%;background:var(--fx-bg,#0D0D0D);border:1px solid var(--fx-bd,#3A3A3A);border-radius:8px;color:var(--fx-tx0,#fff);font-size:14px;padding:11px 12px;margin-bottom:10px;outline:none}
+.btn{background:var(--fx-ac,#CC1F1F);color:#fff;border:none;border-radius:8px;font-weight:700;padding:11px 16px;font-size:14px}
+.btn.cz{background:var(--fx-s2,#262626);border:1px solid var(--fx-bd,#3A3A3A);color:var(--fx-tx2,#ddd);font-size:12px;padding:7px 12px;text-decoration:none;display:inline-block}
+.erro{color:var(--fx-ertx,#F87171);font-size:13px;margin:6px 0 10px;min-height:18px}
+#app{display:none}
+.top{position:sticky;top:0;z-index:10;background:var(--fx-bg,#111);border-bottom:1px solid var(--fx-bd,#222);padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top img{width:32px}.top h1{font-size:17px}.top small{color:var(--fx-tx3,#888);font-size:12px;display:block}
+.top .sp{flex:1}
+.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.aba{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);color:var(--fx-tx2,#ddd);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;text-decoration:none}
+.aba.on{background:var(--fx-ac,#CC1F1F);border-color:var(--fx-ac,#CC1F1F);color:#fff}
+.aba.off{opacity:.5;cursor:default}
+.aba small{font-weight:500;font-size:11px;opacity:.8;margin-left:4px}
+/* Início: os 4 resultados */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.card{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2A2A2A);border-radius:14px;padding:20px;text-decoration:none;color:inherit;display:block;transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-2px);border-color:var(--fx-ac,#CC1F1F)}
+.card .ic{font-size:34px}.card h2{font-size:17px;margin:10px 0 4px}.card p{font-size:12.5px;color:var(--fx-tx3,#999);line-height:1.5}
+.card.breve{opacity:.55;cursor:default}.card.breve:hover{transform:none;border-color:var(--fx-bd,#2A2A2A)}
+.selo{display:inline-block;margin-top:10px;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:var(--fx-s2,#262626);color:var(--fx-tx2,#bbb)}
+/* Varejo */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.k{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2A2A2A);border-radius:12px;padding:12px 14px}
+.k span{font-size:11.5px;color:var(--fx-tx3,#999);display:block}.k b{display:block;font-size:22px;font-weight:800;margin-top:2px}.k small{font-size:11.5px;color:var(--fx-tx3,#999)}
+.k.dest{border-color:var(--fx-ac,#CC1F1F)}
+.prog{height:8px;background:var(--fx-s2,#262626);border-radius:4px;overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:#22C55E}
+.sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.sec h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.sec .sub{font-size:12px;color:var(--fx-tx3,#888);margin-bottom:10px;line-height:1.45}
+.tabw{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--fx-tx3,#888);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:7px 8px;border-bottom:1px solid var(--fx-bd,#2A2A2A);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--fx-bd,#1C1C1C);white-space:nowrap}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.loja{cursor:pointer}tr.loja:hover td{background:var(--fx-s2,#1d1d1d)}
+tr.loja td:first-child{font-weight:800;color:var(--fx-tx3,#888)}
+tr.loja.aberta td{background:var(--fx-s2,#1d1d1d)}
+tr.total td{font-weight:800;border-top:2px solid var(--fx-bd,#333)}
+.seta{display:inline-block;transition:transform .2s;color:var(--fx-tx3,#888);margin-right:4px}
+tr.aberta .seta{transform:rotate(90deg)}
+tr.vend td{background:var(--fx-bg,#101010);font-size:12.5px}
+tr.vend td:first-child{color:var(--fx-tx3,#777)}
+.soma td{font-size:12px;color:var(--fx-tx3,#999);background:var(--fx-bg,#101010)}
+.ok{color:var(--fx-oktx,#4ADE80)}.ruim{color:var(--fx-ertx,#F87171)}
+.pct{display:inline-block;min-width:44px;text-align:right;font-weight:700}
+.mini{height:6px;background:var(--fx-s2,#262626);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}.mini i{display:block;height:100%;background:#22C55E}
+.medalha{font-size:15px}
+.nota{font-size:11.5px;color:var(--fx-tx3,#888);margin-top:8px;line-height:1.5}
+.vazio{padding:30px;text-align:center;color:var(--fx-tx3,#888);font-size:13px}
+/* Metas (admin) */
+.metas{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:10px 0}
+.metas label{font-size:12px;color:var(--fx-tx2,#ccc);display:flex;flex-direction:column;gap:4px}
+.metas input{background:var(--fx-bg,#0D0D0D);border:1px solid var(--fx-bd,#3A3A3A);border-radius:8px;color:var(--fx-tx0,#fff);font-size:14px;padding:8px 10px}
+/* Conferência com o Analytics (seta vermelha) */
+.conf-bt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--fx-erbg,#2A1212);border:1px solid #7F1D1D;color:var(--fx-ertx,#FCA5A5);border-radius:12px;padding:12px 16px;font-size:13.5px;font-weight:700}
+.conf-bt .sv{font-size:20px;transition:transform .2s;color:#EF4444}
+.conf-bt.aberto .sv{transform:rotate(180deg)}
+.conf-ok{font-size:12.5px;color:var(--fx-oktx,#4ADE80);padding:8px 2px}
+#conf-corpo{display:none;margin-top:10px}
+.mot{font-size:12px;line-height:1.45;padding:4px 0;border-top:1px dashed var(--fx-bd,#2a2a2a)}
+.mot:first-child{border-top:none}
+.mot small{color:var(--fx-tx3,#999);display:block}
+@media(max-width:700px){.wrap{padding:10px}.top{padding:8px 10px}.k b{font-size:19px}td,th{padding:7px 6px}}
+</style>
+<script src="/tema-comum.js"></script>
+<script src="/paleta.js" data-padrao="escuro,#CC1F1F" data-antes="#bt-sair"></script>
+</head>
+<body>
+
+<div id="login" class="tela-centro">
+  <div class="login">
+    <img src="/logo-fox.png" alt="">
+    <h1>🏆 Resultados Fox Pneus</h1>
+    <p>Entre com o mesmo login das Ligações e do App.</p>
+    <input id="l-email" type="email" placeholder="E-mail" autocomplete="username">
+    <input id="l-senha" type="password" placeholder="Senha" autocomplete="current-password">
+    <div class="erro" id="l-erro"></div>
+    <button class="btn" id="l-entrar" style="width:100%">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top">
+    <img src="/logo-fox.png" alt="">
+    <div><h1>🏆 Resultados Fox Pneus</h1><small id="sub-top">Rede Fox Pneus</small></div>
+    <div class="sp"></div>
+    <button class="btn cz" id="bt-atualizar" style="display:none">↻ Atualizar</button>
+    <button class="btn cz" id="bt-sair">Sair</button>
+  </div>
+  <div class="wrap">
+    <div class="abas" id="abas"></div>
+    <div id="tela"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os números é o banco (só quem tem login ativo lê; SQL 26).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const fmtR = v => "R$ " + Number(v || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtR0 = v => "R$ " + Math.round(Number(v || 0)).toLocaleString("pt-BR");
+const fmtN = v => Math.round(Number(v || 0)).toLocaleString("pt-BR");
+const fmtD = iso => { if (!iso) return ""; const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
+const hojePVH = () => new Date().toLocaleDateString("en-CA", {timeZone: "America/Porto_Velho"});
+const horaPVH = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+const LOJAS = ["MATRIZ", "C.AUTO PVH", "ARIQUEMES", "JI-PARANA", "CACOAL", "C.AUTO VLH", "PARINTINS", "XAPURI"];
+const NOME_LOJA = {"C.AUTO PVH": "C. Automotivo PVH", "C.AUTO VLH": "C. Automotivo Vilhena", "JI-PARANA": "Ji-Paraná", "PARINTINS": "Parintins (Manaus)", "XAPURI": "Xapuri (Rio Branco)"};
+const nomeLoja = l => NOME_LOJA[l] || (l.charAt(0) + l.slice(1).toLowerCase());
+let perfil = null, ehAdmin = false;
+
+// ── LOGIN (qualquer pessoa com login ativo) ──
+async function entrar(sessao) {
+  if (!sessao) return;
+  const { data: p } = await sb.from("perfis").select("nome,apelido,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
+  if (!p || !p.ativo) { await sb.auth.signOut(); $("l-erro").textContent = "Seu acesso está desativado ou não existe. Fale com o TI."; return; }
+  perfil = p; ehAdmin = (p.funcoes || []).includes("admin");
+  if (ehAdmin && window.FoxTema && FoxTema.admin) try { FoxTema.admin(); } catch (e) {}
+  $("login").style.display = "none"; $("app").style.display = "block";
+  rota();
+}
+$("l-entrar").onclick = async () => {
+  $("l-erro").textContent = "";
+  const cred = {email: $("l-email").value.trim().toLowerCase(), password: $("l-senha").value};
+  const { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sb, cred) : sb.auth.signInWithPassword(cred));
+  if (error) { $("l-erro").textContent = error.mensagem || "E-mail ou senha incorretos."; return; }
+  entrar(data.session);
+};
+$("l-senha").addEventListener("keydown", e => { if (e.key === "Enter") $("l-entrar").click(); });
+$("bt-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("bt-atualizar").onclick = () => carregarVarejo();
+sb.auth.getSession().then(({data}) => entrar(data.session));
+
+// ── ABAS ──
+const ABAS = [
+  {id: "", t: "🏠 Início"},
+  {id: "televendas", t: "💰 Resultado Televendas", href: "/televendas.html"},
+  {id: "varejo", t: "🏪 Resultado Varejo · Geral"},
+  {id: "atacado", t: "📦 Resultado Atacado", breve: true},
+  {id: "truck", t: "🚚 Resultado Truck", breve: true},
+];
+function rota() {
+  const r = (location.hash || "").replace("#", "");
+  $("abas").innerHTML = ABAS.map(a => a.breve
+    ? `<span class="aba off" title="Será feito no futuro">${a.t}<small>em breve</small></span>`
+    : `<a class="aba ${a.id === r ? "on" : ""}" href="${a.href || "#" + a.id}">${a.t}</a>`).join("");
+  $("bt-atualizar").style.display = r === "varejo" ? "" : "none";
+  if (r === "varejo") return carregarVarejo();
+  inicio();
+}
+window.addEventListener("hashchange", () => perfil && rota());
+
+function inicio() {
+  $("sub-top").textContent = "Rede Fox Pneus";
+  const nome = (perfil.apelido || (perfil.nome || "").split(" ")[0] || "").trim();
+  $("tela").innerHTML = `<p style="font-size:14px;color:var(--fx-tx2,#ccc);margin-bottom:14px">${nome ? "Olá, " + esc(nome) + "! " : ""}Escolha o resultado:</p>
+  <div class="cards">
+    <a class="card" href="/televendas.html"><div class="ic">💰</div><h2>Resultado Televendas</h2><p>Vendas, metas e ranking das operadoras do televendas.</p></a>
+    <a class="card" href="#varejo"><div class="ic">🏪</div><h2>Resultado Varejo · Geral</h2><p>Ranking das lojas no dia e no mês, meta, e os vendedores de cada loja. Atualiza de hora em hora.</p></a>
+    <div class="card breve"><div class="ic">📦</div><h2>Resultado Atacado</h2><p>Será feito no futuro.</p><span class="selo">em breve</span></div>
+    <div class="card breve"><div class="ic">🚚</div><h2>Resultado Truck</h2><p>Será feito no futuro.</p><span class="selo">em breve</span></div>
+  </div>`;
+}
+
+// ── VAREJO ──
+let V = null, aberta = null, editandoMetas = false;
+// Dias de venda (seg a sáb) que faltam no mês, contando hoje
+function diasRestantes(iso) {
+  const d = new Date(iso + "T12:00:00"), fim = new Date(d.getFullYear(), d.getMonth() + 1, 0, 12);
+  let n = 0;
+  for (const x = new Date(d); x <= fim; x.setDate(x.getDate() + 1)) if (x.getDay() !== 0) n++;
+  return n;
+}
+async function carregarVarejo() {
+  $("sub-top").textContent = "Resultado Varejo · Geral";
+  $("tela").innerHTML = '<div class="vazio">Carregando…</div>';
+  const hoje = hojePVH(), mes = hoje.slice(0, 8) + "01";
+  const [l, v, c, m] = await Promise.all([
+    sb.from("varejo_lojas").select("*").eq("mes", mes),
+    sb.from("varejo_vendedores").select("*").eq("mes", mes),
+    sb.from("varejo_conferencia").select("*").eq("mes", mes),
+    sb.from("varejo_metas").select("*").eq("mes", mes),
+  ]);
+  if (l.error) {
+    $("tela").innerHTML = `<div class="vazio">${/varejo_lojas|does not exist|schema cache/i.test(l.error.message || "") ? "O Resultado Varejo ainda não está pronto: falta rodar o passo 26 no Supabase. Avise o TI." : "Não consegui carregar: " + esc(l.error.message)}</div>`;
+    return;
+  }
+  V = {hoje, mes, lojas: l.data || [], vend: v.data || [], conf: c.data || [], metas: m.data || []};
+  desenharVarejo();
+}
+function desenharVarejo() {
+  const {hoje, lojas, vend, conf, metas} = V;
+  const mesL = lojas.filter(x => x.periodo === "mes"), hojeL = lojas.filter(x => x.periodo === "hoje" && x.dia === hoje);
+  if (!mesL.length) { $("tela").innerHTML = '<div class="vazio">Ainda não há números deste mês. O robô atualiza de hora em hora, de segunda a sábado (7h45 às 17h45).</div>'; return; }
+  const meta = Object.fromEntries(metas.map(x => [x.loja, Number(x.meta)]));
+  const porLoja = {};
+  for (const loja of new Set([...LOJAS, ...mesL.map(x => x.loja)])) {
+    const a = mesL.find(x => x.loja === loja) || {venda: 0, clientes: 0, itens: 0, ticket: 0};
+    const h = hojeL.find(x => x.loja === loja) || {venda: 0, clientes: 0};
+    porLoja[loja] = {loja, mes: a, hoje: h, meta: meta[loja] || 0};
+  }
+  const ranking = Object.values(porLoja).sort((a, b) => b.mes.venda - a.mes.venda);
+  const soma = (arr, f) => arr.reduce((s, x) => s + Number(f(x) || 0), 0);
+  const T = {
+    hoje: soma(ranking, x => x.hoje.venda), cliHoje: soma(ranking, x => x.hoje.clientes),
+    mes: soma(ranking, x => x.mes.venda), cli: soma(ranking, x => x.mes.clientes), itens: soma(ranking, x => x.mes.itens),
+    meta: soma(ranking, x => x.meta),
+  };
+  T.ticket = T.cli ? T.mes / T.cli : 0;
+  const dr = diasRestantes(hoje), falta = Math.max(0, T.meta - T.mes);
+  const atual = mesL.reduce((m, x) => x.atualizado_em > m ? x.atualizado_em : m, "");
+  const temHoje = hojeL.length > 0;
+  const pctT = T.meta ? T.mes / T.meta * 100 : null;
+
+  const kpis = `<div class="kpis">
+    <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " clientes" : "ainda sem rodada hoje"}</small></div>
+    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens</small></div>
+    <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i style="width:${Math.min(100, pctT)}%"></i></div><small>${pctT.toFixed(0)}% atingido</small>` : `<small>${ehAdmin ? "clique em ✏️ Metas" : "o TI ainda não lançou"}</small>`}</div>
+    <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + " dia(s) de venda" : T.meta ? "meta batida! 🎉" : ""}</small></div>
+    <div class="k"><span>Ticket médio</span><b>${fmtR(T.ticket)}</b><small>venda ÷ clientes</small></div>
+  </div>`;
+
+  const med = i => ["🥇", "🥈", "🥉"][i] || (i + 1) + "º";
+  let linhas = "";
+  ranking.forEach((x, i) => {
+    const p = x.meta ? x.mes.venda / x.meta * 100 : null;
+    linhas += `<tr class="loja ${aberta === x.loja ? "aberta" : ""}" onclick="abrirLoja('${esc(x.loja)}')">
+      <td class="medalha">${med(i)}</td>
+      <td><span class="seta">▸</span><b>${esc(nomeLoja(x.loja))}</b></td>
+      <td class="r">${temHoje ? fmtR(x.hoje.venda) : ""}</td>
+      <td class="r">${temHoje ? fmtN(x.hoje.clientes) : ""}</td>
+      <td class="r"><b>${fmtR(x.mes.venda)}</b></td>
+      <td class="r">${x.meta ? fmtR0(x.meta) : ""}</td>
+      <td class="r">${p == null ? "" : `<span class="pct">${p.toFixed(0)}%</span><span class="mini"><i style="width:${Math.min(100, p)}%"></i></span>`}</td>
+      <td class="r">${x.meta ? fmtR0(Math.max(0, x.meta - x.mes.venda)) : ""}</td>
+      <td class="r">${fmtN(x.mes.clientes)}</td>
+      <td class="r">${fmtR(x.mes.ticket)}</td>
+      <td class="r">${fmtN(x.mes.itens)}</td></tr>`;
+    if (aberta === x.loja) linhas += vendedoresDaLoja(x.loja, temHoje);
+  });
+  linhas += `<tr class="total"><td></td><td>Total Varejo</td><td class="r">${temHoje ? fmtR(T.hoje) : ""}</td><td class="r">${temHoje ? fmtN(T.cliHoje) : ""}</td>
+    <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : pctT.toFixed(0) + "%"}</td>
+    <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
+
+  const metasHtml = ehAdmin ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
+    ${editandoMetas ? `<div class="sub">Só o administrador vê este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
+    <div class="metas">${LOJAS.map(l => `<label>${esc(nomeLoja(l))}<input type="number" min="0" step="1000" data-loja="${esc(l)}" value="${meta[l] || ""}"></label>`).join("")}</div>
+    <button class="btn" onclick="salvarMetas()">Salvar metas</button> <span id="metas-msg" class="nota"></span>` : `<div class="sub">Total: ${T.meta ? fmtR0(T.meta) : "nenhuma meta lançada"}.</div>`}</div>` : "";
+
+  $("tela").innerHTML = kpis + `<div class="sec"><h2>🏆 Ranking das lojas</h2>
+    <div class="sub">Clique na loja para ver os vendedores. Ordem pela venda do mês. Atualizado ${atual ? "em " + horaPVH(atual) : ""} · rotina 553 do Movere, de hora em hora (seg a sáb).</div>
+    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
+    <p class="nota">Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.</p></div>`
+    + metasHtml + conferencia(conf);
+}
+const fmtMes = iso => ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][Number(iso.slice(5, 7)) - 1] + "/" + iso.slice(0, 4);
+function vendedoresDaLoja(loja, temHoje) {
+  const m = V.vend.filter(v => v.loja === loja && v.periodo === "mes").sort((a, b) => b.venda - a.venda);
+  const h = Object.fromEntries(V.vend.filter(v => v.loja === loja && v.periodo === "hoje" && v.dia === V.hoje).map(v => [v.cod, v]));
+  if (!m.length) return `<tr class="vend"><td></td><td colspan="10">Sem vendedores no mês.</td></tr>`;
+  const total = V.lojas.find(x => x.loja === loja && x.periodo === "mes");
+  const somaMes = m.reduce((s, v) => s + Number(v.venda), 0), somaHoje = Object.values(h).reduce((s, v) => s + Number(v.venda), 0);
+  const bate = total && Math.abs(somaMes - Number(total.venda)) < 0.05;
+  return m.map((v, i) => `<tr class="vend"><td class="r">${i + 1}º</td><td>&nbsp;&nbsp;&nbsp;👤 ${esc(v.nome)}</td>
+      <td class="r">${temHoje ? fmtR(h[v.cod] ? h[v.cod].venda : 0) : ""}</td><td class="r">${temHoje ? fmtN(h[v.cod] ? h[v.cod].clientes : 0) : ""}</td>
+      <td class="r">${fmtR(v.venda)}</td><td class="r"></td><td class="r">${total && total.venda ? (v.venda / total.venda * 100).toFixed(0) + "% da loja" : ""}</td><td></td>
+      <td class="r">${fmtN(v.clientes)}</td><td class="r">${fmtR(v.ticket)}</td><td class="r">${fmtN(v.itens)}</td></tr>`).join("")
+    + `<tr class="soma"><td></td><td>&nbsp;&nbsp;&nbsp;Soma dos vendedores</td><td class="r">${temHoje ? fmtR(somaHoje) : ""}</td><td></td><td class="r">${fmtR(somaMes)}</td>
+      <td colspan="6">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
+}
+function abrirLoja(loja) { aberta = aberta === loja ? null : loja; desenharVarejo(); }
+async function salvarMetas() {
+  const linhas = [...document.querySelectorAll(".metas input")].filter(i => i.value !== "").map(i => ({mes: V.mes, loja: i.dataset.loja, meta: Number(i.value), alterado_por: perfil.nome || perfil.email, alterado_em: new Date().toISOString()}));
+  const { error } = await sb.from("varejo_metas").upsert(linhas, {onConflict: "mes,loja"});
+  if (error) { $("metas-msg").textContent = "Não consegui salvar: " + error.message; return; }
+  editandoMetas = false; carregarVarejo();
+}
+
+// Seta vermelha: a 553 comparada com o Analytics (relatório do Jonathan), loja por loja, com os motivos
+function conferencia(conf) {
+  if (!conf.length) return `<p class="nota">A conferência com o Analytics aparece aqui depois da primeira rodada do dia 2 em diante.</p>`;
+  const dif = conf.filter(x => Math.abs(Number(x.diferenca || 0)) >= 0.05).sort((a, b) => Math.abs(b.diferenca) - Math.abs(a.diferenca));
+  const ate = fmtD(conf[0].ate);
+  if (!dif.length) return `<div class="conf-ok">✅ Conferido com o Analytics (relatório do Jonathan) até ${ate}: as ${conf.length} lojas batem.</div>`;
+  const totalDif = dif.reduce((s, x) => s + Number(x.diferenca), 0);
+  const corpo = dif.map(x => `<tr><td><b>${esc(nomeLoja(x.loja))}</b></td><td class="r">${fmtR(x.v553)}</td><td class="r">${fmtR(x.analytics)}</td>
+      <td class="r ruim"><b>${Number(x.diferenca) > 0 ? "+" : ""}${fmtR(x.diferenca)}</b></td>
+      <td style="white-space:normal;min-width:320px">${(x.motivos || []).map(m => `<div class="mot"><b>${esc(m.motivo)}</b>: ${fmtR(m.valor)}
+        ${m.cod_cliente ? ` · cliente cód. <b>${esc(m.cod_cliente)}</b>` : ""}${m.nota ? ` · nota ${esc(m.nota)}` : ""}${m.dia ? ` · ${fmtD(m.dia)}` : ""}${m.vendedor ? ` · ${esc(m.vendedor)}` : ""}
+        <small>${esc(m.explica || "")}</small></div>`).join("") || "<small>Sem motivo identificado.</small>"}</td></tr>`).join("");
+  return `<button class="conf-bt" id="conf-bt" onclick="this.classList.toggle('aberto');$('conf-corpo').style.display=this.classList.contains('aberto')?'block':'none'">
+      <span class="sv">▼</span><span>A rotina 553 está diferente do Analytics (relatório do Jonathan) em ${dif.length} loja(s) até ${ate}: ${totalDif > 0 ? "+" : ""}${fmtR(totalDif)}. Clique para ver os valores e os motivos.</span></button>
+    <div id="conf-corpo" class="sec"><div class="tabw"><table><tr><th>Loja</th><th class="r">Rotina 553</th><th class="r">Analytics</th><th class="r">Diferença</th><th>Motivos</th></tr>${corpo}</table></div>
+    <p class="nota">Comparado até ontem (o Analytics atualiza de madrugada). O Analytics tira o segmento REVENDA e a rotina 553 não tem esse filtro.
+    Para acertar: conferir no Movere o segmento do cliente indicado.</p></div>`;
+}
+</script>
+<script src="/fernanda.js" defer></script>
+</body>
+</html>
