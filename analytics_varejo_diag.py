@@ -78,8 +78,9 @@ def main():
                 dfs = dfs[:-len(q(cli, tt, esc[-1])["attribute"]["content"]["displayForms"])]
                 r = executar(cli, tt, base, linhas + dfs, [M_FAT], ("obj/1539]",), (fdia,))
             n_nota = len(q(cli, tt, esc[-1])["attribute"]["content"]["displayForms"])
-            for nome_q, extra_dfs in (("9_sem_nota", dfs[:-n_nota]), ("10_so_codigo", dfs[:1])):
-                rr = executar(cli, tt, base, linhas + extra_dfs, [M_FAT], ("obj/1539]",), (fdia,))
+            sem_dia = linhas[:-1]
+            for nome_q, extra_dfs in (("11_sem_dia_codigo", dfs[:1]), ("12_sem_dia_nome", dfs[1:2]), ("13_sem_dia_nota", dfs[2:3])):
+                rr = executar(cli, tt, base, sem_dia + extra_dfs, [M_FAT], ("obj/1539]",), (fdia,))
                 out[nome_q] = [rr[0]] + [x for x in rr[1:] if any("REVENDA" in str(c).upper() for c in x)] if isinstance(rr, list) and rr else rr
                 print("▶", nome_q, len(out[nome_q]) if isinstance(out[nome_q], list) else out[nome_q])
             if isinstance(r, list) and r:
