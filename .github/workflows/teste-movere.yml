@@ -20,11 +20,7 @@ jobs:
         env:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
-          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
-          DRY_RUN: '1'
-          MOSTRAR_TRANCADO: '1'
-        run: python3 resultados_varejo.py
+        run: python3 teste_movere.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
