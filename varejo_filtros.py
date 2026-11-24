@@ -30,6 +30,25 @@ def norm(s: str) -> str:
     return " ".join(s.replace(":", " ").split())
 
 
+# O Movere lembra os últimos filtros usados com o mesmo login (ex.: "Nome do item começando por: FLEXIVEL"):
+# antes de marcar os do Varejo, limpa TODOS os campos de texto e listas, menos datas, visão e grupo empresarial.
+JS_LIMPAR = r"""() => {
+  const manter = /cdtaini|cdtafim|idvisaoempresarial|idgrupoempresarial/i;
+  let n = 0;
+  for (const el of document.querySelectorAll('input[type=text],input:not([type]),textarea')) {
+    if (manter.test(el.id || '') || !el.value) continue;
+    el.value = ''; ['input', 'change'].forEach(e => el.dispatchEvent(new Event(e, {bubbles: true}))); n++;
+  }
+  for (const h of document.querySelectorAll('[id$="_hiddenFieldRegistrosSelecionados"]')) { if (h.value) { h.value = ''; n++; } }
+  for (const s of document.querySelectorAll('select.caixaTextoPesquisaDeMultiplaSelecao')) {
+    if (window.jQuery) { try { window.jQuery(s).val(null).trigger('change'); } catch (e) {} }
+    else { [...s.options].forEach(o => o.selected = false); s.dispatchEvent(new Event('change', {bubbles: true})); }
+  }
+  for (const c of document.querySelectorAll('[id*="cArosPermitidos"]')) if (c.checked) { c.checked = false; n++; }
+  return n;
+}"""
+
+
 # Acha a caixa "digita e escolhe" de um componente pelo campo escondido dele
 JS_CAIXA = r"""(comp) => {
   const h = document.querySelector('[id$="' + comp + '_hiddenFieldRegistrosSelecionados"]');

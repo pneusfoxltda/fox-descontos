@@ -14,7 +14,7 @@ from playwright.async_api import async_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_televendas import login, RELATORIO_URL, MOVERE_BASE
-from varejo_filtros import LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, marcar_lista, ler_resumos
+from varejo_filtros import LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, marcar_lista, ler_resumos, JS_LIMPAR
 
 CHAVE_PUBLICA = """-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzijlXhYa99ik9jnObJRO
@@ -44,6 +44,8 @@ def trancar(obj) -> str:
 async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: list) -> dict:
     await page.goto(RELATORIO_URL, wait_until="domcontentloaded", timeout=40000)
     await page.wait_for_timeout(2500)
+    print(f"   campos limpos (lembrados pelo Movere): {await page.evaluate(JS_LIMPAR)}")
+    await page.wait_for_timeout(500)
     for campo, val in (("cdtaini_edt", data_ini), ("cdtafim_edt", data_fim)):
         el = page.locator(f"#{P}{campo}")
         await el.click(click_count=3); await el.fill(val); await el.press("Tab")
