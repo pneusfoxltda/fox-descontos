@@ -560,6 +560,25 @@ async def preencher_formulario(page, operador: dict, data_fmt: str):
     await page.goto(RELATORIO_URL, wait_until='domcontentloaded', timeout=30000)
     await page.wait_for_timeout(800)
 
+    # 0. O Movere lembra os últimos filtros usados com o mesmo login. O robô do Varejo (resultados_varejo.py)
+    #    usa a mesma rotina 553 com lojas, tabelas de preço, famílias e frete: tira tudo isso antes de seguir.
+    try:
+        await page.evaluate("""() => {
+            for (const c of ['cEstabelecimentos', 'cTabelaPreco', 'cFamiliaItens']) {
+                const h = document.querySelector('[id$="' + c + '_hiddenFieldRegistrosSelecionados"]');
+                if (h) h.value = '';
+                const s = document.querySelector('select[id*="' + c + '"]');
+                if (s) { if (window.jQuery) { try { window.jQuery(s).val(null).trigger('change'); } catch (e) {} }
+                         else { [...s.options].forEach(o => o.selected = false); } }
+            }
+            for (const id of ['cFreteCompoeValoresTotais', 'chkFamiliaItens']) {
+                const e = document.querySelector('[id$="' + id + '"]');
+                if (e && e.checked) { e.checked = false; e.dispatchEvent(new Event('change', {bubbles: true})); }
+            }
+        }""")
+    except Exception:
+        pass
+
     # 1. Visão Empresarial = 1
     await page.evaluate("""() => {
         const inp = document.querySelector('[id*="idvisaoempresarial"]');
