@@ -336,15 +336,22 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
       <h2 id="trava-tit">Ligue os avisos da Fernanda para continuar</h2>
       <p id="trava-txt">Eu te aviso de segunda a sábado, <b>2 vezes de manhã e 2 à tarde</b>, com os seus clientes do dia. Só números, nada de dados de cliente.</p>
       <button class="trava-bt" id="trava-bt">🔔 Ligar avisos</button>
+      <small id="trava-det" style="display:none;margin-top:8px;opacity:.75;font-size:11px;word-break:break-word"></small>
       <div class="trava-passos" id="trava-passos" style="display:none">
-        <b>O navegador está bloqueando os avisos. Para liberar:</b>
+        <div id="trava-bloq"><b>O navegador está bloqueando os avisos. Para liberar:</b>
         <ol>
           <li>Clique no <b>cadeado</b> 🔒 (ou no ⓘ) ao lado do endereço do site, lá em cima.</li>
           <li>Em <b>Notificações</b>, escolha <b>Permitir</b>.</li>
           <li>Clique em <b>"Já liberei, atualizar a página"</b> (aqui embaixo, ou no botão <b>Atualizar</b> da faixa que o navegador mostra lá em cima). A liberação só vale depois de atualizar a página.</li>
-        </ol>
+        </ol></div>
+        <div id="trava-win" style="display:none"><b>O navegador já deixou, mas o Windows não aceitou os avisos.</b>
+        <ol>
+          <li>No menu Iniciar do Windows, abra <b>Configurações → Sistema → Notificações</b>.</li>
+          <li>Ligue <b>Notificações</b>, desligue o <b>Não incomodar</b> e, na lista, deixe o <b>Microsoft Edge</b> (ou o Google Chrome) ligado.</li>
+          <li>Volte aqui e clique em <b>Tentar de novo</b>. Se continuar, abra as Ligações pelo <b>Google Chrome</b>.</li>
+        </ol></div>
         <small id="trava-sino" style="display:none">Apareceu um <b>sininho riscado 🔕</b> na barra de endereço? Clique nele e escolha <b>Permitir</b> (o navegador escondeu a pergunta).<br></small>
-        <small>No celular Android: toque nos 3 pontinhos ⋮ → ⓘ (informações do site) → Notificações → Permitir.</small>
+        <small id="trava-andr">No celular Android: toque nos 3 pontinhos ⋮ → ⓘ (informações do site) → Notificações → Permitir.</small>
       </div>
       <button class="trava-sair" onclick="sb.auth.signOut().then(() => location.reload())">Sair</button>
     </div>
@@ -1371,10 +1378,11 @@ const AVISOS = {
     } catch (e) { return "desligado"; }
   },
   async ativar() {
+    AVISOS.ultimoErro = "";
     const st = await AVISOS.estado();
     if (st === "iphone_instalar" || st === "nao_suporta" || st === "negado") return st;
     const { data: chave, error } = await sb.rpc("push_chave_publica");
-    if (error) return /push_chave_publica|function/i.test(error.message) ? "sem_sql" : "erro";
+    if (error) { AVISOS.ultimoErro = "Chave: " + (error.message || ""); return /push_chave_publica|function/i.test(error.message) ? "sem_sql" : "erro"; }
     if (!chave) return "sem_chave";
     const perm = await Notification.requestPermission();
     if (perm === "default") return "dispensado";     // fechou a pergunta, ou o navegador (Edge) escondeu num sininho 🔕
@@ -1388,7 +1396,7 @@ const AVISOS = {
       const nome = (perfil.apelido || primeiro(perfil.nome) || "").trim();
       reg.showNotification("🦊 Avisos ligados!", {body: `Pronto${nome ? ", " + nome : ""}! Vou te avisar de segunda a sábado, 2 vezes de manhã e 2 à tarde.`, icon: "/icone-192.png", tag: "fe-lig-teste"});
       return "ativo";
-    } catch (e) { console.warn("avisos:", e); return "erro"; }
+    } catch (e) { console.warn("avisos:", e); AVISOS.ultimoErro = ((e && e.name) || "Erro") + ": " + ((e && e.message) || e); return "erro"; }
   },
   async salvar(sub) {
     const j = sub.toJSON();
@@ -1453,6 +1461,7 @@ async function conferirTrava() {
     const r = await Promise.race([AVISOS.ativar(), new Promise(ok => setTimeout(() => ok("demorou"), 15000))]);
     botaoAviso();
     if (r === "ativo") { mostrarTrava(false); toast("Avisos ligados! 🔔 Bom trabalho!"); return; }
+    if (r === "demorou") AVISOS.ultimoErro = "Demorou mais de 15 s para ligar (internet ou serviço de avisos do navegador)";
     mostrarTrava(true, false);
   }
 }
@@ -1466,9 +1475,19 @@ function mostrarTrava(on, bloqueado, sino) {
     ". Os avisos aparecem no computador (ou celular) e aqui comigo, na raposa. Só números, nada de dados de cliente.";
   $("trava-passos").style.display = bloqueado || sino ? "" : "none";
   $("trava-sino").style.display = sino ? "" : "none";
+  // Não conseguiu ligar: mostra o motivo exato (para o print ao TI) e a dica do Windows
+  const det = AVISOS.ultimoErro || "";
+  const win = /push service|Registration failed|AbortError|NotAllowed|InvalidState/i.test(det);
+  const winOk = win && window.Notification && Notification.permission === "granted";   // o navegador deixou; quem barrou foi o Windows
+  $("trava-win").style.display = win ? "" : "none";
+  $("trava-bloq").style.display = winOk ? "none" : "";
+  $("trava-andr").style.display = winOk ? "none" : "";
+  if (win) $("trava-passos").style.display = "";
+  $("trava-det").textContent = det ? "Motivo (mande um print ao TI): " + det + " · permissão: " + (window.Notification ? Notification.permission : "?") : "";
+  $("trava-det").style.display = det ? "block" : "none";
   mostrarTrava.bloqueado = !!bloqueado;
   // Bloqueado no navegador: a liberação no cadeado só vale depois de atualizar a página (Edge e Chrome)
-  $("trava-bt").textContent = bloqueado ? "Já liberei, atualizar a página" : sino ? "🔔 Tentar de novo" : "🔔 Ligar avisos";
+  $("trava-bt").textContent = bloqueado ? "Já liberei, atualizar a página" : sino || det ? "🔔 Tentar de novo" : "🔔 Ligar avisos";
 }
 $("trava-bt").onclick = async () => {
   const bt = $("trava-bt");
