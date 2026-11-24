@@ -741,9 +741,12 @@
   window.feAjuda = function (q) {
     const n = N(q);
     if (/quem (e|eh) (voce|vc)|qual (e )?(o )?seu nome|voce e (uma )?(ia|robo)/.test(n)) {
-      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, explico tudo sobre pneus (medida, segmentos, quando trocar…), preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
+      bot("Eu sou a Fernanda, a assistente do FOXNET! 🦊\nAjudo a encontrar as coisas no site, explico tudo sobre pneus (medida, segmentos, quando trocar…), treino vendas (simulação com nota, objeções, auditoria de conversa), preencho o cadastro de desconto (até lendo o orçamento em PDF ou imagem), mostro os seus números no painel do televendas e faço contas.\nTudo aqui no seu navegador: nada do que você me manda sai do computador. 🔒");
       return true;
     }
+    // Treinadora de vendas (fernanda-vendas.js): simulação, auditoria, objeções. Vem antes: no meio de um
+    // treino, a resposta do vendedor fala de pneu e não pode cair na parte de pneus.
+    if (window.feVendas && window.feVendas.resposta(q)) return true;
     // Conhecimento de pneus (fernanda-pneus.js): medida, segmentos, troca, DOT, etiqueta, run-flat…
     if (window.fePneus && window.fePneus.resposta(q)) return true;
     if (respostaConta(q)) return true;
@@ -834,6 +837,8 @@
   if (/\/ligacoes/.test(location.pathname)) { const s = document.createElement("script"); s.src = "/fernanda-ligacoes.js"; s.defer = true; document.head.appendChild(s); }
   // Conhecimento de pneus (estudo da Fox): em todas as telas
   { const s = document.createElement("script"); s.src = "/fernanda-pneus.js"; s.defer = true; document.head.appendChild(s); }
+  // Treinadora de vendas (Base de Conhecimento Mestre da Fox): em todas as telas
+  { const s = document.createElement("script"); s.src = "/fernanda-vendas.js"; s.defer = true; document.head.appendChild(s); }
 
   // Para testes
   window.FE_AJUDA_TESTE = { lerOrcamento, prepararImagem, textoDoPdf, montarLinhas, lerMensagem, numBR, dataDoTexto, medidaDoTexto, segmentoDoTexto, pgtoDoTexto, lojaDoTexto };
