@@ -130,7 +130,10 @@ async def main():
         await login(page)
         out = {"periodo": [ini, fim]}
         cenarios = (("A_como_pdf", ["VAREJO"], []), ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO))
-        if os.environ.get("POR_LOJA"):
+        if os.environ.get("SEM_ATACADO"):   # pedido do TI: todas as tabelas menos ATACADO e ATACADO PREMIUM
+            cenarios = (("E_tudo_menos_atacado", TABELAS_VAREJO + ["AMAGGI", "GK FROTAS/ZANELATTO/PINGO"], FAMILIAS_VAREJO),
+                        ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO))
+        elif os.environ.get("POR_LOJA"):
             cenarios = tuple((f"F_{lj}", TABELAS_VAREJO, FAMILIAS_VAREJO, [lj]) for lj in os.environ["POR_LOJA"].split(","))
         elif os.environ.get("SO_B"):
             cenarios = (("C_sem_filtro_tabela", [], FAMILIAS_VAREJO), ("D_tabelas_fora", TABELAS_FORA_VAREJO, FAMILIAS_VAREJO))

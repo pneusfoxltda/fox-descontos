@@ -22,12 +22,11 @@ jobs:
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
           DATA_INI: '01/11/2026'
           DATA_FIM: '21/11/2026'
-          SO_B: '1'
+          SEM_ATACADO: '1'
           ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
           ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
-          POR_LOJA: 'ARIQUEMES,C.AUTO PVH,JI-PARANA,C.AUTO VLH'
           FRETE: '1'
-        run: python3 ${{ github.ref_name == 'varejo-553' && 'analytics_varejo_diag.py' || 'teste_movere.py' }} && if [ "${{ github.ref_name }}" = varejo-553 ]; then python3 varejo_teste.py; fi
+        run: if [ "${{ github.ref_name }}" = varejo-553 ]; then python3 varejo_teste.py; fi
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
