@@ -77,6 +77,11 @@ def main():
                 print("   com a nota deu", r, "· tentando sem a nota")
                 dfs = dfs[:-len(q(cli, tt, esc[-1])["attribute"]["content"]["displayForms"])]
                 r = executar(cli, tt, base, linhas + dfs, [M_FAT], ("obj/1539]",), (fdia,))
+            n_nota = len(q(cli, tt, esc[-1])["attribute"]["content"]["displayForms"])
+            for nome_q, extra_dfs in (("9_sem_nota", dfs[:-n_nota]), ("10_so_codigo", dfs[:1])):
+                rr = executar(cli, tt, base, linhas + extra_dfs, [M_FAT], ("obj/1539]",), (fdia,))
+                out[nome_q] = [rr[0]] + [x for x in rr[1:] if any("REVENDA" in str(c).upper() for c in x)] if isinstance(rr, list) and rr else rr
+                print("▶", nome_q, len(out[nome_q]) if isinstance(out[nome_q], list) else out[nome_q])
             if isinstance(r, list) and r:
                 out["8_revenda_clientes"] = [r[0]] + [x for x in r[1:] if any("REVENDA" in str(c).upper() for c in x)]
             else:
