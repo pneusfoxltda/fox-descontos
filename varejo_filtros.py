@@ -200,3 +200,31 @@ def ler_resumos(html: str) -> dict:
             v = next((_num(x) for x in seq[j + 1:j + 4] if _num(x) is not None), None)
             totais[rot] = v
     return {"vendedores": vend, "estabelecimentos": estab, "totais": totais}
+
+
+def ler_quadro_familia(html: str) -> list:
+    """Quadro "Resumo por Família de Itens" da 553: [{'cod','nome','venda','itens'}] (12 colunas, sem vendas/ticket)."""
+    from bs4 import BeautifulSoup
+    seq = []
+    for d in BeautifulSoup(html, "html.parser").find_all(["div", "td"]):
+        if d.find(["div", "td"]):
+            continue
+        t = " ".join(d.get_text(" ", strip=True).split())
+        if t:
+            seq.append(t)
+    try:
+        i = seq.index("Resumo por Família de Itens")
+        i = seq.index("% Desc. Cond. Pag.", i) + 1
+    except ValueError:
+        return []
+    out = []
+    while i < len(seq) and not seq[i].startswith("Resumo por") and seq[i] != "Total Geral:":
+        t = seq[i]
+        if t.lstrip("-").isdigit() and i + 1 < len(seq) and _num(seq[i + 1]) is None:
+            vals = [_num(v) for v in seq[i + 2:i + 12]]
+            if all(v is not None for v in vals):
+                out.append({"cod": t, "nome": seq[i + 1], "itens": vals[1], "venda": vals[4]})
+                i += 12
+                continue
+        i += 1
+    return out

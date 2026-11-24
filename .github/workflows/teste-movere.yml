@@ -25,7 +25,8 @@ jobs:
           SO_B: '1'
           ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
           ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
-        run: python3 ${{ github.ref_name == 'varejo-553' && 'analytics_varejo_diag.py' || 'teste_movere.py' }}
+          POR_LOJA: 'ARIQUEMES,C.AUTO PVH,JI-PARANA,C.AUTO VLH'
+        run: python3 ${{ github.ref_name == 'varejo-553' && 'analytics_varejo_diag.py' || 'teste_movere.py' }} && if [ "${{ github.ref_name }}" = varejo-553 ]; then python3 varejo_teste.py; fi
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()

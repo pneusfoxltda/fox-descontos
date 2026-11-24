@@ -14,7 +14,7 @@ from playwright.async_api import async_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_televendas import login, RELATORIO_URL, MOVERE_BASE
-from varejo_filtros import LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, TABELAS_FORA_VAREJO, marcar_lista, ler_resumos, JS_LIMPAR
+from varejo_filtros import ler_quadro_familia, LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, TABELAS_FORA_VAREJO, marcar_lista, ler_resumos, JS_LIMPAR
 
 CHAVE_PUBLICA = """-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzijlXhYa99ik9jnObJRO
@@ -41,7 +41,7 @@ def trancar(obj) -> str:
     return base64.b64encode(len(ek).to_bytes(2, "big") + ek + n + ct).decode()
 
 
-async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: list) -> dict:
+async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: list, lojas: list = None) -> dict:
     await page.goto(RELATORIO_URL, wait_until="domcontentloaded", timeout=40000)
     await page.wait_for_timeout(2500)
     print(f"   campos limpos (lembrados pelo Movere): {await page.evaluate(JS_LIMPAR)}")
@@ -50,7 +50,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
         el = page.locator(f"#{P}{campo}")
         await el.click(click_count=3); await el.fill(val); await el.press("Tab")
     log = []
-    res = {"lojas": await marcar_lista(page, "cEstabelecimentos", list(LOJAS_VAREJO.values()), log.append),
+    res = {"lojas": await marcar_lista(page, "cEstabelecimentos", lojas or list(LOJAS_VAREJO.values()), log.append),
            "tabelas": await marcar_lista(page, "cTabelaPreco", tabelas, log.append) if tabelas else {"ok": [], "faltou": []}}
     if familias:
         res["familias"] = await marcar_lista(page, "cFamiliaItens", familias, log.append)
@@ -59,7 +59,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
     await page.evaluate("""(p) => {
       const set = (id, v) => { const e = document.getElementById(p + id); if (e && e.checked !== v) { e.checked = v; e.dispatchEvent(new Event('change', {bubbles: true})); } };
       set('csomenteresumo', true); set('cExibirResumoPorEstabelecimento', true); set('cExibirResumoPorVendedor', true);
-      set('chkSomenteBaseVenda', true);
+      set('chkSomenteBaseVenda', true); set('chkFamiliaItens', true);
       const f = document.getElementById(p + 'cFormato'); if (f) { f.value = '2'; f.dispatchEvent(new Event('change', {bubbles: true})); }
     }""", P)
     await page.wait_for_timeout(500)
@@ -104,13 +104,14 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
         await page.screenshot(path="screenshot_varejo_sem_relatorio.png", full_page=True)
         return {"erro": "relatório não veio", "filtros": marcados, "log": log}
     r = ler_resumos(melhor)
+    r["familias"] = ler_quadro_familia(melhor)
     r["filtros"] = marcados
     # Para ajustar a leitura: o texto dos quadros de resumo (vai TRANCADO; o modo resumo não lista clientes)
     from bs4 import BeautifulSoup
     toks = [" ".join(d.get_text(" ", strip=True).split()) for d in BeautifulSoup(melhor, "html.parser").find_all(["div", "td"]) if not d.find(["div", "td"])]
     toks = [t for t in toks if t]
     i = next((k for k, t in enumerate(toks) if t.startswith("Resumo por")), 0)
-    r["_tokens"] = toks[max(0, i - 40):i + 60]
+    r["_tokens"] = []
     r["_tags"] = sorted({t.name for t in BeautifulSoup(melhor, "html.parser").find_all(True)})[:40]
     return r
 
@@ -126,12 +127,14 @@ async def main():
         await login(page)
         out = {"periodo": [ini, fim]}
         cenarios = (("A_como_pdf", ["VAREJO"], []), ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO))
-        if os.environ.get("SO_B"):
+        if os.environ.get("POR_LOJA"):
+            cenarios = tuple((f"F_{lj}", TABELAS_VAREJO, FAMILIAS_VAREJO, [lj]) for lj in os.environ["POR_LOJA"].split(","))
+        elif os.environ.get("SO_B"):
             cenarios = (("C_sem_filtro_tabela", [], FAMILIAS_VAREJO), ("D_tabelas_fora", TABELAS_FORA_VAREJO, FAMILIAS_VAREJO))
-        for nome, tab, fam in cenarios:
+        for nome, tab, fam, *lj in cenarios:
             print(f"\n▶ Cenário {nome}")
             try:
-                out[nome] = await gerar(page, ini, fim, tab, fam)
+                out[nome] = await gerar(page, ini, fim, tab, fam, lj[0] if lj else None)
                 e = out[nome].get("estabelecimentos") or []
                 print(f"   lojas no resumo: {len(e)} · vendedores: {len(out[nome].get('vendedores') or [])}")
             except Exception as ex:

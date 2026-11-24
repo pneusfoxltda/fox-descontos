@@ -14,7 +14,7 @@ GD, PID = cv.GD, cv.PID
 MD = f"/gdc/md/{PID}"
 REL = 1111480
 M_FAT, M_FAT_SEM_DEV, M_DEV = f"{MD}/obj/2160", f"{MD}/obj/3982", f"{MD}/obj/3983"
-A_ESTAB, A_TABELA, A_SEGMENTO = f"{MD}/obj/1583", f"{MD}/obj/3800", f"{MD}/obj/1539"
+A_ESTAB, A_TABELA, A_SEGMENTO, A_FAMILIA = f"{MD}/obj/1583", f"{MD}/obj/3800", f"{MD}/obj/1539", f"{MD}/obj/1637"
 
 
 def q(cli, tt, uri):
@@ -56,8 +56,9 @@ def main():
         base = q(cli, tt, rep["content"]["definitions"][-1])["reportDefinition"]["content"]
         dias = [cv.elemento_dia(cli, tt, date(2026, 11, 1) + timedelta(days=i)) for i in range(21)]
         fdia = f"[{MD}/obj/{cv.ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in dias if u)})"
-        E, T, S = df(cli, tt, A_ESTAB), df(cli, tt, A_TABELA), df(cli, tt, A_SEGMENTO)
-        testes = {
+        E, T, S, F = df(cli, tt, A_ESTAB), df(cli, tt, A_TABELA), df(cli, tt, A_SEGMENTO), df(cli, tt, A_FAMILIA)
+        testes = {"6_loja_x_familia_SEM_filtro_segmento": ([E, F, S], [M_FAT], ("obj/1539]",), ())}
+        _antigos = {
             "1_loja_com_e_sem_devolucao": ([E], [M_FAT, M_FAT_SEM_DEV, M_DEV], (), ()),
             "2_loja_x_tabela": ([E, T], [M_FAT], (), ()),
             "3_loja_x_segmento_SEM_filtro_segmento": ([E, S], [M_FAT], ("obj/1539]",), ()),
