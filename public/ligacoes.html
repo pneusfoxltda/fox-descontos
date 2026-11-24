@@ -821,7 +821,7 @@ function cartao(l) {
   else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(ehRobo(l.status_por) ? quemFez(l) : l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
   else linhaStatus = (l.status_em ? `<b>${esc(nomeStatus(l))}</b> · ${esc(ehRobo(l.status_por) ? quemFez(l) : l.status_por || "")} · ${fmtQuando(l.status_em)}` : `<b>${esc(nomeStatus(l))}</b>`);
-  const editavel = podeEditar(l) && !FECHADOS.includes(l.status);
+  const editavel = podeEditar(l) && !ehTv(l.status);   // o vendedor pode mudar à vontade; só o que o robô marcou fica travado
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
       <div><div class="cli">${esc(nomeCli(l) || "Cliente sem nome")}${podeEditar(l) ? `<button class="ed-nome" onclick="editarNome(${l.id})" title="Corrigir o nome do cliente">✏️</button>` : ""}</div>
@@ -961,7 +961,8 @@ async function gravar(l, novo, ehDesfazer = false) {
   if (st === "nao_atende" && !ehDesfazer) l.tentativas = Math.max(Number(l.tentativas || 0), tentativas(l.id)) + 1;
   setTimeout(avisarFernanda, 0);
   if (obs) l.obs = obs;
-  if (os) l.os_venda = os; if (data) l.agendado_para = data; if (motivo) l.motivo_perda = motivo;
+  // Saiu do status: o dado que era só dele sai junto (igual ao banco, passo 22)
+  l.os_venda = st === "venda_ganha" ? os : null; l.agendado_para = st === "agendou" ? data : null; l.motivo_perda = st === "venda_perdida" ? motivo : null;
   const h = {ligacao_id: l.id, quando: agora, quem, status: st,
     obs: [data && st === "agendou" ? "Agendado para " + fmtDataLonga(data) : "", os ? "O.S. " + os : "", motivo ? "Motivo: " + motivo : "", obs].filter(Boolean).join(" · ") || null};
   if (historicoTodo) historicoTodo.push(h);
@@ -1005,7 +1006,13 @@ function render0(id, v) { const sel = $("tst-" + id); sel.className = "stsel c-"
 // A O.S. sozinha não vira venda: só quando o Status também for "Venda ganha" (decisão do TI)
 const osEsperando = new Map();
 async function mudouOS(id, v) {
-  v = v.trim(); if (!v) { osEsperando.delete(id); return; }
+  const l0 = todas.find(x => x.id === id);
+  v = v.trim();
+  if (!v) {
+    osEsperando.delete(id);
+    if (l0 && l0.status === "venda_ganha") toast("Para tirar a venda, mude o Status (por exemplo: Pendente ligação). A O.S. sai junto.", false);
+    render(); return;
+  }
   const sel = $("tst-" + id);
   if (sel && sel.value === "venda_ganha") { osEsperando.delete(id); return gravar(todas.find(x => x.id === id), {status: "venda_ganha", os: v}); }
   osEsperando.set(id, v);
@@ -1014,9 +1021,11 @@ async function mudouOS(id, v) {
 }
 // O navegador avisa a cada número digitado no ano (0002, 0020, 0202...): só salva com o ano completo e razoável
 const anoOk = v => { const a = Number(String(v || "").slice(0, 4)), h = Number(hojeISO().slice(0, 4)); return a >= h - 1 && a <= h + 2; };
-async function mudouData(id, v) { if (!v || !anoOk(v)) return; await gravar(todas.find(x => x.id === id), {status: "agendou", data: v}); }
+async function mudouData(id, v) {
+  if (!v) { const l0 = todas.find(x => x.id === id); if (l0 && l0.status === "agendou" && !$("tdt-" + id).validity.badInput) { toast("Para tirar o agendamento, mude o Status (por exemplo: Pendente ligação). A data sai junto.", false); render(); } return; }
+  if (!anoOk(v)) return; await gravar(todas.find(x => x.id === id), {status: "agendou", data: v}); }
 async function mudouMotivo(id, v) {
-  if (!v) return;
+  if (!v) { const l0 = todas.find(x => x.id === id); if (l0 && l0.status === "venda_perdida") { toast("Para tirar a venda perdida, mude o Status. O motivo sai junto.", false); render(); } return; }
   const an = $("tan-" + id);
   if (v === "Outro motivo" && !an.value.trim()) { an.classList.add("falta"); an.placeholder = "Escreva o motivo aqui"; an.focus(); toast("Escreva qual foi o motivo na Anotação.", false); return; }
   await gravar(todas.find(x => x.id === id), {status: "venda_perdida", motivo: v, obs: an.value});
@@ -1078,7 +1087,8 @@ function tabela(lista) {
   return `<div class="tabwrap"><table class="tl">${cab}${lista.map(linhaTabela).join("")}</table></div>`;
 }
 function linhaTabela(l) {
-  const id = l.id, ed = podeEditar(l), fechado = FECHADOS.includes(l.status), dis = (!ed || fechado) ? "disabled" : "";
+  // O vendedor muda o status à vontade (salva sozinho, como numa planilha). Só o que o robô marcou fica travado.
+  const id = l.id, ed = podeEditar(l), fechado = FECHADOS.includes(l.status), travado = ehTv(l.status), dis = (!ed || travado) ? "disabled" : "";
   const d = dig(l.telefone), wa = linkWa(l), t = tentativas(id), forte = t >= 2 && !fechado;
   const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("") +
     (l.status === "nao_atende" && t < MAX_TENT ? `<option value="nao_atende_mais">📞 Liguei de novo, não atendeu (${t + 1}ª tentativa)</option>` : "");
@@ -1093,9 +1103,9 @@ function linhaTabela(l) {
     <td class="r">${fmtR(l.valor)}</td>
     <td>${fmtDataLonga(l.data_cotacao)}<div class="quem">${dias ? "há " + dias + " dia" + (dias > 1 ? "s" : "") : "hoje"}</div></td>
     <td><select id="tst-${id}" class="stsel c-${esc(l.status)}" ${dis} onchange="mudouStatus(${id}, this.value)">${opcoes}</select>${quem}</td>
-    <td>${fechado || !ed ? `<span class="txt-fixo">${esc(l.os_venda || "")}</span>` : `<input id="tos-${id}" class="cel os ${l.os_venda ? "ok" : osEsperando.has(id) ? "falta" : ""}" value="${esc(osEsperando.get(id) || l.os_venda || "")}" placeholder="Nº O.S." maxlength="30" onchange="mudouOS(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}</td>
-    <td>${fechado || !ed ? `<span class="txt-fixo">${l.agendado_para ? fmtDataLonga(l.agendado_para) : ""}</span>` : `<input id="tdt-${id}" type="date" class="cel dt ${l.agendado_para ? (atrasado(l) ? "atr" : "ok") : ""}" value="${l.agendado_para || ""}" onchange="mudouData(${id}, this.value)" title="${atrasado(l) ? "Agendamento atrasado: dê o resultado" : "Data do agendamento"}">${atrasado(l) ? '<div class="quem" style="color:#F87171">⚠️ atrasado</div>' : ""}`}</td>
-    <td>${fechado || !ed ? `<span class="txt-fixo">${esc(l.motivo_perda || "")}</span>` : `<select id="tmp-${id}" class="cel mt" onchange="mudouMotivo(${id}, this.value)"><option value=""></option>${MOTIVOS_PERDA.map(m => `<option>${m}</option>`).join("")}</select>`}</td>
+    <td>${travado || !ed ? `<span class="txt-fixo">${esc(l.os_venda || "")}</span>` : `<input id="tos-${id}" class="cel os ${l.status === "venda_ganha" && l.os_venda ? "ok" : osEsperando.has(id) ? "falta" : ""}" value="${esc(osEsperando.get(id) || (l.status === "venda_ganha" ? l.os_venda || "" : ""))}" placeholder="Nº O.S." maxlength="30" onchange="mudouOS(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}</td>
+    <td>${travado || !ed ? `<span class="txt-fixo">${l.agendado_para ? fmtDataLonga(l.agendado_para) : ""}</span>` : `<input id="tdt-${id}" type="date" class="cel dt ${l.status === "agendou" && l.agendado_para ? (atrasado(l) ? "atr" : "ok") : ""}" value="${l.status === "agendou" ? l.agendado_para || "" : ""}" onchange="mudouData(${id}, this.value)" title="${atrasado(l) ? "Agendamento atrasado: dê o resultado" : "Data do agendamento"}">${atrasado(l) ? '<div class="quem" style="color:#F87171">⚠️ atrasado</div>' : ""}`}</td>
+    <td>${travado || !ed ? `<span class="txt-fixo">${esc(l.motivo_perda || "")}</span>` : `<select id="tmp-${id}" class="cel mt" onchange="mudouMotivo(${id}, this.value)"><option value=""></option>${MOTIVOS_PERDA.map(m => `<option ${l.status === "venda_perdida" && m === l.motivo_perda ? "selected" : ""}>${m}</option>`).join("")}</select>`}</td>
     <td>${!ed || ehTv(l.status) ? `<span class="txt-fixo">${esc(l.obs || (ehTv(l.status) && l.comprou_em ? "comprou em " + fmtDataLonga(l.comprou_em) + " (robô)" : ""))}</span>` : `<input id="tan-${id}" class="cel an" value="${esc(l.obs || "")}" placeholder="Anotação" maxlength="300" onchange="mudouAnotacao(${id}, this.value)" onkeydown="if(event.key==='Enter')this.blur()">`}${salvoId === id ? '<span class="salvo">✓ salvo</span>' : ""}</td>
     ${veHistorico() ? `<td><button class="hbt ${abertos.has(id) ? "on" : ""}" onclick="abrirHist(${id})" title="Ver histórico">🕘 ${hs.length}</button></td>` : ""}
     ${!filtro.loja ? `<td>${esc(l.loja)}</td>` : ""}
