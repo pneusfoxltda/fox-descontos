@@ -137,6 +137,23 @@ vendas para o televendas; `apps-script/` tem o do painel).
     abaixo de 30%, resumo da rede).
     **Nunca nome nem telefone de cliente.** A mesma mensagem fica em `avisos_fernanda` (SQL `23_avisos_fernanda.sql`,
     cada um lê só as suas, 15 dias) e a raposa mostra na página (`FE_LIG.avisoRobo`, confere a cada 5 min).
+  · **Conhecimento de pneus** (`public/fernanda-pneus.js`, estudo "Pneus" da Fox enviado pelo TI em 24/11/2026; carregado
+    pelo fernanda-ajuda.js em todas as telas, `window.fePneus`, chamado antes das contas): segmentos (liso 100% asfalto,
+    HT 70/30, AT 50/50, TA 40/60, MUD 20/80, carga: Doblô/Strada/Fiorino) e indicação pelo % de terra; lê a medida
+    (largura no costado, altura %, R, aro, índice de carga em kg, velocidade, diâmetro); compara 2 medidas (diferença
+    %); alternativas do estudo (175/65R14 → 175/70R14, 175/70R14 → 175/75R14, sempre "o cliente confere na loja");
+    medidas com A/T na Fox (175/70R14, 175/75R14, 175/80R14, 205/60R15, 205/65R15, 205/70R15; outras com 1 não têm);
+    troca (novo ~8 mm, preventiva 3 mm, obrigatória 1,6 mm, TWI) e "sulco X mm"; validade/garantia 5 anos e "DOT 2324"
+    (idade); etiqueta INMETRO; run-flat; válvula/TPMS, balanceamento, torque, alinhamento. No Cadastrar só responde
+    se for pergunta (a medida digitada continua indo para o formulário).
+  · **Treinadora de vendas** (`public/fernanda-vendas.js`, "Base de Conhecimento Mestre" enviada pelo TI em 24/11/2026;
+    todas as telas, `window.feVendas`, chamada ANTES dos pneus): "treinar vendas" abre 3 modos: 🎭 simulação (cliente
+    sorteado: 10 produtos × 8 perfis × objeções × WhatsApp/balcão; nota 0–10 por palavras em diagnóstico, consciência
+    técnica, armas da Fox e fechamento + resposta modelo), 🔎 auditoria de conversa colada, ⚡ resposta rápida
+    ("cliente achou mais barato na internet" → 2 respostas). Playbook com 17 objeções (`OBJ`), filosofia, protocolo e
+    diferenciais (**montagem gratuita + checklist preventivo completo gratuito**). Respostas modelo ADAPTADAS à regra do
+    TI: sem "reservar box", sem "segurar condição 48 h", sem "pronta entrega" (nunca prometer pneu separado nem horário
+    reservado); combinar o dia da visita. No Cadastrar só responde se a pessoa pedir ("cliente disse…", "treinar").
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
