@@ -65,8 +65,7 @@ def main():
         if os.environ.get("CLIENTES_REVENDA"):   # pedido do TI: código do cliente das vendas de REVENDA
             cc = [(e["title"], e["link"]) for e in at if re.search(r"cliente|nota|documento", e["title"], re.I)]
             print("🏷️ atributos de cliente/nota:", [(t, l.split("/")[-1]) for t, l in cc])
-            esc = [l for t, l in cc if re.fullmatch(r"(c[oó]d(igo)?\.?|id|nome)?\s*(do\s+)?cliente", t.strip(), re.I)][:3]
-            esc += [l for t, l in cc if re.search(r"n[uú]mero.*(nota|documento)|^(nota|documento)", t.strip(), re.I)][:1]
+            esc = [f"{MD}/obj/1513", f"{MD}/obj/1519", f"{MD}/obj/1550"]   # Cód cliente, Nome Cliente, idnotafiscal
             print("   usando:", [l.split("/")[-1] for l in esc])
             linhas = ([E, df(cli, tt, vend), S] if vend else [E, S]) + [df(cli, tt, f"{MD}/obj/{cv.ATTR_DIA}")]
             dfs = []
@@ -74,6 +73,10 @@ def main():
                 for d in q(cli, tt, l)["attribute"]["content"]["displayForms"]:
                     dfs.append(d["meta"]["uri"])
             r = executar(cli, tt, base, linhas + dfs, [M_FAT], ("obj/1539]",), (fdia,))
+            if not isinstance(r, list):   # sem a nota fiscal
+                print("   com a nota deu", r, "· tentando sem a nota")
+                dfs = dfs[:-len(q(cli, tt, esc[-1])["attribute"]["content"]["displayForms"])]
+                r = executar(cli, tt, base, linhas + dfs, [M_FAT], ("obj/1539]",), (fdia,))
             if isinstance(r, list) and r:
                 out["8_revenda_clientes"] = [r[0]] + [x for x in r[1:] if any("REVENDA" in str(c).upper() for c in x)]
             else:
