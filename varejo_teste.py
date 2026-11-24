@@ -14,7 +14,7 @@ from playwright.async_api import async_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sync_televendas import login, RELATORIO_URL, MOVERE_BASE
-from varejo_filtros import LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, marcar_lista, ler_resumos, JS_LIMPAR
+from varejo_filtros import LOJAS_VAREJO, FAMILIAS_VAREJO, TABELAS_VAREJO, TABELAS_FORA_VAREJO, marcar_lista, ler_resumos, JS_LIMPAR
 
 CHAVE_PUBLICA = """-----BEGIN PUBLIC KEY-----
 MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAzijlXhYa99ik9jnObJRO
@@ -51,7 +51,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
         await el.click(click_count=3); await el.fill(val); await el.press("Tab")
     log = []
     res = {"lojas": await marcar_lista(page, "cEstabelecimentos", list(LOJAS_VAREJO.values()), log.append),
-           "tabelas": await marcar_lista(page, "cTabelaPreco", tabelas, log.append)}
+           "tabelas": await marcar_lista(page, "cTabelaPreco", tabelas, log.append) if tabelas else {"ok": [], "faltou": []}}
     if familias:
         res["familias"] = await marcar_lista(page, "cFamiliaItens", familias, log.append)
     marcados = {k: f"{len(v['ok'])} ok, faltou {v['faltou']}" for k, v in res.items()}
@@ -127,7 +127,7 @@ async def main():
         out = {"periodo": [ini, fim]}
         cenarios = (("A_como_pdf", ["VAREJO"], []), ("B_filtros_varejo", TABELAS_VAREJO, FAMILIAS_VAREJO))
         if os.environ.get("SO_B"):
-            cenarios = cenarios[1:]
+            cenarios = (("C_sem_filtro_tabela", [], FAMILIAS_VAREJO), ("D_tabelas_fora", TABELAS_FORA_VAREJO, FAMILIAS_VAREJO))
         for nome, tab, fam in cenarios:
             print(f"\n▶ Cenário {nome}")
             try:

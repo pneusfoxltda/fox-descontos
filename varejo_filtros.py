@@ -18,6 +18,13 @@ TABELAS_VAREJO = [
     "COLABORADORES", "CP 1", "CP 2", "CP 3", "CP 4", "CP 5", "CP SEM DEFINIÇÃO", "CTR",
     "FROTAS LEVE", "FROTAS TICKET LOG", "Não Atribuído", "RECAPAGEM DIFERENCIADA", "VAREJO",
 ]
+# Na 553 não existe a opção "Não Atribuído" (venda SEM tabela de preço). Para incluí-la:
+# Varejo = (sem filtro de tabela) − (tabelas que NÃO são do varejo). Lista ativa na 553 em 24/11/2026: 16 tabelas.
+TABELAS_FORA_VAREJO = ["AMAGGI", "ATACADO", "ATACADO PREMIUM", "GK FROTAS/ZANELATTO/PINGO"]
+# Segmento de vendas (GERAL / LICITACAO / PAGAMENTO FLEXIVEL / REVENDA): o TI quer tirar REVENDA, mas esse filtro
+# NÃO existe na 553 (procurado nas 21 listas do formulário em 24/11/2026). Guardado para o futuro.
+SEGMENTOS_VENDA_VAREJO = ["(vazio)", "GERAL", "LICITACAO", "PAGAMENTO FLEXIVEL"]   # fora: REVENDA
+
 CAMPOS = {  # componente do Movere (id) → o que marcar
     "cEstabelecimentos": list(LOJAS_VAREJO.values()),
     "cFamiliaItens": FAMILIAS_VAREJO,
