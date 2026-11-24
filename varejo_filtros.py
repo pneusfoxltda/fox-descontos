@@ -140,6 +140,8 @@ COLUNAS = ["peso", "quant", "qtd_mont", "preco_tabela", "vlr_venda", "vlr_c_rep"
 
 def _num(s: str):
     s = str(s).strip().replace("R$", "").replace(" ", "")
+    if s in ("NaN", "Infinity", "-Infinity"):
+        return 0.0
     if not s or not any(ch.isdigit() for ch in s):
         return None
     try:

@@ -45,6 +45,8 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
     await page.goto(RELATORIO_URL, wait_until="domcontentloaded", timeout=40000)
     await page.wait_for_timeout(2500)
     print(f"   campos limpos (lembrados pelo Movere): {await page.evaluate(JS_LIMPAR)}")
+    if os.environ.get("FRETE"):
+        await page.evaluate("() => { window.__FRETE = true; }")
     await page.wait_for_timeout(500)
     for campo, val in (("cdtaini_edt", data_ini), ("cdtafim_edt", data_fim)):
         el = page.locator(f"#{P}{campo}")
@@ -60,6 +62,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
       const set = (id, v) => { const e = document.getElementById(p + id); if (e && e.checked !== v) { e.checked = v; e.dispatchEvent(new Event('change', {bubbles: true})); } };
       set('csomenteresumo', true); set('cExibirResumoPorEstabelecimento', true); set('cExibirResumoPorVendedor', true);
       set('chkSomenteBaseVenda', true); set('chkFamiliaItens', true);
+      if (window.__FRETE) set('cFreteCompoeValoresTotais', true);
       const f = document.getElementById(p + 'cFormato'); if (f) { f.value = '2'; f.dispatchEvent(new Event('change', {bubbles: true})); }
     }""", P)
     await page.wait_for_timeout(500)

@@ -57,7 +57,12 @@ def main():
         dias = [cv.elemento_dia(cli, tt, date(2026, 11, 1) + timedelta(days=i)) for i in range(21)]
         fdia = f"[{MD}/obj/{cv.ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in dias if u)})"
         E, T, S, F = df(cli, tt, A_ESTAB), df(cli, tt, A_TABELA), df(cli, tt, A_SEGMENTO), df(cli, tt, A_FAMILIA)
-        testes = {"6_loja_x_familia_SEM_filtro_segmento": ([E, F, S], [M_FAT], ("obj/1539]",), ())}
+        at = q(cli, tt, f"{MD}/query/attributes")["query"]["entries"]
+        cand = [(e["title"], e["link"]) for e in at if re.search(r"vendedor", e["title"], re.I)]
+        print("🏷️ atributos de vendedor:", [(t, l.split("/")[-1]) for t, l in cand])
+        vend = next((l for t, l in cand if re.fullmatch(r"(nome )?vendedor( 1)?", t.strip(), re.I)), None) or next((l for t, l in cand if "nome" in t.lower() and "vendedor" in t.lower()), None)
+        print("   usando:", vend)
+        testes = {"7_loja_x_vendedor_x_segmento": ([E, df(cli, tt, vend), S], [M_FAT], ("obj/1539]",), ())} if vend else {}
         _antigos = {
             "1_loja_com_e_sem_devolucao": ([E], [M_FAT, M_FAT_SEM_DEV, M_DEV], (), ()),
             "2_loja_x_tabela": ([E, T], [M_FAT], (), ()),
