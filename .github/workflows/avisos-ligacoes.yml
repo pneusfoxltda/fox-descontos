@@ -2,7 +2,8 @@ name: Avisos das Ligações (computador e celular)
 
 # Manda o aviso da Fernanda para quem ligou os avisos nas Ligações das lojas.
 # Segunda a sábado, horário de Porto Velho (UTC−4), decisão do TI:
-#   8h (bom dia) · 10h (como estão as ligações) · 14h (boa tarde) · 16h30 (reta final)
+#   acordado pelo Sync Televendas às 7h45 (o bom dia espera e sai às 8h), 9h45, 13h45 e 16h45 (fim do dia).
+#   Os horários abaixo são só reserva (o GitHub atrasa); o mesmo aviso nunca sai duas vezes no dia.
 # Só números, nada de nome ou telefone de cliente. Sem custo.
 on:
   schedule:
@@ -27,7 +28,7 @@ concurrency:
 jobs:
   avisos:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
 

@@ -1,7 +1,7 @@
 """
 Avisos das Ligações das lojas no computador e no celular (notificação push do navegador).
 
-Acordado pelo Sync Televendas (7h45, 9h45, 13h45, 16h45 de Porto Velho, seg–sáb); turnos manha1, manha2,
+Acordado pelo Sync Televendas (7h45, 9h45, 13h45, 16h45 de Porto Velho, seg–sáb; o bom dia espera e sai às 8h); turnos manha1, manha2,
 tarde1 e tarde2 (fim do dia). A Fernanda fala como uma coordenadora (decisão do TI, 24/11/2026):
   · vendedor: quantos clientes recebeu hoje, o de maior valor para começar, quantos faltam, se mudar a
     estratégia, e o resumo do fim do dia (ligações, agendamentos, mensagens, vendas);
@@ -132,6 +132,15 @@ def enviar(cli, insc: dict, aviso: dict, publica_b64: str, privada_b64: str) -> 
 
 
 # ── Os números e o texto do aviso ─────────────────────────────────────────────
+def esperar_ate_8h(agora: datetime, turno: str, manual: bool) -> int:
+    """Segundos até as 8h para o 'bom dia' (no máximo 25 min). Rodada à mão ou de teste não espera."""
+    if turno != "manha1" or manual:
+        return 0
+    oito = agora.replace(hour=8, minute=0, second=0, microsecond=0)
+    seg = int((oito - agora).total_seconds())
+    return seg if 0 < seg <= 25 * 60 else 0
+
+
 def turno_do_horario(agora: datetime) -> str:
     h = agora.hour + agora.minute / 60
     return "manha1" if h < 9.5 else "manha2" if h < 12 else "tarde1" if h < 15.5 else "tarde2"
@@ -453,6 +462,11 @@ def main() -> int:
         print(f"❌ Turno desconhecido: {turno}")
         return 1
     print(f"🕗 Turno: {turno} · {agora.strftime('%d/%m %H:%M')}" + (" (teste: não envia)" if dry else ""))
+    # O "bom dia" sai às 8h em ponto (decisão do TI): o despertador acorda este robô às 7h45, então ele espera
+    espera = esperar_ate_8h(agora, turno, dry or bool((os.environ.get("TURNO", "") or "").strip()))
+    if espera:
+        print(f"⏳ O bom dia sai às 8h: esperando {espera // 60} min")
+        time.sleep(espera)
 
     with httpx.Client(timeout=30) as cli:
         conf = sb_get(cli, chave, "push_config?select=chave_publica,chave_privada&id=eq.1")

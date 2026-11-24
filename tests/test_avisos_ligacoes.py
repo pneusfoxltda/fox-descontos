@@ -73,6 +73,14 @@ def test_assinatura_vapid_valida():
     chave_pub.verify(der, f"{cab}.{corpo}".encode(), ec.ECDSA(hashes.SHA256()))   # dá erro se a assinatura não bater
 
 
+def test_bom_dia_espera_ate_as_8h():
+    t = lambda h, m: datetime(2026, 11, 23, h, m, tzinfo=av.TZ_LOJA)
+    assert av.esperar_ate_8h(t(7, 48), "manha1", False) == 12 * 60
+    assert av.esperar_ate_8h(t(8, 2), "manha1", False) == 0          # já passou das 8h: manda na hora
+    assert av.esperar_ate_8h(t(7, 48), "manha1", True) == 0          # rodada à mão / teste não espera
+    assert av.esperar_ate_8h(t(9, 47), "manha2", False) == 0
+
+
 def test_turno_pelo_horario():
     t = lambda h, m=0: av.turno_do_horario(datetime(2026, 11, 23, h, m))
     assert (t(8), t(10), t(14), t(16, 30)) == ("manha1", "manha2", "tarde1", "tarde2")
