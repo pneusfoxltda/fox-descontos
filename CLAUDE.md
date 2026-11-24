@@ -114,7 +114,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
     quem não atende, meu resumo, dicas de abordagem (nunca prometer pneu separado), como fazer.
     Botões "Ver na lista" (destaca a linha), Ligar e WhatsApp (os mesmos links da tela).
   · **Avisos no computador e no celular** (notificação push do navegador, grátis; SQL `17_avisos_push.sql`,
-    robô `avisos_ligacoes.py`, workflow `avisos-ligacoes.yml`): **seg–sáb 8h, 10h, 14h e 16h30** (decisão do TI:
+    robô `avisos_ligacoes.py`, workflow `avisos-ligacoes.yml`): **seg–sáb 8h, 9h45, 13h45 e 16h45** (decisão do TI:
     2x de manhã, 2x à tarde). Cada pessoa liga no 🔔 do topo das Ligações ou pela Fernanda ("Sim, quero
     receber avisos"); a Fernanda oferece uma vez por aparelho. Vendedor: os números dele; gerente: a loja e
     quem tem mais sem contato; gerente de todas/admin: a rede. **Só números** (nada de cliente). Férias e
@@ -130,7 +130,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
     sistema de avisos não estiver pronto (sem SQL 17 ou sem a chave). `conferirTrava()` no ligacoes.html.
     **Fernanda coordenadora** (`montar_aviso` no `avisos_ligacoes.py`, decisão do TI 24/11/2026): **sempre 4 mensagens por
     dia para cada pessoa** (só não manda para quem não tem cliente na lista), 4 turnos
-    (manha1 7h45, manha2 9h45, tarde1 13h45, tarde2 = fim do dia 16h45): vendedor (quantos recebeu hoje, o de maior
+    (manha1 = bom dia às **8h** em ponto: acordado às 7h45 e espera; manha2 9h45, tarde1 13h45, tarde2 = fim do dia 16h45): vendedor (quantos recebeu hoje, o de maior
     valor com valor e nº da cotação, quantos faltam, "mudar a estratégia", até as 17h, resumo do dia); gerente da
     loja (cada vendedor: quem falou com quantos, quem não falou com nenhum, quem não entrou hoje, para cobrar);
     Jonathan/admin (resumo de todas as lojas "falaram com / receberam", lojas sem contato com o nome do gerente,
