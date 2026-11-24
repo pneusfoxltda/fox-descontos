@@ -78,6 +78,25 @@ async def marcar_lista(page, comp: str, nomes: list, log=print) -> dict:
             else:
                 log(f"     ✖ {nome}: opções vistas = {[x['t'] for x in cand][:8]}")
             break
+        if not achou and nome != nome.split()[-1]:
+            # 2ª tentativa: busca pela última palavra sem acento (ex.: "Não Atribuído" → "Atribuido")
+            await page.keyboard.press("Escape")
+            await page.click(f"#fx-{comp} .select2-selection")
+            campo = page.locator(f"#fx-{comp} .select2-search__field")
+            await campo.fill(""); await campo.type(norm(nome).split()[-1][:6], delay=40)
+            for _ in range(24):
+                await page.wait_for_timeout(250)
+                itens = await page.evaluate("""() => [...document.querySelectorAll('.select2-results__option')].map((e, i) => ({i, t: (e.innerText || '').trim()}))""")
+                cand = [x for x in itens if x["t"] and "Procurando" not in x["t"] and "Nenhum" not in x["t"]]
+                if not cand:
+                    continue
+                esc = next((x for x in cand if alvo in norm(x["t"])), None)
+                if esc is not None:
+                    await page.locator(".select2-results__option").nth(esc["i"]).click(); achou = True
+                    log(f"     ✔ {nome}  ← '{esc['t']}' (2ª busca)")
+                else:
+                    log(f"     ✖ {nome}: opções vistas = {[x['t'] for x in cand][:8]}")
+                break
         if not achou:
             faltou.append(nome)
             await page.keyboard.press("Escape")
@@ -86,3 +105,72 @@ async def marcar_lista(page, comp: str, nomes: list, log=print) -> dict:
         await page.wait_for_timeout(200)
     info2 = await page.evaluate(JS_CAIXA, comp)
     return {"ok": ok, "faltou": faltou, "hidden": info2["hidden"] if info2 else "", "escolhidos": info2["escolhidos"] if info2 else []}
+
+
+# ── Leitura do relatório (só os quadros de resumo; nada de cliente) ──────────────
+COLUNAS = ["peso", "quant", "qtd_mont", "preco_tabela", "vlr_venda", "vlr_c_rep", "vlr_lucro", "pct_lucro",
+           "pct_marg", "pct_desc", "qtd_vendas", "ticket"]
+
+
+def _num(s: str):
+    s = str(s).strip().replace("R$", "").replace(" ", "")
+    if not s or not any(ch.isdigit() for ch in s):
+        return None
+    try:
+        return float(s.replace(".", "").replace(",", "."))
+    except ValueError:
+        return None
+
+
+def ler_resumos(html: str) -> dict:
+    """Lê do HTML (SSRS) da 553 os quadros "Resumo por Vendedor" e "Resumo por Estabelecimento" e os totais.
+    Guarda só: venda líquida (vlr_venda), itens (quant), vendas (qtd_vendas) e ticket. Nada de cliente, lucro ou margem."""
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, "html.parser")
+    seq = []
+    for d in soup.find_all("div"):
+        if d.find("div"):
+            continue  # só as caixas de texto finais
+        t = " ".join(d.get_text(" ", strip=True).split())
+        if t:
+            seq.append(t)
+
+    def quadro(titulo):
+        try:
+            i = seq.index(titulo)
+        except ValueError:
+            return [], None
+        try:
+            i = seq.index("Ticket Médio", i) + 1
+        except ValueError:
+            return [], None
+        linhas, total = [], None
+        while i < len(seq):
+            t = seq[i]
+            if t.startswith("Resumo por") or t.startswith("Valor Total"):
+                break
+            if t == "Total Geral:":
+                nums = [x for x in (_num(v) for v in seq[i + 1:i + 16]) if x is not None]
+                total = nums
+                break
+            if t.lstrip("-").isdigit() and i + 1 < len(seq) and _num(seq[i + 1]) is None:
+                vals = [_num(v) for v in seq[i + 2:i + 2 + len(COLUNAS)]]
+                if all(v is not None for v in vals):
+                    r = dict(zip(COLUNAS, vals))
+                    linhas.append({"cod": t, "nome": seq[i + 1], "venda": r["vlr_venda"], "itens": r["quant"],
+                                   "vendas": int(r["qtd_vendas"]), "ticket": r["ticket"]})
+                    i += 2 + len(COLUNAS)
+                    continue
+            i += 1
+        return linhas, total
+
+    vend, vend_tot = quadro("Resumo por Vendedor")
+    estab, estab_tot = quadro("Resumo por Estabelecimento")
+    totais = {}
+    for rot in ["Valor Total das Notas Emitidas", "Valor Total Devoluções", "Valor Venda Líquida (Venda - Devolução)",
+                "Quantidade Clientes Atendidos", "Quantidade Itens Atendidos"]:
+        if rot in seq:
+            j = seq.index(rot)
+            v = next((_num(x) for x in seq[j + 1:j + 4] if _num(x) is not None), None)
+            totais[rot] = v
+    return {"vendedores": vend, "estabelecimentos": estab, "totais": totais}
