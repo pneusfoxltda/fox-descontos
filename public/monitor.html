@@ -31,6 +31,17 @@ button{font-family:inherit;cursor:pointer}
 .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
 .sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:14px 16px}
 .sec.larga{grid-column:1/-1}
+.fe-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.chipf{background:var(--fx-s2,#1c1c1c);color:var(--fx-tx2,#ddd);border:1px solid var(--fx-bd,#333);border-radius:999px;padding:5px 12px;font-size:12px;cursor:pointer}
+.chipf.on{background:var(--fx-ac,#CC1F1F);border-color:var(--fx-ac,#CC1F1F);color:#fff}
+.self{background:var(--fx-s2,#1c1c1c);color:var(--fx-tx2,#ddd);border:1px solid var(--fx-bd,#333);border-radius:8px;padding:5px 8px;font-size:12px}
+.fe-nums{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.fe-num{background:var(--fx-s2,#1c1c1c);border:1px solid var(--fx-bd,#2a2a2a);border-radius:10px;padding:8px 14px;min-width:110px}
+.fe-num b{display:block;font-size:22px}.fe-num span{font-size:12px;color:var(--fx-tx3,#888)}
+.fe-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.fe-cols h3,.sec h3{font-size:13px;margin-bottom:6px}
+.fe-ol{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5}.fe-ol small{display:block;color:var(--fx-tx3,#888);font-size:11px}
+.fe-n{background:var(--fx-s2,#222);border-radius:999px;padding:0 7px;font-size:11px;color:var(--fx-tx2,#ccc)}
 .sec h2{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .sec .sub{font-size:12px;color:var(--fx-tx3,#888);margin:-6px 0 10px;line-height:1.45}
 .it{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--fx-bd,#1F1F1F);font-size:13px}
@@ -310,11 +321,45 @@ async function carregar() {
     `<tr><td>${esc(k)}</td><td class="r">${t.existe ? (t.linhas ?? "?") : "<span style='color:var(--fx-tx3,#888)'>não existe</span>"}</td><td>${t.ultima ? quando(t.ultima) : ""}</td></tr>`).join("") + `</table>`;
   html.push(secao("🗄️ Tabelas do banco", "", corpo));
 
+  html.push(`<div class="sec larga" id="sec-fernanda"><h2>🦊 Conversas com a Fernanda</h2><div class="sub">Carregando…</div></div>`);
   $("grade").innerHTML = html.join("");
+  carregarFernanda();
   $("geral").innerHTML = `<div class="g vm"><b>${contagem.vm}</b><span>🔴 com erro</span></div><div class="g am"><b>${contagem.am}</b><span>🟡 atenção</span></div><div class="g vd"><b>${contagem.vd}</b><span>🟢 funcionando</span></div>`;
   $("atualizado").textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR", {timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit"}) + " · atualiza sozinho a cada 5 min";
 }
 setInterval(() => { if ($("app").style.display === "block" && !document.hidden) carregar(); }, 5 * 60 * 1000);
+
+// ── 🦊 O que as pessoas escrevem para a Fernanda (SQL 25) ──
+let feDias = 1, feLoja = "";
+async function carregarFernanda() {
+  const box = $("sec-fernanda"); if (!box) return;
+  const {data: F, error} = await sb.rpc("monitor_fernanda", {p_dias: feDias});
+  if (error) {
+    box.innerHTML = `<h2>🦊 Conversas com a Fernanda</h2>` + item("am", /monitor_fernanda|function|schema/.test(error.message) ? "Falta rodar o passo 25 (25_fernanda_conversas.sql) no Supabase" : esc(error.message));
+    return;
+  }
+  const per = [[1, "Hoje"], [7, "7 dias"], [30, "30 dias"]].map(([d, n]) => `<button class="chipf ${d === feDias ? "on" : ""}" data-fd="${d}">${n}</button>`).join("");
+  const lojas = [...new Set((F.ultimas || []).map(u => u.loja || "(sem loja)"))].sort();
+  const selLoja = `<select id="fe-loja" class="self"><option value="">Todas as lojas</option>${lojas.map(l => `<option ${l === feLoja ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  const ult = (F.ultimas || []).filter(u => !feLoja || (u.loja || "(sem loja)") === feLoja);
+  const cartao = (t, v) => `<div class="fe-num"><b>${v}</b><span>${t}</span></div>`;
+  const lista = (arr, f) => arr && arr.length ? `<ol class="fe-ol">${arr.map(f).join("")}</ol>` : `<p class="nota">Nada ainda.</p>`;
+  box.innerHTML = `<h2>🦊 Conversas com a Fernanda</h2>
+    <div class="sub">O que as pessoas escrevem para a Fernanda (o texto digitado; telefones aparecem como ••••; PDF e imagem não são enviados). Guardado por 90 dias.</div>
+    <div class="fe-bar">${per} ${selLoja}</div>
+    <div class="fe-nums">${cartao("mensagens", F.total || 0)}${cartao("pessoas", F.pessoas || 0)}${cartao("sem resposta", F.nao_achou || 0)}</div>
+    <div class="fe-cols">
+      <div><h3>👥 Quem mais conversou</h3>${lista(F.por_pessoa, p => `<li><b>${esc(p.nome)}</b>${p.loja ? " · " + esc(p.loja) : ""} <span class="fe-n">${p.n}</span><small>última: ${quando(p.ultima)}</small></li>`)}</div>
+      <div><h3>🔥 O que mais perguntaram</h3>${lista(F.mais_perguntado, p => `<li>${esc(p.texto)} <span class="fe-n">${p.n}x</span>${p.pessoas > 1 ? `<small>${p.pessoas} pessoas</small>` : ""}</li>`)}</div>
+      <div><h3>🤔 A Fernanda não soube responder</h3>${lista(F.sem_resposta, p => `<li>${esc(p.texto)} <span class="fe-n">${p.n}x</span></li>`)}<p class="nota">Mande essas para o Claude ensinar a Fernanda. 😉</p></div>
+    </div>
+    <h3 style="margin-top:12px">💬 Últimas mensagens${feLoja ? " · " + esc(feLoja) : ""}</h3>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto"><table><tr><th>Quando</th><th>Quem</th><th>Loja</th><th>Tela</th><th>Mensagem</th><th></th></tr>` +
+    (ult.length ? ult.map(u => `<tr><td style="white-space:nowrap">${quando(u.quando)}</td><td>${esc(u.nome)}</td><td>${esc(u.loja || "")}</td><td>${esc(String(u.tela || "").replace(/^\/|\.html$/g, "") || "foxnet")}</td><td>${esc(u.texto)}</td><td title="${u.achou === false ? "a Fernanda não soube responder" : ""}">${u.achou === false ? "🤔" : ""}</td></tr>`).join("")
+      : `<tr><td colspan="6" class="nota">Ninguém conversou com a Fernanda nesse período.</td></tr>`) + `</table></div>`;
+  box.querySelectorAll("[data-fd]").forEach(b => b.onclick = () => { feDias = +b.dataset.fd; carregarFernanda(); });
+  $("fe-loja").onchange = e => { feLoja = e.target.value; carregarFernanda(); };
+}
 </script>
 </body>
 </html>

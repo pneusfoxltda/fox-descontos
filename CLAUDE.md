@@ -85,7 +85,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **Clicar na raposa de qualquer sistema volta para a intranet** (FOXNET), inclusive nas telas de login
   (`tema-comum.js`; em produção vai para foxnet-intranet.vercel.app levando a cor escolhida; nos links de teste, /foxnet/).
   A Fernanda usa a mesma raposa em preto, de propósito.
-- **Fernanda**: assistente sem IA externa (palavras-chave), não envia dados para fora.
+- **Fernanda**: assistente sem IA externa (palavras-chave). Arquivos (PDF/imagem) nunca saem do computador; o **texto
+  digitado no chat** é registrado para o 🩺 Monitor (`feRegistrar` no fernanda.js → `fernanda_registrar`, SQL
+  `25_fernanda_conversas.sql`: até 300 letras, números grandes/telefones viram ••••, nome e loja de quem está logado,
+  tela, se achou resposta; 90 dias; só o admin lê por `monitor_fernanda(p_dias)`). Seção "🦊 Conversas com a
+  Fernanda" no fim do Monitor: hoje / 7 / 30 dias, filtro por loja, quem mais conversou, o que mais perguntaram, o que
+  ela não soube responder (para ensinar) e as últimas 150 mensagens.
   `public/fernanda.js` (busca no FOXNET) + `public/fernanda-ajuda.js` (ajuda de cada tela,
   carregado pelo fernanda.js; `feAnswer` chama `window.feAjuda` antes de `feAnswerBase`):
   · **Cadastrar desconto** (`cadastrardescontos.html` e aba Cadastrar do App — campos com
@@ -154,6 +159,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
     diferenciais (**montagem gratuita + checklist preventivo completo gratuito**). Respostas modelo ADAPTADAS à regra do
     TI: sem "reservar box", sem "segurar condição 48 h", sem "pronta entrega" (nunca prometer pneu separado nem horário
     reservado); combinar o dia da visita. No Cadastrar só responde se a pessoa pedir ("cliente disse…", "treinar").
+    **Módulo 2** (TI, 24/11/2026): roteiro de ligação de resgate (etapas A/B/C; nas Ligações já vem preenchido com o
+    cliente de maior valor sem contato, a medida, o dia e a validade do preço), "me manda no WhatsApp" (30 segundos,
+    nunca desligar sem tentar um dia), resgate no WhatsApp (visita em 48 h), escada de condições (4x sem juros · 8x
+    com 5% para visita em 48 h · 21x · cobrir orçamento com o gerente; regra de ouro: contrapartida = dia da visita),
+    cobrir orçamento na mesma ligação. **Regras da Fox**: não faz entrega; **preço garantido pela data da cotação:
+    7 dias (cotação do televendas) ou 3 dias (cotação da loja)**; nunca travar box nem separar pneu.
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos

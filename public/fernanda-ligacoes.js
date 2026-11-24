@@ -108,7 +108,7 @@
     if (curta) return partes.slice(0, 2).join(" ");
     return partes.join("\n\n");
   }
-  const CHIPS = ["Agendados de hoje", "Por onde começo?", "Quantos faltam?", "Quem não atende?", "Meu resumo", "Dica para ligar", "🎯 Treinar vendas", "🔔 Avisos no celular"];
+  const CHIPS = ["Agendados de hoje", "Por onde começo?", "Quantos faltam?", "Quem não atende?", "Meu resumo", "Dica para ligar", "📞 Roteiro de ligação", "🎯 Treinar vendas", "🔔 Avisos no celular"];
 
   // ── Respostas no chat ──
   function resposta(q) {

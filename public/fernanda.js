@@ -111,9 +111,22 @@ function feAct(r){
   const onclick = r.url ? `window.open('${r.url}','_blank')` : r.menu!==undefined ? `feClose();feMenu(${r.menu})` : `feClose();feGo('${r.go}')`;
   return `<button class="fe-a" onclick="${onclick}"><b>${feEsc(r.t)} ${r.url?"↗":"→"}</b><small>${feEsc(r.d)}</small></button>`;
 }
+/* ══ Registro para o 🩺 Monitor do TI (SQL 25): o TEXTO digitado, a tela e se a Fernanda achou resposta.
+   Telefones e números grandes são escondidos no banco; PDF e imagem NUNCA são enviados. Sem o SQL 25, nada acontece. ══ */
+const FE_SB="https://dxwkiaxpygibzmwzvcuz.supabase.co", FE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+let feRec={achou:true};               // um por mensagem: a resposta de uma não mistura com a próxima
+function feRegistrar(q, rec){
+  try{
+    let tok=FE_ANON; const s=JSON.parse(localStorage.getItem("foxnet-auth")||"null");
+    const at=s && (s.access_token || (s.currentSession && s.currentSession.access_token)), exp=s && (s.expires_at || (s.currentSession && s.currentSession.expires_at));
+    if(at && (!exp || exp*1000>Date.now())) tok=at;
+    fetch(FE_SB+"/rest/v1/rpc/fernanda_registrar",{method:"POST",keepalive:true,headers:{apikey:FE_ANON,Authorization:"Bearer "+tok,"Content-Type":"application/json"},
+      body:JSON.stringify({p_texto:String(q).slice(0,300),p_tela:location.pathname,p_achou:rec.achou})}).catch(()=>{});
+  }catch(e){}
+}
 function feSend(){
   const q=feIn.value.trim(); if(!q) return; feIn.value="";
-  feMe(q); feChips.innerHTML="";
+  feMe(q); feChips.innerHTML=""; const rec=feRec={achou:true}; setTimeout(()=>feRegistrar(q, rec), 1500);
   const t=document.createElement("div"); t.className="fe-m bot"; t.innerHTML='<span class="fe-dots"><i></i><i></i><i></i></span>'; feMsgs.appendChild(t); feScroll();
   setTimeout(()=>{ t.remove(); feAnswer(q); }, 450);
 }
@@ -131,6 +144,7 @@ function feAnswer(q){
   feNaoAchei();
 }
 function feNaoAchei(){
+  feRec.achou=false;
   feBot("Hmm, não encontrei isso no FOXNET. 🤔\nTente com outras palavras ou escolha uma das opções abaixo. Se for algo que ainda não existe aqui, avise o TI para incluirmos!");
   feRenderChips(FE_CHIPS);
 }

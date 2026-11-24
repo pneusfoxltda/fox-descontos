@@ -1306,7 +1306,7 @@ window.FE_LIG = {
   pronto: () => !!perfil && todas.length >= 0 && $("main-screen").style.display !== "none",
   eu: () => ({
     id: meuId, nome: (perfil && (perfil.apelido || primeiro(perfil.nome) || primeiro(String(perfil.email || "").split("@")[0]))) || "",
-    nomeCompleto: perfil && perfil.nome, email: perfil && perfil.email, loja: perfil && perfil.loja,
+    nomeCompleto: perfil && perfil.nome, email: perfil && perfil.email, loja: perfil && perfil.loja, artigo: perfil && perfil.artigo,
     papel: ehAdmin ? "admin" : ehVendedor ? "vendedor" : gerenteLoja ? "gerente" : ehGerente ? "gerente_todas" : ""
   }),
   // Os clientes "da pessoa": vendedor → os dele; gerente → a loja; admin/gerente de todas → a loja escolhida (ou todas)
