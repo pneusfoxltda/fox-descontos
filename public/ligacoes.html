@@ -168,7 +168,9 @@ body.modo-tabela .cel.os{width:92px;} body.modo-tabela .cel.dt{width:128px;} bod
 .mini.wa,.bt-wa{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;} .ico-wa{flex-shrink:0;}
 .ed-nome{background:none;border:none;cursor:pointer;font-size:12px;padding:0 0 0 5px;opacity:.45;vertical-align:middle;} .ed-nome:hover{opacity:1;}
 .mini.lig.off{opacity:.35;cursor:not-allowed;filter:grayscale(1);}
-.mini.wa2,.bt-wa2{background:#0F3D24;color:#86EFAC;text-decoration:none;} .mini.wa2.forte,.bt-wa2.forte{background:#16A34A;color:#fff;animation:pulsa 1.6s infinite;}
+.mini.wa{padding:3px 6px;} .mini.wa .ico-wa{width:15px;height:15px;}
+.ico-duo{display:inline-flex;align-items:center;vertical-align:middle;} .ico-duo .ico-wa{width:14px;height:14px;} .ico-duo .ico-pin{margin-left:-5px;}
+.mini.wa2,.bt-wa2{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;background:#0F3D24;color:#86EFAC;text-decoration:none;} .mini.wa2.forte,.bt-wa2.forte{background:#16A34A;color:#fff;animation:pulsa 1.6s infinite;}
 .mini.wa.forte,.bt-wa.forte{background:#16A34A;color:#fff;box-shadow:0 0 0 2px #22C55E55;animation:pulsa 1.6s infinite;}
 @keyframes pulsa{50%{box-shadow:0 0 0 5px #22C55E22;}}
 .stsel{border:none;border-radius:12px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;color-scheme:var(--cs);}
@@ -253,7 +255,7 @@ input.cel.os.falta{border-color:#F59E0B}
 body.claro .c-pendente{background:#FEF3C7;color:#92400E;} body.claro .c-nao_atende{background:#FEE2E2;color:#B91C1C;} body.claro .c-retornar{background:#DBEAFE;color:#1D4ED8;} body.claro .c-aguardando_wa{background:#DCFCE7;color:#15803D;}
 body.claro .c-sem_interesse{background:#EEEEEE;color:#555;} body.claro .c-agendou{background:#EDE9FE;color:#6D28D9;} body.claro .c-venda_ganha{background:#DCFCE7;color:#15803D;}
 body.claro .c-venda_perdida{background:#FEE2E2;color:#B91C1C;} body.claro .c-venda_televendas,body.claro .c-comprou{background:#CCFBF1;color:#0F766E;}
-body.claro .mini.lig,body.claro .bt-lig{background:#DBEAFE;color:#1D4ED8;} body.claro .mini.wa,body.claro .bt-wa{background:#DCFCE7;color:#15803D;}
+body.claro .mini.lig,body.claro .bt-lig{background:#DBEAFE;color:#1D4ED8;} body.claro .mini.wa,body.claro .bt-wa{background:#DCFCE7;color:#15803D;} body.claro .mini.wa2,body.claro .bt-wa2{background:#DCFCE7;color:#15803D;}
 body.claro .mini.wa.forte,body.claro .bt-wa.forte{background:#16A34A;color:#fff;}
 body.claro .selo.ganha{background:#DCFCE7;color:#15803D;} body.claro .selo.tv{background:#CCFBF1;color:#0F766E;} body.claro .selo.agendou{background:#EDE9FE;color:#6D28D9;}
 body.claro .selo.perdida,body.claro .selo.atraso{background:#FEE2E2;color:#B91C1C;}
@@ -418,6 +420,8 @@ const STATUS = {
 };
 // Máximo de tentativas por ligação; depois disso, só pelo WhatsApp (decisão do TI)
 const MAX_TENT = 3;
+// Ícone da 2ª mensagem: WhatsApp e localização juntos, meio a meio (decisão do TI)
+const ICONE_PIN = '<svg class="ico-pin" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="#EF4444" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
 const ICONE_WA = '<svg class="ico-wa" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.8-1.2.2-.6.2-1.1.1-1.2l-.5-.3z"/></svg>';
 const MANUAIS = ["pendente", "nao_atende", "retornar", "aguardando_wa", "sem_interesse", "agendou", "venda_ganha", "venda_perdida"];
 const FECHADOS = ["venda_ganha", "venda_perdida", "venda_televendas", "comprou"];
@@ -834,7 +838,7 @@ function cartao(l) {
     ${l.telefone ? `<div class="tel"><span class="num">${esc(l.telefone)}</span>
       ${tentativas(l.id) >= MAX_TENT && !FECHADOS.includes(l.status) ? `<span class="bt bt-lig" style="opacity:.4" title="Já foram ${tentativas(l.id)} tentativas">📞 ${tentativas(l.id)} tentativas</span>` : `<a class="bt bt-lig" href="tel:${esc(d)}">📞 Ligar</a>`}
       ${wa ? `<a class="bt bt-wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" onclick="mandouWa(${l.id})">${ICONE_WA}WhatsApp${forte ? " (tente aqui)" : ""}</a>` : ""}
-      ${linkWa2(l) ? `<a class="bt bt-wa2 ${waMandou.has(l.id) ? "forte" : ""}" data-wa2="${l.id}" href="${esc(linkWa2(l))}" target="_blank" rel="noopener" title="2ª mensagem: endereço e mapa da loja">📍 Endereço</a>` : ""}</div>` : ""}
+      ${linkWa2(l) ? `<a class="bt bt-wa2 ${waMandou.has(l.id) ? "forte" : ""}" data-wa2="${l.id}" href="${esc(linkWa2(l))}" target="_blank" rel="noopener" title="2ª mensagem: endereço e mapa da loja"><span class="ico-duo">${ICONE_WA}${ICONE_PIN}</span>Endereço</a>` : ""}</div>` : ""}
     <div class="st">${linhaStatus}${l.obs ? `<div style="margin-top:4px">📝 ${esc(l.obs)}</div>` : ""}</div>
     ${editavel ? `<div class="acao">
       <select id="s-${l.id}" onchange="trocouStatus(${l.id})">${MANUAIS.map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${
@@ -1125,7 +1129,7 @@ function linhaTabela(l) {
   const linha = `<tr class="${atrasado(l) ? "atr" : ""}" id="tr-${id}">
     <td class="fx1">${esc(l.cotacao)}</td>
     <td class="fx2">${esc(nomeCli(l))}${ed ? `<button class="ed-nome" onclick="editarNome(${id})" title="Corrigir o nome do cliente">✏️</button>` : ""}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
-    <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span>${t >= MAX_TENT && !fechado ? `<span class="mini lig off" title="Já foram ${t} tentativas por ligação: agora tente pelo WhatsApp (mensagem ou ligação)">📞</span>` : `<a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>`}${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp: 1ª mensagem (orçamento)"}" onclick="mandouWa(${id})">${ICONE_WA}WA</a>` : ""}${linkWa2(l) ? `<a class="mini wa2 ${waMandou.has(id) ? "forte" : ""}" data-wa2="${id}" href="${esc(linkWa2(l))}" target="_blank" rel="noopener" title="WhatsApp: 2ª mensagem (endereço e mapa da loja)">📍</a>` : ""}` : ""}</td>
+    <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span>${t >= MAX_TENT && !fechado ? `<span class="mini lig off" title="Já foram ${t} tentativas por ligação: agora tente pelo WhatsApp (mensagem ou ligação)">📞</span>` : `<a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>`}${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp: 1ª mensagem (orçamento)"}" onclick="mandouWa(${id})">${ICONE_WA}</a>` : ""}${linkWa2(l) ? `<a class="mini wa2 ${waMandou.has(id) ? "forte" : ""}" data-wa2="${id}" href="${esc(linkWa2(l))}" target="_blank" rel="noopener" title="WhatsApp: 2ª mensagem (endereço e mapa da loja)"><span class="ico-duo">${ICONE_WA}${ICONE_PIN}</span></a>` : ""}` : ""}</td>
     <td>${esc(cotou(l))}</td>
     <td>${celulaResp(l)}</td>
     <td class="r">${fmtR(l.valor)}</td>

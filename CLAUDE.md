@@ -262,9 +262,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Pendentes ordenados pelo maior valor + total em aberto. Celular (< 900 px): cartões.
   **WhatsApp em 2 mensagens** (texto do TI, 24/11/2026): botão WA = mensagem 1 ("Olá, {cliente}! Aqui é {vendedor},
   da Fox Pneus {loja}. Vi que você fez um orçamento ontem/antes de ontem/no dia X do pneu {medida}… o que falta para
-  fecharmos…"); botão 📍 = mensagem 2 com endereço e link do mapa da loja (`ENDERECO_LOJA`; PARINTINS = Manaus,
+  fecharmos…"); botão (ícone do WhatsApp + alfinete de localização, meio a meio) = mensagem 2 com endereço e link do mapa da loja (`ENDERECO_LOJA`; PARINTINS = Manaus,
   XAPURI = Rio Branco, C.AUTO VLH = Vilhena), pisca depois da 1ª. O link do WhatsApp só leva 1 mensagem e
-  precisa do clique em enviar: envio automático só com a API oficial do WhatsApp Business (paga) ou pelo Kommo.
+  precisa do clique em enviar (o botão WA é só o símbolo do WhatsApp): envio automático só com a API oficial do WhatsApp Business (paga) ou pelo Kommo.
   **Nunca prometer pneu separado nem horário reservado** (o estoque pode acabar; decisão do TI). Mensagens curtas.
 - **Data do agendamento pelo Kommo**: o robô lê o campo **"Data da visita"** do lead e grava em
   `agendado_para` quando a lista está sem data ou com data mais antiga.
