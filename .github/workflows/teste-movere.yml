@@ -22,11 +22,11 @@ jobs:
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
           DATA_INI: '01/11/2026'
           DATA_FIM: '21/11/2026'
-          SEM_ATACADO: '1'
+          CLIENTES_REVENDA: '1'
           ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
           ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
           FRETE: '1'
-        run: if [ "${{ github.ref_name }}" = varejo-553 ]; then python3 varejo_teste.py; fi
+        run: python3 analytics_varejo_diag.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()

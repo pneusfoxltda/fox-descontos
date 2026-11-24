@@ -62,7 +62,24 @@ def main():
         print("🏷️ atributos de vendedor:", [(t, l.split("/")[-1]) for t, l in cand])
         vend = next((l for t, l in cand if re.fullmatch(r"(nome )?vendedor( 1)?", t.strip(), re.I)), None) or next((l for t, l in cand if "nome" in t.lower() and "vendedor" in t.lower()), None)
         print("   usando:", vend)
-        testes = {"7_loja_x_vendedor_x_segmento": ([E, df(cli, tt, vend), S], [M_FAT], ("obj/1539]",), ())} if vend else {}
+        if os.environ.get("CLIENTES_REVENDA"):   # pedido do TI: código do cliente das vendas de REVENDA
+            cc = [(e["title"], e["link"]) for e in at if re.search(r"cliente|nota|documento", e["title"], re.I)]
+            print("🏷️ atributos de cliente/nota:", [(t, l.split("/")[-1]) for t, l in cc])
+            esc = [l for t, l in cc if re.fullmatch(r"(c[oó]d(igo)?\.?|id|nome)?\s*(do\s+)?cliente", t.strip(), re.I)][:3]
+            esc += [l for t, l in cc if re.search(r"n[uú]mero.*(nota|documento)|^(nota|documento)", t.strip(), re.I)][:1]
+            print("   usando:", [l.split("/")[-1] for l in esc])
+            linhas = ([E, df(cli, tt, vend), S] if vend else [E, S]) + [df(cli, tt, f"{MD}/obj/{cv.ATTR_DIA}")]
+            dfs = []
+            for l in esc:
+                for d in q(cli, tt, l)["attribute"]["content"]["displayForms"]:
+                    dfs.append(d["meta"]["uri"])
+            r = executar(cli, tt, base, linhas + dfs, [M_FAT], ("obj/1539]",), (fdia,))
+            if isinstance(r, list) and r:
+                out["8_revenda_clientes"] = [r[0]] + [x for x in r[1:] if any("REVENDA" in str(c).upper() for c in x)]
+            else:
+                out["8_revenda_clientes"] = r
+            print("▶ 8_revenda_clientes:", len(out["8_revenda_clientes"]) if isinstance(out["8_revenda_clientes"], list) else out["8_revenda_clientes"], "linhas")
+        testes = {} if os.environ.get("CLIENTES_REVENDA") else {"7_loja_x_vendedor_x_segmento": ([E, df(cli, tt, vend), S], [M_FAT], ("obj/1539]",), ())} if vend else {}
         _antigos = {
             "1_loja_com_e_sem_devolucao": ([E], [M_FAT, M_FAT_SEM_DEV, M_DEV], (), ()),
             "2_loja_x_tabela": ([E, T], [M_FAT], (), ()),
