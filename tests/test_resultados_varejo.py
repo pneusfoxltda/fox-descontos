@@ -39,6 +39,26 @@ def t_vendedores_somam_a_loja():
     assert round(sum(v["venda"] for v in vd), 2) == lj["venda"]
 
 
+def t_pneus_por_loja_e_vendedor():
+    mes = {"lojas": [{"loja": "MATRIZ", "venda": 10.0}, {"loja": "CACOAL", "venda": 5.0}],
+           "vend": [{"loja": "MATRIZ", "cod": "1"}, {"loja": "MATRIZ", "cod": "2"}, {"loja": "CACOAL", "cod": "9"}]}
+    rv.juntar_pneus(mes, "MATRIZ", {"itens": 12.0, "clientes": 5}, [{"cod": "1", "itens": 12.0, "clientes": 5}])
+    assert mes["lojas"][0]["pneus"] == 12.0 and mes["lojas"][0]["pneus_vendas"] == 5
+    assert "pneus" not in mes["lojas"][1]
+    assert mes["vend"][0]["pneus"] == 12.0 and mes["vend"][1]["pneus"] == 0.0 and "pneus" not in mes["vend"][2]
+
+
+def t_gravar_mesmas_colunas():
+    enviados = []
+    class R:
+        status_code, text = 201, ""
+        def raise_for_status(self): pass
+    class Cli:
+        def post(self, url, headers=None, json=None): enviados.append(json); return R()
+    rv._post(Cli(), "u", {}, [{"loja": "A", "pneus": 1}, {"loja": "B"}])
+    assert enviados[0][1] == {"loja": "B", "pneus": None}
+
+
 def t_data_analytics():
     assert rv.iso_analytics("11/3/2026") == "2026-11-03"
 

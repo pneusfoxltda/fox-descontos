@@ -63,6 +63,8 @@ tr.vend td:first-child{color:var(--fx-tx3,#777)}
 .pct{display:inline-block;min-width:44px;text-align:right;font-weight:700}
 .mini{height:6px;background:var(--fx-s2,#262626);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}.mini i{display:block;height:100%;background:#22C55E}
 .medalha{font-size:15px}
+.emv{display:block;font-size:10.5px;color:var(--fx-tx3,#888);font-weight:500}
+th.pn,td.pn{background:rgba(34,197,94,.06)}
 .nota{font-size:11.5px;color:var(--fx-tx3,#888);margin-top:8px;line-height:1.5}
 .vazio{padding:30px;text-align:center;color:var(--fx-tx3,#888);font-size:13px}
 /* Metas (admin) */
@@ -122,6 +124,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "
 const fmtR = v => "R$ " + Number(v || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtR0 = v => "R$ " + Math.round(Number(v || 0)).toLocaleString("pt-BR");
 const fmtN = v => Math.round(Number(v || 0)).toLocaleString("pt-BR");
+// Pneus: quantos pneus e em quantas vendas (vazio até o robô ler, ou sem o SQL 27)
+const celPneus = (q, n) => q == null ? "" : `<b>${fmtN(q)}</b><small class="emv">em ${fmtN(n)} venda${Number(n) === 1 ? "" : "s"}</small>`;
 const fmtD = iso => { if (!iso) return ""; const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
 const hojePVH = () => new Date().toLocaleDateString("en-CA", {timeZone: "America/Porto_Velho"});
 const horaPVH = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
@@ -226,6 +230,7 @@ function desenharVarejo() {
     hoje: soma(ranking, x => x.hoje.venda), cliHoje: soma(ranking, x => x.hoje.clientes),
     mes: soma(ranking, x => x.mes.venda), cli: soma(ranking, x => x.mes.clientes), itens: soma(ranking, x => x.mes.itens),
     meta: soma(ranking, x => x.meta),
+    pneus: ranking.some(x => x.mes.pneus != null) ? soma(ranking, x => x.mes.pneus) : null, pneusV: soma(ranking, x => x.mes.pneus_vendas),
   };
   T.ticket = T.cli ? T.mes / T.cli : 0;
   const dr = diasRestantes(hoje), falta = Math.max(0, T.meta - T.mes);
@@ -235,7 +240,7 @@ function desenharVarejo() {
 
   const kpis = `<div class="kpis">
     <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " clientes" : "ainda sem rodada hoje"}</small></div>
-    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens</small></div>
+    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens${T.pneus != null ? " · 🛞 " + fmtN(T.pneus) + " pneus" : ""}</small></div>
     <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i style="width:${Math.min(100, pctT)}%"></i></div><small>${pctT.toFixed(0)}% atingido</small>` : `<small>${ehAdmin ? "clique em ✏️ Metas" : "o TI ainda não lançou"}</small>`}</div>
     <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + " dia(s) de venda" : T.meta ? "meta batida! 🎉" : ""}</small></div>
     <div class="k"><span>Ticket médio</span><b>${fmtR(T.ticket)}</b><small>venda ÷ clientes</small></div>
@@ -255,13 +260,14 @@ function desenharVarejo() {
       <td class="r">${p == null ? "" : `<span class="pct">${p.toFixed(0)}%</span><span class="mini"><i style="width:${Math.min(100, p)}%"></i></span>`}</td>
       <td class="r">${x.meta ? fmtR0(Math.max(0, x.meta - x.mes.venda)) : ""}</td>
       <td class="r">${fmtN(x.mes.clientes)}</td>
+      <td class="r pn">${celPneus(x.mes.pneus, x.mes.pneus_vendas)}</td>
       <td class="r">${fmtR(x.mes.ticket)}</td>
       <td class="r">${fmtN(x.mes.itens)}</td></tr>`;
     if (aberta === x.loja) linhas += vendedoresDaLoja(x.loja, temHoje);
   });
   linhas += `<tr class="total"><td></td><td>Total Varejo</td><td class="r">${temHoje ? fmtR(T.hoje) : ""}</td><td class="r">${temHoje ? fmtN(T.cliHoje) : ""}</td>
     <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : pctT.toFixed(0) + "%"}</td>
-    <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
+    <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r pn">${celPneus(T.pneus, T.pneusV)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
 
   const metasHtml = ehAdmin ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
     ${editandoMetas ? `<div class="sub">Só o administrador vê este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
@@ -270,24 +276,24 @@ function desenharVarejo() {
 
   $("tela").innerHTML = kpis + `<div class="sec"><h2>🏆 Ranking das lojas</h2>
     <div class="sub">Clique na loja para ver os vendedores. Ordem pela venda do mês. Atualizado ${atual ? "em " + horaPVH(atual) : ""} · rotina 553 do Movere, de hora em hora (seg a sáb).</div>
-    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
-    <p class="nota">Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.</p></div>`
+    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r pn">🛞 Pneus</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
+    <p class="nota">Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. 🛞 Pneus = pneus vendidos no mês (só as famílias de pneu) e em quantas vendas. Ticket médio = venda ÷ clientes.</p></div>`
     + metasHtml + conferencia(conf);
 }
 const fmtMes = iso => ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][Number(iso.slice(5, 7)) - 1] + "/" + iso.slice(0, 4);
 function vendedoresDaLoja(loja, temHoje) {
   const m = V.vend.filter(v => v.loja === loja && v.periodo === "mes").sort((a, b) => b.venda - a.venda);
   const h = Object.fromEntries(V.vend.filter(v => v.loja === loja && v.periodo === "hoje" && v.dia === V.hoje).map(v => [v.cod, v]));
-  if (!m.length) return `<tr class="vend"><td></td><td colspan="10">Sem vendedores no mês.</td></tr>`;
+  if (!m.length) return `<tr class="vend"><td></td><td colspan="11">Sem vendedores no mês.</td></tr>`;
   const total = V.lojas.find(x => x.loja === loja && x.periodo === "mes");
   const somaMes = m.reduce((s, v) => s + Number(v.venda), 0), somaHoje = Object.values(h).reduce((s, v) => s + Number(v.venda), 0);
   const bate = total && Math.abs(somaMes - Number(total.venda)) < 0.05;
   return m.map((v, i) => `<tr class="vend"><td class="r">${i + 1}º</td><td>&nbsp;&nbsp;&nbsp;👤 ${esc(v.nome)}</td>
       <td class="r">${temHoje ? fmtR(h[v.cod] ? h[v.cod].venda : 0) : ""}</td><td class="r">${temHoje ? fmtN(h[v.cod] ? h[v.cod].clientes : 0) : ""}</td>
       <td class="r">${fmtR(v.venda)}</td><td class="r"></td><td class="r">${total && total.venda ? (v.venda / total.venda * 100).toFixed(0) + "% da loja" : ""}</td><td></td>
-      <td class="r">${fmtN(v.clientes)}</td><td class="r">${fmtR(v.ticket)}</td><td class="r">${fmtN(v.itens)}</td></tr>`).join("")
+      <td class="r">${fmtN(v.clientes)}</td><td class="r pn">${celPneus(v.pneus, v.pneus_vendas)}</td><td class="r">${fmtR(v.ticket)}</td><td class="r">${fmtN(v.itens)}</td></tr>`).join("")
     + `<tr class="soma"><td></td><td>&nbsp;&nbsp;&nbsp;Soma dos vendedores</td><td class="r">${temHoje ? fmtR(somaHoje) : ""}</td><td></td><td class="r">${fmtR(somaMes)}</td>
-      <td colspan="6">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
+      <td colspan="7">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
 }
 function abrirLoja(loja) { aberta = aberta === loja ? null : loja; desenharVarejo(); }
 async function salvarMetas() {
