@@ -42,6 +42,9 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
           ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
+          MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
+          MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
           KOMMO_TOKEN: ${{ secrets.KOMMO_TOKEN }}
           DRY_RUN: ${{ inputs.teste && '1' || '' }}
         run: python ligacoes_lojas.py

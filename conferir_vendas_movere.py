@@ -134,15 +134,24 @@ def vendas_por_telefone(linhas: list) -> dict:
     return vendas
 
 
-def cruzar(descontos: list, vendas: dict) -> list:
+def cruzar(descontos: list, vendas: dict, por_orcamento: dict = None) -> list:
     """
-    Para cada desconto, procura a PRIMEIRA venda do mesmo telefone no dia do
-    cadastro ou depois. Devolve a lista de marcações a gravar.
+    Para cada desconto, procura a venda no dia do cadastro ou depois:
+      1º pelo NÚMERO do orçamento/O.S. (API do Movere: a nota traz o nº do orçamento) · mais certeiro;
+      2º pela PRIMEIRA venda do mesmo telefone (últimos 8 dígitos; Analytics e API).
+    Devolve a lista de marcações a gravar.
     """
     marcar = []
+    por_orcamento = por_orcamento or {}
     for d in descontos:
         base = data_local(d.get("criado_em"))
         if base is None:
+            continue
+        num = re.sub(r"\D", "", str(d.get("numero") or "")).lstrip("0")
+        if num and num in por_orcamento and por_orcamento[num][0] >= base:
+            dia, valor = por_orcamento[num]
+            marcar.append({"id": d["id"], "numero": d.get("numero"), "venda_movere_em": dia.isoformat(),
+                           "venda_movere_valor": valor, "por": "orçamento"})
             continue
         achou = []
         for k in chaves_tel(d.get("telefone_cliente")):
@@ -153,7 +162,7 @@ def cruzar(descontos: list, vendas: dict) -> list:
         valor = round(sum(v[1] for v in achou if v[0] == dia), 2)
         marcar.append({
             "id": d["id"], "numero": d.get("numero"),
-            "venda_movere_em": dia.isoformat(), "venda_movere_valor": valor,
+            "venda_movere_em": dia.isoformat(), "venda_movere_valor": valor, "por": "telefone",
         })
     return marcar
 
@@ -205,7 +214,7 @@ def gravar(cli: httpx.Client, chave: str, m: dict, agora: str):
         "venda_movere": True,
         "venda_movere_em": m["venda_movere_em"],
         "venda_movere_valor": m["venda_movere_valor"],
-        "venda_movere_por": "telefone",
+        "venda_movere_por": m.get("por", "telefone"),
         "venda_movere_conferido_em": agora,
     }
     r = cli.patch(f"{SUPABASE_URL}/rest/v1/descontos?id=eq.{m['id']}",
@@ -327,27 +336,39 @@ def main() -> int:
         inicio = min(data_local(d["criado_em"]) for d in pendentes)
         dias = [inicio + timedelta(days=i) for i in range((hoje - inicio).days + 1)]
 
-        tt = login_analytics(cli, login, senha)
-        print("🔐 Login no Analytics OK")
-        els = [u for u in (elemento_dia(cli, tt, d) for d in dias) if u]
-        print(f"📅 Dias com dados no Analytics: {len(els)} de {len(dias)} "
-              f"({inicio.strftime('%d/%m')} a {hoje.strftime('%d/%m')})")
-        if not els:
-            RESUMO["encontrados"] = 0
-            print("⚠️ O Analytics ainda não tem vendas nesse período.")
-            registrar_rodada(True, "o Analytics ainda não tem vendas nesse período", teste=dry)
-            return 0
-        filtro = f"[{_md()}/obj/{ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in els)})"
-        linhas = relatorio(cli, tt, REL_VENDAS, DASH_VENDAS if USAR_FILTRO_DASH else None, filtro)
-        vendas = vendas_por_telefone(linhas)
-        print(f"🧾 Linhas de venda: {max(len(linhas) - 1, 0)} · telefones distintos: {len(vendas)}")
+        # 1) API oficial do Movere: vendas NA HORA, com telefone e nº do orçamento
+        import movere_api
+        # só os últimos dias pela API (rápido); os mais antigos o Analytics já tem
+        api_tel, api_orc = movere_api.buscar(max(inicio, hoje - timedelta(days=movere_api.DIAS_API)), hoje)
+        RESUMO["api_telefones"], RESUMO["api_orcamentos"] = len(api_tel), len(api_orc)
 
-        marcar = cruzar(pendentes, vendas)
-        print(f"🎯 Descontos que viraram venda: {len(marcar)}")
+        # 2) Analytics (reserva: atualiza de madrugada). Se falhar e a API respondeu, segue só com a API.
+        vendas = {}
+        try:
+            tt = login_analytics(cli, login, senha)
+            print("🔐 Login no Analytics OK")
+            els = [u for u in (elemento_dia(cli, tt, d) for d in dias) if u]
+            print(f"📅 Dias com dados no Analytics: {len(els)} de {len(dias)} "
+                  f"({inicio.strftime('%d/%m')} a {hoje.strftime('%d/%m')})")
+            if els:
+                filtro = f"[{_md()}/obj/{ATTR_DIA}] IN ({', '.join('[' + u + ']' for u in els)})"
+                linhas = relatorio(cli, tt, REL_VENDAS, DASH_VENDAS if USAR_FILTRO_DASH else None, filtro)
+                vendas = vendas_por_telefone(linhas)
+                print(f"🧾 Analytics: {max(len(linhas) - 1, 0)} linhas de venda · telefones distintos: {len(vendas)}")
+        except Exception as e:
+            if not api_tel:
+                raise
+            print(f"⚠️ Analytics falhou ({type(e).__name__}): segue só com a API")
+        vendas = movere_api.juntar(vendas, api_tel)
+
+        marcar = cruzar(pendentes, vendas, api_orc)
+        n_orc = sum(1 for m in marcar if m.get("por") == "orçamento")
+        print(f"🎯 Descontos que viraram venda: {len(marcar)} (pelo nº do orçamento: {n_orc} · pelo telefone: {len(marcar) - n_orc})")
+        RESUMO["por_orcamento"] = n_orc
         RESUMO["encontrados"] = len(marcar)
         agora = datetime.now(timezone.utc).isoformat()
         for m in marcar:
-            print(f"   • #{m['numero']} → venda em {date.fromisoformat(m['venda_movere_em']).strftime('%d/%m/%Y')}"
+            print(f"   • #{m['numero']} → venda em {date.fromisoformat(m['venda_movere_em']).strftime('%d/%m/%Y')} (pelo {m.get('por', 'telefone')})"
                   + (" (teste, não gravado)" if dry else ""))
             if not dry:
                 gravar(cli, chave, m, agora)
