@@ -6,15 +6,15 @@ from varejo_filtros import ler_resumos
 
 
 def t_conferencia_explica_revenda():
-    # Caso real de 01 a 21/11/2026: ARIQUEMES tem uma devolução de REVENDA de 1.266,00; o resto bate.
-    v553 = {"ARIQUEMES": 319740.76, "MATRIZ": 558211.44}
-    ana = {"ARIQUEMES": 321006.76, "MATRIZ": 558211.44}
-    rev = [{"loja": "ARIQUEMES", "vendedor": "Camila", "dia": "2026-11-13", "cod_cliente": "239846", "nota": "1301", "valor": -1266.0}]
+    # Exemplo (números de mentira): uma loja com uma devolução de REVENDA de 1.266,00; a outra bate.
+    v553 = {"ARIQUEMES": 1000.0, "MATRIZ": 500.0}
+    ana = {"ARIQUEMES": 2266.0, "MATRIZ": 500.0}
+    rev = [{"loja": "ARIQUEMES", "vendedor": "Camila", "dia": "2026-11-13", "cod_cliente": "000001", "nota": "1301", "valor": -1266.0}]
     c = rv.conferir(v553, ana, rev)
     assert c["MATRIZ"]["diferenca"] == 0 and c["MATRIZ"]["motivos"] == []
     a = c["ARIQUEMES"]
     assert a["diferenca"] == -1266.0, a
-    assert len(a["motivos"]) == 1 and a["motivos"][0]["motivo"] == "Devolução de REVENDA" and a["motivos"][0]["cod_cliente"] == "239846"
+    assert len(a["motivos"]) == 1 and a["motivos"][0]["motivo"] == "Devolução de REVENDA" and a["motivos"][0]["cod_cliente"] == "000001"
 
 
 def t_conferencia_sobra_sem_explicacao():
