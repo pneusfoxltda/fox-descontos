@@ -353,7 +353,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
   (`varejo_metas`). Sem metas, mostra "sem meta". **Dias úteis** igual ao Televendas: no ✏️ Metas, calendário do mês;
   clicar no dia marca feriado (domingo nunca conta). Feriados gravados em `varejo_metas` com `loja = 'feriado_DD'`.
-  **% desejado do dia** = dias úteis até hoje ÷ dias úteis do mês; % meta **verde** se ≥ desejado, **vermelho** abaixo.
+  **% desejado do dia** (regra única do TI, 25/11/2026, vale para Televendas, Varejo e Atacado) = dias úteis **já fechados**
+  (até ontem) ÷ dias úteis do mês; ex.: 23 dias úteis, em 24/11 fecharam 17 → 17/23 = 73,9%; mês fechado = 100%.
+  % meta **verde** se ≥ desejado, **vermelho** abaixo.
   Ícone de pneu em SVG (`PNEU`; o emoji 🛞 não aparece no Windows). Em cima só "Atualizado em…"; as explicações
   ficam em "🔻 Mais informações sobre atualização", lá embaixo (pedido do TI, 25/11/2026). Página até 1700 px de largura.
 - **Seta vermelha lá embaixo** (pedido do TI): a 553 até ontem (mês − hoje) comparada com o Analytics
@@ -420,6 +422,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (tabelas sem RLS, regras para quem não está logado, senhas antigas legíveis) e espaço do banco (500 MB).
 - Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).
   Se o SQL 18 não rodou, gravam sem os detalhes (não quebram). Só contagens: nada de cliente.
+- Seção **🏆 Resultados Fox Pneus (rotina 553)**: última rodada dos robôs do Varejo e do Atacado (detalhes, erros, bolinhas) e
+  se os números chegaram na página (`varejo_lojas` / `atacado_lojas`; amarelo se parados há mais de 2 h em horário de loja).
 - Próximas etapas combinadas: backup diário trancado com senha (segredo no GitHub), 3 linhas nos
   Apps Scripts para o monitor ver os e-mails, e anotar erros das telas.
 

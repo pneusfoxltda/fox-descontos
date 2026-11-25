@@ -261,7 +261,9 @@ function desenharVarejo() {
   T.ticket = T.cli ? T.mes / T.cli : 0;
   const du = diasUteis(V.mes), diaHoje = Number(hoje.slice(8, 10));
   const duPass = du.filter(d => d <= diaHoje).length, dr = du.filter(d => d >= diaHoje).length;
-  const desejado = du.length ? Math.round(duPass / du.length * 100) : 0;   // % da meta que já devia ter até hoje
+  // % desejado do dia (decisão do TI, 25/11/2026): dias úteis JÁ FECHADOS (até ontem) ÷ dias úteis do mês (no fim do mês = 100%)
+  const duFech = du.filter(d => d < diaHoje).length;
+  const desejado = du.length ? Math.round(duFech / du.length * 100) : 0;
   const cor = p => Math.round(p) >= desejado ? "vd" : "vm";
   const falta = Math.max(0, T.meta - T.mes);
   // Metas de pneus (Meta · Super · Mega): cor pelo ritmo do dia, faixa alcançada e projeção do mês no ritmo atual
@@ -340,7 +342,7 @@ function desenharVarejo() {
       · ${PNEU} Pneus = pneus vendidos no mês (só as famílias de pneu) e em quantas vendas. Com metas de pneus: o % é sobre a <b>Meta</b>
         (verde no ritmo do dia, vermelho abaixo); a barrinha tem 3 marcas (Meta, Super, Mega) e o selo mostra a faixa já alcançada
         (✅ Meta · ⭐ Super · 🏆 Mega). "No ritmo" = quantos pneus a loja fecha o mês se continuar vendendo como até hoje.<br>
-      · % meta: <span class="pb vd">verde</span> no ritmo (% atingido ≥ % desejado do dia) · <span class="pb vm">vermelho</span> abaixo do ritmo. Hoje o desejado é ${desejado}% (${duPass} de ${du.length} dias úteis; domingos e feriados não contam).
+      · % meta: <span class="pb vd">verde</span> no ritmo (% atingido ≥ % desejado do dia) · <span class="pb vm">vermelho</span> abaixo do ritmo. Hoje o desejado é ${desejado}% (${duFech} de ${du.length} dias úteis já fechados, até ontem; domingos e feriados não contam; no fim do mês chega a 100%).
     </div>`;
 }
 const fmtMes = iso => ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][Number(iso.slice(5, 7)) - 1] + "/" + iso.slice(0, 4);

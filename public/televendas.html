@@ -1000,7 +1000,10 @@ function render(rows) {
 
   const duTotal = diasUteis(ano, mes).length;
   const duPassados = diasUteisPassados(ano, mes, diaHoje);
-  const pctDesejado = duTotal > 0 ? Math.round(duPassados / duTotal * 100) : 0;
+  // % desejado do dia (decisão do TI, 25/11/2026): dias úteis JÁ FECHADOS (até ontem) ÷ dias úteis do mês.
+  // Ex.: 23 dias úteis, em 24/11 já fecharam 17 → 17/23 = 73,9%; com o mês fechado = 100%.
+  const duFechados = mesCompleto ? duTotal : diasUteis(ano, mes).filter(d => d < diaHoje).length;
+  const pctDesejado = duTotal > 0 ? Math.round(duFechados / duTotal * 100) : 0;
 
   const mult = META_MULT[metaIdx];
   const metaSetorTotal = metaTotal(mult);
@@ -1119,7 +1122,7 @@ function render(rows) {
     <div class="kpi">
       <div class="kpi-label">% desejado do dia</div>
       <div class="kpi-valor">${pct(pctDesejado)}</div>
-      <div class="kpi-sub">${duPassados} de ${duTotal} dias úteis</div>
+      <div class="kpi-sub">${duFechados} de ${duTotal} dias úteis fechados</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Falta para a meta</div>

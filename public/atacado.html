@@ -411,7 +411,9 @@ function render() {
   const diaHoje = mesCompleto ? new Date(ano, m, 0).getDate() : Number(hoje.slice(8, 10));
   const du = diasUteis(ano, m, fer), duTotal = du.length, duPassados = du.filter(d => d <= diaHoje).length;
   const duRestantes = mesCompleto ? 0 : du.filter(d => d >= diaHoje).length;
-  const pctDesejado = duTotal ? Math.round(duPassados / duTotal * 100) : 0;
+  // % desejado do dia (decisão do TI, 25/11/2026): dias úteis JÁ FECHADOS (até ontem) ÷ dias úteis do mês (mês fechado = 100%)
+  const duFechados = mesCompleto ? duTotal : du.filter(d => d < diaHoje).length;
+  const pctDesejado = duTotal ? Math.round(duFechados / duTotal * 100) : 0;
   const mult = META_MULT[metaIdx];
   const vMes = vend.filter(x => x.periodo === "mes"), tMes = lojas.find(x => x.periodo === "mes" && x.loja === "TOTAL");
   const semDados = !tMes;
@@ -444,7 +446,7 @@ function render() {
     <div class="kpi"><div class="kpi-label">Faturamento do setor</div><div class="kpi-valor">${brl(totalMes)}</div>
       <div class="kpi-sub">meta ${brl(metaSetor)}</div><div class="progress-bar"><div class="progress-fill ${pctMeta >= pctDesejado ? "verde" : ""}" style="width:${Math.min(100, pctMeta)}%"></div></div></div>
     <div class="kpi"><div class="kpi-label">% da meta</div><div class="kpi-valor ${Math.round(pctMeta) >= pctDesejado ? "verde" : "vermelho"}">${pct(pctMeta)}</div><div class="kpi-sub">desejado: ${pct(pctDesejado)}</div></div>
-    <div class="kpi"><div class="kpi-label">% desejado do dia</div><div class="kpi-valor">${pct(pctDesejado)}</div><div class="kpi-sub">${duPassados} de ${duTotal} dias úteis</div></div>
+    <div class="kpi"><div class="kpi-label">% desejado do dia</div><div class="kpi-valor">${pct(pctDesejado)}</div><div class="kpi-sub">${duFechados} de ${duTotal} dias úteis fechados</div></div>
     <div class="kpi"><div class="kpi-label">Falta para a meta</div><div class="kpi-valor vermelho">${brl(faltaMeta)}</div><div class="kpi-sub">${duRestantes} dia${duRestantes !== 1 ? "s" : ""} út${duRestantes !== 1 ? "eis" : "il"} restante${duRestantes !== 1 ? "s" : ""}</div></div>
     <div class="kpi"><div class="kpi-label">Setor precisa por dia</div><div class="kpi-valor">${brl(precisaPorDia)}</div><div class="kpi-sub">meta diária original ${brl(duTotal ? metaSetor / duTotal : 0)}</div></div>
     <div class="kpi"><div class="kpi-label">${PNEU} Pneus no mês</div><div class="kpi-valor">${tMes && tMes.pneus != null ? num(tMes.pneus) : "…"}</div><div class="kpi-sub">${tMes && tMes.pneus != null ? `em ${num(tMes.pneus_vendas)} vendas · ${num(tMes.clientes)} clientes` : "aguardando o robô"}</div></div>`;
@@ -517,7 +519,7 @@ function render() {
     · Filtros da 553: Tabela de Preço <b>2 ATACADO</b> e <b>5 ATACADO PREMIUM</b>, todas as lojas e famílias, somente base de venda, frete compõe os valores totais.<br>
     · Faturamento = venda líquida (vendas menos devoluções). Clientes = vendas realizadas. Ticket médio = faturamento ÷ clientes.<br>
     · ${PNEU} Pneus = pneus vendidos no mês (famílias de pneu de carro, caminhonete, caminhão e agrícola) e em quantas vendas.<br>
-    · Verde: no ritmo (% atingido ≥ % desejado do dia). Vermelho: abaixo. Hoje o desejado é ${pct(pctDesejado)} (${duPassados} de ${duTotal} dias úteis; domingos e feriados não contam).<br>
+    · Verde: no ritmo (% atingido ≥ % desejado do dia). Vermelho: abaixo. Hoje o desejado é ${pct(pctDesejado)} (${duFechados} de ${duTotal} dias úteis já fechados, até ontem; domingos e feriados não contam; no fim do mês chega a 100%).<br>
     · Metas 2 e 3 = Meta 1 + 10% e + 20%. "Outros vendedores" = quem vendeu no Atacado sem meta (vendas avulsas e devoluções).`;
 }
 
