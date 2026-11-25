@@ -393,8 +393,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
   do Televendas** (mesmo CSS, pedido do TI 25/11/2026): Meta 1 / Meta 2 (+10%) / Meta 3 (+20%), KPIs (faturamento do setor,
   % da meta, % desejado do dia, falta, setor precisa por dia) + "Pneus no mês"; tabela **por vendedor** (principal) com Meta,
   **últimos 5 dias úteis** (passar o mouse mostra clientes, itens e o valor; sem nome de cliente), faturamento do mês, pneus,
-  precisa por dia e % atingido; linha verde no ritmo / vermelha abaixo; "Outros vendedores (sem meta)" recolhido; TOTAL
+  precisa por dia e % atingido; linha verde no ritmo / vermelha abaixo; TOTAL
   SETOR; tabela **Por loja** (hoje, mês, % do setor, clientes, itens, pneus, ticket). Seletor de mês. Pede login.
+  Vendedores sem meta (quase sempre devoluções, valor negativo) ficam lá embaixo: 🔻 Mais informações → "↩️ Devoluções e
+  outros vendedores" (pedido do TI, 25/11/2026); o TOTAL SETOR já desconta.
   **Editar metas** (admin e gerente de todas as lojas): meta 1 de cada vendedor + feriados (dias úteis igual ao Televendas).
 - Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, acordado com o Varejo 7h45–17h45 + cron 19h20; grupo
   de concorrência **`movere-553`** igual ao Varejo: nunca os dois ao mesmo tempo no mesmo login): rotina 553 com
