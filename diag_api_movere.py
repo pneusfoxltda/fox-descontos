@@ -56,9 +56,10 @@ for cod, nome in lojas:
     if ger["estrutura_impressa"] == 0 and notas:
         n0 = notas[0].get("NF") or notas[0].get("nf") or notas[0]
         print("Estrutura da resposta de vendas:", est_n, "· campos da nota:", sorted(n0.keys()))
-        print("   comercial:", sorted((n0.get("comercial") or {}).keys()))
-        print("   produto:", sorted(((n0.get("produtos") or [{}])[0]).keys()))
-        print("   cliente:", sorted((n0.get("cliente") or {}).keys())[:30])
+        print("   Comercial:", sorted((n0.get("Comercial") or {}).keys()))
+        print("   Produto:", sorted(((n0.get("Produtos") or [{}])[0]).keys()))
+        print("   Cliente:", sorted((n0.get("Cliente") or {}).keys())[:30])
+        print("   NFe:", sorted((n0.get("NFe") or {}).keys())[:20] if isinstance(n0.get("NFe"), dict) else type(n0.get("NFe")).__name__)
         c1 = cots[0].get("orcamento", cots[0]) if cots else {}
         print("   cotação tem cliente?", "sim: " + str(sorted((c1.get("cliente") or {}).keys())[:12]) if c1.get("cliente") else "não (só no orçamento)")
         ger["estrutura_impressa"] = 1
@@ -75,12 +76,14 @@ for cod, nome in lojas:
         t = f"{nf.get('identradasaida')}:{nf.get('descricaoentradaesaida')}"
         tipos[t] += 1
         es = str(nf.get("descricaoentradaesaida") or "").upper()
-        if nf.get("identradasaida") == 1 or "ENTRADA" in es or "DEVOL" in es: entrada += v
-        else: saida += v; n_saida += 1
-        com_orc += 1 if (nf.get("comercial") or {}).get("idorcamento") else 0
-        com_cel += 1 if (nf.get("cliente") or {}).get("fonecelular") else 0
-        vend.add((nf.get("comercial") or {}).get("idvendedor"))
-        for p in nf.get("produtos") or []:
+        if "DEVOLU" in es and "VENDA" in es: entrada += v          # devolução de venda
+        elif "VENDA" in es: saida += v; n_saida += 1               # venda de verdade
+        # transferências, remessas e carcaças ficam de fora
+        cm, cl = nf.get("Comercial") or {}, nf.get("Cliente") or {}
+        com_orc += 1 if cm.get("idorcamento") else 0
+        com_cel += 1 if (cl.get("fonecelular") or cl.get("fonecom")) else 0
+        vend.add(cm.get("idvendedor"))
+        for p in nf.get("Produtos") or []:
             if MEDIDA.search(str(p.get("descricao") or "").upper()): pneus += float(p.get("quantidade") or 0)
     L.update({"notas": len(notas), "notas_saida": n_saida, "valor_saida": round(saida, 2), "valor_entrada": round(entrada, 2),
               "tipos": dict(tipos), "com_orcamento": com_orc, "com_celular": com_cel, "vendedores": len(vend - {None}), "pneus": pneus})
