@@ -63,6 +63,27 @@ def t_data_analytics():
     assert rv.iso_analytics("11/3/2026") == "2026-11-03"
 
 
+def t_modo_do_dia():
+    from datetime import date as D
+    os.environ.pop("MODO", None)
+    qua = D(2026, 11, 25)
+    assert rv.decidir_modo(qua, 10, D(2026, 11, 24)) == "hoje"          # de dia, com o retrato de ontem
+    assert rv.decidir_modo(qua, 19, D(2026, 11, 24)) == "completo"      # 19h: mês completo
+    assert rv.decidir_modo(qua, 10, D(2026, 11, 23)) == "completo"      # a rodada das 19h de ontem não aconteceu
+    assert rv.decidir_modo(qua, 10, None) == "completo"                 # mês novo, sem retrato
+    assert rv.decidir_modo(D(2026, 11, 30), 8, D(2026, 11, 28)) == "hoje"   # segunda: o anterior útil é sábado
+
+
+def t_situacao_amarelo_e_vermelho():
+    base = {"mes": {"lojas": [], "vend": []}, "hoje": {"lojas": [{"loja": "A"}], "vend": []}, "erros": [], "sem_hoje": []}
+    assert rv.situacao(dict(base, sem_hoje=["B"]), "hoje", 8) == (True, [])                 # cedo: loja sem venda ainda
+    ok, p = rv.situacao(dict(base, sem_hoje=["B"]), "hoje", 14)
+    assert ok and p == ["hoje B (sem relatório)"]                                            # 1 faltando: amarelo
+    ok, p = rv.situacao(dict(base, sem_hoje=["B", "C", "D"]), "hoje", 14)
+    assert not ok and len(p) == 3                                                            # muita coisa: vermelho
+    assert rv.situacao(dict(base, hoje={"lojas": [], "vend": []}), "completo", 19)[0] is False   # nada veio
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):

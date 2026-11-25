@@ -2,7 +2,8 @@ name: Resultados Atacado (rotina 553)
 
 # Grava o "Resultado Atacado" da página /atacado (modelo do painel do Televendas): rotina 553 com as tabelas
 # 2 ATACADO + 5 ATACADO PREMIUM, todas as lojas; mês, pneus do mês e os últimos 5 dias úteis, por vendedor e por loja.
-# Acordado pelo sync-televendas de hora em hora (seg–sáb, 7h45 às 17h45). Cron 19h20 fecha o dia (reserva).
+# De dia (acordado pelo sync-televendas às 7h45, 10h45, 13h45, 15h45 e 17h45, seg–sáb) só os dias (hoje e os que faltam).
+# Às 19h20 (cron abaixo) o COMPLETO: mês + pneus do mês + dias. Retrato do mês velho → a próxima rodada faz o completo.
 # Mesmo grupo do Varejo ("movere-553"): os dois nunca usam o login do Movere ao mesmo tempo (um espera o outro).
 on:
   schedule:
@@ -13,6 +14,11 @@ on:
         description: 'Só mostrar o que faria, sem gravar nada'
         type: boolean
         default: false
+      modo:
+        description: 'automatico (pelo horário), dias (só os dias) ou completo (mês + pneus + dias)'
+        type: choice
+        options: [automatico, dias, completo]
+        default: automatico
 
 concurrency:
   group: movere-553
@@ -40,4 +46,5 @@ jobs:
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           DRY_RUN: ${{ inputs.teste && '1' || '' }}
+          MODO: ${{ inputs.modo != 'automatico' && inputs.modo || '' }}
         run: python resultados_atacado.py

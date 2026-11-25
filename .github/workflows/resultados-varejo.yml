@@ -1,8 +1,9 @@
 name: Resultados Varejo (rotina 553)
 
-# Grava o "Resultado Varejo - Geral" da página /resultados: rotina 553 do Movere, loja por loja, no mês e hoje,
-# e a conferência com o Analytics (a setinha vermelha). Acordado pelo sync-televendas de hora em hora
-# (seg–sáb, 7h45 às 17h45 de Porto Velho). O cron abaixo fecha o dia às 19h10 e serve de reserva.
+# Grava o "Resultado Varejo - Geral" da página /resultados: rotina 553 do Movere, loja por loja.
+# De dia (acordado pelo sync-televendas às 7h45, 10h45, 13h45, 15h45 e 17h45, seg–sáb) só o "hoje" das 8 lojas.
+# Às 19h10 (cron abaixo) o COMPLETO: mês + pneus + conferência com o Analytics (a setinha vermelha).
+# Se o retrato do mês ficou velho (a rodada das 19h não aconteceu), a próxima rodada faz o completo sozinha.
 on:
   schedule:
     - cron: '10 23 * * 1-6'
@@ -12,6 +13,11 @@ on:
         description: 'Só mostrar o que faria, sem gravar nada'
         type: boolean
         default: false
+      modo:
+        description: 'automatico (pelo horário), hoje (só o dia) ou completo (mês + pneus + conferência)'
+        type: choice
+        options: [automatico, hoje, completo]
+        default: automatico
 
 concurrency:
   group: movere-553   # o mesmo do Atacado: um espera o outro (mesmo login do Movere)
@@ -20,7 +26,7 @@ concurrency:
 jobs:
   varejo:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -41,4 +47,5 @@ jobs:
           ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           DRY_RUN: ${{ inputs.teste && '1' || '' }}
+          MODO: ${{ inputs.modo != 'automatico' && inputs.modo || '' }}
         run: python resultados_varejo.py

@@ -107,5 +107,6 @@ jobs:
             17) acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml ;;
             *)  echo "Nenhum robô para acordar nesta hora." ;;
           esac
-          # Resultados Fox Pneus · Varejo e Atacado (um espera o outro): de hora em hora, das 7h45 às 17h45 (e o próprio robô roda às 19h10)
-          if [ "$H" -ge 7 ] && [ "$H" -le 17 ]; then acordar resultados-varejo.yml; acordar resultados-atacado.yml; fi
+          # Resultados Fox Pneus · Varejo e Atacado (um espera o outro), decisão do TI 25/11/2026: de dia só o "hoje"
+          # às 7h45, 10h45, 13h45, 15h45 e 17h45; o mês completo (com pneus e conferência) roda às 19h pelo cron de cada robô
+          case "$H" in 7|10|13|15|17) acordar resultados-varejo.yml; acordar resultados-atacado.yml ;; esac

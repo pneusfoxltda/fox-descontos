@@ -403,8 +403,15 @@ vendas para o televendas; `apps-script/` tem o do painel).
   "Jonathan - Faturamento Varejo" (1111480), por loja, com os motivos: **REVENDA** (o Analytics tira, a 553 não tem o
   filtro) com o código do cliente, nota, dia e vendedor; o que sobrar vira "Diferença sem explicação automática".
   Tudo batendo: "✅ Conferido com o Analytics".
-- Robô **`resultados_varejo.py`** (workflow `resultados-varejo.yml`): acordado pelo sync-televendas **7h45 às 17h45**
-  (seg–sáb) + cron 19h10. Gera a 553 **loja por loja** (assim os vendedores somam a loja), mês e hoje (≈ 15 min).
+- Robô **`resultados_varejo.py`** (workflow `resultados-varejo.yml`). **Horários (decisão do TI, 25/11/2026)**: de dia, acordado
+  pelo sync-televendas às **7h45, 10h45, 13h45, 15h45 e 17h45** (seg–sáb), lê **só o "hoje"** das 8 lojas (modo `hoje`, rápido);
+  às **19h10** (cron) o **completo**: mês + pneus + conferência com o Analytics. `decidir_modo`: 18h ou mais, sem retrato do mês ou
+  retrato mais velho que o dia útil anterior → completo (a rodada das 19h que falhou é refeita na próxima). À mão: entrada "modo".
+  A página soma **mês (retrato) + hoje** quando o retrato é de antes de hoje (`somarHoje` no resultados.html; Pneus e seta vermelha
+  mudam 1x por dia). **Robô teimoso**: cada relatório 2 tentativas; quem falhar vai para a **repescagem** no fim (entra de novo no
+  Movere); cada loja é **gravada assim que chega** (`gravar_loja`); "hoje" sem relatório **não vira zero** (fica o último número).
+  `situacao`: até 2 problemas = ok com aviso (🟡 no Monitor), mais = erro; "hoje" sem relatório antes das 10h não conta.
+  Tempo máximo 60 min. Gera a 553 **loja por loja** (assim os vendedores somam a loja).
   Filtros em `varejo_filtros.py`: 8 lojas, 13 tabelas de preço (`TABELAS_VAREJO`; ATACADO, ATACADO PREMIUM, AMAGGI e
   GK fora), 11 famílias, **"Frete compõe valores totais"** marcado (assim bate com o Analytics). O Movere lembra os
   filtros do login: o `sync_televendas.py` limpa lojas/tabelas/famílias/frete antes de cada relatório (não afetar o
@@ -439,7 +446,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Vendedores sem meta (quase sempre devoluções, valor negativo) ficam lá embaixo: 🔻 Mais informações → "↩️ Devoluções e
   outros vendedores" (pedido do TI, 25/11/2026); o TOTAL SETOR já desconta.
   **Editar metas** (admin e gerente de todas as lojas): meta 1 de cada vendedor + feriados (dias úteis igual ao Televendas).
-- Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, acordado com o Varejo 7h45–17h45 + cron 19h20; grupo
+- Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, acordado com o Varejo nos mesmos horários: de dia modo
+  `dias` (só os dias: hoje e os que faltam), às 19h20 modo `completo` (mês + pneus + dias); a página soma mês + dias depois do
+  retrato (`somarDias` no atacado.html); repescagem, grava cada mês/dia assim que chega, dia sem relatório não vira zero; grupo
   de concorrência **`movere-553`** igual ao Varejo: nunca os dois ao mesmo tempo no mesmo login): rotina 553 com
   `TABELAS_ATACADO` (2 ATACADO + 5 ATACADO PREMIUM), **todas as lojas** (`gerar(..., lojas=[])`), todas as famílias, frete;
   mês (+ pneus do mês com `FAMILIAS_PNEUS_ATACADO`: inclui TRUCK, MULTIMARCAS TRUCK, TRUCK/AGRO e TRUCK PROMETEON, que tem

@@ -399,10 +399,31 @@ async function carregar() {
     $("tabela-wrap").innerHTML = ""; $("lojas-wrap").innerHTML = ""; return;
   }
   const metas = m.data || [];
-  D = {mes, vend: v.data || [], lojas: l.data || [],
+  const sm = somarDias(v.data || [], l.data || []);
+  D = {mes, vend: sm.vend, lojas: sm.lojas,
        metas: Object.fromEntries(metas.filter(x => x.chave.startsWith("v:")).map(x => [x.chave.slice(2), {meta: Number(x.meta), nome: x.nome}])),
        fer: new Set(metas.filter(x => /^feriado_\d+$/.test(x.chave)).map(x => Number(x.chave.slice(8))))};
   render();
+}
+
+// O mês completo (com pneus) é lido às 19h; de dia o robô lê só os dias (decisão do TI, 25/11/2026).
+// Por isso o mês na tela = retrato do mês (até o dia dele) + os dias lidos DEPOIS do retrato.
+function somarDias(vend, lojas) {
+  const soma = (a, b) => Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100;
+  const tMes = lojas.find(x => x.periodo === "mes" && x.loja === "TOTAL");
+  if (!tMes) return {vend, lojas};
+  const depois = x => x.periodo === "dia" && x.dia > tMes.dia;
+  const juntar = (rows, chave) => {
+    const extra = {};
+    rows.filter(depois).forEach(x => { const e = extra[x[chave]] = extra[x[chave]] || {venda: 0, clientes: 0, itens: 0, nome: x.nome, cod: x.cod, loja: x.loja};
+      e.venda = soma(e.venda, x.venda); e.clientes += Number(x.clientes || 0); e.itens = soma(e.itens, x.itens); });
+    const out = rows.map(x => x.periodo === "mes" && extra[x[chave]]
+      ? {...x, venda: soma(x.venda, extra[x[chave]].venda), clientes: Number(x.clientes || 0) + extra[x[chave]].clientes, itens: soma(x.itens, extra[x[chave]].itens)} : x);
+    Object.entries(extra).filter(([k]) => !rows.some(x => x.periodo === "mes" && String(x[chave]) === k))   // vendeu pela 1ª vez no mês depois do retrato
+      .forEach(([, e]) => out.push({...e, periodo: "mes", dia: tMes.dia, pneus: null, pneus_vendas: null}));
+    return out;
+  };
+  return {vend: juntar(vend, "cod"), lojas: juntar(lojas, "loja")};
 }
 
 function render() {
@@ -519,7 +540,9 @@ function render() {
     </tbody></table></div>`;
 
   $("info-corpo").innerHTML = `
-    · Atualizado ${atual ? "em " + horaPVH(atual) : ""}: rotina 553 do Movere, de hora em hora (seg a sáb, 7h45 às 17h45, e às 19h20).<br>
+    · Atualizado ${atual ? "em " + horaPVH(atual) : ""}: rotina 553 do Movere. Durante o dia (seg a sáb, 7h45, 10h45, 13h45, 15h45 e 17h45) o robô lê
+      só os dias (hoje e os que faltam), e o mês na tela = mês até o último fechamento + esses dias. Às 19h ele lê o <b>mês completo</b> e os ${PNEU} pneus
+      (a coluna Pneus muda uma vez por dia). Se o Movere não entregar o relatório, fica o último número certo.<br>
     · Filtros da 553: Tabela de Preço <b>2 ATACADO</b> e <b>5 ATACADO PREMIUM</b>, todas as lojas e famílias, somente base de venda, frete compõe os valores totais.<br>
     · Faturamento = venda líquida (vendas menos devoluções). Clientes = vendas realizadas. Ticket médio = faturamento ÷ clientes.<br>
     · ${PNEU} Pneus = pneus vendidos no mês (famílias de pneu de carro, caminhonete, caminhão e agrícola) e em quantas vendas.<br>

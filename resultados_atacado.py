@@ -83,22 +83,25 @@ async def gerar_553(page, ini: date, fim: date, familias: list, tentativas=(1, 2
     return r
 
 
-async def ler(hoje: date, dias: list, meses: list) -> dict:
+async def ler(hoje: date, dias: list, meses: list, ao_ler=None) -> dict:
+    """Lê os meses (com pneus) e os dias. ao_ler(tipo, chave, dados) grava cada um assim que chega.
+    Quem falhar volta para uma REPESCAGEM no fim, depois de entrar de novo no Movere. Dia que não veio NÃO
+    vira zero: fica o último número (e o dia passado continua "não lido", a próxima rodada tenta de novo)."""
     from playwright.async_api import async_playwright
     from sync_televendas import login
     from varejo_filtros import FAMILIAS_PNEUS_ATACADO
     os.environ["FRETE"] = "1"   # "Frete compõe valores totais: Sim" (igual ao relatório do TI)
-    out = {"meses": {}, "dias": {}, "erros": []}
+    out = {"meses": {}, "dias": {}, "erros": [], "sem_dia": [], "repescados": 0}
     async with async_playwright() as pw:
         b = await pw.chromium.launch(headless=True)
         page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1400, "height": 2400})).new_page()
         await login(page)
-        for ini, fim in meses:
+
+        async def um_mes(ini, fim):
             print(f"▶ mês {ini:%m/%Y} até {fim:%d/%m}")
             r = await gerar_553(page, ini, fim, [])
             if "erro" in r:
-                out["erros"].append(f"mês {ini:%m/%Y}")
-                continue
+                return False
             lojas, total = lojas_e_total(r)
             vend = vendedores(r)
             print(f"   lojas: {len(lojas)} · vendedores: {len(vend)} · soma dos vendedores = total: "
@@ -112,16 +115,47 @@ async def ler(hoje: date, dias: list, meses: list) -> dict:
             juntar_pneus(vend, vendedores(rp) if rp else [], "cod")
             total["pneus"], total["pneus_vendas"] = tp["itens"], tp["clientes"]
             out["meses"][ini] = {"fim": fim, "lojas": lojas + [total], "vend": vend}
-        for d in dias:
+            if ao_ler:
+                ao_ler("mes", ini, out["meses"][ini])
+            return True
+
+        async def um_dia(d):
             print(f"▶ dia {d:%d/%m}")
-            r = await gerar_553(page, d, d, [], tentativas=(1,))
-            if "erro" in r:   # sem venda no dia o Movere não monta o relatório: dia zerado
-                print("   sem relatório: dia zerado")
-                out["dias"][d] = {"lojas": [{"loja": TOTAL, "cod": None, "venda": 0.0, "clientes": 0, "itens": 0.0}], "vend": []}
-                continue
+            r = await gerar_553(page, d, d, [])
+            if "erro" in r:
+                return False
             lojas, total = lojas_e_total(r)
             out["dias"][d] = {"lojas": lojas + [total], "vend": vendedores(r)}
             print(f"   lojas: {len(lojas)} · vendedores: {len(out['dias'][d]['vend'])}")
+            if ao_ler:
+                ao_ler("dia", d, out["dias"][d])
+            return True
+
+        falhas = []
+        for ini, fim in meses:
+            if not await um_mes(ini, fim):
+                falhas.append(("mes", (ini, fim)))
+        for d in dias:
+            if not await um_dia(d):
+                falhas.append(("dia", d))
+        if falhas:
+            print(f"🔁 Repescagem: {len(falhas)} relatório(s) que não vieram, entrando de novo no Movere")
+            try:
+                await login(page)
+            except Exception as e:
+                print(f"   ⚠️ não entrei de novo ({type(e).__name__}): sigo com a mesma sessão")
+            ainda = []
+            for tipo, x in falhas:
+                if await (um_mes(*x) if tipo == "mes" else um_dia(x)):
+                    out["repescados"] += 1
+                else:
+                    ainda.append((tipo, x))
+            falhas = ainda
+        for tipo, x in falhas:
+            if tipo == "mes":
+                out["erros"].append(f"mês {x[0]:%m/%Y}")
+            else:   # sem venda no dia o Movere não monta o relatório; ou o Movere falhou: não grava zero
+                out["sem_dia"].append(x.isoformat())
         await b.close()
     return out
 
@@ -133,21 +167,36 @@ def sb_get(cli, chave, caminho):
     return r.json()
 
 
-def gravar(cli, chave, res: dict):
+def gravar_um(cli, chave, tipo: str, k, x: dict):
+    """Grava um mês (tipo 'mes', k = 1º dia) ou um dia (tipo 'dia', k = o dia), trocando o que havia."""
     H = cv._sb_headers(chave, {"Prefer": "resolution=merge-duplicates,return=minimal"})
     url, agora = f"{cv.SUPABASE_URL}/rest/v1", datetime.now(timezone.utc).isoformat()
-    def trocar(periodo, mes, dia, lojas, vend):
-        filtro = f"mes=eq.{mes}&periodo=eq.{periodo}" + (f"&dia=eq.{dia}" if periodo == "dia" else "")
-        for t in ("atacado_lojas", "atacado_vendedores"):
-            cli.delete(f"{url}/{t}?{filtro}", headers=cv._sb_headers(chave)).raise_for_status()
-        base = {"mes": mes, "periodo": periodo, "dia": dia, "atualizado_em": agora}
-        _post(cli, f"{url}/atacado_lojas?on_conflict=mes,periodo,dia,loja", H, [dict(l, **base) for l in lojas])
-        if vend:
-            _post(cli, f"{url}/atacado_vendedores?on_conflict=mes,periodo,dia,cod", H, [dict(v, **base) for v in vend])
+    mes, dia = (k.isoformat(), x["fim"].isoformat()) if tipo == "mes" else (k.replace(day=1).isoformat(), k.isoformat())
+    filtro = f"mes=eq.{mes}&periodo=eq.{tipo}" + (f"&dia=eq.{dia}" if tipo == "dia" else "")
+    for t in ("atacado_lojas", "atacado_vendedores"):
+        cli.delete(f"{url}/{t}?{filtro}", headers=cv._sb_headers(chave)).raise_for_status()
+    base = {"mes": mes, "periodo": tipo, "dia": dia, "atualizado_em": agora}
+    _post(cli, f"{url}/atacado_lojas?on_conflict=mes,periodo,dia,loja", H, [dict(l, **base) for l in x["lojas"]])
+    if x["vend"]:
+        _post(cli, f"{url}/atacado_vendedores?on_conflict=mes,periodo,dia,cod", H, [dict(v, **base) for v in x["vend"]])
+
+
+def gravar(cli, chave, res: dict):
     for ini, m in res["meses"].items():
-        trocar("mes", ini.isoformat(), m["fim"].isoformat(), m["lojas"], m["vend"])
+        gravar_um(cli, chave, "mes", ini, m)
     for d, x in res["dias"].items():
-        trocar("dia", d.replace(day=1).isoformat(), d.isoformat(), x["lojas"], x["vend"])
+        gravar_um(cli, chave, "dia", d, x)
+
+
+def decidir_modo(hoje: date, hora: int, ultimo_mes, feriados=frozenset()) -> str:
+    """'completo' (mês + pneus + dias) às 19h ou se o retrato do mês ficou velho; de dia, 'dias' (só os dias)."""
+    m = os.environ.get("MODO", "").strip().lower()
+    if m in ("completo", "dias", "hoje"):
+        return "dias" if m == "hoje" else m
+    anterior = dias_uteis(hoje - timedelta(days=1), set(feriados), 1)[0]
+    if hora >= 18 or ultimo_mes is None or ultimo_mes < anterior:
+        return "completo"
+    return "dias"
 
 
 def registrar(chave, ok, msg, detalhes, inicio):
@@ -167,10 +216,10 @@ def registrar(chave, ok, msg, detalhes, inicio):
 
 def main() -> int:
     inicio = datetime.now(timezone.utc)
-    hoje = datetime.now(TZ).date()
+    agora = datetime.now(TZ)
+    hoje = agora.date()
     chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
-    print(f"📦 Resultado Atacado · {hoje:%d/%m/%Y}{' · TESTE (não grava)' if DRY else ''}")
-    feriados, ja_lidos = set(), set()
+    feriados, ja_lidos, ultimo = set(), set(), None
     if chave:
         try:
             with httpx.Client(timeout=30) as cli:
@@ -179,19 +228,50 @@ def main() -> int:
                     feriados.add(date.fromisoformat(x["mes"]).replace(day=int(x["chave"][8:])))
                 for x in sb_get(cli, chave, f"atacado_lojas?select=dia&periodo=eq.dia&loja=eq.{TOTAL}&dia=gte.{(hoje - timedelta(days=15)).isoformat()}"):
                     ja_lidos.add(date.fromisoformat(x["dia"]))
+                um = sb_get(cli, chave, f"atacado_lojas?select=dia&periodo=eq.mes&loja=eq.{TOTAL}&mes=eq.{hoje.replace(day=1).isoformat()}")
+                ultimo = date.fromisoformat(um[0]["dia"]) if um else None
         except httpx.HTTPStatusError as e:
             print(f"⚠️ Não li feriados/dias já lidos ({e.response.status_code}). Rodou o SQL 30?")
+    modo = decidir_modo(hoje, agora.hour, ultimo, feriados)
     ultimos = dias_uteis(hoje, feriados)
     dias = dias_a_ler(ultimos, hoje, ja_lidos)
-    meses = [(hoje.replace(day=1), hoje)]
-    if hoje.day <= 3:   # fecha o mês anterior com o último dia
-        fim_ant = hoje.replace(day=1) - timedelta(days=1)
-        meses.append((fim_ant.replace(day=1), fim_ant))
+    meses = []
+    if modo == "completo":
+        meses = [(hoje.replace(day=1), hoje)]
+        if hoje.day <= 3:   # fecha o mês anterior com o último dia
+            fim_ant = hoje.replace(day=1) - timedelta(days=1)
+            meses.append((fim_ant.replace(day=1), fim_ant))
+    print(f"📦 Resultado Atacado · {hoje:%d/%m/%Y} · modo {modo.upper()} (retrato do mês: {ultimo.strftime('%d/%m') if ultimo else 'nenhum'})"
+          f"{' · TESTE (não grava)' if DRY else ''}")
     print(f"Dias úteis no painel: {[d.strftime('%d/%m') for d in ultimos]} · a ler: {[d.strftime('%d/%m') for d in dias]}")
-    res = asyncio.run(ler(hoje, dias, meses))
-    detalhes = {"meses": len(res["meses"]), "dias": len(res["dias"]), "erros": res["erros"][:20],
-                "vendedores_mes": sum(len(m["vend"]) for m in res["meses"].values())}
-    print("Resumo:", {k: v for k, v in detalhes.items() if k != "erros"}, "· erros:", len(res["erros"]))
+    if not DRY and not chave:
+        print("❌ Falta o segredo SUPABASE_SERVICE_KEY")
+        return 1
+    cli = None if DRY else httpx.Client(timeout=60)
+    falhas_gravar = []
+
+    def ao_ler(tipo, k, x):
+        if cli is None:
+            return
+        try:
+            gravar_um(cli, chave, tipo, k, x)
+        except httpx.HTTPStatusError as e:
+            falhas_gravar.append(f"{tipo} {k} ({e.response.status_code})")
+
+    try:
+        res = asyncio.run(ler(hoje, dias, meses, ao_ler))
+    finally:
+        if cli is not None:
+            cli.close()
+    # 'hoje' sem relatório antes das 10h é normal (ainda sem venda); dia passado sem relatório é problema
+    sem = [d for d in res["sem_dia"] if d != hoje.isoformat() or agora.hour >= 10]
+    probs = res["erros"] + [f"dia {d[8:10]}/{d[5:7]} sem relatório" for d in sem] + (
+        ["não gravou: " + ", ".join(falhas_gravar) + " (rodou o SQL 30?)"] if falhas_gravar else [])
+    veio = len(res["meses"]) + len(res["dias"])
+    ok = not falhas_gravar and not res["erros"] and len(probs) <= 2 and (veio > 0 or not (meses or dias))
+    detalhes = {"modo": modo, "meses": len(res["meses"]), "dias": len(res["dias"]), "repescados": res["repescados"],
+                "erros": probs[:20], "vendedores_mes": sum(len(m["vend"]) for m in res["meses"].values())}
+    print("Resumo:", {k: v for k, v in detalhes.items() if k != "erros"}, "· problemas:", len(probs))
     if DRY:
         if os.environ.get("MOSTRAR_TRANCADO"):
             from varejo_teste import trancar
@@ -200,21 +280,9 @@ def main() -> int:
             for i in range(0, len(b), 900):
                 print("TRANCADO:" + b[i:i + 900])
         print("TESTE: nada foi gravado.")
-        return 0 if not res["erros"] else 1
-    if not chave:
-        print("❌ Falta o segredo SUPABASE_SERVICE_KEY")
-        return 1
-    try:
-        with httpx.Client(timeout=60) as cli:
-            gravar(cli, chave, res)
-        print("✅ Gravado no banco.")
-    except httpx.HTTPStatusError as e:
-        msg = f"Não gravou no banco ({e.response.status_code}). Rodou o SQL 30?"
-        print("❌", msg)
-        registrar(chave, False, msg, detalhes, inicio)
-        return 1
-    ok = not res["erros"]
-    registrar(chave, ok, "; ".join(res["erros"])[:300], detalhes, inicio)
+        return 0 if ok else 1
+    print("✅ Gravado no banco (cada mês e dia assim que chegou)." if ok else "⚠️ Rodada com problemas: " + "; ".join(probs)[:300])
+    registrar(chave, ok, "; ".join(probs)[:300], detalhes, inicio)
     return 0 if ok else 1
 
 

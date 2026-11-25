@@ -37,6 +37,17 @@ def t_relatorio_e_pneus():
     assert vend[0]["pneus"] == 36.0 and vend[1]["pneus"] == 0.0 and vend[1]["pneus_vendas"] == 0
 
 
+def t_modo_do_dia():
+    import os
+    from datetime import date as D
+    os.environ.pop("MODO", None)
+    assert ra.decidir_modo(D(2026, 11, 25), 10, D(2026, 11, 24)) == "dias"
+    assert ra.decidir_modo(D(2026, 11, 25), 19, D(2026, 11, 24)) == "completo"
+    assert ra.decidir_modo(D(2026, 11, 25), 10, D(2026, 11, 23)) == "completo"
+    assert ra.decidir_modo(D(2026, 11, 30), 8, D(2026, 11, 28)) == "dias"       # segunda, retrato de sábado
+    assert ra.decidir_modo(D(2026, 11, 21), 8, D(2026, 11, 19), {D(2026, 11, 20)}) == "dias"   # 20/11 feriado
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):
