@@ -137,7 +137,8 @@ def vendas_por_telefone(linhas: list) -> dict:
 def cruzar(descontos: list, vendas: dict, por_orcamento: dict = None) -> list:
     """
     Para cada desconto, procura a venda no dia do cadastro ou depois:
-      1º pelo NÚMERO do orçamento/O.S. (API do Movere: a nota traz o nº do orçamento) · mais certeiro;
+      1º pelo NÚMERO: desconto "O.S." = nº da O.S. que está na nota; desconto "Orçamento" = nº da COTAÇÃO,
+         ligada à O.S. pela API (ConsultaOrcamentos) · mais certeiro;
       2º pela PRIMEIRA venda do mesmo telefone (últimos 8 dígitos; Analytics e API).
     Devolve a lista de marcações a gravar.
     """
@@ -148,10 +149,12 @@ def cruzar(descontos: list, vendas: dict, por_orcamento: dict = None) -> list:
         if base is None:
             continue
         num = re.sub(r"\D", "", str(d.get("numero") or "")).lstrip("0")
-        if num and num in por_orcamento and por_orcamento[num][0] >= base:
-            dia, valor = por_orcamento[num]
+        # "Orçamento" no desconto = nº da COTAÇÃO; "O.S." = nº da ordem de serviço (o que vira a nota)
+        chave = ("os" if d.get("tipo") == "os" else "cotacao", num)
+        if num and chave in por_orcamento and por_orcamento[chave][0] >= base:
+            dia, valor = por_orcamento[chave]
             marcar.append({"id": d["id"], "numero": d.get("numero"), "venda_movere_em": dia.isoformat(),
-                           "venda_movere_valor": valor, "por": "orçamento"})
+                           "venda_movere_valor": valor, "por": "O.S." if chave[0] == "os" else "cotação"})
             continue
         achou = []
         for k in chaves_tel(d.get("telefone_cliente")):
@@ -362,8 +365,8 @@ def main() -> int:
         vendas = movere_api.juntar(vendas, api_tel)
 
         marcar = cruzar(pendentes, vendas, api_orc)
-        n_orc = sum(1 for m in marcar if m.get("por") == "orçamento")
-        print(f"🎯 Descontos que viraram venda: {len(marcar)} (pelo nº do orçamento: {n_orc} · pelo telefone: {len(marcar) - n_orc})")
+        n_orc = sum(1 for m in marcar if m.get("por") in ("cotação", "O.S."))
+        print(f"🎯 Descontos que viraram venda: {len(marcar)} (pelo nº da cotação/O.S.: {n_orc} · pelo telefone: {len(marcar) - n_orc})")
         RESUMO["por_orcamento"] = n_orc
         RESUMO["encontrados"] = len(marcar)
         agora = datetime.now(timezone.utc).isoformat()
