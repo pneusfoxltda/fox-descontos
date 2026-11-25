@@ -55,6 +55,11 @@ def test_escolher_novas_regras():
     assert [c["cotacao"] for c in novas2] == ["5004"] and m2["ja_importada"] == 1
 
 
+def test_cotacao_que_virou_venda_nao_entra():
+    novas, motivos = ll.escolher_novas(ll.cotacoes(ler(COT)), {}, set(), set(), set(), {"5006"})
+    assert "5006" not in [c["cotacao"] for c in novas] and motivos["comprou"] == 1
+
+
 def test_reconferir():
     vendas = cv.vendas_por_telefone(ler(VENDAS))
     abertas = [

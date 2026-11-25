@@ -239,8 +239,9 @@ def comprou_desde(tel: str, desde: date, vendas: dict):
 
 
 # ── Regras (testáveis sem rede) ───────────────────────────────────────────────
-def escolher_novas(cots: list, vendas: dict, agendados: set, ja_existem: set, tel_abertos: set):
-    """Decide quais cotações entram na lista. Devolve (novas, contagem dos motivos)."""
+def escolher_novas(cots: list, vendas: dict, agendados: set, ja_existem: set, tel_abertos: set, cot_vendidas: set = frozenset()):
+    """Decide quais cotações entram na lista. Devolve (novas, contagem dos motivos).
+    cot_vendidas = nº das cotações que já viraram O.S. com nota de venda (API do Movere): não entram."""
     motivos = {"comprou": 0, "agendou": 0, "repetido": 0, "ja_importada": 0, "loja_ignorada": 0}
     vistos, novas = set(), []
     for c in cots:
@@ -251,7 +252,7 @@ def escolher_novas(cots: list, vendas: dict, agendados: set, ja_existem: set, te
             motivos["loja_ignorada"] += 1
             continue
         chaves = cv.chaves_tel(c["telefone"])
-        if comprou_desde(c["telefone"], c["data"], vendas):
+        if c["cotacao"] in cot_vendidas or comprou_desde(c["telefone"], c["data"], vendas):
             motivos["comprou"] += 1
             continue
         if chaves & agendados:
@@ -466,7 +467,7 @@ def main() -> int:
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
         # API oficial do Movere: as vendas de hoje e de ontem (o Analytics só tem até ontem de madrugada)
         import movere_api
-        api_tel, _ = movere_api.buscar(max(inicio_vendas, hoje - timedelta(days=movere_api.DIAS_API)), hoje)
+        api_tel, api_num = movere_api.buscar(max(inicio_vendas, hoje - timedelta(days=movere_api.DIAS_API)), hoje)
         if api_tel:
             vendas = movere_api.juntar(vendas, api_tel)
             print(f"🛰️ Com a API do Movere: {len(vendas)} telefones (vendas na hora)")
@@ -486,10 +487,13 @@ def main() -> int:
         prontos = sorted(set(prontos) | {d for d in revisar if d in uris_vendas})
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
+        # O token do Analytics vence em poucos minutos (a API do Movere e as vendas demoram): entra de novo antes das cotações
+        tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"]) if dias_cot else tt
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
         # Cotações dos vendedores das lojas (SQL 31): o mesmo relatório sem o filtro do televendas
         cots_loja = []
         if tem_origem and dias_cot and max(dias_cot) >= INICIO_LOJA:
+            tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"])
             cots_loja = separar_loja(cotacoes(cv.relatorio(cli, tt, REL_COT, None,
                                                            filtro_dias([uris_vendas[d] for d in dias_cot]))), todas_cots)
             print(f"🏪 Cotações dos vendedores das lojas: {len(cots_loja)}")
@@ -518,7 +522,8 @@ def main() -> int:
                 cli, chave, "ligacoes?select=cotacao&limit=20000&data_cotacao=in.(" +
                 ",".join(d.isoformat() for d in prontos) + ")")}
             tel_abertos = {l["tel_chave"] for l in abertas if l.get("tel_chave")}
-            novas, motivos = escolher_novas(cots, vendas, agendados, existentes, tel_abertos)
+            cot_vendidas = {n for (tipo, n) in api_num if tipo == "cotacao"}   # cotação que virou O.S. vendida (mesmo com outro telefone)
+            novas, motivos = escolher_novas(cots, vendas, agendados, existentes, tel_abertos, cot_vendidas)
             por_loja = {}
             for c in novas:
                 por_loja[c["loja"]] = por_loja.get(c["loja"], 0) + 1
