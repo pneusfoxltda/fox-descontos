@@ -402,7 +402,13 @@ def main() -> int:
         if uris_vendas:
             vendas = cv.vendas_por_telefone(cv.relatorio(cli, tt, REL_VENDAS, None, filtro_dias(list(uris_vendas.values()))))
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
-        DETALHES.update(etapa="vendas", vendas_dias=len(uris_vendas), vendas_telefones=len(vendas))
+        # API oficial do Movere: as vendas de hoje e de ontem (o Analytics só tem até ontem de madrugada)
+        import movere_api
+        api_tel, _ = movere_api.buscar(inicio_vendas, hoje)
+        if api_tel:
+            vendas = movere_api.juntar(vendas, api_tel)
+            print(f"🛰️ Com a API do Movere: {len(vendas)} telefones (vendas na hora)")
+        DETALHES.update(etapa="vendas", vendas_dias=len(uris_vendas), vendas_telefones=len(vendas), api_telefones=len(api_tel))
 
         # 1) Importar — só os dias que já existem no Analytics (senão, tenta na próxima rodada)
         agora = datetime.now(cv.TZ_LOJA).replace(tzinfo=None)
