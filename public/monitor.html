@@ -238,10 +238,14 @@ async function carregar() {
       corpo += item("vd", "Cruzamento Analytics × Kommo × lista", `entraram <b>${d.novas}</b> · fora: comprou ${f.comprou || 0}, agendado no Kommo ${f.agendou || 0}, telefone repetido ${f.repetido || 0}, já na lista ${f.ja_importada || 0}, atacado ${f.loja_ignorada || 0}`);
       const pl = Object.entries(d.novas_por_loja || {}).map(([k, v]) => `<span class="tag">${esc(k)} ${v}</span>`).join("");
       if (pl) corpo += item("vd", "Novos clientes por loja", pl);
+      if (d.cotacoes_loja != null) corpo += item(d.cotacoes_loja > 0 || !d.novas_loja ? "vd" : "am", "🏪 Cotações dos vendedores das lojas",
+        `${d.cotacoes_loja} cotações vindas do Movere` + (d.novas_loja != null ? ` · entraram ${d.novas_loja}: ${d.novas_loja_quem_cotou || 0} para quem cotou, ${d.novas_loja_divisao || 0} para a divisão` : "") +
+        (d.nomes_sem_ligacao ? ` · <b>${d.nomes_sem_ligacao} nome(s) do Movere não reconhecido(s)</b> (veja no /admin)` : ""));
     }
     corpo += item(d.divididos != null ? "vd" : "cz", "Divisão entre os vendedores", d.divididos != null ? `${d.divididos} cliente(s) divididos nesta rodada` : "");
     corpo += item("vd", "Reconferência (comprou / agendou depois)", `${d.comprou || 0} viraram "venda pelo sistema" · ${d.agendou || 0} agendados no Kommo`);
   }
+  const corpoLista = corpo;   // guardado: as seções abaixo reaproveitam a variável "corpo"
   // 1a) API oficial do Movere: vendas na hora (robôs dos descontos e das Ligações)
   corpo = "";
   [["conferir_vendas_movere", "🏷️ Descontos (venda concluída)", "seg a sáb 7h45, 12h45 e 17h45"],
@@ -278,7 +282,7 @@ async function carregar() {
   });
   html.push(secao("🏆 Resultados Fox Pneus (rotina 553)", "Varejo e Atacado: a última rodada de cada robô e se os números chegaram na página.", corpo));
 
-  html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:var(--fx-ertx,#F87171)'>deu erro</b>"}` : "", corpo));
+  html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:var(--fx-ertx,#F87171)'>deu erro</b>"}` : "", corpoLista));
 
   // 3) Lista por dia
   const dias = R.ligacoes_dias || [];
