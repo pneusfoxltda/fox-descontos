@@ -41,6 +41,21 @@ with httpx.Client(timeout=180) as cli:
         s = seg[c["loja"]][c["operador"]]; s[0] += 1; s[1].append(c["valor"])
     det = {l: {o: [v[0], round(statistics.median(v[1]), 2)] for o, v in ops.items()} for l, ops in seg.items()}
     vals = [c["valor"] for c in lojas]
-    print("Z TRANCADO:", trancar({"operadores_por_loja": det, "ops_tv": sorted(ops_tv),
+    # coluna "Vendedor" (r[6]) das cotações das lojas
+    vend = {}
+    for r in todas_l[1:]:
+        if len(r) < 9 or r[0].strip() in cot_tv or r[5].strip() in ops_tv: continue
+        vend.setdefault(r[4].strip(), {}).setdefault(r[6].strip(), set()).add(r[0].strip())
+    print("loja | vendedores distintos (coluna Vendedor) | cotações com vendedor 'Não informado'/vazio")
+    for l, v in sorted(vend.items()):
+        sem = sum(len(c) for k, c in v.items() if not k or k.lower().startswith("n"+"ão inf"))
+        print(f"{l} | {len(v)} | {sem}")
+    # na mesma cotação, mais de um vendedor?
+    multi = {}
+    for r in todas_l[1:]:
+        if len(r) >= 9: multi.setdefault(r[0].strip(), set()).add(r[6].strip())
+    print("cotações com mais de 1 vendedor:", sum(1 for v in multi.values() if len(v) > 1))
+    print("Z TRANCADO:", trancar({l: {k: len(c) for k, c in v.items()} for l, v in vend.items()}))
+    print("Z2 TRANCADO_IGNORAR:", trancar({"operadores_por_loja": det, "ops_tv": sorted(ops_tv),
           "valor_mediana": statistics.median(vals) if vals else 0, "acima_500": sum(v >= 500 for v in vals),
           "acima_1000": sum(v >= 1000 for v in vals)}))
