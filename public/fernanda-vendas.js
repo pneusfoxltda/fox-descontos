@@ -340,7 +340,9 @@
   // ══════════════════════ CONVERSA ══════════════════════
   let modo = null, cenario = null;
   const MENU = ["🎭 Simulação (roleplay)", "🔎 Auditar uma conversa", "⚡ Resposta rápida a objeção"];
+  let ultimoMenu = false;   // o menu de treino acabou de aparecer: "1", "2" ou "3" escolhem a opção
   function menu() {
+    ultimoMenu = true;
     bot("🎯 Bora treinar! Como você quer treinar hoje?\n1. 🎭 Simulação: eu faço o papel do cliente, você responde e eu dou nota de 0 a 10.\n2. 🔎 Auditoria: cole uma conversa de WhatsApp que travou e eu mostro onde dava para melhorar.\n3. ⚡ Resposta rápida: me conte a objeção que você acabou de ouvir e eu te dou 2 respostas prontas.");
     chips(MENU);
   }
@@ -354,8 +356,50 @@
     chips(["Outra objeção", "🎭 Simulação (roleplay)", "Sair do treino"]);
   }
 
+  // Perguntas que a Fernanda não sabia (Monitor, 25/11/2026)
+  const INSISTIR = "🤝 Boa reflexão! Insistir do jeito errado cansa o cliente. Acompanhar do jeito certo é atendimento, e é isso que a Fox faz:\n" +
+    "· No máximo 3 ligações por cliente (as Ligações já travam o 📞 depois da 3ª). Depois, só WhatsApp.\n" +
+    "· Cada contato leva algo NOVO: uma condição, uma dúvida respondida, a validade do preço (3 dias cotação da loja, 7 dias televendas). Nunca só \"e aí, vai fechar?\".\n" +
+    "· Horário comercial e o canal que o cliente prefere (se ele pediu WhatsApp, siga no WhatsApp).\n" +
+    "· Se o cliente disse que não quer, respeite: marque \"Sem interesse\" ou \"Venda perdida\" com o motivo e pare.\n" +
+    "· Lembre: quem pediu orçamento pediu ajuda. Retornar com educação é cuidado, não pressão.\n\nQuer o roteiro de ligação ou uma mensagem leve de WhatsApp?";
   function resposta(q) {
     const n = N(q), naTelaDeCadastro = !!document.querySelector("[data-fe]");
+    // "1", "2" ou "3" logo depois do menu de treino
+    const escolha = ultimoMenu && n.match(/^(opcao |a |o )?([123])\.?$/);
+    ultimoMenu = false;
+    if (escolha) {
+      const k = escolha[2];
+      if (k === "1") { lancarCenario(); return true; }
+      if (k === "2") { modo = "auditoria"; bot("🔎 Mande o PRINT da conversa de WhatsApp (📎 ou Ctrl+V) ou cole o texto. Eu leio, digo onde a conversa parou e te dou a próxima mensagem pronta."); chips(["Sair do treino"]); return true; }
+      modo = "rapida"; bot("⚡ Me conte a objeção que o cliente fez. Ex.: \"achou mais barato na internet\", \"não quer alinhar\", \"vai falar com a esposa\"."); chips(["Sair do treino"]); return true;
+    }
+    // Insistir no contato prejudica a imagem da Fox?
+    if (/(insist|insistente|incomod|chato|chatice|perturb|encher o saco|pressionar|forcar|muita ligac|ligar (muito|demais|toda hora)|imagem da fox)/.test(n) && /(client|ligar|ligac|contato|whats|mensag|imagem)/.test(n)) {
+      bot(INSISTIR); chips(["📞 Roteiro de ligação", "💬 Mensagem de resgate", "🎯 Treinar vendas"]); return true;
+    }
+    if (/^💬 mensagem de resgate$/.test(n)) { const r = SABER.find(x => /resgate/.test(x.re.source)); if (r) { bot(r.txt); chips(["📞 Roteiro de ligação", "🎯 Treinar vendas"]); return true; } }
+    // "quero aprender a vender", "me ensina a vender"
+    if (/(quero |preciso |como )?(aprender|aperender|aprende|ensina|ensinar|ensine|melhorar) (a |as |minhas? )?(vender|vendas)|(vender|vendas) melhor|ser (um |uma )?(bom|boa|melhor) vendedor/.test(n)) {
+      bot("Bora! 💪 Vender bem se aprende praticando. Eu te ajudo de 3 jeitos:");
+      menu(); return true;
+    }
+    // Só "venda" / "vendas": o que eu sei sobre vendas
+    if (/^(venda|vendas|vender)[?!.]*$/.test(n)) {
+      bot("Sobre vendas eu posso te ajudar com:\n🎯 Treinar vendas (simulação com nota, auditoria de conversa, resposta rápida a objeção)\n📞 Roteiro de ligação para resgatar orçamento\n🪜 Escada de condições (parcelamento e até onde ir)\n💡 Dicas de venda\n\nO que você quer?");
+      chips(["🎯 Treinar vendas", "📞 Roteiro de ligação", "🪜 Escada de condições", "💡 Dicas de venda"]); return true;
+    }
+    if (/^(💡 |📞 |🪜 |💬 )/.test(n) && modo !== "roleplay") modo = null;   // tocou num botão de assunto: sai do modo de objeção/auditoria
+    // "ok", "beleza", "obrigado"…: só confirma (no Cadastrar o "ok" pode ser parte do preenchimento)
+    if (!naTelaDeCadastro && /^(ok|okay|okk+|blz|beleza|certo|ta bom|ta|entendi|show|top|perfeito|valeu|vlw|obrigad[oa]|obg|brigad[oa]|tudo bem|combinado|massa|legal|joia|👍)[!.]*$/.test(n)) {
+      bot(modo === "roleplay" ? "👍 Quando quiser, responda o cliente do cenário ou toque em \"Próximo cenário\"." : /^(valeu|vlw|obrigad|obg|brigad)/.test(n) ? "Por nada! 😊 Bora vender! Se precisar, é só chamar." : "👍 Combinado! Precisa de mais alguma coisa?");
+      chips(modo === "roleplay" ? ["Próximo cenário", "Sair do treino"] : modo ? ["Sair do treino"] : ["🎯 Treinar vendas", "📞 Roteiro de ligação", "💡 Dicas de venda"]); return true;
+    }
+    // Número sozinho, fora do menu: explica
+    if (/^\d{1,2}$/.test(n) && !naTelaDeCadastro) {
+      bot(`Recebi só o número ${n}. 🤔 Se for uma opção do treino, digite "treinar vendas" que eu mostro o menu de novo (aí é só mandar 1, 2 ou 3). Se for outra coisa, me conte com mais palavras.`);
+      chips(["🎯 Treinar vendas"]); return true;
+    }
     // Sair / trocar de modo
     if (modo && /^(sair( do treino)?|parar|chega|encerrar|fim do treino)$/.test(n)) { modo = null; cenario = null; bot("Treino encerrado. Mandou bem! 💪 Quando quiser de novo, é só dizer \"treinar vendas\"."); return true; }
     if (/(treinar|treino|treinamento|simula|roleplay|role play|me treina)/.test(n) && !/(cadastr|desconto)/.test(n)) {
@@ -393,7 +437,7 @@
       bot(s.roteiro ? roteiro() : s.txt); chips(["🎯 Treinar vendas", "📞 Roteiro de ligação", "🪜 Escada de condições"]); return true;
     }
     if (/(dica|dicas) de venda|como vender (mais|melhor)|vender mais/.test(n)) {
-      bot("💡 Dicas de venda Fox:\n· Pergunte antes de orçar (uso, urgência, jogo ou par).\n· Eduque sobre o risco antes do preço.\n· Use as armas: montagem gratuita + checklist completo gratuito.\n· Pneu nunca anda sozinho: ofereça alinhamento, balanceamento e óleo.\n· Cliente decidiu? Pare de argumentar e feche com duas opções de dia.\n\nQuer treinar agora?"); chips(MENU); return true;
+      bot("💡 Dicas de venda Fox:\n· Pergunte antes de orçar (uso, urgência, jogo ou par).\n· Eduque sobre o risco antes do preço.\n· Use as armas: montagem gratuita + checklist completo gratuito.\n· Pneu nunca anda sozinho: ofereça alinhamento, balanceamento e óleo.\n· Cliente decidiu? Pare de argumentar e feche com duas opções de dia.\n\nQuer treinar agora? (mande 1, 2 ou 3)"); chips(MENU); ultimoMenu = true; return true;
     }
     return false;
   }

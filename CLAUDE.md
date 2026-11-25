@@ -163,7 +163,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
     é lida como conversa de WhatsApp (`lerConversa` no fernanda-ajuda.js, Tesseract; balão à direita = vendedor, à esquerda
     = cliente; modo escuro invertido; cabeçalho, horas e chip de data saem). `auditarConversa` (fernanda-vendas.js) mostra
     "Li assim", onde a conversa parou e a **próxima mensagem pronta** (objeção do cliente, sinal de compra, pergunta de
-    preço ou cliente sumiu → resgate), ideias de frases e a auditoria. Texto exportado do WhatsApp também é separado. Respostas modelo ADAPTADAS à regra do
+    preço ou cliente sumiu → resgate), ideias de frases e a auditoria. Texto exportado do WhatsApp também é separado. **Perguntas ensinadas** (Monitor "não soube responder", 25/11/2026): "venda" (o que ela sabe de vendas),
+    "insistir no contato é ruim para a imagem da Fox" (`INSISTIR`: até 3 ligações, cada contato com algo novo, respeitar o não),
+    "quero aprender a vender" (abre o treino), "ok/obrigado" (confirma) e "1/2/3" logo depois do menu de treino (`ultimoMenu`). Respostas modelo ADAPTADAS à regra do
     TI: sem "reservar box", sem "segurar condição 48 h", sem "pronta entrega" (nunca prometer pneu separado nem horário
     reservado); combinar o dia da visita. No Cadastrar só responde se a pessoa pedir ("cliente disse…", "treinar").
     **Módulo 2** (TI, 24/11/2026): roteiro de ligação de resgate (etapas A/B/C; nas Ligações já vem preenchido com o
