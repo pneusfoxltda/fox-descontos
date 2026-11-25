@@ -235,8 +235,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   PARINTINS, C.AUTO PVH líquido, ARIQUEMES varejo+atacado). **Sem tabela de preço**: Varejo/Atacado continuam pela 553.
   `ConsultaOrcamentos`: cotações (cotação pura vem sem cliente/telefone: a lista das Ligações continua pelo Analytics).
 - `movere_api.py`: vendas na hora por telefone e por nº do orçamento (só VENDA; últimos `DIAS_API` = 10 dias, o Analytics
-  cobre os mais antigos). Usado em `conferir_vendas_movere.py` (descontos: 1º pelo nº do orçamento, 2º pelo telefone;
-  `venda_movere_por`) e em `ligacoes_lojas.py` (comprou → venda televendas). Se a API falhar, segue só com o Analytics.
+  cobre os mais antigos). Usado em `conferir_vendas_movere.py` (descontos: 1º pelo NÚMERO, 2º pelo telefone; `venda_movere_por`). **Nos descontos,
+  "Orçamento" = nº da COTAÇÃO e "O.S." = nº da ordem de serviço** (TI, 25/11/2026). Na API: nota `Comercial.idorcamento` = nº da
+  O.S.; `ConsultaOrcamentos` (status 2) liga `idcotacao` → `idorcamento` (conferido com 2 exemplos do TI) e em `ligacoes_lojas.py` (comprou → venda televendas). Se a API falhar, segue só com o Analytics.
   Testes: `python tests/test_movere_api.py`.
 
 ## Número repetido — branch `cadastro-sem-duplicado`
