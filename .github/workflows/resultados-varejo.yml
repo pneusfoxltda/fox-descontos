@@ -14,7 +14,7 @@ on:
         default: false
 
 concurrency:
-  group: resultados-varejo
+  group: movere-553   # o mesmo do Atacado: um espera o outro (mesmo login do Movere)
   cancel-in-progress: false
 
 jobs:

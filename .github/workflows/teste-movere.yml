@@ -20,9 +20,7 @@ jobs:
         env:
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-          DRY_RUN: '1'
-          MOSTRAR_TRANCADO: '1'
-        run: python3 resultados_atacado.py
+        run: python3 teste_movere.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()

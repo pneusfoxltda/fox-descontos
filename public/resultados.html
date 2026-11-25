@@ -184,7 +184,7 @@ const ABAS = [
   {id: "", t: "🏠 Início"},
   {id: "televendas", t: "💰 Resultado Televendas", href: "/televendas.html"},
   {id: "varejo", t: "🏪 Resultado Varejo · Geral"},
-  {id: "atacado", t: "📦 Resultado Atacado", breve: true},
+  {id: "atacado", t: "📦 Resultado Atacado", href: "/atacado"},
   {id: "truck", t: "🚚 Resultado Truck", breve: true},
 ];
 function rota() {
@@ -205,7 +205,7 @@ function inicio() {
   <div class="cards">
     <a class="card" href="/televendas.html"><div class="ic">💰</div><h2>Resultado Televendas</h2><p>Vendas, metas e ranking das operadoras do televendas.</p></a>
     <a class="card" href="#varejo"><div class="ic">🏪</div><h2>Resultado Varejo · Geral</h2><p>Ranking das lojas no dia e no mês, meta, e os vendedores de cada loja. Atualiza de hora em hora.</p></a>
-    <div class="card breve"><div class="ic">📦</div><h2>Resultado Atacado</h2><p>Será feito no futuro.</p><span class="selo">em breve</span></div>
+    <a class="card" href="/atacado"><div class="ic">📦</div><h2>Resultado Atacado</h2><p>Vendas do Atacado por vendedor, com as 3 metas, os últimos 5 dias úteis, pneus e as lojas. No modelo do Televendas.</p></a>
     <div class="card breve"><div class="ic">🚚</div><h2>Resultado Truck</h2><p>Será feito no futuro.</p><span class="selo">em breve</span></div>
   </div>`;
 }
