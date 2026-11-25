@@ -11,16 +11,16 @@ jobs:
 
       - name: Instala dependências
         run: |
-          pip install playwright beautifulsoup4 httpx --break-system-packages 2>/dev/null || \
-          pip install playwright beautifulsoup4 httpx
+          pip install playwright beautifulsoup4 httpx cryptography --break-system-packages 2>/dev/null || \
+          pip install playwright beautifulsoup4 httpx cryptography
           playwright install chromium
           playwright install-deps chromium
 
       - name: Roda teste
         env:
-          MOVERE_USER: ${{ secrets.MOVERE_USER }}
-          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+        run: python3 diag_cotacoes_lojas.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
