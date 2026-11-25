@@ -223,6 +223,22 @@ vendas para o televendas; `apps-script/` tem o do painel).
   o admin vê a última rodada: verde (ok), vermelho (falhou + última certa), amarelo (sem rodar
   há mais de 40 h). A "Venda concluída" ainda NÃO entra no Dashboard (ideia futura).
 
+## 🛰️ API oficial do Movere — branch `venda-api`
+
+- Documentação pública no Swagger (`api.moveresoftware.com/swagger/docs/movere-api` e `.../movere-inteligente`; esta sessão
+  não alcança o site, os testes rodam no GitHub). Login `POST /api/LoginComAmbiente` {ambiente, usuario, senha} → token
+  (vale ~5 dias). **Um login novo NÃO derruba o token anterior** (testado em 25/11/2026; o mesmo usuário é usado por outra IA
+  do TI). Segredos: `MOVERE_API_AMBIENTE`, `MOVERE_API_USUARIO`, `MOVERE_API_SENHA` (o `MOVERE_API_TOKEN` fixo estava vencido).
+- `NotasFiscaisEmitidas` (por loja e período, 100 por página): nota em `NF` com `Cliente` (fonecelular/fonecom),
+  `Comercial` (idorcamento; sem vendedor nem tabela de preço), `Produtos` (descrição com a medida), `descricaoentradaesaida`
+  (VENDA / DEVOLUÇÃO DE VENDA / transferência / carcaça). Conferido 24/11: as vendas batem centavo com a 553 (MATRIZ,
+  PARINTINS, C.AUTO PVH líquido, ARIQUEMES varejo+atacado). **Sem tabela de preço**: Varejo/Atacado continuam pela 553.
+  `ConsultaOrcamentos`: cotações (cotação pura vem sem cliente/telefone: a lista das Ligações continua pelo Analytics).
+- `movere_api.py`: vendas na hora por telefone e por nº do orçamento (só VENDA; últimos `DIAS_API` = 10 dias, o Analytics
+  cobre os mais antigos). Usado em `conferir_vendas_movere.py` (descontos: 1º pelo nº do orçamento, 2º pelo telefone;
+  `venda_movere_por`) e em `ligacoes_lojas.py` (comprou → venda televendas). Se a API falhar, segue só com o Analytics.
+  Testes: `python tests/test_movere_api.py`.
+
 ## Número repetido — branch `cadastro-sem-duplicado`
 
 - `10_sem_numero_repetido.sql`: guarda cópia dos repetidos em `descontos_duplicados_apagados`
