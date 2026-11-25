@@ -71,7 +71,7 @@ STATUS_COMPROU = "venda_televendas"
 # quem cotou (coluna "Vendedor") é o responsável. Só as 8 lojas das Ligações. Gerente, férias, desativado ou
 # não cadastrado → divisão automática. SQL 31 (ligacoes.origem, perfis.nome_movere, ligacoes_nomes_movere).
 LOJAS_COTACAO_LOJA = {"MATRIZ", "C.AUTO PVH", "ARIQUEMES", "JI-PARANA", "CACOAL", "C.AUTO VLH", "PARINTINS", "XAPURI"}
-INICIO_LOJA = date(2026, 11, 25)          # primeiras cotações das lojas na lista
+INICIO_LOJA = date(2026, 11, 24)          # primeiras cotações das lojas na lista (decisão do TI: desde 24/11)
 
 
 # ── Kommo ─────────────────────────────────────────────────────────────────────

@@ -361,7 +361,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
 - **Cotações dos VENDEDORES DAS LOJAS** (decisão do TI, 25/11/2026; SQL **`31_ligacoes_cotacoes_loja.sql`**): além das do
   televendas, entram as cotações feitas nas **8 lojas** (FOX-GM, MANAUS, RECAP-PVH, RECAP-VLH e ATACADO ficam fora), **todas**,
-  desde `INICIO_LOJA` (25/11/2026). O robô roda o relatório 782403 também SEM o filtro do dashboard 782276; nas cotações da
+  desde `INICIO_LOJA` (24/11/2026). O robô roda o relatório 782403 também SEM o filtro do dashboard 782276; nas cotações da
   loja o "NomeOperador" vem "Não informado" e quem cotou vem na coluna **"Vendedor"** (nome completo do Movere).
   **Quem cotou é o responsável** (Cotou: Edileia · Responsável: Edileia), sem divisão. Cotação do **gerente**, de vendedor de
   férias/desativado ou de nome **não reconhecido** → divisão automática. Reconhecer: `casar_vendedor` (1º `perfis.nome_movere`,
