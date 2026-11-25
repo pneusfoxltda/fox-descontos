@@ -375,6 +375,11 @@ vendas para o televendas; `apps-script/` tem o do painel).
   levar ≈ 20 min. SQL **`27_varejo_pneus_metas.sql`**: colunas de pneus + metas de nov/2026 (total R$ 4.500.000;
   MATRIZ 800 mil, C.AUTO PVH 680, JI-PARANA 680, CACOAL 620, PARINTINS 530, XAPURI 480, ARIQUEMES 410, C.AUTO VLH 300).
   Sem o SQL 27 o robô grava sem os pneus (não quebra).
+  **Metas de pneus** (TI, 25/11/2026; SQL **`28_varejo_metas_pneus.sql`**: `varejo_metas.meta_pneus/super_pneus/mega_pneus`;
+  nov/2026: total Meta 7.840 · Super 8.970 · Mega 9.720): na coluna Pneus "vendidos / Meta", % (verde no ritmo do dia,
+  vermelho abaixo), barrinha com 3 marcas, "faltam N p/ Meta|Super|Mega" e selo da faixa (✅ Meta · ⭐ Super · 🏆 Mega);
+  mouse em cima: vendas e projeção "no ritmo de hoje". Cartão "Pneus no mês" com o total da rede. Lançadas no ✏️ Metas
+  (3 caixinhas por loja). Vendedor: só o número (sem meta por vendedor).
 - SQL **`26_resultados_varejo.sql`**: `varejo_lojas`, `varejo_vendedores` (periodo `mes`/`hoje`), `varejo_conferencia`,
   `varejo_metas`, `perfil_ativo()`. Testes: `python tests/test_resultados_varejo.py`.
 - Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo; ARIQUEMES −1.266,00 = devolução REVENDA (cliente
