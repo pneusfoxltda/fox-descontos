@@ -338,7 +338,8 @@ def main() -> int:
 
         # 1) API oficial do Movere: vendas NA HORA, com telefone e nº do orçamento
         import movere_api
-        api_tel, api_orc = movere_api.buscar(inicio, hoje)
+        # só os últimos dias pela API (rápido); os mais antigos o Analytics já tem
+        api_tel, api_orc = movere_api.buscar(max(inicio, hoje - timedelta(days=movere_api.DIAS_API)), hoje)
         RESUMO["api_telefones"], RESUMO["api_orcamentos"] = len(api_tel), len(api_orc)
 
         # 2) Analytics (reserva: atualiza de madrugada). Se falhar e a API respondeu, segue só com a API.

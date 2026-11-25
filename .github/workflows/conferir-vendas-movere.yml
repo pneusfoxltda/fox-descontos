@@ -40,5 +40,6 @@ jobs:
           MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
           MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
           MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
+          PYTHONUNBUFFERED: '1'
           DRY_RUN: ${{ inputs.teste && '1' || '' }}
         run: python conferir_vendas_movere.py

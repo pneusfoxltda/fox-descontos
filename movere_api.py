@@ -17,6 +17,7 @@ import httpx
 
 BASE = "https://api.moveresoftware.com"
 POR_PAGINA = 100
+DIAS_API = 10          # os robôs buscam pela API só os últimos 10 dias (o Analytics cobre os mais antigos; 45 dias passava de 15 min)
 
 
 def configurada() -> bool:

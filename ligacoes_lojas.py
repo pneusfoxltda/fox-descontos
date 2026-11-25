@@ -404,7 +404,7 @@ def main() -> int:
         print(f"🧾 Vendas: {len(uris_vendas)} dia(s) no Analytics · {len(vendas)} telefones")
         # API oficial do Movere: as vendas de hoje e de ontem (o Analytics só tem até ontem de madrugada)
         import movere_api
-        api_tel, _ = movere_api.buscar(inicio_vendas, hoje)
+        api_tel, _ = movere_api.buscar(max(inicio_vendas, hoje - timedelta(days=movere_api.DIAS_API)), hoje)
         if api_tel:
             vendas = movere_api.juntar(vendas, api_tel)
             print(f"🛰️ Com a API do Movere: {len(vendas)} telefones (vendas na hora)")
