@@ -347,13 +347,15 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - Página **`/resultados`** (`public/resultados.html`, rewrite no `middleware.js`; bloco "Resultados Fox Pneus" no FOXNET).
   Pede o login (o mesmo das Ligações e do App; qualquer perfil **ativo** lê; decisão: o repositório é público, sem
   login qualquer um leria os números com a chave anon). Abas: **Resultado Televendas** (abre `/televendas.html`),
-  **Resultado Varejo · Geral**, **Atacado** e **Truck** ("em breve", decisão do TI 24/11/2026).
+  **Resultado Varejo · Geral**, **Resultado Atacado** (`/atacado`) e **Truck** ("em breve").
 - **Varejo** (decisão do TI: base = **rotina 553**, com o dia de hoje): Vendido hoje, no mês, meta, falta (e por dia,
   contando seg–sáb), ticket médio; **ranking das lojas** (hoje, clientes, mês, meta, %, falta, clientes, ticket, itens);
   clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
   (`varejo_metas`). Sem metas, mostra "sem meta". **Dias úteis** igual ao Televendas: no ✏️ Metas, calendário do mês;
   clicar no dia marca feriado (domingo nunca conta). Feriados gravados em `varejo_metas` com `loja = 'feriado_DD'`.
-  **% desejado do dia** = dias úteis até hoje ÷ dias úteis do mês; % meta **verde** se ≥ desejado, **vermelho** abaixo.
+  **% desejado do dia** (regra única do TI, 25/11/2026, vale para Televendas, Varejo e Atacado) = dias úteis **já fechados**
+  (até ontem) ÷ dias úteis do mês; ex.: 23 dias úteis, em 24/11 fecharam 17 → 17/23 = 73,9%; mês fechado = 100%.
+  % meta **verde** se ≥ desejado, **vermelho** abaixo.
   Ícone de pneu em SVG (`PNEU`; o emoji 🛞 não aparece no Windows). Em cima só "Atualizado em…"; as explicações
   ficam em "🔻 Mais informações sobre atualização", lá embaixo (pedido do TI, 25/11/2026). Página até 1700 px de largura.
 - **Seta vermelha lá embaixo** (pedido do TI): a 553 até ontem (mês − hoje) comparada com o Analytics
@@ -382,9 +384,27 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (3 caixinhas por loja). Vendedor: só o número (sem meta por vendedor).
 - SQL **`26_resultados_varejo.sql`**: `varejo_lojas`, `varejo_vendedores` (periodo `mes`/`hoje`), `varejo_conferencia`,
   `varejo_metas`, `perfil_ativo()`. Testes: `python tests/test_resultados_varejo.py`.
-- Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo; ARIQUEMES −1.266,00 = devolução REVENDA (cliente
-  239846, nota 1301); C.AUTO PVH +516,77 era REVENDA e o segmento foi corrigido no Movere. Segmento REVENDA não existe
-  como filtro na 553 (procurado nas 21 listas).
+- Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo com o Analytics; a diferença das outras é REVENDA
+  (devoluções/vendas de clientes com segmento REVENDA). Segmento REVENDA não existe como filtro na 553 (procurado nas 21 listas).
+
+## 📦 Resultado Atacado — branch `resultado-atacado`
+
+- Página **`/atacado`** (`public/atacado.html`; aba e cartão "Resultado Atacado" em /resultados). **Visual copiado do painel
+  do Televendas** (mesmo CSS, pedido do TI 25/11/2026): Meta 1 / Meta 2 (+10%) / Meta 3 (+20%), KPIs (faturamento do setor,
+  % da meta, % desejado do dia, falta, setor precisa por dia) + "Pneus no mês"; tabela **por vendedor** (principal) com Meta,
+  **últimos 5 dias úteis** (passar o mouse mostra clientes, itens e o valor; sem nome de cliente), faturamento do mês, pneus,
+  precisa por dia e % atingido; linha verde no ritmo / vermelha abaixo; "Outros vendedores (sem meta)" recolhido; TOTAL
+  SETOR; tabela **Por loja** (hoje, mês, % do setor, clientes, itens, pneus, ticket). Seletor de mês. Pede login.
+  **Editar metas** (admin e gerente de todas as lojas): meta 1 de cada vendedor + feriados (dias úteis igual ao Televendas).
+- Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, acordado com o Varejo 7h45–17h45 + cron 19h20; grupo
+  de concorrência **`movere-553`** igual ao Varejo: nunca os dois ao mesmo tempo no mesmo login): rotina 553 com
+  `TABELAS_ATACADO` (2 ATACADO + 5 ATACADO PREMIUM), **todas as lojas** (`gerar(..., lojas=[])`), todas as famílias, frete;
+  mês (+ pneus do mês com `FAMILIAS_PNEUS_ATACADO`: inclui TRUCK, MULTIMARCAS TRUCK, TRUCK/AGRO e TRUCK PROMETEON, que tem
+  câmaras; RECAPAGEM fica fora) e os últimos 5 dias úteis (hoje e o dia anterior sempre; os outros só se faltarem;
+  linha `TOTAL` em `atacado_lojas` marca o dia lido). Nos dias 1–3 fecha o mês anterior. ≈ 2–5 min.
+  Conferido em 25/11/2026: o total do mês bateu com o relatório 553 do TI (soma dos vendedores = total).
+- SQL **`30_resultados_atacado.sql`**: `atacado_vendedores`, `atacado_lojas` (periodo `mes`/`dia`), `atacado_metas`
+  (`v:COD` e `feriado_DD`; metas de EXEMPLO de nov/2026, 8 vendedores, R$ 5,2 mi). Testes: `python tests/test_resultados_atacado.py`.
 
 ## 🩺 Monitor (só o admin) — branch `monitor`
 
@@ -402,6 +422,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (tabelas sem RLS, regras para quem não está logado, senhas antigas legíveis) e espaço do banco (500 MB).
 - Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).
   Se o SQL 18 não rodou, gravam sem os detalhes (não quebram). Só contagens: nada de cliente.
+- Seção **🏆 Resultados Fox Pneus (rotina 553)**: última rodada dos robôs do Varejo e do Atacado (detalhes, erros, bolinhas) e
+  se os números chegaram na página (`varejo_lojas` / `atacado_lojas`; amarelo se parados há mais de 2 h em horário de loja).
 - Próximas etapas combinadas: backup diário trancado com senha (segredo no GitHub), 3 linhas nos
   Apps Scripts para o monitor ver os e-mails, e anotar erros das telas.
 

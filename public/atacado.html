@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<title>Atacado · Fox Pneus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Visual copiado do painel do Televendas (public/televendas.html), para ficar igual */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--fx-bg,#f4f6f9);color:var(--fx-tx,#1a2332);font-family:'Inter',sans-serif;min-height:100vh;}
+
+/* ── Header ── */
+.header{background:var(--fx-hd,#0f1f3d);padding:14px 24px;display:flex;align-items:center;gap:12px;}
+.logo{width:40px;height:40px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--fx-s1,#fff);}
+.brand{color:#fff;font-weight:700;font-size:16px;}
+.brand small{display:block;font-size:11px;color:#8899bb;font-weight:400;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.sync-info{font-size:11px;color:#8899bb;text-align:right;}
+.btn-refresh{background:var(--fx-hd2,#1e3a6e);border:none;color:#8fb3ff;font-size:11px;border-radius:6px;padding:6px 12px;cursor:pointer;transition:.15s;}
+.btn-refresh:hover{background:var(--fx-hd2,#2a4d8f);color:#fff;}
+
+/* ── Container ── */
+.container{max-width:1100px;margin:0 auto;padding:20px 16px;}
+
+/* ── Título ── */
+.page-header{margin-bottom:16px;}
+.page-title{font-size:22px;font-weight:800;color:var(--fx-tx,#0f1f3d);}
+.page-title span{color:var(--fx-ac,#CC1F1F);}
+.page-meta{font-size:12px;color:var(--fx-tx3,#7a8ba0);margin-top:3px;}
+
+/* ── Metas ── */
+.metas-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.meta-btn{background:var(--fx-s1,#fff);border:2px solid var(--fx-bd,#dde3ec);border-radius:8px;padding:8px 16px;cursor:pointer;transition:.15s;text-align:center;}
+.meta-btn:hover{border-color:var(--fx-hd,#0f1f3d);}
+.meta-btn.active{background:var(--fx-hd,#0f1f3d);border-color:var(--fx-hd,#0f1f3d);color:#fff;}
+.meta-btn .meta-label{font-size:11px;font-weight:600;opacity:.7;}
+.meta-btn .meta-valor{font-size:14px;font-weight:800;}
+.meta-btn.active .meta-label{opacity:.8;}
+
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.kpi{background:var(--fx-s1,#fff);border-radius:10px;padding:14px 16px;border:1px solid var(--fx-bd,#e2e8f0);box-shadow:0 1px 3px #0001;}
+.kpi-label{font-size:11px;font-weight:600;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-valor{font-size:22px;font-weight:800;color:var(--fx-tx,#0f1f3d);}
+.kpi-valor.vermelho{color:var(--fx-ac,#CC1F1F);}
+.kpi-valor.verde{color:var(--fx-oktx,#16a34a);}
+.kpi-sub{font-size:11px;color:var(--fx-tx4,#9aabb8);margin-top:4px;}
+.progress-bar{height:6px;background:var(--fx-s2,#e2e8f0);border-radius:3px;margin-top:8px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;background:var(--fx-ac,#CC1F1F);transition:width .6s;}
+.progress-fill.verde{background:#16a34a;}
+
+/* ── Tabela ── */
+.table-wrap{background:var(--fx-s1,#fff);border-radius:12px;border:1px solid var(--fx-bd,#e2e8f0);overflow:hidden;box-shadow:0 1px 3px #0001;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--fx-hd,#0f1f3d);color:#fff;}
+th{padding:15px 12px;font-weight:700;font-size:15px;text-align:center !important;letter-spacing:.3px;vertical-align:middle;}
+thead th:first-child{text-align:center !important;}
+.th-dias{background:#e85d04;color:#fff;text-align:center;}
+thead tr:last-child th{background:#e85d04;color:#fff;font-size:13px;padding:8px 12px;}
+tbody tr{border-bottom:1px solid var(--fx-bd,#f0f4f8);transition:.1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--fx-bg,#f8fafc);}
+tbody tr.total-row{font-weight:700;}
+tbody tr.row-verde{background:var(--fx-okbg,#bbf7d0);}
+tbody tr.row-verde:hover{background:var(--fx-okbg,#a7f3d0) !important;}
+tbody tr.row-vermelho{background:var(--fx-erbg,#fecaca);}
+tbody tr.row-vermelho:hover{background:var(--fx-erbg,#fca5a5) !important;}
+tbody tr.total-row.row-verde{background:var(--fx-okbg,#bbf7d0) !important;}
+tbody tr.total-row.row-vermelho{background:var(--fx-erbg,#fecaca) !important;}
+td{padding:11px 12px;text-align:center;color:var(--fx-tx,#1a2332);}
+td:first-child{text-align:left;font-weight:700;}
+td.verde{color:var(--fx-oktx,#16a34a);font-weight:700;}
+td.vermelho{color:var(--fx-ac,#CC1F1F);font-weight:700;}
+td.dia-col{color:var(--fx-tx2,#374151);font-size:12px;}
+td.meta-col{color:var(--fx-tx3,#6b7280);}
+
+/* ── Badge % ── */
+.pct-badge{display:inline-block;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:700;}
+.pct-badge.verde{background:var(--fx-okbg,#dcfce7);color:var(--fx-oktx,#16a34a);}
+.pct-badge.amarelo{background:#fef9c3;color:var(--fx-avtx,#b45309);}
+.pct-badge.vermelho{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F);}
+
+/* ── Filtro de data ── */
+.filtro-data-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filtro-data-label{font-size:12px;font-weight:600;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.4px;}
+.filtro-data-btn{background:var(--fx-s1,#fff);border:2px solid var(--fx-bd,#dde3ec);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--fx-tx,#0f1f3d);display:flex;align-items:center;gap:8px;transition:.15s;}
+.filtro-data-btn:hover{border-color:var(--fx-hd,#0f1f3d);}
+.filtro-data-btn.ativo{border-color:var(--fx-ac,#CC1F1F);color:var(--fx-ac,#CC1F1F);}
+.filtro-data-clear{background:none;border:none;cursor:pointer;font-size:11px;color:var(--fx-tx4,#9aabb8);padding:4px 6px;border-radius:4px;}
+.filtro-data-clear:hover{color:var(--fx-ac,#CC1F1F);}
+
+/* ── Calendário popup ── */
+.cal-popup{display:none;position:absolute;z-index:200;background:var(--fx-s1,#fff);border:1px solid var(--fx-bd,#dde3ec);border-radius:12px;box-shadow:0 8px 32px #0002;padding:16px;min-width:280px;}
+.cal-mes-btn{background:var(--fx-bg,#f0f4f8);border-radius:7px;padding:9px 12px;font-size:12px;font-weight:700;color:var(--fx-tx,#0f1f3d);cursor:pointer;margin-bottom:12px;text-align:center;transition:.15s;border:none;width:100%;display:block;}
+.cal-mes-btn:hover{background:var(--fx-hd,#0f1f3d);color:#fff;}
+.cal-popup.aberto{display:block;}
+.cal-popup-wrap{position:relative;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-nav{background:none;border:1px solid var(--fx-bd,#dde3ec);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--fx-tx,#0f1f3d);display:flex;align-items:center;justify-content:center;transition:.1s;}
+.cal-nav:hover{background:var(--fx-hd,#0f1f3d);color:#fff;}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed;}
+.cal-titulo{font-size:14px;font-weight:700;color:var(--fx-tx,#0f1f3d);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dow{font-size:10px;font-weight:700;color:var(--fx-tx4,#9aabb8);text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-dia{font-size:13px;font-weight:500;color:var(--fx-tx,#1a2332);text-align:center;padding:7px 4px;border-radius:6px;cursor:pointer;transition:.1s;}
+.cal-dia:hover:not(.cal-dia-vazio):not(.cal-dia-disabled){background:#e8f0fe;color:var(--fx-tx,#0f1f3d);}
+.cal-dia.cal-dia-hoje{font-weight:800;color:var(--fx-ac,#CC1F1F);}
+.cal-dia.cal-dia-sel{background:var(--fx-hd,#0f1f3d);color:#fff !important;font-weight:700;}
+.cal-dia.cal-dia-disabled{color:#d1d5db;cursor:not-allowed;pointer-events:none;}
+.cal-dia.cal-dia-vazio{cursor:default;}
+.cal-dia-futuros{font-size:10px;color:var(--fx-tx4,#9aabb8);text-align:center;margin-top:8px;}
+.cal-dia.cal-dia-range-start{background:var(--fx-ac,#CC1F1F) !important;color:#fff !important;font-weight:700;}
+.cal-dia.cal-dia-in-range{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F) !important;}
+
+/* ── Legenda ── */
+.legenda{display:flex;gap:20px;padding:10px 12px;background:var(--fx-bg,#f8fafc);font-size:11px;color:var(--fx-tx3,#7a8ba0);border-top:1px solid var(--fx-bd,#e2e8f0);}
+.leg-item{display:flex;align-items:center;gap:5px;}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── Loading / Error ── */
+.loading{text-align:center;padding:60px;color:var(--fx-tx4,#9aabb8);}
+.spinner{width:32px;height:32px;border:3px solid var(--fx-bd,#e2e8f0);border-top-color:var(--fx-ac,#CC1F1F);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.erro{background:#fff5f5;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:var(--fx-ac,#CC1F1F);font-size:13px;text-align:center;}
+
+/* ── Modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:#0008;z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--fx-s1,#fff);border-radius:14px;padding:24px;width:480px;box-shadow:0 20px 60px #0003;}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--fx-tx,#0f1f3d);}
+.modal-grid{display:grid;gap:10px;margin-bottom:16px;}
+.modal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.modal-row label{font-size:13px;color:var(--fx-tx2,#374151);flex:1;}
+.modal-row input{width:130px;border:1px solid var(--fx-bd,#d1d5db);border-radius:6px;padding:8px 10px;font-size:14px;text-align:right;}
+.modal-row input:focus{outline:none;border-color:var(--fx-hd,#0f1f3d);}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;padding:10px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.btn-ok{background:var(--fx-hd,#0f1f3d);color:#fff;}
+.btn-cancel{background:var(--fx-bg,#f1f5f9);color:var(--fx-tx2,#374151);}
+.btn-editar-meta{background:none;border:1px solid var(--fx-bd,#d1d5db);border-radius:6px;color:var(--fx-tx3,#6b7280);font-size:11px;padding:5px 10px;cursor:pointer;margin-left:8px;}
+.btn-editar-meta:hover{border-color:var(--fx-hd,#0f1f3d);color:var(--fx-tx,#0f1f3d);}
+
+/* ── Modal feriados ── */
+.modal-section-title{font-size:11px;font-weight:700;color:var(--fx-tx3,#7a8ba0);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;}
+.modal-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.modal-cal-dow{font-size:9px;font-weight:700;color:var(--fx-tx4,#9aabb8);text-align:center;padding:4px 0;text-transform:uppercase;}
+.modal-cal-dia{font-size:12px;text-align:center;padding:6px 3px;border-radius:5px;line-height:1;}
+.modal-cal-dia.util{cursor:pointer;background:var(--fx-bg,#f0f4f8);color:var(--fx-tx,#1a2332);font-weight:600;}
+.modal-cal-dia.util:hover{background:#dde6f5;}
+.modal-cal-dia.feriado{background:var(--fx-erbg,#fee2e2);color:var(--fx-ac,#CC1F1F);font-weight:700;cursor:pointer;}
+.modal-cal-dia.dom{color:#d1d5db;font-size:11px;}
+.modal-cal-dia.vazio{background:none;}
+.modal-du-info{font-size:11px;color:var(--fx-tx3,#7a8ba0);margin-top:4px;margin-bottom:16px;}
+
+/* ── Modal Clientes (drill-down) ── */
+#modal-clientes .modal{width:580px;max-width:calc(100vw - 32px);}
+.cli-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cli-modal-header h3{margin:0;font-size:14px;color:var(--fx-tx,#0f1f3d);}
+.cli-modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:var(--fx-tx4,#9aabb8);line-height:1;padding:0 4px;}
+.cli-modal-close:hover{color:var(--fx-ac,#CC1F1F);}
+.cli-scroll{overflow-y:auto;max-height:420px;}
+
+/* ── Período info banner ── */
+.periodo-banner{background:#fff8e7;border:1px solid #fde68a;border-radius:8px 8px 0 0;padding:10px 16px;font-size:12px;color:var(--fx-avtx,#92400e);display:flex;align-items:center;gap:8px;}
+
+/* ── Scroll hint (mobile) ── */
+.scroll-hint{display:none;text-align:center;font-size:11px;color:var(--fx-tx4,#9aabb8);padding:6px 0 2px;letter-spacing:.3px;}
+
+/* ── Modal login ── */
+#modal-login .modal{width:360px;max-width:calc(100vw - 32px);}
+.login-input{width:100%;padding:10px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:.15s;box-sizing:border-box;}
+.login-input:focus{border-color:var(--fx-hd,#0f1f3d);}
+.btn-login{width:100%;background:var(--fx-hd,#0f1f3d);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-login:hover{background:var(--fx-hd2,#1e3a6e);}
+.login-erro{display:none;color:var(--fx-ac,#CC1F1F);font-size:13px;margin:0;text-align:center;padding:6px 0;}
+
+/* ── Modal usuários (admin) ── */
+#modal-usuarios .modal{width:480px;max-width:calc(100vw - 32px);}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--fx-bg,#f8fafc);border-radius:8px;margin-bottom:6px;}
+.user-row .user-name{font-size:14px;font-weight:600;color:var(--fx-tx,#0f1f3d);}
+.user-row .user-pass{font-size:12px;color:var(--fx-tx4,#9aabb8);}
+.btn-del-user{background:none;border:none;cursor:pointer;color:var(--fx-tx4,#9aabb8);font-size:16px;padding:4px 6px;border-radius:4px;}
+.btn-del-user:hover{color:var(--fx-ac,#CC1F1F);background:var(--fx-erbg,#fee2e2);}
+.add-user-form{display:flex;gap:8px;margin-top:12px;}
+.add-user-form input{flex:1;padding:9px 12px;border:1.5px solid #d1dce6;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;}
+.add-user-form input:focus{border-color:var(--fx-hd,#0f1f3d);}
+.btn-add-user{background:var(--fx-hd,#0f1f3d);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* ── Export button ── */
+.btn-export{background:var(--fx-s1,#fff);border:1.5px solid #d1dce6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--fx-tx2,#374151);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;transition:.15s;}
+.btn-export:hover{border-color:var(--fx-hd,#0f1f3d);color:var(--fx-tx,#0f1f3d);}
+.export-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--fx-bg,#f8fafc);border-top:1px solid var(--fx-bd,#e2e8f0);flex-wrap:wrap;gap:6px;}
+
+@media(max-width:768px){
+  /* Header compacto */
+  .header{padding:10px 14px;}
+  .brand{font-size:14px;}
+  .brand small{display:none;}
+  .sync-info{display:none;}
+  .btn-refresh{padding:5px 10px;font-size:10px;}
+
+  /* Container */
+  .container{padding:12px 10px;}
+
+  /* Título */
+  .page-title{font-size:17px;}
+  .page-meta{font-size:11px;}
+
+  /* Metas */
+  .metas-row{gap:6px;}
+  .meta-btn{padding:6px 12px;}
+  .meta-btn .meta-valor{font-size:12px;}
+
+  /* KPIs · 2 colunas */
+  .kpis{grid-template-columns:1fr 1fr;gap:8px;}
+  .kpi{padding:10px 12px;}
+  .kpi-valor{font-size:18px;}
+  .kpi-label{font-size:10px;}
+
+  /* Tabela · scroll horizontal */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;}
+  .scroll-hint{display:block;}
+  table{font-size:11px;min-width:620px;}
+  th{font-size:12px !important;padding:10px 8px !important;}
+  td{padding:9px 8px;font-size:11px;}
+  td:first-child{font-size:13px !important;}
+  .pct-badge{font-size:11px;padding:3px 7px;}
+
+  /* Legenda empilha */
+  .legenda{flex-direction:column;gap:6px;}
+
+  /* Modal full width */
+  .modal{width:calc(100vw - 32px);padding:18px;}
+}
+
+/* ── Atacado: o que é a mais que o Televendas ── */
+.dia-tip{position:relative;cursor:help}
+.dia-tip:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:100%;transform:translateX(-50%);white-space:pre;background:var(--fx-hd,#0f1f3d);color:#fff;font-size:12px;font-weight:600;line-height:1.5;padding:8px 12px;border-radius:8px;box-shadow:0 6px 20px #0004;z-index:20;text-align:center;margin-bottom:6px}
+.pneu-ic{width:14px;height:14px;vertical-align:-2px;display:inline-block}
+.pneus-sub{display:block;font-size:11px;color:var(--fx-tx3,#6b7280);font-weight:500}
+tr.outros td{background:var(--fx-bg,#f8fafc);color:var(--fx-tx3,#6b7280);cursor:pointer}
+tr.outro td{background:var(--fx-bg,#f8fafc);font-size:12px;color:var(--fx-tx3,#6b7280)}
+.sec-titulo{font-size:15px;font-weight:800;color:var(--fx-tx,#0f1f3d);margin:26px 0 10px;display:flex;align-items:center;gap:8px}
+.info-bt{background:none;border:none;color:var(--fx-ac,#CC1F1F);font-size:12.5px;font-weight:700;padding:14px 2px 6px;cursor:pointer;font-family:'Inter',sans-serif}
+#info-corpo{display:none;font-size:12px;color:var(--fx-tx3,#6b7280);line-height:1.7;padding:2px 2px 20px}
+.sel-mes{background:var(--fx-s1,#fff);border:2px solid var(--fx-bd,#dde3ec);border-radius:8px;padding:8px 12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--fx-tx,#0f1f3d);cursor:pointer}
+.voltar{font-size:12px;color:#8899bb;text-decoration:none;margin-left:8px}
+.voltar:hover{color:#fff}
+#tela-login{min-height:70vh;display:flex;align-items:center;justify-content:center}
+.login-box{background:var(--fx-s1,#fff);border:1px solid var(--fx-bd,#e2e8f0);border-radius:14px;padding:28px;width:360px;max-width:calc(100vw - 32px);box-shadow:0 1px 3px #0001;display:flex;flex-direction:column;gap:10px;text-align:center}
+#modal-metas .modal{width:560px;max-width:calc(100vw - 32px);max-height:90vh;overflow:auto}
+.modal-row small{display:block;font-size:11px;color:var(--fx-tx4,#9aabb8)}
+</style>
+<script src="/tema-comum.js"></script>
+<script src="/paleta.js" data-padrao="claro,#0F1F3D" data-dentro=".header-right"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo"><img src="data:image/png;base64,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" alt="Fox Pneus" style="width:36px;height:36px;object-fit:contain;"></div>
+  <div class="brand">Fox Pneus <small>Grupo Redefox</small></div>
+  <a class="voltar" href="/resultados">← Resultados Fox Pneus</a>
+  <div class="header-right">
+    <div class="sync-info" id="sync-info"></div>
+    <button class="btn-refresh" onclick="carregar()">↻ Atualizar</button>
+    <button class="btn-refresh" id="bt-sair" onclick="sb.auth.signOut().then(() => location.reload())" style="display:none">Sair</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="tela-login" style="display:none">
+    <div class="login-box">
+      <img src="/logo-fox.png" alt="" style="width:52px;margin:0 auto">
+      <div class="page-title" style="font-size:18px">Atacado <span>Fox Pneus</span></div>
+      <p style="font-size:12px;color:var(--fx-tx3,#7a8ba0)">Entre com o mesmo login das Ligações e do App.</p>
+      <input class="login-input" id="l-email" type="email" placeholder="E-mail" autocomplete="username">
+      <input class="login-input" id="l-senha" type="password" placeholder="Senha" autocomplete="current-password">
+      <p class="login-erro" id="l-erro"></p>
+      <button class="btn-login" id="l-entrar">Entrar</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div class="page-title">Atacado <span>Fox Pneus</span></div>
+        <div class="page-meta" id="page-meta">Carregando…</div>
+      </div>
+      <div class="filtro-data-wrap"><span class="filtro-data-label">📅</span><select class="sel-mes" id="sel-mes" onchange="mesSel=this.value;carregar()"></select></div>
+    </div>
+
+    <div class="metas-row" id="metas-row">
+      <div class="meta-btn active" onclick="setMeta(0)" id="meta-btn-0"><div class="meta-label">Meta 1</div><div class="meta-valor" id="meta-btn-val-0"></div></div>
+      <div class="meta-btn" onclick="setMeta(1)" id="meta-btn-1"><div class="meta-label">Meta 2 (+10%)</div><div class="meta-valor" id="meta-btn-val-1"></div></div>
+      <div class="meta-btn" onclick="setMeta(2)" id="meta-btn-2"><div class="meta-label">Meta 3 (+20%)</div><div class="meta-valor" id="meta-btn-val-2"></div></div>
+      <button class="btn-editar-meta" onclick="abrirMetas()" id="btn-metas" style="display:none">✏️ Editar metas</button>
+    </div>
+
+    <div class="kpis" id="kpis"><div class="loading"><div class="spinner"></div>Buscando dados…</div></div>
+    <p class="scroll-hint">← deslize para ver mais →</p>
+    <div id="tabela-wrap"></div>
+
+    <div class="sec-titulo">🏪 Por loja</div>
+    <div id="lojas-wrap"></div>
+
+    <button class="info-bt" onclick="const c=document.getElementById('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
+    <div id="info-corpo"></div>
+  </div>
+</div>
+
+<!-- Metas e feriados (admin e gerente de todas as lojas) -->
+<div class="modal-bg" id="modal-metas">
+  <div class="modal">
+    <h3>✏️ Metas do Atacado · <span id="mm-mes"></span></h3>
+    <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:10px">Meta 1 de cada vendedor (as Metas 2 e 3 são +10% e +20%). Vendedor sem meta aparece em "Outros vendedores". Deixe em branco para tirar.</div>
+    <div class="modal-grid" id="mm-vend"></div>
+    <div class="modal-section-title">Feriados / dias não úteis <span id="mm-du" style="font-size:11px;font-weight:400;color:var(--fx-tx4,#9aabb8);"></span></div>
+    <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:8px;">Clique em um dia útil (seg–sáb) para marcar como feriado</div>
+    <div id="mm-cal" class="modal-cal"></div>
+    <p id="mm-msg" style="font-size:12px;color:var(--fx-ac,#CC1F1F);min-height:16px"></p>
+    <div class="modal-btns"><button class="btn-cancel" onclick="fecharMetas()">Cancelar</button><button class="btn-ok" onclick="salvarMetas()">Salvar</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPA_URL = "https://dxwkiaxpygibzmwzvcuz.supabase.co";
+// Chave pública (anon): quem protege os números é o banco (só login ativo lê; SQL 30).
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4d2tpYXhweWdpYnptd3p2Y3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMTE3NzcsImV4cCI6MjA5Mjg4Nzc3N30.mVbUlLaRCI5OMf539Ehjt-XpfAY-wjr7_WCzPsgVvp0";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { storageKey: "foxnet-auth", persistSession: true, autoRefreshToken: true } });
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const brl = v => "R$ " + Math.round(Number(v || 0)).toLocaleString("pt-BR");
+const brl2 = v => "R$ " + Number(v || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const num = v => Math.round(Number(v || 0)).toLocaleString("pt-BR");
+const pct = v => Math.round(Number(v || 0)) + "%";
+const dataBR = iso => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+const hojePVH = () => new Date().toLocaleDateString("en-CA", {timeZone: "America/Porto_Velho"});
+const horaPVH = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"}).replace(" ", " ");
+const META_MULT = [1, 1.1, 1.2];
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+const PNEU = '<svg class="pneu-ic" viewBox="0 0 24 24" aria-label="pneu"><circle cx="12" cy="12" r="10.5" fill="#2b2b2b" stroke="#888" stroke-width="1.2"/><circle cx="12" cy="12" r="5.2" fill="#9CA3AF"/><circle cx="12" cy="12" r="2" fill="#4B5563"/><g stroke="#666" stroke-width="1.4"><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></g></svg>';
+const nomeLoja = l => ({"FOX-GM": "Fox GM (Guajará-Mirim)", "C.AUTO PVH": "C. Automotivo PVH", "C.AUTO VLH": "C. Automotivo Vilhena", "JI-PARANA": "Ji-Paraná",
+  "RECAP-PVH": "Recapagem PVH", "RECAP-VLH": "Recapagem Vilhena", "XAPURI": "Xapuri (Rio Branco)"}[l] || (l.charAt(0) + l.slice(1).toLowerCase()));
+let perfil = null, podeMetas = false, mesSel = hojePVH().slice(0, 7), metaIdx = 0, D = null, outrosAbertos = false, ferEdit = null;
+
+// ── LOGIN (o mesmo login das Ligações e do App; qualquer perfil ativo) ──
+async function entrar(sessao) {
+  if (!sessao) { $("tela-login").style.display = ""; return; }
+  const { data: p } = await sb.from("perfis").select("*").eq("id", sessao.user.id).maybeSingle();
+  if (!p || !p.ativo) { await sb.auth.signOut(); $("tela-login").style.display = ""; $("l-erro").style.display = "block"; $("l-erro").textContent = "Seu acesso está desativado ou não existe. Fale com o TI."; return; }
+  perfil = p;
+  const ehAdmin = (p.funcoes || []).includes("admin");
+  podeMetas = ehAdmin || ((p.papel_ligacoes === "gerente" || !!p.dash_ligacoes) && !p.loja);   // igual ao banco (SQL 30)
+  if (ehAdmin && window.FoxTema && FoxTema.admin) try { FoxTema.admin(); } catch (e) {}
+  $("tela-login").style.display = "none"; $("app").style.display = ""; $("bt-sair").style.display = "";
+  $("btn-metas").style.display = podeMetas ? "" : "none";
+  montarMeses(); carregar();
+}
+$("l-entrar").onclick = async () => {
+  $("l-erro").style.display = "none";
+  const cred = {email: $("l-email").value.trim().toLowerCase(), password: $("l-senha").value};
+  const { data, error } = await (window.FoxLogin ? FoxLogin.entrar(sb, cred) : sb.auth.signInWithPassword(cred));
+  if (error) { $("l-erro").style.display = "block"; $("l-erro").textContent = error.mensagem || "E-mail ou senha incorretos."; return; }
+  entrar(data.session);
+};
+$("l-senha").addEventListener("keydown", e => { if (e.key === "Enter") $("l-entrar").click(); });
+sb.auth.getSession().then(({data}) => entrar(data.session));
+
+function montarMeses() {
+  const [a, m] = hojePVH().split("-").map(Number), ops = [];
+  for (let i = 0; i < 12; i++) { const d = new Date(a, m - 1 - i, 1); ops.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`); }
+  $("sel-mes").innerHTML = ops.map(o => `<option value="${o}" ${o === mesSel ? "selected" : ""}>${MESES[Number(o.slice(5)) - 1]} ${o.slice(0, 4)}${o === hojePVH().slice(0, 7) ? " (este mês)" : ""}</option>`).join("");
+}
+function setMeta(i) { metaIdx = i; render(); }
+
+// ── Dias úteis (igual ao Televendas): seg a sáb, menos os feriados marcados em "Editar metas" ──
+function diasUteis(ano, mes, fer) {
+  const total = new Date(ano, mes, 0).getDate(), out = [];
+  for (let d = 1; d <= total; d++) { const w = new Date(ano, mes - 1, d).getDay(); if (w >= 1 && w <= 6 && !fer.has(d)) out.push(d); }
+  return out;
+}
+
+async function carregar() {
+  $("kpis").innerHTML = '<div class="loading"><div class="spinner"></div>Buscando dados…</div>';
+  const mes = mesSel + "-01";
+  const [v, l, m] = await Promise.all([
+    sb.from("atacado_vendedores").select("*").eq("mes", mes),
+    sb.from("atacado_lojas").select("*").eq("mes", mes),
+    sb.from("atacado_metas").select("*").eq("mes", mes),
+  ]);
+  if (v.error || l.error) {
+    const e = (v.error || l.error).message || "";
+    $("kpis").innerHTML = `<div class="erro" style="grid-column:1/-1">${/atacado_|does not exist|schema cache/i.test(e) ? "O Resultado Atacado ainda não está pronto: falta rodar o passo 30 no Supabase. Avise o TI." : "Não consegui carregar: " + esc(e)}</div>`;
+    $("tabela-wrap").innerHTML = ""; $("lojas-wrap").innerHTML = ""; return;
+  }
+  const metas = m.data || [];
+  D = {mes, vend: v.data || [], lojas: l.data || [],
+       metas: Object.fromEntries(metas.filter(x => x.chave.startsWith("v:")).map(x => [x.chave.slice(2), {meta: Number(x.meta), nome: x.nome}])),
+       fer: new Set(metas.filter(x => /^feriado_\d+$/.test(x.chave)).map(x => Number(x.chave.slice(8))))};
+  render();
+}
+
+function render() {
+  const {mes, vend, lojas, metas, fer} = D;
+  const ano = Number(mes.slice(0, 4)), m = Number(mes.slice(5, 7)), hoje = hojePVH();
+  const mesCompleto = mes.slice(0, 7) < hoje.slice(0, 7);
+  const diaHoje = mesCompleto ? new Date(ano, m, 0).getDate() : Number(hoje.slice(8, 10));
+  const du = diasUteis(ano, m, fer), duTotal = du.length, duPassados = du.filter(d => d <= diaHoje).length;
+  const duRestantes = mesCompleto ? 0 : du.filter(d => d >= diaHoje).length;
+  // % desejado do dia (decisão do TI, 25/11/2026): dias úteis JÁ FECHADOS (até ontem) ÷ dias úteis do mês (mês fechado = 100%)
+  const duFechados = mesCompleto ? duTotal : du.filter(d => d < diaHoje).length;
+  const pctDesejado = duTotal ? Math.round(duFechados / duTotal * 100) : 0;
+  const mult = META_MULT[metaIdx];
+  const vMes = vend.filter(x => x.periodo === "mes"), tMes = lojas.find(x => x.periodo === "mes" && x.loja === "TOTAL");
+  const semDados = !tMes;
+  // Últimos 5 dias úteis (até hoje), com os valores do robô (passando o mouse: clientes e itens)
+  const datas5 = du.filter(d => d <= diaHoje).slice(-5).map(d => `${mes.slice(0, 8)}${String(d).padStart(2, "0")}`);
+  const porDia = {};   // cod → dia → linha
+  vend.filter(x => x.periodo === "dia").forEach(x => { (porDia[x.cod] = porDia[x.cod] || {})[x.dia] = x; });
+  const totDia = Object.fromEntries(lojas.filter(x => x.periodo === "dia" && x.loja === "TOTAL").map(x => [x.dia, x]));
+  const atual = [...lojas, ...vend].reduce((a, x) => x.atualizado_em > a ? x.atualizado_em : a, "");
+
+  // Vendedores com meta (os principais) e os outros (sem meta: vendas avulsas e devoluções)
+  const linhaDe = cod => vMes.find(x => x.cod === cod) || {cod, nome: (metas[cod] || {}).nome || cod, venda: 0, clientes: 0, itens: 0, pneus: null, pneus_vendas: null};
+  const comMeta = Object.keys(metas).filter(c => metas[c].meta > 0).map(c => {
+    const x = linhaDe(c), meta = metas[c].meta * mult, pctOp = meta ? x.venda / meta * 100 : 0, falta = Math.max(0, meta - x.venda);
+    return {...x, nome: x.nome || metas[c].nome, metaOp: meta, pctOp, falta, precisa: duRestantes ? falta / duRestantes : 0};
+  }).sort((a, b) => b.pctOp - a.pctOp);
+  const outros = vMes.filter(x => !(metas[x.cod] && metas[x.cod].meta > 0)).sort((a, b) => b.venda - a.venda);
+  const metaSetor = comMeta.reduce((s, x) => s + x.metaOp, 0);
+  const totalMes = tMes ? Number(tMes.venda) : 0;
+  const pctMeta = metaSetor ? totalMes / metaSetor * 100 : 0, faltaMeta = Math.max(0, metaSetor - totalMes);
+  const precisaPorDia = duRestantes ? faltaMeta / duRestantes : 0;
+
+  META_MULT.forEach((mm, i) => { $(`meta-btn-val-${i}`).textContent = brl(comMeta.reduce((s, x) => s + metas[x.cod].meta * mm, 0)); $(`meta-btn-${i}`).classList.toggle("active", i === metaIdx); });
+  const ultDia = [...Object.keys(totDia)].sort().pop();
+  $("page-meta").textContent = semDados ? `${MESES[m - 1]} ${ano} · aguardando a primeira rodada do robô` :
+    `Vendas até ${dataBR(tMes.dia)} · atualizado em ${horaPVH(atual)} · fonte: Movere (rotina 553, tabelas Atacado)`;
+  $("sync-info").textContent = atual ? "Atualizado " + horaPVH(atual) : "";
+
+  $("kpis").innerHTML = `
+    <div class="kpi"><div class="kpi-label">Faturamento do setor</div><div class="kpi-valor">${brl(totalMes)}</div>
+      <div class="kpi-sub">meta ${brl(metaSetor)}</div><div class="progress-bar"><div class="progress-fill ${pctMeta >= pctDesejado ? "verde" : ""}" style="width:${Math.min(100, pctMeta)}%"></div></div></div>
+    <div class="kpi"><div class="kpi-label">% da meta</div><div class="kpi-valor ${Math.round(pctMeta) >= pctDesejado ? "verde" : "vermelho"}">${pct(pctMeta)}</div><div class="kpi-sub">desejado: ${pct(pctDesejado)}</div></div>
+    <div class="kpi"><div class="kpi-label">% desejado do dia</div><div class="kpi-valor">${pct(pctDesejado)}</div><div class="kpi-sub">${duFechados} de ${duTotal} dias úteis fechados</div></div>
+    <div class="kpi"><div class="kpi-label">Falta para a meta</div><div class="kpi-valor vermelho">${brl(faltaMeta)}</div><div class="kpi-sub">${duRestantes} dia${duRestantes !== 1 ? "s" : ""} út${duRestantes !== 1 ? "eis" : "il"} restante${duRestantes !== 1 ? "s" : ""}</div></div>
+    <div class="kpi"><div class="kpi-label">Setor precisa por dia</div><div class="kpi-valor">${brl(precisaPorDia)}</div><div class="kpi-sub">meta diária original ${brl(duTotal ? metaSetor / duTotal : 0)}</div></div>
+    <div class="kpi"><div class="kpi-label">${PNEU} Pneus no mês</div><div class="kpi-valor">${tMes && tMes.pneus != null ? num(tMes.pneus) : "…"}</div><div class="kpi-sub">${tMes && tMes.pneus != null ? `em ${num(tMes.pneus_vendas)} vendas · ${num(tMes.clientes)} clientes` : "aguardando o robô"}</div></div>`;
+
+  const celDia = (x, d) => {
+    if (!x || !Number(x.venda)) return `<td class="dia-col" style="font-size:13px"></td>`;
+    const tip = `${num(x.clientes)} cliente${Number(x.clientes) === 1 ? "" : "s"}\n${num(x.itens)} itens vendidos\n${brl2(x.venda)}`;
+    return `<td class="dia-col dia-tip" style="font-size:13px" data-tip="${esc(tip)}">${brl(x.venda)}</td>`;
+  };
+  const celPneus = x => x.pneus == null ? `<td></td>` : `<td style="font-size:14px;font-weight:700">${num(x.pneus)}<span class="pneus-sub">em ${num(x.pneus_vendas)} vendas</span></td>`;
+  const linhas = comMeta.map(op => {
+    const on = !semDados && Math.round(op.pctOp) >= pctDesejado;
+    const badge = semDados ? "" : on ? "verde" : (Math.round(op.pctOp) >= Math.round(pctDesejado * 0.7) ? "amarelo" : "vermelho");
+    return `<tr class="${semDados ? "" : on ? "row-verde" : "row-vermelho"}">
+      <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">${esc(op.nome.toUpperCase())}</td>
+      <td class="meta-col" style="font-size:15px;font-weight:700">${brl(op.metaOp)}</td>
+      ${datas5.map(d => celDia((porDia[op.cod] || {})[d], d)).join("")}
+      <td style="font-size:15px;font-weight:700;color:var(--fx-tx,#1a2332)">${brl(op.venda)}</td>
+      ${celPneus(op)}
+      <td style="font-size:13px;font-weight:600;color:var(--fx-tx,#1a2332)">${mesCompleto ? "" : brl(op.precisa)}</td>
+      <td><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td></tr>`;
+  }).join("");
+  const somaOutros = outros.reduce((s, x) => s + Number(x.venda), 0);
+  const linhaOutros = outros.length ? `<tr class="outros" onclick="outrosAbertos=!outrosAbertos;render()" title="Clique para ver">
+      <td style="font-size:13px">${outrosAbertos ? "▾" : "▸"} Outros vendedores (${outros.length}, sem meta)</td><td></td>
+      ${datas5.map(d => { const s = outros.reduce((a, x) => a + Number(((porDia[x.cod] || {})[d] || {}).venda || 0), 0); return `<td class="dia-col">${s ? brl(s) : ""}</td>`; }).join("")}
+      <td style="font-weight:700">${brl(somaOutros)}</td><td></td><td></td><td></td></tr>`
+    + (outrosAbertos ? outros.map(x => `<tr class="outro"><td style="padding-left:28px">${esc(x.nome)}</td><td></td>${datas5.map(d => celDia((porDia[x.cod] || {})[d], d)).join("")}
+      <td>${brl(x.venda)}</td>${celPneus(x)}<td></td><td></td></tr>`).join("") : "") : "";
+  const onT = Math.round(pctMeta) >= pctDesejado;
+  $("tabela-wrap").innerHTML = semDados ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13px;color:var(--fx-avtx,#92400e)">⏳ <strong>${MESES[m - 1]} ${ano}</strong> · Aguardando dados do mês. As vendas aparecem aqui depois da primeira rodada do robô (de hora em hora, seg a sáb).</div>` : `
+  <div class="table-wrap" style="margin-top:16px;"><table>
+    <thead><tr>
+      <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Vendedor</th>
+      <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Meta</th>
+      <th colspan="${datas5.length}" class="th-dias">Últimos ${datas5.length} dias úteis</th>
+      <th rowspan="2" style="border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15)">Faturamento<br>do mês</th>
+      <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">${PNEU} Pneus<br>no mês</th>
+      <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Precisa por dia<br>(${duRestantes} restantes)</th>
+      <th rowspan="2">% atingido</th></tr>
+      <tr>${datas5.map(d => `<th class="th-dias">${dataBR(d)}</th>`).join("")}</tr></thead>
+    <tbody>${linhas}${linhaOutros}
+      <tr class="total-row ${onT ? "row-verde" : "row-vermelho"}">
+        <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">TOTAL SETOR</td>
+        <td class="meta-col">${brl(metaSetor)}</td>
+        ${datas5.map(d => celDia(totDia[d], d)).join("")}
+        <td>${brl(totalMes)}</td>${celPneus(tMes)}<td>${mesCompleto ? "" : brl(precisaPorDia)}</td>
+        <td><span class="pct-badge ${onT ? "verde" : "vermelho"}">${pct(pctMeta)}</span></td></tr>
+    </tbody></table>
+    <div class="legenda"><div class="leg-item"><span class="leg-dot" style="background:#16a34a"></span> No ritmo (% atingido ≥ % desejado do dia)</div>
+      <div class="leg-item"><span class="leg-dot" style="background:var(--fx-ac,#CC1F1F)"></span> Abaixo do ritmo</div>
+      <span style="margin-left:auto">Passe o mouse no valor do dia para ver clientes e itens · ordenado pelo maior % atingido</span></div></div>`;
+
+  // Por loja
+  const lMes = lojas.filter(x => x.periodo === "mes" && x.loja !== "TOTAL").sort((a, b) => b.venda - a.venda);
+  const lHoje = Object.fromEntries(lojas.filter(x => x.periodo === "dia" && x.dia === (mesCompleto ? "" : hoje)).map(x => [x.loja, x]));
+  $("lojas-wrap").innerHTML = semDados ? "" : `<div class="table-wrap"><table>
+    <thead><tr><th>Loja</th><th>Hoje</th><th>Faturamento<br>do mês</th><th>% do setor</th><th>Clientes</th><th>Itens</th><th>${PNEU} Pneus</th><th>Ticket médio</th></tr></thead>
+    <tbody>${lMes.map(x => `<tr><td style="font-size:14px;font-weight:800">${esc(nomeLoja(x.loja))}</td>
+      ${lHoje[x.loja] && Number(lHoje[x.loja].venda) ? `<td class="dia-tip" data-tip="${esc(num(lHoje[x.loja].clientes) + " clientes\n" + num(lHoje[x.loja].itens) + " itens vendidos")}">${brl(lHoje[x.loja].venda)}</td>` : "<td></td>"}
+      <td style="font-weight:700">${brl(x.venda)}</td><td>${totalMes ? pct(x.venda / totalMes * 100) : ""}</td><td>${num(x.clientes)}</td><td>${num(x.itens)}</td>
+      ${x.pneus == null ? "<td></td>" : `<td>${num(x.pneus)}<span class="pneus-sub">em ${num(x.pneus_vendas)} vendas</span></td>`}
+      <td>${x.clientes ? brl(x.venda / x.clientes) : ""}</td></tr>`).join("")}
+      <tr class="total-row"><td style="font-size:14px;font-weight:800">TOTAL</td><td>${lHoje.TOTAL ? brl(lHoje.TOTAL.venda) : ""}</td><td>${brl(totalMes)}</td><td>100%</td>
+      <td>${num(tMes.clientes)}</td><td>${num(tMes.itens)}</td>${tMes.pneus == null ? "<td></td>" : `<td>${num(tMes.pneus)}</td>`}<td>${tMes.clientes ? brl(totalMes / tMes.clientes) : ""}</td></tr>
+    </tbody></table></div>`;
+
+  $("info-corpo").innerHTML = `
+    · Atualizado ${atual ? "em " + horaPVH(atual) : ""}: rotina 553 do Movere, de hora em hora (seg a sáb, 7h45 às 17h45, e às 19h20).<br>
+    · Filtros da 553: Tabela de Preço <b>2 ATACADO</b> e <b>5 ATACADO PREMIUM</b>, todas as lojas e famílias, somente base de venda, frete compõe os valores totais.<br>
+    · Faturamento = venda líquida (vendas menos devoluções). Clientes = vendas realizadas. Ticket médio = faturamento ÷ clientes.<br>
+    · ${PNEU} Pneus = pneus vendidos no mês (famílias de pneu de carro, caminhonete, caminhão e agrícola) e em quantas vendas.<br>
+    · Verde: no ritmo (% atingido ≥ % desejado do dia). Vermelho: abaixo. Hoje o desejado é ${pct(pctDesejado)} (${duFechados} de ${duTotal} dias úteis já fechados, até ontem; domingos e feriados não contam; no fim do mês chega a 100%).<br>
+    · Metas 2 e 3 = Meta 1 + 10% e + 20%. "Outros vendedores" = quem vendeu no Atacado sem meta (vendas avulsas e devoluções).`;
+}
+
+// ── Editar metas e feriados (admin e gerente de todas as lojas) ──
+function abrirMetas() {
+  const {metas, vend} = D, nomes = {};
+  vend.filter(x => x.periodo === "mes").forEach(x => nomes[x.cod] = x.nome);
+  Object.entries(metas).forEach(([c, x]) => nomes[c] = nomes[c] || x.nome || c);
+  const cods = Object.keys(nomes).sort((a, b) => ((metas[b] || {}).meta || 0) - ((metas[a] || {}).meta || 0) || nomes[a].localeCompare(nomes[b]));
+  $("mm-mes").textContent = MESES[Number(D.mes.slice(5, 7)) - 1] + " " + D.mes.slice(0, 4);
+  $("mm-vend").innerHTML = cods.map(c => `<div class="modal-row"><label>${esc(nomes[c])}<small>cód. ${esc(c)}</small></label>
+    <input type="number" min="0" step="10000" data-cod="${esc(c)}" data-nome="${esc(nomes[c])}" value="${metas[c] && metas[c].meta ? metas[c].meta : ""}" placeholder="sem meta"></div>`).join("");
+  ferEdit = new Set(D.fer); desenharCal(); $("mm-msg").textContent = ""; $("modal-metas").classList.add("open");
+}
+function fecharMetas() { $("modal-metas").classList.remove("open"); }
+function desenharCal() {
+  const ano = Number(D.mes.slice(0, 4)), m = Number(D.mes.slice(5, 7)), total = new Date(ano, m, 0).getDate();
+  let h = ["D", "S", "T", "Q", "Q", "S", "S"].map(d => `<div class="modal-cal-dow">${d}</div>`).join("") + '<div class="modal-cal-dia vazio"></div>'.repeat(new Date(ano, m - 1, 1).getDay());
+  for (let d = 1; d <= total; d++) {
+    const dom = new Date(ano, m - 1, d).getDay() === 0;
+    h += dom ? `<div class="modal-cal-dia dom">${d}</div>` : `<div class="modal-cal-dia ${ferEdit.has(d) ? "feriado" : "util"}" onclick="ferEdit.has(${d})?ferEdit.delete(${d}):ferEdit.add(${d});desenharCal()">${d}</div>`;
+  }
+  $("mm-cal").innerHTML = h;
+  $("mm-du").textContent = `· ${diasUteis(ano, m, ferEdit).length} dias úteis`;
+}
+async function salvarMetas() {
+  const quem = perfil.nome || perfil.email, agora = new Date().toISOString(), mes = D.mes;
+  const ins = [...document.querySelectorAll("#mm-vend input")].filter(i => i.value !== "" && Number(i.value) > 0)
+    .map(i => ({mes, chave: "v:" + i.dataset.cod, nome: i.dataset.nome, meta: Number(i.value), alterado_por: quem, alterado_em: agora}));
+  const tirar = [...document.querySelectorAll("#mm-vend input")].filter(i => i.value === "" || Number(i.value) <= 0).map(i => "v:" + i.dataset.cod);
+  let r = ins.length ? await sb.from("atacado_metas").upsert(ins, {onConflict: "mes,chave"}) : {};
+  if (!r.error && tirar.length) r = await sb.from("atacado_metas").delete().eq("mes", mes).in("chave", tirar);
+  if (!r.error) r = await sb.from("atacado_metas").delete().eq("mes", mes).like("chave", "feriado_%");
+  if (!r.error && ferEdit.size) r = await sb.from("atacado_metas").insert([...ferEdit].map(d => ({mes, chave: "feriado_" + String(d).padStart(2, "0"), meta: 0, alterado_por: quem, alterado_em: agora})));
+  if (r.error) { $("mm-msg").textContent = "Não consegui salvar: " + r.error.message; return; }
+  fecharMetas(); carregar();
+}
+</script>
+<script src="/fernanda.js" defer></script>
+</body>
+</html>

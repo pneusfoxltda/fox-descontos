@@ -159,6 +159,7 @@ const ROBOS = [
   {arq: "avisos-ligacoes.yml", nome: "Avisos no celular", robo: "avisos_ligacoes", quando: "seg a sáb 8h, 10h, 14h e 16h30", maxH: 42},
   {arq: "conferir-vendas-movere.yml", nome: "Vendas do Movere nos descontos", robo: "conferir_vendas_movere", quando: "seg a sáb 7h50, 12h50 e 17h50", maxH: 42},
   {arq: "sync-televendas.yml", nome: "Painel do televendas (Movere)", robo: null, quando: "seg a sáb, de hora em hora (6h45 às 17h45)", maxH: 40},
+  {arq: "resultados-atacado.yml", nome: "Resultados · Atacado (rotina 553)", robo: "resultados_atacado", quando: "seg a sáb, de hora em hora (7h45 às 17h45) e 19h20", maxH: 40},
   {arq: "resultados-varejo.yml", nome: "Resultados · Varejo (rotina 553)", robo: "resultados_varejo", quando: "seg a sáb, de hora em hora (7h45 às 17h45) e 19h10", maxH: 40},
 ];
 async function rodadasGithub(arq) {
@@ -185,12 +186,14 @@ async function paginas() {
 async function carregar() {
   $("bt-atualizar").disabled = true; $("atualizado").textContent = "Carregando…";
   contagem = {vd: 0, am: 0, vm: 0};
-  const [resumo, gh, pags, senhaInicial] = await Promise.all([
+  const ult = t => sb.from(t).select("atualizado_em,dia,periodo").order("atualizado_em", {ascending: false}).limit(1);
+  const [resumo, gh, pags, senhaInicial, resV, resA] = await Promise.all([
     sb.rpc("monitor_resumo"),
     Promise.all(ROBOS.map(r => rodadasGithub(r.arq))),
     paginas(),
     // Quem ainda entra com a senha inicial (= o próprio e-mail): o admin lê todos os perfis
     sb.from("perfis").select("nome,apelido,loja,criado_em").eq("trocar_senha", true).eq("ativo", true).order("loja"),
+    ult("varejo_lojas"), ult("atacado_lojas"),   // Resultados: quando os números chegaram no banco
   ]);
   $("bt-atualizar").disabled = false;
   if (resumo.error) {
@@ -239,6 +242,28 @@ async function carregar() {
     corpo += item(d.divididos != null ? "vd" : "cz", "Divisão entre os vendedores", d.divididos != null ? `${d.divididos} cliente(s) divididos nesta rodada` : "");
     corpo += item("vd", "Reconferência (comprou / agendou depois)", `${d.comprou || 0} viraram "venda pelo sistema" · ${d.agendou || 0} agendados no Kommo`);
   }
+  // 1b) Resultados Fox Pneus: robôs da rotina 553 (Varejo e Atacado) e se os números chegaram no banco
+  corpo = "";
+  const horaUtil = () => { const h = horaPVH(), d = diaPVH(); return d !== "Sun" && h >= 9 && h <= 19; };
+  [["resultados_varejo", "🏪 Varejo · Geral", resV, "26", d => `${d.lojas_mes ?? "?"} lojas no mês · ${d.lojas_hoje ?? "?"} hoje · ${d.vendedores_mes ?? "?"} vendedores · ${d.lojas_com_diferenca ? d.lojas_com_diferenca + " loja(s) diferente(s) do Analytics (seta vermelha)" : "batendo com o Analytics"}`],
+   ["resultados_atacado", "📦 Atacado", resA, "30", d => `${d.meses ?? "?"} mês(es) · ${d.dias ?? "?"} dia(s) lidos · ${d.vendedores_mes ?? "?"} vendedores no mês`]].forEach(([robo, nome, res, sql, txt]) => {
+    const rr = ((R.robos || {})[robo] || []).filter(x => !x.teste), u = rr[0];
+    if (!u) { corpo += item("am", `${nome}: ainda sem rodada registrada`, "Aparece depois da primeira rodada do robô (de hora em hora, seg a sáb)."); }
+    else {
+      const d = u.detalhes || {}, erros = (d.erros || []).length;
+      corpo += item(u.ok === false ? "vm" : erros ? "am" : "vd", `${nome}: última rodada ${quando(u.inicio)}`,
+        (u.ok === false ? `<b>deu erro</b>: ${esc(u.mensagem || "")}<br>` : "") + txt(d) + (erros ? `<br>⚠️ ${erros} relatório(s) que não vieram: ${esc((d.erros || []).join(", "))}` : "")
+        + `<br><span class="bol">${rr.slice(0, 8).map(x => `<i style="background:${x.ok === false ? COR.vm : COR.vd}"></i>`).join("")}</span>`);
+    }
+    if (res && res.error) corpo += item("vm", `${nome}: não li as tabelas`, /does not exist|schema cache/i.test(res.error.message || "") ? `Falta rodar o passo ${sql} no Supabase.` : esc(res.error.message));
+    else if (res) {
+      const a = (res.data || [])[0];
+      const h = a ? horas(a.atualizado_em) : Infinity;
+      corpo += item(!a ? "am" : h > 2 && horaUtil() ? "am" : "vd", `${nome}: números na página`, a ? `atualizados ${quando(a.atualizado_em)}${h > 2 && horaUtil() ? " · <b>parados há mais de 2 h</b> em horário de loja" : ""}` : "ainda vazio");
+    }
+  });
+  html.push(secao("🏆 Resultados Fox Pneus (rotina 553)", "Varejo e Atacado: a última rodada de cada robô e se os números chegaram na página.", corpo));
+
   html.push(secao("🔗 Última rodada da lista: passo a passo", rl ? `Rodada de ${quando(rl.inicio)} · ${rl.ok ? "deu certo" : "<b style='color:var(--fx-ertx,#F87171)'>deu erro</b>"}` : "", corpo));
 
   // 3) Lista por dia

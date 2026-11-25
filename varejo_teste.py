@@ -53,7 +53,8 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
         el = page.locator(f"#{P}{campo}")
         await el.click(click_count=3); await el.fill(val); await el.press("Tab")
     log = []
-    res = {"lojas": await marcar_lista(page, "cEstabelecimentos", lojas or list(LOJAS_VAREJO.values()), log.append),
+    lista_lojas = list(LOJAS_VAREJO.values()) if lojas is None else lojas   # [] = todas as lojas (sem filtro), ex.: Atacado
+    res = {"lojas": await marcar_lista(page, "cEstabelecimentos", lista_lojas, log.append) if lista_lojas else {"ok": [], "faltou": []},
            "tabelas": await marcar_lista(page, "cTabelaPreco", tabelas, log.append) if tabelas else {"ok": [], "faltou": []}}
     if familias:
         res["familias"] = await marcar_lista(page, "cFamiliaItens", familias, log.append)

@@ -114,5 +114,7 @@ function encaminhar(url, request) {
   if (caminho === '/monitor') return rewrite(new URL('/monitor.html', request.url));
   // 🏆 Resultados Fox Pneus (Televendas, Varejo · Geral; Atacado e Truck no futuro). Pede o login.
   if (caminho === '/resultados') return rewrite(new URL('/resultados.html', request.url));
+  // 📦 Resultado Atacado (no modelo do painel do Televendas). Pede o login.
+  if (caminho === '/atacado') return rewrite(new URL('/atacado.html', request.url));
   return next();
 }
