@@ -190,7 +190,8 @@
   }
 
   // ══════════════════════ AUDITORIA DE CONVERSA ══════════════════════
-  function auditar(txt) {
+  // txt = o que o VENDEDOR escreveu (ou a conversa inteira, quando não dá para separar); txtCli = o que o cliente escreveu
+  function auditar(txt, txtCli) {
     const n = N(txt), l = [];
     // Pergunta de diagnóstico (do vendedor): "você roda…?", "qual o carro…?" (a pergunta de preço do cliente não conta)
     const iPreco = n.search(/r\$\s*\d|\d+,\d{2}|\bvalor (e|fica|sai)\b/);
@@ -204,10 +205,77 @@
     l.push(/(que dia|qual dia|horario|amanha|hoje|passar aqui|vir aqui|agend)/.test(n) ? "✅ Tentou levar para a visita/agendamento." : "❌ Não conduziu para o fechamento: termine com duas opções de dia/horário.");
     if (/(desconto|abaixo|faco por)/.test(n)) l.push("⚠️ Apareceu desconto: só use depois de mostrar valor (custo por km, garantia, armas da Fox).");
     if (/(separo|separado|reservo|reservado|reservar)/.test(n)) l.push("⚠️ Regra da Fox: nunca prometer pneu separado nem horário reservado.");
-    const achadas = OBJ.filter(o => o.re.test(n));
+    const achadas = OBJ.filter(o => o.re.test(txtCli != null ? N(txtCli) : n));
     let r = "🔎 Auditoria da conversa (automática, por palavras: confira com o seu olhar):\n\n" + l.join("\n");
     if (achadas.length) r += "\n\n💬 Objeções que apareceram e a resposta modelo Fox:\n" + achadas.slice(0, 2).map(o => `\n• ${o.nome}:\n"${o.modelo[0]}"`).join("\n");
     return r;
+  }
+
+  // ══════════════════════ CONVERSA LIDA DO PRINT (ou colada) ══════════════════════
+  // msgs = [{quem: "cliente" | "vendedor" | "?", txt}] na ordem da conversa. Entende quem disse o quê,
+  // onde a conversa parou e dá a PRÓXIMA MENSAGEM pronta para mandar + ideias para melhorar.
+  const SIM = /\b(quero|pode ser|fechado|fechou|combinado|vou (passar|ai|la)|passo (ai|la|amanha|hoje)|bora|beleza|blz|ok|pode (marcar|agendar)|tenho interesse)\b/;
+  const PERGUNTA_PRECO = /(quanto|valor|preco|r\$|parcel|a vista|pix|cartao|desconto|fica quanto|sai quanto)/;
+  function proximaMensagem(msgs) {
+    const ult = msgs[msgs.length - 1] || {quem: "?", txt: ""};
+    const cli = msgs.filter(m => m.quem === "cliente");
+    const ultCli = cli.length ? N(cli[cli.length - 1].txt) : "";
+    const recente = N(cli.slice(-3).map(m => m.txt).join("\n"));
+    const oUlt = OBJ.find(x => x.re.test(ultCli));
+    const o = oUlt || (SIM.test(ultCli) || PERGUNTA_PRECO.test(ultCli) ? null : OBJ.find(x => x.re.test(recente)));
+    if (ult.quem === "vendedor" && cli.length) {
+      const objAntes = o ? `\n\nA última objeção dele foi "${o.nome}". Se ele responder, use:\n"${o.modelo[0]}"` : "";
+      return "📍 A conversa parou em VOCÊ: o cliente não respondeu a sua última mensagem.\n\n📩 Mande agora (curta, para ele responder):\n\"[Nome], olha só… Tenho uma condição especial aqui sobre o seu orçamento. Quer ouvir?\"\n\nDepois do \"sim\": \"Para quem vier na loja em até 48 horas, a Fox Pneus libera o parcelamento em até 8x com desconto + montagem gratuita e checklist preventivo! Te explico melhor ou já combinamos o dia da sua visita?\"\n\n📞 Se não responder até amanhã, ligue (diga \"roteiro de ligação\")." + objAntes;
+    }
+    if (o) return `📍 A conversa parou no cliente, com a objeção "${o.nome}".\n\n📩 Responda assim (adapte com o nome e o pneu):\n"${o.modelo[0]}"\n\nOutra opção:\n"${o.modelo[1]}"`;
+    if (SIM.test(ultCli) && PERGUNTA_PRECO.test(ultCli)) return "📍 O cliente está quase fechando e perguntou a condição. Responda e já feche o dia:\n\n📩 Mande:\n\"Fica em 4x de R$ [valor] sem juros, [Nome], com a montagem gratuita e o checklist preventivo completo do carro. Fica melhor você passar hoje à tarde ou amanhã logo cedo?\"\n\n(Não prometa pneu separado nem horário reservado: combine o dia da visita.)";
+    if (SIM.test(ultCli)) return "📍 O cliente deu sinal de que quer comprar. PARE de argumentar e feche!\n\n📩 Mande:\n\"Perfeito! Fica melhor você passar hoje à tarde ou amanhã logo cedo?\"\n\n(Não prometa pneu separado nem horário reservado: combine o dia da visita.)";
+    if (PERGUNTA_PRECO.test(ultCli)) return "📍 O cliente perguntou de preço/condição. Responda com valor + vantagens + dia:\n\n📩 Mande:\n\"[Nome], esse pneu sai por R$ [valor] cada, em até 4x sem juros. E comprando com a gente a montagem é gratuita e você ainda ganha o checklist preventivo completo do carro. Fica melhor passar hoje à tarde ou amanhã cedo?\"";
+    if (/\?/.test(cli.length ? cli[cli.length - 1].txt : "")) return "📍 A conversa parou numa pergunta do cliente: responda de forma curta e termine puxando para o dia da visita:\n\n📩 \"…e se quiser, já combinamos: fica melhor hoje à tarde ou amanhã cedo?\"";
+    return "📍 Próximo passo: leve para o dia da visita.\n\n📩 Mande:\n\"[Nome], consegui uma condição boa para o seu orçamento, com montagem gratuita e checklist preventivo completo. Fica melhor passar hoje à tarde ou amanhã cedo?\"";
+  }
+  function ideias(txtVend) {
+    const n = N(txtVend), l = [];
+    if (!MONTAGEM.test(n)) l.push("\"Comprando os pneus com a gente, a montagem é por nossa conta.\"");
+    if (!/check ?-?list/.test(n)) l.push("\"E ainda faço um checklist preventivo completo do seu carro, sem custo.\"");
+    if (!/(alinhament|balanceament)/.test(n)) l.push("\"Já aproveita e faz o alinhamento e o balanceamento, para o pneu novo durar mais.\"");
+    if (new Set(n.match(TECNICO) || []).size < 2) l.push("\"Pneu com o sulco baixo perde aderência na chuva e aumenta o risco de aquaplanagem: é segurança da família.\"");
+    if (!/\?/.test(txtVend)) l.push("\"Você roda mais na cidade ou pega estrada? É o jogo completo ou só o par?\"");
+    return l.slice(0, 4);
+  }
+  function auditarConversa(msgs) {
+    msgs = (msgs || []).filter(m => m && String(m.txt || "").trim());
+    const separou = msgs.some(m => m.quem === "cliente") && msgs.some(m => m.quem === "vendedor");
+    const txtVend = (separou ? msgs.filter(m => m.quem !== "cliente") : msgs).map(m => m.txt).join("\n");
+    const txtCli = separou ? msgs.filter(m => m.quem === "cliente").map(m => m.txt).join("\n") : null;
+    const leitura = separou ? "👀 Li assim (confira):\n" + msgs.slice(-6).map(m => (m.quem === "cliente" ? "👤 Cliente: " : "🧑‍💼 Você: ") + (m.txt.length > 90 ? m.txt.slice(0, 88) + "…" : m.txt)).join("\n") + "\n\n" : "";
+    let r = leitura + proximaMensagem(separou ? msgs : [{quem: "cliente", txt: msgs.map(m => m.txt).join("\n")}]);
+    const id = ideias(txtVend);
+    if (id.length) r += "\n\n💡 Ideias para usar nessa conversa:\n· " + id.join("\n· ");
+    r += "\n\n" + auditar(txtVend, txtCli);
+    return r;
+  }
+  // Texto colado: separa "Cliente: …" / "Eu: …" ou o formato exportado do WhatsApp ("25/11/2026 10:32 - Nome: texto")
+  function msgsDoTexto(txt) {
+    const linhas = String(txt || "").split(/\n+/).map(l => l.replace(/^\[?\d{1,2}\/\d{1,2}(\/\d{2,4})?,? \d{1,2}:\d{2}(:\d{2})?\]?\s*-?\s*/, "").trim()).filter(Boolean);
+    const out = [];
+    for (const l of linhas) {
+      const m = l.match(/^([^:]{1,30}):\s*(.+)$/);
+      let quem = "?", t = l;
+      if (m) { const k = N(m[1]); t = m[2];
+        quem = /^(cliente|client)/.test(k) ? "cliente" : /^(eu|vendedor|vendedora|atendente|voce|fox)/.test(k) ? "vendedor" : "nome:" + k; }
+      const ant = out[out.length - 1];
+      if (ant && (quem === "?" || quem === ant.quem)) ant.txt += "\n" + t; else out.push({quem, txt: t});
+    }
+    // Exportado do WhatsApp: os dois nomes viram cliente/vendedor (o vendedor é quem fala de montagem, valor, loja…)
+    const nomes = [...new Set(out.filter(m => m.quem.startsWith("nome:")).map(m => m.quem))];
+    if (nomes.length === 2) {
+      const pts = nomes.map(k => N(out.filter(m => m.quem === k).map(m => m.txt).join(" ")).match(/(fox|montagem|r\$|parcel|garantia|checklist|loja|orcamento|aqui e)/g)?.length || 0);
+      const vend = pts[0] >= pts[1] ? nomes[0] : nomes[1];
+      out.forEach(m => { if (m.quem.startsWith("nome:")) m.quem = m.quem === vend ? "vendedor" : "cliente"; });
+    }
+    out.forEach(m => { if (m.quem.startsWith("nome:")) m.quem = "?"; });
+    return out;
   }
 
   // ══════════════════════ CONHECIMENTO (filosofia, protocolo, diferenciais) ══════════════════════
@@ -291,11 +359,11 @@
     if (modo && /^(sair( do treino)?|parar|chega|encerrar|fim do treino)$/.test(n)) { modo = null; cenario = null; bot("Treino encerrado. Mandou bem! 💪 Quando quiser de novo, é só dizer \"treinar vendas\"."); return true; }
     if (/(treinar|treino|treinamento|simula|roleplay|role play|me treina)/.test(n) && !/(cadastr|desconto)/.test(n)) {
       if (/simula|roleplay|role play|cliente dificil/.test(n)) { lancarCenario(); return true; }
-      if (/audit|analis|avali/.test(n)) { modo = "auditoria"; bot("🔎 Cole aqui a conversa de WhatsApp (pode ser o texto exportado ou copiado) que eu analiso."); chips(["Sair do treino"]); return true; }
+      if (/audit|analis|avali/.test(n)) { modo = "auditoria"; bot("🔎 Mande o PRINT da conversa de WhatsApp (📎 ou Ctrl+V) ou cole o texto. Eu leio, digo onde a conversa parou e te dou a próxima mensagem pronta."); chips(["Sair do treino"]); return true; }
       menu(); return true;
     }
     if (/^🎭|^simulacao/.test(n) || /^(proximo cenario|pular cenario|outro cenario|mais um)$/.test(n) || (/^(sim|bora|vamos|pronto|estou pronto)!?$/.test(n) && modo === "roleplay")) { lancarCenario(); return true; }
-    if (/^🔎|^auditar/.test(n)) { modo = "auditoria"; bot("🔎 Cole aqui a conversa de WhatsApp que travou ou que foi perdida. Eu mostro o que faltou."); chips(["Sair do treino"]); return true; }
+    if (/^🔎|^auditar/.test(n)) { modo = "auditoria"; bot("🔎 Mande o PRINT da conversa de WhatsApp (📎 ou Ctrl+V) ou cole o texto. Eu leio, digo onde a conversa parou e te dou a próxima mensagem pronta."); chips(["Sair do treino"]); return true; }
     if (/^⚡|^resposta rapida|^outra objecao$/.test(n)) {
       modo = "rapida"; bot("⚡ Me conte a objeção que o cliente fez. Ex.: \"achou mais barato na internet\", \"não quer alinhar\", \"vai falar com a esposa\"."); chips(["Sair do treino"]); return true;
     }
@@ -310,7 +378,7 @@
     }
     // Modo auditoria (ou conversa longa colada pedindo análise)
     if ((modo === "auditoria" && q.length >= 60) || (q.length >= 80 && /(analis|audit|avali|onde errei|o que (eu )?errei)/.test(n) && /(conversa|atendimento|cliente:|vendedor:|\n)/.test(n))) {
-      bot(auditar(q)); modo = null; chips(["🎭 Simulação (roleplay)", "⚡ Resposta rápida a objeção", "Sair do treino"]); return true;
+      bot(auditarConversa(msgsDoTexto(q))); modo = null; chips(["🎭 Simulação (roleplay)", "⚡ Resposta rápida a objeção", "Sair do treino"]); return true;
     }
     // Resposta rápida: o vendedor conta a objeção
     const pediuAjuda = modo === "rapida" || /(cliente (disse|falou|fala|diz|achou|acha|quer|vai|esta|ta)|objecao|como (eu )?respondo|o que (eu )?respondo|o que (eu )?falo|como contorn|como rebat|me ajuda (a|com) (responder|fechar))/.test(n);
@@ -329,5 +397,5 @@
     return false;
   }
 
-  window.feVendas = {resposta, avaliar, auditar, novoCenario, OBJ};
+  window.feVendas = {resposta, avaliar, auditar, auditarConversa, msgsDoTexto, novoCenario, OBJ, modo: () => modo, sairAuditoria: () => { if (modo === "auditoria") modo = null; }};
 })();
