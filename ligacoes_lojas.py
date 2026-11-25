@@ -486,10 +486,13 @@ def main() -> int:
         prontos = sorted(set(prontos) | {d for d in revisar if d in uris_vendas})
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
+        # O token do Analytics vence em poucos minutos (a API do Movere e as vendas demoram): entra de novo antes das cotações
+        tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"]) if dias_cot else tt
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
         # Cotações dos vendedores das lojas (SQL 31): o mesmo relatório sem o filtro do televendas
         cots_loja = []
         if tem_origem and dias_cot and max(dias_cot) >= INICIO_LOJA:
+            tt = cv.login_analytics(cli, segredos["ANALYTICS_LOGIN"], segredos["ANALYTICS_SENHA"])
             cots_loja = separar_loja(cotacoes(cv.relatorio(cli, tt, REL_COT, None,
                                                            filtro_dias([uris_vendas[d] for d in dias_cot]))), todas_cots)
             print(f"🏪 Cotações dos vendedores das lojas: {len(cots_loja)}")
