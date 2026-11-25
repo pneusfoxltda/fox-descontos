@@ -84,8 +84,9 @@ def test_dias_para_importar():
     assert ll.dias_para_importar(date(2026, 10, 1), hoje)[0] == date(2026, 11, 17)              # nunca antes de 17/11
 
 
-def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultima="2026-11-19", ja_na_lista=()):
-    reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": [], "divisao": 0}
+def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultima="2026-11-19", ja_na_lista=(),
+                    sql31=False, cot_loja="", perfis=()):
+    reg = {"post_ligacoes": [], "patch": [], "hist": [], "rodadas": [], "logs": [], "divisao": 0, "nomes": [], "cot_execs": 0}
 
     def responder(req: httpx.Request):
         u = unquote(str(req.url))
@@ -95,6 +96,12 @@ def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultim
             if "/rpc/distribuir_ligacoes" in u:
                 reg["divisao"] += 1
                 return httpx.Response(404, json={}) if sem_sql15 else httpx.Response(200, json=2)
+            if "/ligacoes_nomes_movere" in u:
+                reg["nomes"] += json.loads(req.content); return httpx.Response(201)
+            if "select=origem&limit=1" in u:
+                return httpx.Response(200, json=[]) if sql31 else httpx.Response(400, json={})
+            if "/perfis?" in u:
+                return httpx.Response(200, json=list(perfis))
             if "/ligacoes_historico" in u:
                 reg["hist"].append(json.loads(req.content)); return httpx.Response(201)
             if req.method == "PATCH":
@@ -136,7 +143,8 @@ def _rodar_com_rede(dias_no_analytics, dry=False, hora=9, sem_sql15=False, ultim
             rel = json.loads(req.content)["report_req"]["definitionContent"]["content"]["reportDefinition"]["content"]["rel"]
             return httpx.Response(201, json={"uri": f"/res/{rel}"})
         if u.endswith("/res/cot"):
-            return httpx.Response(200, content=COT.encode())
+            reg["cot_execs"] += 1   # 1ª = com o filtro do televendas · 2ª = sem filtro (televendas + lojas)
+            return httpx.Response(200, content=(COT + (cot_loja if reg["cot_execs"] > 1 else "")).encode())
         if u.endswith("/res/ven"):
             return httpx.Response(200, content=VENDAS.encode())
         raise AssertionError("chamada inesperada: " + req.method + " " + u)
@@ -176,6 +184,64 @@ def test_fluxo_completo():
     assert len(st) == 1 and st[0]["status"] == "venda_televendas" and st[0]["comprou_em"] == "2026-11-20"
     assert reg["hist"][0]["quem"] == ll.ROBO_MOVERE
     assert reg["rodadas"][-1]["ok"] is True and reg["rodadas"][-1]["robo"] == "ligacoes_lojas"
+
+
+# Cotações feitas pelos vendedores nas lojas (operador "Não informado"; quem cotou vem em "Vendedor")
+COT_LOJA = """6001,Cliente Loja A,69 97777-0001,20/11/2026,MATRIZ,Não informado,EDILEIA BRITO DA SILVA,175/70R14 PIRELLI,"400,00"
+6002,Cliente Loja B,69 97777-0002,20/11/2026,MATRIZ,Não informado,WAGNER DE OLIVEIRA RAIOL,Pneu,"300,00"
+6003,Cliente Loja C,69 97777-0003,20/11/2026,MATRIZ,Não informado,JOAO NOVATO,Pneu,"200,00"
+6004,Cliente Loja D,69 97777-0004,20/11/2026,MANAUS,Não informado,FULANO DE MANAUS,Pneu,"900,00"
+6005,Mesmo Tel Televendas,69 98888-0006,20/11/2026,C.AUTO VLH,Não informado,PEDRO LOJA,Pneu,"100,00"
+6006,Cliente Ferias,69 97777-0006,20/11/2026,MATRIZ,Não informado,FELIPE FERREIRA SEIXAS,Pneu,"150,00"
+"""
+PERFIS = [
+    {"id": "u-edi", "nome": "Edileia Brito", "apelido": "Edileia", "loja": "MATRIZ", "papel_ligacoes": "vendedor", "ativo": True, "ferias": False},
+    {"id": "u-wag", "nome": "Wagner Raiol", "apelido": "Wagner", "loja": "MATRIZ", "papel_ligacoes": "gerente", "ativo": True, "ferias": False},
+    {"id": "u-fel", "nome": "Felipe Seixas", "apelido": "Felipe", "loja": "MATRIZ", "papel_ligacoes": "vendedor", "ativo": True, "ferias": True},
+    {"id": "u-ped", "nome": "Joaquim", "apelido": "Pedro", "loja": "C.AUTO VLH", "papel_ligacoes": "vendedor", "ativo": True, "ferias": False,
+     "nome_movere": "PEDRO LOJA"},
+]
+
+
+def test_casar_vendedor():
+    assert ll.casar_vendedor("EDILEIA BRITO DA SILVA", "MATRIZ", PERFIS)["id"] == "u-edi"
+    assert ll.casar_vendedor("WAGNER DE OLIVEIRA RAIOL", "MATRIZ", PERFIS)["id"] == "u-wag"
+    assert ll.casar_vendedor("EDILEIA BRITO DA SILVA", "CACOAL", PERFIS) is None          # outra loja
+    assert ll.casar_vendedor("JOAO NOVATO", "MATRIZ", PERFIS) is None
+    assert ll.casar_vendedor("PEDRO LOJA", "C.AUTO VLH", PERFIS)["id"] == "u-ped"        # pelo "Nome no Movere"
+    dois = PERFIS + [{"id": "u-edi2", "nome": "Edileia", "loja": "MATRIZ"}]
+    assert ll.casar_vendedor("EDILEIA SANTOS", "MATRIZ", dois)["id"] == "u-edi2"
+    assert ll.casar_vendedor("EDILEIA BRITO DA SILVA", "MATRIZ", dois) is None            # duas batem: não adivinha
+    assert ll.casar_vendedor("ÉDILÉIA BRITO", "MATRIZ", PERFIS)["id"] == "u-edi"          # acento não importa
+
+
+def test_cotacoes_da_loja_vao_para_quem_cotou():
+    antes = ll.INICIO_LOJA
+    ll.INICIO_LOJA = date(2026, 11, 20)
+    try:
+        codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, sql31=True, cot_loja=COT_LOJA, perfis=PERFIS)
+    finally:
+        ll.INICIO_LOJA = antes
+    assert codigo == 0, reg["rodadas"]
+    n = {x["cotacao"]: x for x in reg["post_ligacoes"]}
+    assert set(n) == {"5001", "6001", "6002", "6003", "6005", "6006"}, sorted(n)   # MANAUS fora; 5006 = mesmo telefone da 6005 (fica a da loja)
+    assert n["6001"]["origem"] == "loja" and n["6001"]["responsavel_id"] == "u-edi" and n["6001"]["responsavel_nome"] == "Edileia"
+    assert n["6001"]["operador"] == "EDILEIA BRITO DA SILVA" and n["6001"]["medida"] == "175/70R14"
+    assert n["6002"]["responsavel_id"] is None      # gerente → divisão
+    assert n["6003"]["responsavel_id"] is None      # não cadastrado → divisão
+    assert n["6006"]["responsavel_id"] is None      # de férias → divisão
+    assert n["6005"]["responsavel_id"] == "u-ped"   # pelo Nome no Movere
+    assert n["5001"]["origem"] == "televendas" and n["5001"]["responsavel_id"] is None
+    assert len({tuple(sorted(x)) for x in reg["post_ligacoes"]}) == 1      # todas as linhas com as mesmas chaves
+    nomes = {x["nome"]: x for x in reg["nomes"]}
+    assert nomes["JOAO NOVATO"]["perfil_id"] is None and nomes["WAGNER DE OLIVEIRA RAIOL"]["perfil_id"] == "u-wag"
+    assert "FULANO DE MANAUS" not in nomes
+    assert ll.DETALHES["novas_loja"] == 5 and ll.DETALHES["novas_loja_quem_cotou"] == 2
+
+
+def test_sem_sql31_nao_traz_cotacoes_da_loja():
+    codigo, reg = _rodar_com_rede({"20/11/2026", "21/11/2026"}, cot_loja=COT_LOJA, perfis=PERFIS)
+    assert codigo == 0 and reg["cot_execs"] == 1 and all("origem" not in x for x in reg["post_ligacoes"])
 
 
 def test_analytics_sem_o_dia_nao_importa_mas_reconfere():

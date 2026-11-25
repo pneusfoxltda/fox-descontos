@@ -123,6 +123,13 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
       <div class="log" id="log-vend"></div>
     </div>
 
+    <div class="sec" id="sec-movere" style="display:none;border-color:var(--fx-avtx,#F59E0B)">
+      <h3>⚠️ Vendedores do Movere que o sistema não reconheceu</h3>
+      <div class="sub">Estes nomes fizeram cotações nas lojas, mas o robô não sabe quem são nas Ligações. Enquanto isso, os clientes deles vão para a <b>divisão automática</b> da loja.
+        Escolha a pessoa em "É quem?" e as próximas cotações vão direto para ela. Se a pessoa ainda não tem acesso, cadastre acima e depois volte aqui.</div>
+      <div class="scroll"><table class="tbl" id="t-movere"></table></div>
+    </div>
+
     <div class="sec">
       <h3>Acessos das Ligações</h3>
       <div class="sub">Mude aqui a função, o primeiro nome, a loja, as férias e o acesso. Ao colocar um vendedor de <b>férias</b>, desativar ou mudar de loja/função, os clientes em aberto dele passam para os outros vendedores da loja (fica registrado no histórico).</div>
@@ -202,7 +209,7 @@ function lerFuncao(txt) {
   return null;
 }
 
-let sql15 = true, sql24 = false, avisosPorPerfil = {};
+let sql15 = true, sql24 = false, sql31 = false, nomesMovere = [], avisosPorPerfil = {};
 async function carregar() {
   let { data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias,ferias_ate").order("nome");
   if (error && /ferias_ate/.test(error.message)) ({ data, error } = await sb.from("perfis").select("id,nome,email,funcoes,ativo,loja,dash_ligacoes,trocar_senha,papel_ligacoes,apelido,ferias").order("nome"));   // passo 16 ainda não rodou
@@ -217,6 +224,12 @@ async function carregar() {
   const art = await sb.from("perfis").select("id,artigo");
   sql24 = !art.error;
   if (sql24) { const m = new Map((art.data || []).map(x => [x.id, x.artigo])); perfis.forEach(p => p.artigo = m.get(p.id) || null); }
+  // "Nome no Movere" (SQL 31): para o robô saber quem fez cada cotação da loja
+  const nm = await sb.from("perfis").select("id,nome_movere");
+  sql31 = !nm.error;
+  if (sql31) { const m = new Map((nm.data || []).map(x => [x.id, x.nome_movere])); perfis.forEach(p => p.nome_movere = m.get(p.id) || null); }
+  const nv = sql31 ? await sb.from("ligacoes_nomes_movere").select("loja,nome,cotacoes,ultima,perfil_id").order("loja").order("nome") : {data: []};
+  nomesMovere = nv.error ? [] : (nv.data || []);
   // Quem ligou os avisos da Fernanda (SQL 17): quantos aparelhos cada pessoa tem
   avisosPorPerfil = {};
   const av = await sb.from("push_inscricoes").select("perfil_id,ultimo_envio");
@@ -382,12 +395,38 @@ async function mudarFerias(p, ferias) {
   } catch (e) { toast("Erro: " + e.message, false); renderTabela(); }
 }
 
+// Nome do Movere já ligado a alguém? (pelo robô na última rodada ou escolhido aqui)
+const normNome = t => norm(t).replace(/[^a-z ]/g, " ").split(/\s+/).filter(w => w && !["da", "de", "do", "das", "dos", "e"].includes(w)).join(" ");
+const donoDoNome = n => perfis.find(p => p.nome_movere && normNome(p.nome_movere) === normNome(n.nome)) ||
+                        (n.perfil_id && perfis.find(p => p.id === n.perfil_id));
+function renderMovere() {
+  const sem = nomesMovere.filter(n => !donoDoNome(n));
+  $("sec-movere").style.display = sql31 && sem.length ? "" : "none";
+  if (!sem.length) return;
+  $("t-movere").innerHTML = `<tr><th>Loja</th><th>Nome no Movere</th><th>Cotações</th><th>Última</th><th>É quem?</th></tr>` +
+    sem.map(n => `<tr><td>${esc(n.loja)}</td><td><b>${esc(n.nome)}</b></td><td>${n.cotacoes}</td><td>${n.ultima ? n.ultima.split("-").reverse().join("/") : ""}</td>
+      <td><select class="s-quem" data-nome="${esc(n.nome)}"><option value="">Escolha…</option>${perfis.filter(p => p.loja === n.loja && p.ativo)
+        .map(p => `<option value="${p.id}">${esc(p.nome)}${funcaoDe(p) === "gerente" ? " (gerente)" : ""}</option>`).join("")}</select></td></tr>`).join("");
+  document.querySelectorAll(".s-quem").forEach(s => s.onchange = () => {
+    const p = perfis.find(x => x.id === s.value); if (!p) return;
+    mudar(p, {nome_movere: s.dataset.nome}, `${p.apelido || primeiroNome(p.nome)} = "${s.dataset.nome}" no Movere: as próximas cotações dele(a) vão direto para ele(a)`);
+  });
+}
+// Coluna "Nome no Movere": automático (o robô reconheceu) ou escolhido numa lista com os nomes que vieram da loja
+function celMovere(p) {
+  if (!p.loja) return "";
+  const auto = nomesMovere.find(n => n.perfil_id === p.id && !p.nome_movere);
+  const nomes = [...new Set(nomesMovere.filter(n => n.loja === p.loja).map(n => n.nome).concat(p.nome_movere ? [p.nome_movere] : []))].sort();
+  return `<select class="s-movere" data-id="${p.id}" title="${auto ? "Reconhecido sozinho: " + esc(auto.nome) : ""}"><option value="">${auto ? "✓ " + esc(auto.nome) : "(automático)"}</option>` +
+    nomes.map(n => `<option ${n === p.nome_movere ? "selected" : ""}>${esc(n)}</option>`).join("") + `</select>`;
+}
 function renderTabela() {
+  renderMovere();
   const b = norm($("f-busca").value);
   const lista = perfis.filter(p => p.loja || p.dash_ligacoes || p.papel_ligacoes || (p.funcoes || []).includes("admin"))   // o admin também aparece (para escolher o "Aqui é o/a")
     .filter(p => !b || norm(p.nome + " " + p.email + " " + (p.loja || "") + " " + (p.apelido || "")).includes(b))
     .sort((a, c) => (a.loja || "~").localeCompare(c.loja || "~") || funcaoDe(c).localeCompare(funcaoDe(a)) || (a.nome || "").localeCompare(c.nome || ""));
-  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th>${sql24 ? '<th title="Como se apresenta no WhatsApp: Aqui é o… / Aqui é a…">Aqui é</th>' : ""}<th>E-mail</th><th>Função</th><th>Loja</th><th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +
+  $("t-acessos").innerHTML = `<tr><th>Nome</th><th>Primeiro nome</th>${sql24 ? '<th title="Como se apresenta no WhatsApp: Aqui é o… / Aqui é a…">Aqui é</th>' : ""}<th>E-mail</th><th>Função</th><th>Loja</th>${sql31 ? '<th title="Como o nome aparece nas cotações do Movere (o robô reconhece sozinho; escolha só se ele não reconhecer)">Nome no Movere</th>' : ""}<th>Férias</th><th>Situação</th><th title="Avisos da Fernanda no computador/celular">🔔 Avisos</th><th>Ativo</th></tr>` +
     (lista.length ? lista.map(p => { const f = funcaoDe(p); return `<tr>
       <td><b>${esc(p.nome)}</b>${(p.funcoes || []).length ? ` <span class="tag cz">${esc(p.funcoes.join(", "))}</span>` : ""}</td>
       <td>${sql15 ? `<input class="ap" data-id="${p.id}" value="${esc(p.apelido || primeiroNome(p.nome))}" maxlength="20">` : esc(primeiroNome(p.nome))}</td>
@@ -395,11 +434,12 @@ function renderTabela() {
       <td>${esc(p.email)}</td>
       <td><select data-id="${p.id}" class="s-funcao">${FUNCOES.map(([v, n]) => `<option value="${v}" ${v === f ? "selected" : ""}>${n}</option>`).join("")}</select></td>
       <td>${f === "gerente_todas" ? '<span class="tag cz">todas</span>' : `<select data-id="${p.id}" class="s-loja"><option value="">sem loja</option>${LOJAS.map(l => `<option ${l === p.loja ? "selected" : ""}>${l}</option>`).join("")}</select>`}</td>
+      ${sql31 ? `<td>${celMovere(p)}</td>` : ""}
       <td>${f === "vendedor" && sql15 ? `<label style="cursor:pointer"><input type="checkbox" data-id="${p.id}" class="c-ferias" ${p.ferias ? "checked" : ""}> ${p.ferias ? "🏖️ férias" + (p.ferias_ate ? " · volta " + p.ferias_ate.split("-").reverse().join("/") : "") : "trabalhando"}</label>` : ""}</td>
       <td>${p.trocar_senha ? '<span class="tag am">aguardando 1º acesso</span>' : '<span class="tag vd">senha própria</span>'}</td>
       <td>${avisosPorPerfil[p.id] ? `<span class="tag vd" title="${avisosPorPerfil[p.id].ult ? "último aviso: " + new Date(avisosPorPerfil[p.id].ult).toLocaleString("pt-BR") : "ainda sem aviso enviado"}">ligado · ${avisosPorPerfil[p.id].n} aparelho(s)</span>` : '<span class="tag cz">desligado</span>'}</td>
       <td><input type="checkbox" data-id="${p.id}" class="c-ativo" ${p.ativo ? "checked" : ""}></td>
-    </tr>`; }).join("") : `<tr><td colspan="${sql24 ? 10 : 9}" style="color:var(--fx-tx4,#777);padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
+    </tr>`; }).join("") : `<tr><td colspan="${9 + (sql24 ? 1 : 0) + (sql31 ? 1 : 0)}" style="color:var(--fx-tx4,#777);padding:14px">Ninguém cadastrado nas Ligações ainda.</td></tr>`);
   const pe = id => perfis.find(p => p.id === id);
   document.querySelectorAll(".s-funcao").forEach(s => s.onchange = () => {
     const p = pe(s.dataset.id), f = s.value;
@@ -419,6 +459,10 @@ function renderTabela() {
   document.querySelectorAll(".s-artigo").forEach(s => s.onchange = () => {
     const p = pe(s.dataset.id), v = s.value || null, n = p.apelido || primeiroNome(p.nome);
     mudar(p, {artigo: v}, `WhatsApp: "Aqui é ${v ? v + " " : ""}${n}"`);
+  });
+  document.querySelectorAll(".s-movere").forEach(s => s.onchange = () => {
+    const p = pe(s.dataset.id), v = s.value || null;
+    mudar(p, {nome_movere: v}, v ? `Nome no Movere: ${v}` : "Nome no Movere: o robô reconhece sozinho");
   });
   document.querySelectorAll(".c-ferias").forEach(c => c.onchange = () => mudarFerias(pe(c.dataset.id), c.checked));
   document.querySelectorAll(".c-ativo").forEach(c => c.onchange = () => {

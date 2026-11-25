@@ -312,24 +312,25 @@
 
   // ══════════════════════ ROTEIRO DE LIGAÇÃO (Módulo 2) ══════════════════════
   // Nas Ligações, monta o roteiro com o cliente de maior valor sem contato (nome, medida, dia da cotação,
-  // validade do preço: os clientes da lista são cotações do televendas = 7 dias).
+  // validade do preço pela data da cotação: televendas 7 dias, loja 3 dias).
   const fmtD = iso => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) : "";
   const somaDias = (iso, d) => new Date(new Date(iso + "T12:00:00").getTime() + d * 864e5).toISOString().slice(0, 10);
   function roteiro() {
-    const F = window.FE_LIG; let cli = "[Nome]", med = "[medida]", dia = "[dia X]", eu = "[Seu Nome]", cargo = "executivo(a)", validade = "";
+    const F = window.FE_LIG; let cli = "[Nome]", med = "[medida]", dia = "[dia X]", eu = "[Seu Nome]", cargo = "executivo(a)", validade = "", onde = "com a gente";
     if (F && F.pronto && F.pronto()) {
       const e = F.eu(); if (e.nome) eu = e.nome;
       cargo = e.artigo === "o" ? "executivo" : e.artigo === "a" ? "executiva" : "executivo(a)";
       const l = (F.meus() || []).filter(x => x.status === "pendente").sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0))[0];
       if (l) {
         cli = F.primeiro(F.nomeCli(l)) || cli; med = l.medida || med; dia = "dia " + fmtD(l.data_cotacao);
-        const ate = somaDias(l.data_cotacao, 7), venceu = ate < F.hoje();
-        validade = venceu ? `\n\n⚠️ A cotação de ${cli} é de ${fmtD(l.data_cotacao)}: o preço garantido (7 dias) venceu em ${fmtD(ate)}. Confirme o valor atual com o gerente antes de ligar.`
-                          : `\n\n⏳ Preço garantido até ${fmtD(ate)} (7 dias da cotação do televendas).`;
+        onde = l.origem === "loja" ? "aqui na loja" : "no nosso WhatsApp";
+        const nd = l.origem === "loja" ? 3 : 7, ate = somaDias(l.data_cotacao, nd), venceu = ate < F.hoje();
+        validade = venceu ? `\n\n⚠️ A cotação de ${cli} é de ${fmtD(l.data_cotacao)}: o preço garantido (${nd} dias) venceu em ${fmtD(ate)}. Confirme o valor atual com o gerente antes de ligar.`
+                          : `\n\n⏳ Preço garantido até ${fmtD(ate)} (${nd} dias da cotação ${nd === 3 ? "da loja" : "do televendas"}).`;
       }
     }
     return `📞 Roteiro de ligação (resgate de orçamento)${cli !== "[Nome]" ? ": " + cli + ", o de maior valor sem contato" : ""}\n\n` +
-      `A) Abertura: "Fala, ${cli}! Tudo bem? Aqui é ${eu}, ${cargo} da Fox Pneus. Tá lembrado de mim? Você fez um orçamento do pneu ${med} no nosso WhatsApp no ${dia}, certo?"\n` +
+      `A) Abertura: "Fala, ${cli}! Tudo bem? Aqui é ${eu}, ${cargo} da Fox Pneus. Tá lembrado de mim? Você fez um orçamento do pneu ${med} ${onde} no ${dia}, certo?"\n` +
       `   Se pedir para mandar no WhatsApp: "Eu só preciso de 30 segundos! Tenho uma notícia boa sobre o seu orçamento…" Se insistir: "Mando agora! Para qual dia fica melhor sua vinda na loja, [dia A] ou [dia B]?" (nunca desligue sem tentar um dia)\n\n` +
       `B) Descobrir o que trava: "Quero entender o que preciso fazer para te ajudar a fechar esses pneus aqui com a gente. Você me ajuda? O que está te impedindo de fechar comigo hoje?"\n` +
       `   Dúvida/benefício → montagem gratuita + checklist gratuito + rodízio gratuito. Concorrência → cobrir orçamento (com o gerente).\n\n` +

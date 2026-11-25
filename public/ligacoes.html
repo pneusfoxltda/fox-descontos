@@ -178,6 +178,7 @@ body.modo-tabela .cel.os{width:76px;} body.modo-tabela .cel.dt{width:118px;paddi
 body.modo-tabela .stsel{field-sizing:content;max-width:230px;padding-right:24px;}  /* a coluna Status fica do tamanho do texto (sobra espaço) */
 .c-pendente{background:#3A2A00;color:#FCD34D;} .c-nao_atende{background:#4A1414;color:#FCA5A5;} .c-retornar{background:#12304A;color:#93C5FD;} .c-aguardando_wa{background:#0F3D24;color:#86EFAC;}
 .c-sem_interesse{background:var(--s3);color:var(--tx2);} .c-agendou{background:#2A1F45;color:#C4B5FD;} .c-venda_ganha{background:#0E3A22;color:#86EFAC;}
+td.origem{white-space:nowrap;font-size:12px} td.o-loja{color:var(--ac2,#F59E0B)}
 .c-venda_perdida{background:#3A0F0F;color:#F87171;} .c-venda_televendas,.c-comprou{background:#06292A;color:#5EEAD4;}
 .quem{font-size:10px;color:var(--tx3);margin-top:3px;}
 .cel{background:var(--in);border:1px solid var(--bd);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;outline:none;color-scheme:var(--cs);}
@@ -358,6 +359,7 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
     </div>
   </div>
   <div class="aviso-robo" id="aviso-robo" style="display:none"></div>
+  <div class="aviso-robo amarelo" id="aviso-movere" style="display:none"></div>
   <!-- LISTA -->
   <div class="wrap" id="v-lista">
     <div class="painel-vend" id="painel-vend" style="display:none"></div>
@@ -366,6 +368,7 @@ body.claro .tabwrap{box-shadow:0 1px 3px rgba(0,0,0,.06);} body.claro .tema-pop{
     <div class="abas" id="abas"></div>
     <div class="busca">
       <input id="busca" placeholder="Buscar por nome, telefone ou nº da cotação…" autocomplete="off">
+      <select id="sel-origem" style="display:none" title="De onde veio a cotação"></select>
       <select id="sel-operador"><option value="">Todos que cotaram</option></select>
       <select id="sel-resp" style="display:none"><option value="">Todos os responsáveis</option></select>
     </div>
@@ -469,7 +472,19 @@ const veHistorico = () => ehAdmin || gerenteLoja;
 const usaHistorico = () => ehAdmin || ehGerente;
 const podeGerir = loja => ehAdmin || (gerenteLoja && loja === perfil.loja);
 let todas = [], historicoTodo = null;
-let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: "", resp: "", agenda: "todos"};
+let filtro = {loja: "", data: "", aba: "pendentes", busca: "", operador: "", resp: "", agenda: "todos", origem: ""};
+// Origem da cotação (SQL 31, decisão do TI 25/11/2026): feita pelo televendas ou pelo vendedor na loja.
+// Preço garantido pela data da cotação: televendas 7 dias, loja 3 dias.
+const origemDe = l => l.origem === "loja" ? "loja" : "televendas";
+const ORIGEM_NOME = {loja: "🏪 Loja", televendas: "📞 Televendas"};
+const temOrigemLoja = () => todas.some(l => l.origem === "loja");
+const daOrigem = l => !filtro.origem || origemDe(l) === filtro.origem;
+function opcoesOrigem() {
+  return `<option value="">Todas as origens</option><option value="loja" ${filtro.origem === "loja" ? "selected" : ""}>Origem: Loja</option>` +
+         `<option value="televendas" ${filtro.origem === "televendas" ? "selected" : ""}>Origem: Televendas</option>`;
+}
+// Venda achada pelo robô: na cotação da loja não é "televendas"
+const nomeTv = l => origemDe(l) === "loja" ? "Venda pelo sistema (Movere)" : null;
 // Aba "Agendou": filtro pela DATA DO AGENDAMENTO (não pelo dia da cotação)
 const AGENDA = [["atrasados", "⚠️ Atrasados"], ["hoje", "Hoje"], ["amanha", "Amanhã"], ["7dias", "Próximos 7 dias"], ["semdata", "Sem data (Kommo)"], ["todos", "Todos"]];
 const somaDias = (iso, n) => new Date(new Date(iso + "T12:00:00").getTime() + n * 864e5).toISOString().slice(0, 10);
@@ -544,7 +559,7 @@ async function abrirSistema() {
   $("modos").style.display = (ehAdmin || ehGerente) ? "flex" : "none";
   $("btn-usuarios").style.display = ehAdmin ? "" : "none";
   await carregar();
-  if (ehAdmin) avisoRobo();
+  if (ehAdmin) { avisoRobo(); avisoMovere(); }
 }
 
 async function doLogin() {
@@ -599,10 +614,12 @@ async function carregar() {
   const COLS = "id,cotacao,cliente,telefone,loja,operador,valor,data_cotacao,status,status_em,status_por,obs,os_venda,comprou_em,criado_em,agendado_para,motivo_perda";
   const ordem = q => q.gte("data_cotacao", desde).order("data_cotacao", {ascending: false}).order("cotacao");
   try {
-    try { todas = await buscarTudo("ligacoes", COLS + ",medida,responsavel_id,responsavel_nome,tentativas", ordem); }
+    try { todas = await buscarTudo("ligacoes", COLS + ",medida,responsavel_id,responsavel_nome,tentativas,origem", ordem); }
+    catch (eO) { try { todas = await buscarTudo("ligacoes", COLS + ",medida,responsavel_id,responsavel_nome,tentativas", ordem); }   // SQL 31 ainda não rodou
     catch (e0) {
       try { todas = await buscarTudo("ligacoes", COLS + ",medida", ordem); }      // SQL 15 ainda não rodou
       catch (e1) { todas = await buscarTudo("ligacoes", COLS, ordem); }            // SQL 14 ainda não rodou: segue sem a medida
+    }
     }
   } catch (e) { $("lista").innerHTML = '<div class="vazio">Não consegui carregar a lista. Atualize a página.</div>'; return; }
   porIdTodas = new Map(todas.map(l => [l.id, l]));
@@ -718,6 +735,20 @@ function montarNomesCotou() {
 const cotou = l => NOMES_COTOU.get(String(l.operador || "").trim()) || primeiro(l.operador);
 
 // ── Aviso do robô (só admin): a última rodada deu erro ou está atrasada?
+// ── Aviso (só admin): vendedor do Movere que fez cotação na loja e o sistema não reconheceu (SQL 31)
+async function avisoMovere() {
+  const box = $("aviso-movere");
+  const [nv, pf] = await Promise.all([sb.from("ligacoes_nomes_movere").select("loja,nome").is("perfil_id", null),
+                                      sb.from("perfis").select("nome_movere").not("nome_movere", "is", null)]);
+  if (nv.error || pf.error) return;   // SQL 31 ainda não rodou
+  const ja = new Set((pf.data || []).map(p => norm(p.nome_movere)));
+  const sem = (nv.data || []).filter(n => !ja.has(norm(n.nome)));
+  box.style.display = sem.length ? "" : "none";
+  if (sem.length) box.innerHTML = `⚠️ <b>${sem.length} vendedor(es) do Movere fizeram cotações e o sistema não reconheceu</b> ` +
+    `(${sem.slice(0, 3).map(n => esc(n.nome.split(" ")[0]) + " · " + esc(n.loja)).join(", ")}${sem.length > 3 ? "…" : ""}): os clientes deles foram para a divisão. ` +
+    `<a href="/admin" style="color:inherit;font-weight:700">Abrir 👥 Usuários e dizer quem é →</a>`;
+}
+
 async function avisoRobo() {
   const { data } = await sb.from("robo_execucoes").select("ok,fim,mensagem").eq("robo", "ligacoes_lojas").eq("teste", false).order("fim", {ascending: false}).limit(1);
   const r = data && data[0], box = $("aviso-robo");
@@ -757,6 +788,7 @@ function daLojaEData(ignorarData = false) {
 function filtrados(ag) {
   const b = norm(filtro.busca.trim()), bd = dig(filtro.busca);
   return daLojaEData(!!b || ag)
+    .filter(daOrigem)
     .filter(l => !filtro.operador || l.operador === filtro.operador)
     .filter(l => !filtro.resp || (filtro.resp === "-" ? !l.responsavel_id : l.responsavel_id === filtro.resp))
     .filter(l => !b || norm(l.cliente).includes(b) || norm(l.cotacao).includes(b) || (bd.length >= 3 && dig(l.telefone).includes(bd)));
@@ -805,7 +837,9 @@ function renderAbasELista(daLoja) {
   }).join("");
   document.querySelectorAll(".aba").forEach(a => a.onclick = () => { filtro.aba = a.dataset.a; limite = POR_PAGINA; render(); });
 
-  const ops = [...new Set(daLoja.map(l => l.operador).filter(Boolean))].sort((a, b) => cotou({operador: a}).localeCompare(cotou({operador: b})));
+  $("sel-origem").style.display = temOrigemLoja() ? "" : "none";
+  $("sel-origem").innerHTML = opcoesOrigem();
+  const ops = [...new Set(daLoja.filter(daOrigem).map(l => l.operador).filter(Boolean))].sort((a, b) => cotou({operador: a}).localeCompare(cotou({operador: b})));
   const atual = filtro.operador;
   $("sel-operador").innerHTML = '<option value="">Todos que cotaram</option>' + ops.map(o => `<option value="${esc(o)}" ${o === atual ? "selected" : ""}>Cotou: ${esc(cotou({operador: o}))}</option>`).join("");
   const resps = [...new Map(daLoja.filter(l => l.responsavel_id).map(l => [l.responsavel_id, l.responsavel_nome])).entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
@@ -835,7 +869,7 @@ function cartao(l) {
   const st = STATUS[l.status] || STATUS.pendente;
   let linhaStatus;
   if (l.status === "venda_ganha") linhaStatus = `<span class="selo ganha">✅ Venda ganha · O.S. ${esc(l.os_venda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
-  else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">📞 Venda ganha televendas${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
+  else if (ehTv(l.status)) linhaStatus = `<span class="selo tv">${nomeTv(l) ? "🤖 " + nomeTv(l) : "📞 Venda ganha televendas"}${l.comprou_em ? " · comprou em " + fmtDataLonga(l.comprou_em) : ""}</span> <span style="color:#888">(a loja não registrou a venda)</span>`;
   else if (l.status === "venda_perdida") linhaStatus = `<span class="selo perdida">❌ Venda perdida · ${esc(l.motivo_perda || "")}</span> · ${esc(l.status_por || "")}${l.status_em ? " · " + fmtQuando(l.status_em) : ""}`;
   else if (l.status === "agendou" && l.agendado_para) linhaStatus = `<span class="selo agendou">📅 Agendado para ${fmtDataLonga(l.agendado_para)} (${diaSemana(l.agendado_para)})</span>${atrasado(l) ? '<span class="selo atraso">atrasado, dê o resultado</span>' : ""} · ${esc(ehRobo(l.status_por) ? quemFez(l) : l.status_por || "")}`;
   else if (l.status === "agendou" && ehRobo(l.status_por)) linhaStatus = `<span class="selo agendou">📅 Agendado no Kommo</span>`;
@@ -844,7 +878,7 @@ function cartao(l) {
   return `<div class="card st-${esc(l.status)} ${atrasado(l) ? "atrasado" : ""}" id="c-${l.id}">
     <div class="c1">
       <div><div class="cli">${esc(nomeCli(l) || "Cliente sem nome")}${podeEditar(l) ? `<button class="ed-nome" onclick="editarNome(${l.id})" title="Corrigir o nome do cliente">✏️</button>` : ""}</div>
-        <div class="meta">${l.medida ? "🛞 " + esc(l.medida) + " · " : ""}Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · Cotou: " + esc(cotou(l)) : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div>
+        <div class="meta">${l.medida ? "🛞 " + esc(l.medida) + " · " : ""}Cotação nº ${esc(l.cotacao)} · ${fmtDataLonga(l.data_cotacao)}${l.operador ? " · Cotou: " + esc(cotou(l)) : ""}${temOrigemLoja() ? " · " + ORIGEM_NOME[origemDe(l)] : ""}${!filtro.loja ? " · " + esc(l.loja) : ""}</div>
         ${(ehAdmin || ehGerente) ? `<div class="meta">Responsável: ${celulaResp(l)}</div>` : ""}</div>
       <div class="val">${fmtR(l.valor)}</div>
     </div>
@@ -1134,7 +1168,7 @@ async function anotar(l, obs) {
 function abrirHist(id) { abertos.has(id) ? abertos.delete(id) : abertos.add(id); render(); }
 
 function tabela(lista) {
-  const cab = `<tr><th class="fx1">Cotação</th><th class="fx2">Nome cliente</th><th>Contato telefônico</th><th>Cotou</th><th>Responsável</th><th class="r">Valor da cotação</th><th>Data</th>` +
+  const cab = `<tr><th class="fx1">Cotação</th><th class="fx2">Nome cliente</th><th>Contato telefônico</th><th>Cotou</th>${temOrigemLoja() ? "<th>Origem</th>" : ""}<th>Responsável</th><th class="r">Valor da cotação</th><th>Data</th>` +
     `<th>Status</th><th>Nº O.S.</th><th>Data agendamento</th><th>Motivo da perda</th><th>Anotação</th>${veHistorico() ? "<th>Histórico</th>" : ""}${!filtro.loja ? "<th>Loja</th>" : ""}</tr>`;
   return `<div class="tabwrap"><table class="tl">${cab}${lista.map(linhaTabela).join("")}</table></div>`;
 }
@@ -1142,7 +1176,7 @@ function linhaTabela(l) {
   // O vendedor muda o status à vontade (salva sozinho, como numa planilha). Só o que o robô marcou fica travado.
   const id = l.id, ed = podeEditar(l), fechado = FECHADOS.includes(l.status), travado = ehTv(l.status), dis = (!ed || travado) ? "disabled" : "";
   const d = dig(l.telefone), wa = linkWa(l), t = tentativas(id), forte = t >= 2 && !fechado;
-  const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("") +
+  const opcoes = (ehTv(l.status) ? [l.status] : MANUAIS).map(s => `<option value="${s}" ${s === l.status ? "selected" : ""}>${s === "nao_atende" ? "Não atendeu" + (t > 1 ? ` (${t}x)` : "") : (ehTv(s) && nomeTv(l)) || CURTO[s] || (STATUS[s] || {}).nome}</option>`).join("") +
     (l.status === "nao_atende" && t < MAX_TENT ? `<option value="nao_atende_mais">📞 Liguei de novo, não atendeu (${t + 1}ª tentativa)</option>` : "");
   const hs = histDe(id), dias = Math.max(0, Math.round((new Date(hojeISO() + "T12:00:00") - new Date(l.data_cotacao + "T12:00:00")) / 864e5));
   const quem = l.status_em ? `<div class="quem">${esc(quemFez(l))} · ${fmtQuando(l.status_em)}</div>` : "";
@@ -1151,6 +1185,7 @@ function linhaTabela(l) {
     <td class="fx2">${esc(nomeCli(l))}${ed ? `<button class="ed-nome" onclick="editarNome(${id})" title="Corrigir o nome do cliente">✏️</button>` : ""}${l.medida ? `<div class="quem">🛞 ${esc(l.medida)}</div>` : ""}</td>
     <td>${l.telefone ? `<span class="tnum">${esc(l.telefone)}</span>${t >= MAX_TENT && !fechado ? `<span class="mini lig off" title="Já foram ${t} tentativas por ligação: agora tente pelo WhatsApp (mensagem ou ligação)">📞</span>` : `<a class="mini lig" href="tel:${esc(d)}" title="Ligar">📞</a>`}${wa ? `<a class="mini wa ${forte ? "forte" : ""}" href="${esc(wa)}" target="_blank" rel="noopener" title="${l.status === "agendou" ? "WhatsApp: confirmar o agendamento" : "WhatsApp: 1ª mensagem (orçamento)"}" onclick="mandouWa(${id})">${ICONE_WA}</a>` : ""}${linkWa2(l) ? `<a class="mini wa2 ${waMandou.has(id) ? "forte" : ""}" data-wa2="${id}" href="${esc(linkWa2(l))}" target="_blank" rel="noopener" title="WhatsApp: 2ª mensagem (endereço e mapa da loja)"><span class="ico-duo">${ICONE_WA}${ICONE_PIN}</span></a>` : ""}` : ""}</td>
     <td>${esc(cotou(l))}</td>
+    ${temOrigemLoja() ? `<td class="origem o-${origemDe(l)}">${ORIGEM_NOME[origemDe(l)]}</td>` : ""}
     <td>${celulaResp(l)}</td>
     <td class="r">${fmtR(l.valor)}</td>
     <td title="${fmtDataLonga(l.data_cotacao)}">${fmtDataCurta(l.data_cotacao)}<div class="quem">${dias ? "há " + dias + " dia" + (dias > 1 ? "s" : "") : "hoje"}</div></td>
@@ -1195,7 +1230,13 @@ async function renderDash() {
   $("dash-atualizar").onclick = () => { $("dash-atualizar").disabled = true; carregar(); };
 
   const ini = inicioPeriodo();
-  const L = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
+  // Origem (televendas / loja): filtro também no Dashboard, e as duas separadas no cartão "Origem"
+  if (temOrigemLoja()) {
+    $("periodos").insertAdjacentHTML("beforeend", `<select id="dash-origem" class="chip" title="De onde veio a cotação">${opcoesOrigem()}</select>`);
+    $("dash-origem").onchange = e => { filtro.origem = e.target.value; renderDash(); };
+  }
+  const L0 = todas.filter(l => l.data_cotacao >= ini && (!filtro.loja || l.loja === filtro.loja));
+  const L = L0.filter(daOrigem);
   const porId = new Map(L.map(l => [l.id, l]));
   const H = historicoTodo.filter(h => porId.has(h.ligacao_id) && !ehSistema(h));   // só o trabalho de pessoas com o cliente
   const tocados = new Set(H.map(h => h.ligacao_id));
@@ -1208,7 +1249,13 @@ async function renderDash() {
   const soma = arr => arr.reduce((s, l) => s + Number(l.valor || 0), 0);
   const kpi = (l, v, s) => `<div class="kpi"><div class="k-l">${l}</div><div class="k-v">${v}</div><div class="k-s">${s}</div></div>`;
   $("kpis").innerHTML = [
-    kpi("Clientes na lista", total, `cotações ${periodo === "1" ? "de" : "desde"} ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}`),
+    kpi("Clientes na lista", total, `cotações ${periodo === "1" ? "de" : "desde"} ${fmtData(ini)}${filtro.loja ? " · " + esc(filtro.loja) : ""}${filtro.origem ? " · Origem: " + (filtro.origem === "loja" ? "Loja" : "Televendas") : ""}`),
+    ...(temOrigemLoja() && !filtro.origem ? [(() => {
+      const lj = L0.filter(l => origemDe(l) === "loja"), tvd = L0.filter(l => origemDe(l) === "televendas");
+      const g = arr => arr.filter(l => l.status === "venda_ganha").length;
+      return kpi("Origem das cotações", `🏪 ${lj.length} · 📞 ${tvd.length}`,
+                 `Loja: ${g(lj)} venda(s) ganha(s) (${pct(g(lj), lj.length)}%) · Televendas: ${g(tvd)} (${pct(g(tvd), tvd.length)}%)`);
+    })()] : []),
     kpi("Trabalhados pela loja", pct(tocados.size, total) + "%", `${tocados.size} com algum registro`),
     kpi("Sem nenhum contato", pendSemContato.length, `ainda pendentes · ${fmtR0(soma(pendSemContato))}`),
     kpi("Venda ganha (loja)", ganhas.length, `${fmtR0(soma(ganhas))} · conversão ${pct(ganhas.length, total)}%`),
@@ -1592,6 +1639,7 @@ $("s-conf").addEventListener("keydown", e => { if (e.key === "Enter") salvarSenh
 $("btn-sair").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 document.querySelectorAll(".modo").forEach(b => b.onclick = () => trocarModo(b.dataset.m));
 $("sel-loja").onchange = e => { filtro.loja = e.target.value; filtro.operador = ""; filtro.resp = ""; limite = POR_PAGINA; escolherDiaInicial(); modo === "dash" ? renderDash() : render(); };
+$("sel-origem").onchange = e => { filtro.origem = e.target.value; filtro.operador = ""; limite = POR_PAGINA; render(); };
 $("sel-operador").onchange = e => { filtro.operador = e.target.value; limite = POR_PAGINA; render(); };
 $("sel-resp").onchange = e => { filtro.resp = e.target.value; limite = POR_PAGINA; render(); };
 let tb; $("busca").oninput = e => { clearTimeout(tb); tb = setTimeout(() => { filtro.busca = e.target.value; limite = POR_PAGINA; render(); }, 200); };
