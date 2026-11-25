@@ -189,10 +189,19 @@ def registrar_rodada(ok: bool, mensagem: str = None, teste: bool = False):
         "conferidos": RESUMO["conferidos"], "encontrados": RESUMO["encontrados"],
         "mensagem": (mensagem or "")[:300] or None,
     }
+    try:   # como foi a API do Movere nesta rodada (o 🩺 Monitor mostra)
+        import movere_api
+        corpo["detalhes"] = dict(movere_api.ESTADO, por_numero=RESUMO.get("por_orcamento"))
+    except Exception:
+        pass
     try:
         with httpx.Client(timeout=20) as cli:
-            cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes",
-                     headers=_sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            r = cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes",
+                         headers=_sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
+            if r.status_code == 400 and "detalhes" in corpo:   # SQL 18 (coluna detalhes) ainda não rodou
+                corpo.pop("detalhes")
+                cli.post(f"{SUPABASE_URL}/rest/v1/robo_execucoes",
+                         headers=_sb_headers(chave, {"Prefer": "return=minimal"}), json=corpo)
             limite = (agora - timedelta(days=GUARDAR_DIAS)).isoformat()
             cli.delete(f"{SUPABASE_URL}/rest/v1/robo_execucoes?robo=eq.{ROBO}&inicio=lt.{limite}",
                        headers=_sb_headers(chave))

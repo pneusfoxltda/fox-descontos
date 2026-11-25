@@ -242,6 +242,20 @@ async function carregar() {
     corpo += item(d.divididos != null ? "vd" : "cz", "Divisão entre os vendedores", d.divididos != null ? `${d.divididos} cliente(s) divididos nesta rodada` : "");
     corpo += item("vd", "Reconferência (comprou / agendou depois)", `${d.comprou || 0} viraram "venda pelo sistema" · ${d.agendou || 0} agendados no Kommo`);
   }
+  // 1a) API oficial do Movere: vendas na hora (robôs dos descontos e das Ligações)
+  corpo = "";
+  [["conferir_vendas_movere", "🏷️ Descontos (venda concluída)", "seg a sáb 7h45, 12h45 e 17h45"],
+   ["ligacoes_lojas", "📞 Ligações (quem comprou vira venda televendas)", "todo dia 6h45, 9h45, 14h45 e 17h45 (sáb e dom 7h, 10h, 15h e 18h)"]].forEach(([robo, nome, hor]) => {
+    const u = ((R.robos || {})[robo] || []).find(x => !x.teste), d = (u && u.detalhes) || {};
+    let st, det;
+    if (!u || d.api_ok === undefined) { st = "cz"; det = "aparece depois da próxima rodada do robô"; }
+    else if (d.api_configurada === false) { st = "am"; det = "a API não está configurada (segredos MOVERE_API_* no GitHub): usando só o Analytics"; }
+    else if (d.api_ok === false) { st = "vm"; det = `a API <b>não respondeu</b> (${esc(d.api_erro || "erro")}): esta rodada usou só o Analytics (as vendas de hoje ficam para a próxima)`; }
+    else { st = "vd"; det = `respondeu: ${d.api_notas} notas (${d.api_vendas} vendas) dos últimos 10 dias` + (d.api_cotacoes_os ? ` · ${d.api_cotacoes_os} cotações ligadas à O.S.` : "") + (d.por_numero ? ` · ${d.por_numero} desconto(s) achado(s) pelo nº da cotação/O.S.` : ""); }
+    corpo += item(st, `${nome}${u ? ": " + quando(u.inicio) : ""}`, `${det}<br>Horário: ${hor}`);
+  });
+  html.push(secao("🛰️ API do Movere (vendas na hora)", "Os robôs dos descontos e das Ligações leem as notas de venda direto no Movere. Se a API falhar, usam o Analytics (que só tem até ontem).", corpo));
+
   // 1b) Resultados Fox Pneus: robôs da rotina 553 (Varejo e Atacado) e se os números chegaram no banco
   corpo = "";
   const horaUtil = () => { const h = horaPVH(), d = diaPVH(); return d !== "Sun" && h >= 9 && h <= 19; };
