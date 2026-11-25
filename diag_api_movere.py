@@ -54,10 +54,13 @@ for cod, nome in lojas:
     notas, erro_n, est_n = paginas("/api/NotasFiscaisEmitidas", {"codigoLoja": cod, "emissaoInicial": dia, "emissaoFinal": dia})
     cots, erro_c, est_c = paginas("/api/ConsultaOrcamentos", {"codigoLoja": cod, "emissaoInicial": dia, "emissaoFinal": dia})
     if ger["estrutura_impressa"] == 0 and notas:
-        n0 = notas[0].get("nf", notas[0])
+        n0 = notas[0].get("NF") or notas[0].get("nf") or notas[0]
         print("Estrutura da resposta de vendas:", est_n, "· campos da nota:", sorted(n0.keys()))
         print("   comercial:", sorted((n0.get("comercial") or {}).keys()))
         print("   produto:", sorted(((n0.get("produtos") or [{}])[0]).keys()))
+        print("   cliente:", sorted((n0.get("cliente") or {}).keys())[:30])
+        c1 = cots[0].get("orcamento", cots[0]) if cots else {}
+        print("   cotação tem cliente?", "sim: " + str(sorted((c1.get("cliente") or {}).keys())[:12]) if c1.get("cliente") else "não (só no orçamento)")
         ger["estrutura_impressa"] = 1
     if ger["estrutura_cot"] == 0 and cots:
         c0 = cots[0].get("orcamento", cots[0])
@@ -67,7 +70,7 @@ for cod, nome in lojas:
     L = {"nome": nome, "erro_vendas": erro_n, "erro_cotacoes": erro_c}
     tipos = collections.Counter(); saida = entrada = 0.0; com_orc = com_cel = 0; vend = set(); pneus = 0; n_saida = 0
     for n in notas:
-        nf = n.get("nf", n)
+        nf = n.get("NF") or n.get("nf") or n
         v = float(nf.get("valortotalnota") or 0)
         t = f"{nf.get('identradasaida')}:{nf.get('descricaoentradaesaida')}"
         tipos[t] += 1
@@ -87,6 +90,7 @@ for cod, nome in lojas:
         st[str(o.get("emissor", {}).get("status") or o.get("status") or ("orçamento" if o.get("idorcamento") else "cotação"))] += 1
         com_oper += 1 if cm.get("idoperador") else 0
         com_cel_c += 1 if (o.get("cliente") or {}).get("fonecelular") else 0
+        st["com_orcamento"] += 1 if o.get("idorcamento") else 0
         virou += 1 if o.get("dataemissaonf") else 0
         canais[str(cm.get("nomecanaldevendas") or "")] += 1
     L.update({"cotacoes": len(cots), "cot_status": dict(st), "cot_com_operador": com_oper, "cot_com_celular": com_cel_c,
