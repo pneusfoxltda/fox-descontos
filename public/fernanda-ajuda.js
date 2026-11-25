@@ -418,16 +418,70 @@
     return { texto: r.data.text || "", itens };
   }
 
+  // ── Print de conversa do WhatsApp (treino de vendas / Ligações) ──
+  // Lê a imagem e separa as mensagens pelo lado do balão: à direita = quem enviou (vendedor), à esquerda = cliente.
+  async function lerConversa(arquivo) {
+    await carregarScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
+    const url = URL.createObjectURL(arquivo);
+    let c;
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      const k = Math.max(1, Math.min(3, 1600 / img.width));
+      c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(img, 0, 0, c.width, c.height);
+      const d = g.getImageData(0, 0, c.width, c.height), a = d.data; let soma = 0;
+      for (let i = 0; i < a.length; i += 4) { const y = 0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]; a[i] = a[i + 1] = a[i + 2] = y; soma += y; }
+      if (soma / (a.length / 4) < 128) for (let i = 0; i < a.length; i += 4) a[i] = a[i + 1] = a[i + 2] = 255 - a[i];   // modo escuro: inverte
+      g.putImageData(d, 0, 0);
+    } finally { URL.revokeObjectURL(url); }
+    const r = await window.Tesseract.recognize(await new Promise(ok => c.toBlob(ok, "image/png")), "por");
+    const W = c.width, H = c.height, out = [];
+    let linhas = r.data.lines || [], ant = null;
+    // Cabeçalho do WhatsApp (nome do contato + "online"/"visto por último"): tudo até ele fica de fora
+    const iCab = linhas.findIndex(l => l.bbox.y1 < H * 0.2 && /(online|visto por|digitando|clique aqui|dados do contato)/.test(N(l.text)));
+    if (iCab >= 0) linhas = linhas.slice(iCab + 1);
+    for (const l of linhas) {
+      const b = l.bbox; let t = String(l.text || "").replace(/\s+/g, " ").trim();
+      t = t.replace(/\s*\d{1,2}[:.]\d{2}\s*[^\wÀ-ú]*\s*$/, "").replace(/\s*(✓|✔|v{2}|W)+\s*$/i, "").trim();   // hora e "visto" no fim
+      if (!t || /^\d{1,2}[:.]\d{2}$/.test(t) || (l.confidence || 100) < 35) continue;
+      const n = N(t);
+      if (/^(hoje|ontem|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d{1,2}\/\d{1,2}(\/\d{2,4})?)$/.test(n)) continue;   // chip da data
+      if (/criptografia|end-?to-?end|mensagem apagada|esta mensagem foi apagada/.test(n)) continue;
+      const centro = b.x0 > W * 0.25 && b.x1 < W * 0.75 && t.length < 25;
+      if (centro) continue;
+      const quem = b.x0 > W * 0.14 ? "vendedor" : "cliente";
+      const h = b.y1 - b.y0;
+      if (ant && ant.quem === quem && b.y0 - ant.y1 < h * 1.3) { ant.txt += " " + t; ant.y1 = b.y1; }
+      else { ant = {quem, txt: t, y1: b.y1}; out.push(ant); }
+    }
+    return out.map(m => ({quem: m.quem, txt: m.txt}));
+  }
+  async function auditarPrint(arquivo) {
+    const V = window.feVendas;
+    bot("Lendo o print da conversa… 🔎 Leva alguns segundos (a imagem não sai do seu computador).");
+    let msgs;
+    try { msgs = await lerConversa(arquivo); }
+    catch (e) { bot("Não consegui ler essa imagem (" + e.message + "). Pode colar o texto da conversa aqui. 🙏"); return; }
+    if (msgs.map(m => m.txt).join(" ").length < 25) { bot("Não consegui ler o texto desse print. 😕 Mande um print mais nítido (sem cortar as mensagens) ou cole o texto da conversa."); return; }
+    if (V.sairAuditoria) V.sairAuditoria();
+    bot(V.auditarConversa(msgs));
+    chips(["🔎 Auditar outra conversa", "📞 Roteiro de ligação", "Sair do treino"]);
+  }
+
   let arquivoPendente = null;
   async function receberArquivo(arquivo) {
     const tela = telaCadastro();
     window.feMe("📎 " + arquivo.name);
-    if (!tela) {
-      bot("Para eu preencher um desconto, abra a tela de Cadastrar e me mande o arquivo lá. 😉");
-      return;
-    }
     const ehPdf = /pdf$/i.test(arquivo.type) || /\.pdf$/i.test(arquivo.name);
     const ehImg = /^image\//.test(arquivo.type);
+    // Fora do Cadastrar (ex.: Ligações) ou no treino "Auditar uma conversa": a imagem é um print de conversa
+    const V = window.feVendas, auditando = V && V.modo && V.modo() === "auditoria";
+    if (ehImg && V && (auditando || !tela)) { await auditarPrint(arquivo); return; }
+    if (!tela) {
+      bot(ehPdf ? "PDF de orçamento eu leio na tela de Cadastrar desconto. Aqui eu leio o PRINT de uma conversa do WhatsApp e te dou ideias de resposta. 😉"
+                : "Para eu preencher um desconto, abra a tela de Cadastrar e me mande o arquivo lá. 😉");
+      return;
+    }
     if (!ehPdf && !ehImg) { bot("Consigo ler PDF ou imagem (print/foto) do orçamento. Esse tipo de arquivo eu não sei abrir. 😕"); return; }
     if (ehImg && tela.temAnexo) {
       arquivoPendente = arquivo;
@@ -785,7 +839,7 @@
     st.textContent = ".fe-clip{background:#1B3247;border:none;color:#fff;border-radius:10px;width:42px;flex-shrink:0;font-size:18px;cursor:pointer}.fe-clip:hover{background:#2A4A66}.fe-in{gap:6px}";
     document.head.appendChild(st);
     const bt = document.createElement("button");
-    bt.type = "button"; bt.id = "fe-clip"; bt.className = "fe-clip"; bt.title = "Enviar PDF ou imagem do orçamento (também dá para colar um print com Ctrl+V)"; bt.textContent = "📎";
+    bt.type = "button"; bt.id = "fe-clip"; bt.className = "fe-clip"; bt.title = telaCadastro() ? "Enviar PDF ou imagem do orçamento (também dá para colar um print com Ctrl+V)" : "Enviar o print de uma conversa do WhatsApp para eu analisar (também dá para colar com Ctrl+V)"; bt.textContent = "📎";
     const inp = document.createElement("input");
     inp.type = "file"; inp.accept = "application/pdf,image/*"; inp.style.display = "none";
     bt.onclick = () => inp.click();

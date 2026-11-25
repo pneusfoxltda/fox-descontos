@@ -158,7 +158,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
     sorteado: 10 produtos × 8 perfis × objeções × WhatsApp/balcão; nota 0–10 por palavras em diagnóstico, consciência
     técnica, armas da Fox e fechamento + resposta modelo), 🔎 auditoria de conversa colada, ⚡ resposta rápida
     ("cliente achou mais barato na internet" → 2 respostas). Playbook com 17 objeções (`OBJ`), filosofia, protocolo e
-    diferenciais (**montagem gratuita + checklist preventivo completo gratuito**). Respostas modelo ADAPTADAS à regra do
+    diferenciais (**montagem gratuita + checklist preventivo completo gratuito**).
+    **Print da conversa** (TI, 25/11/2026): fora do Cadastrar (ex.: Ligações) ou no modo "🔎 Auditar", a imagem colada/📎
+    é lida como conversa de WhatsApp (`lerConversa` no fernanda-ajuda.js, Tesseract; balão à direita = vendedor, à esquerda
+    = cliente; modo escuro invertido; cabeçalho, horas e chip de data saem). `auditarConversa` (fernanda-vendas.js) mostra
+    "Li assim", onde a conversa parou e a **próxima mensagem pronta** (objeção do cliente, sinal de compra, pergunta de
+    preço ou cliente sumiu → resgate), ideias de frases e a auditoria. Texto exportado do WhatsApp também é separado. Respostas modelo ADAPTADAS à regra do
     TI: sem "reservar box", sem "segurar condição 48 h", sem "pronta entrega" (nunca prometer pneu separado nem horário
     reservado); combinar o dia da visita. No Cadastrar só responde se a pessoa pedir ("cliente disse…", "treinar").
     **Módulo 2** (TI, 24/11/2026): roteiro de ligação de resgate (etapas A/B/C; nas Ligações já vem preenchido com o
