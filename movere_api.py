@@ -17,6 +17,8 @@ import httpx
 
 BASE = "https://api.moveresoftware.com"
 POR_PAGINA = 100
+# Como foi a última busca (os robôs gravam isto no registro da rodada e o 🩺 Monitor mostra)
+ESTADO = {"api_configurada": False, "api_ok": None, "api_notas": 0, "api_vendas": 0, "api_cotacoes_os": 0, "api_erro": None}
 DIAS_API = 10          # os robôs buscam pela API só os últimos 10 dias (o Analytics cobre os mais antigos; 45 dias passava de 15 min)
 
 
@@ -157,6 +159,7 @@ def juntar(a: dict, b: dict) -> dict:
 def buscar(desde: date, ate: date, log=print):
     """(por_telefone, por_numero) da API, ou ({}, {}) se a API não estiver configurada ou falhar.
     por_numero = {('os', nº da O.S.) ou ('cotacao', nº da cotação): (dia, valor)}."""
+    ESTADO.update(api_configurada=configurada(), api_ok=None, api_notas=0, api_vendas=0, api_cotacoes_os=0, api_erro=None)
     if not configurada():
         log("ℹ️ API do Movere não configurada (segredos MOVERE_API_*): segue só com o Analytics")
         return {}, {}
@@ -164,12 +167,15 @@ def buscar(desde: date, ate: date, log=print):
         with httpx.Client(timeout=120) as cli:
             tok = login(cli)
             ns = notas(cli, tok, desde, ate, log)
+            ESTADO.update(api_ok=True, api_notas=len(ns), api_vendas=sum(1 for n in ns if n["tipo"] == "venda"))
             try:
                 cot_os = cotacoes_para_os(cli, tok, desde, ate, log)
             except Exception as e:   # sem a ligação cotação → O.S., ainda acha pela O.S. e pelo telefone
                 log(f"⚠️ Cotações da API falharam ({type(e).__name__}): segue pela O.S. e pelo telefone")
                 cot_os = {}
+            ESTADO["api_cotacoes_os"] = len(cot_os)
         return vendas_por_telefone(ns), por_numero(vendas_por_orcamento(ns), cot_os)
     except Exception as e:
+        ESTADO.update(api_ok=False, api_erro=type(e).__name__)
         log(f"⚠️ API do Movere falhou ({type(e).__name__}): segue só com o Analytics")
         return {}, {}

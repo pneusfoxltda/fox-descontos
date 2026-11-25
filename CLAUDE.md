@@ -238,7 +238,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   cobre os mais antigos). Usado em `conferir_vendas_movere.py` (descontos: 1º pelo NÚMERO, 2º pelo telefone; `venda_movere_por`). **Nos descontos,
   "Orçamento" = nº da COTAÇÃO e "O.S." = nº da ordem de serviço** (TI, 25/11/2026). Na API: nota `Comercial.idorcamento` = nº da
   O.S.; `ConsultaOrcamentos` (status 2) liga `idcotacao` → `idorcamento` (conferido com 2 exemplos do TI) e em `ligacoes_lojas.py` (comprou → venda televendas). Se a API falhar, segue só com o Analytics.
-  Testes: `python tests/test_movere_api.py`.
+  Testes: `python tests/test_movere_api.py`. **Monitor**: seção "🛰️ API do Movere" (a última rodada dos descontos e das Ligações
+  grava `movere_api.ESTADO` em `robo_execucoes.detalhes`: respondeu / falhou / não configurada). Horários = os dos dois robôs.
 
 ## Número repetido — branch `cadastro-sem-duplicado`
 

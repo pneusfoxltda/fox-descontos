@@ -408,7 +408,8 @@ def main() -> int:
         if api_tel:
             vendas = movere_api.juntar(vendas, api_tel)
             print(f"🛰️ Com a API do Movere: {len(vendas)} telefones (vendas na hora)")
-        DETALHES.update(etapa="vendas", vendas_dias=len(uris_vendas), vendas_telefones=len(vendas), api_telefones=len(api_tel))
+        DETALHES.update(etapa="vendas", vendas_dias=len(uris_vendas), vendas_telefones=len(vendas), api_telefones=len(api_tel),
+                        **{k: v for k, v in movere_api.ESTADO.items() if k != "api_cotacoes_os"})
 
         # 1) Importar — só os dias que já existem no Analytics (senão, tenta na próxima rodada)
         agora = datetime.now(cv.TZ_LOJA).replace(tzinfo=None)
