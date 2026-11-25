@@ -17,10 +17,7 @@ jobs:
           playwright install-deps chromium
 
       - name: Roda teste
-        env:
-          MOVERE_USER: ${{ secrets.MOVERE_USER }}
-          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+        run: python3 diag_api_movere.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
