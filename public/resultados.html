@@ -28,6 +28,10 @@ button{font-family:inherit;cursor:pointer}
 .aba{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);color:var(--fx-tx2,#ddd);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;text-decoration:none}
 .aba.on{background:var(--fx-ac,#CC1F1F);border-color:var(--fx-ac,#CC1F1F);color:#fff}
 .aba.off{opacity:.5;cursor:default}
+/* barra única de Resultados (resultados-abas.js) com as cores escuras desta tela */
+#abas-resultados a,#abas-resultados span{background:var(--fx-s1,#161616)!important;border-color:var(--fx-bd,#2E2E2E)!important;color:var(--fx-tx2,#ddd)!important}
+#abas-resultados a.on{background:var(--fx-ac,#CC1F1F)!important;border-color:var(--fx-ac,#CC1F1F)!important;color:#fff!important}
+#abas-resultados{background:var(--fx-bg,#0D0D0D)!important}
 .aba small{font-weight:500;font-size:11px;opacity:.8;margin-left:4px}
 /* Início: os 4 resultados */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
@@ -130,7 +134,7 @@ th.pn,td.pn{background:rgba(34,197,94,.06)}
     <button class="btn cz" id="bt-sair">Sair</button>
   </div>
   <div class="wrap">
-    <div class="abas" id="abas"></div>
+    <div id="abas-resultados" data-sob=".top"></div>
     <div id="tela"></div>
   </div>
 </div>
@@ -179,19 +183,10 @@ $("bt-sair").onclick = async () => { await sb.auth.signOut(); location.reload();
 $("bt-atualizar").onclick = () => carregarVarejo();
 sb.auth.getSession().then(({data}) => entrar(data.session));
 
-// ── ABAS ──
-const ABAS = [
-  {id: "", t: "🏠 Início"},
-  {id: "televendas", t: "💰 Resultado Televendas", href: "/televendas.html"},
-  {id: "varejo", t: "🏪 Resultado Varejo · Geral"},
-  {id: "atacado", t: "📦 Resultado Atacado", href: "/atacado"},
-  {id: "truck", t: "🚚 Resultado Truck", breve: true},
-];
+// ── ABAS: a barra é a mesma em todas as telas de Resultados (public/resultados-abas.js) ──
 function rota() {
   const r = (location.hash || "").replace("#", "");
-  $("abas").innerHTML = ABAS.map(a => a.breve
-    ? `<span class="aba off" title="Será feito no futuro">${a.t}<small>em breve</small></span>`
-    : `<a class="aba ${a.id === r ? "on" : ""}" href="${a.href || "#" + a.id}">${a.t}</a>`).join("");
+  if (window.FoxAbas) FoxAbas.desenhar();   // barra única de Resultados (resultados-abas.js)
   $("bt-atualizar").style.display = r === "varejo" ? "" : "none";
   if (r === "varejo") return carregarVarejo();
   inicio();
@@ -203,7 +198,7 @@ function inicio() {
   const nome = (perfil.apelido || (perfil.nome || "").split(" ")[0] || "").trim();
   $("tela").innerHTML = `<p style="font-size:14px;color:var(--fx-tx2,#ccc);margin-bottom:14px">${nome ? "Olá, " + esc(nome) + "! " : ""}Escolha o resultado:</p>
   <div class="cards">
-    <a class="card" href="/televendas.html"><div class="ic">💰</div><h2>Resultado Televendas</h2><p>Vendas, metas e ranking das operadoras do televendas.</p></a>
+    <a class="card" href="/televendas.html?resultados=1"><div class="ic">💰</div><h2>Resultado Televendas</h2><p>Vendas, metas e ranking das operadoras do televendas.</p></a>
     <a class="card" href="#varejo"><div class="ic">🏪</div><h2>Resultado Varejo · Geral</h2><p>Ranking das lojas no dia e no mês, meta, e os vendedores de cada loja. Atualiza de hora em hora.</p></a>
     <a class="card" href="/atacado"><div class="ic">📦</div><h2>Resultado Atacado</h2><p>Vendas do Atacado por vendedor, com as 3 metas, os últimos 5 dias úteis, pneus e as lojas. No modelo do Televendas.</p></a>
     <div class="card breve"><div class="ic">🚚</div><h2>Resultado Truck</h2><p>Será feito no futuro.</p><span class="selo">em breve</span></div>
@@ -408,6 +403,7 @@ function conferencia(conf) {
     Para acertar: conferir no Movere o segmento do cliente indicado.</p></div>`;
 }
 </script>
+<script src="/resultados-abas.js"></script>
 <script src="/fernanda.js" defer></script>
 </body>
 </html>

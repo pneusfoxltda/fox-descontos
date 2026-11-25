@@ -348,6 +348,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Pede o login (o mesmo das Ligações e do App; qualquer perfil **ativo** lê; decisão: o repositório é público, sem
   login qualquer um leria os números com a chave anon). Abas: **Resultado Televendas** (abre `/televendas.html`),
   **Resultado Varejo · Geral**, **Resultado Atacado** (`/atacado`) e **Truck** ("em breve").
+  **Barra de abas única** (`public/resultados-abas.js`, pedido do TI 25/11/2026): a mesma em /resultados, /atacado e no
+  Televendas (só quando veio de Resultados: `?resultados=1`, guardado na aba), presa no topo. Aba nova: só mexer na lista `ABAS`.
 - **Varejo** (decisão do TI: base = **rotina 553**, com o dia de hoje): Vendido hoje, no mês, meta, falta (e por dia,
   contando seg–sáb), ticket médio; **ranking das lojas** (hoje, clientes, mês, meta, %, falta, clientes, ticket, itens);
   clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
