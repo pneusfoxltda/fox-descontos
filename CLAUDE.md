@@ -359,6 +359,19 @@ vendas para o televendas; `apps-script/` tem o do painel).
   o GitHub manda e-mail ao dono do repositório (só em erro) e o admin vê o aviso vermelho no topo
   das Ligações (`robo_execucoes`). Começa nas cotações de 17/11/2026 (`INICIO`; os 5 dias antes de 22/11, decisão do TI).
   Segredos: `ANALYTICS_LOGIN`, `ANALYTICS_SENHA`, `SUPABASE_SERVICE_KEY`, `KOMMO_TOKEN`.
+- **Cotações dos VENDEDORES DAS LOJAS** (decisão do TI, 25/11/2026; SQL **`31_ligacoes_cotacoes_loja.sql`**): além das do
+  televendas, entram as cotações feitas nas **8 lojas** (FOX-GM, MANAUS, RECAP-PVH, RECAP-VLH e ATACADO ficam fora), **todas**,
+  desde `INICIO_LOJA` (25/11/2026). O robô roda o relatório 782403 também SEM o filtro do dashboard 782276; nas cotações da
+  loja o "NomeOperador" vem "Não informado" e quem cotou vem na coluna **"Vendedor"** (nome completo do Movere).
+  **Quem cotou é o responsável** (Cotou: Edileia · Responsável: Edileia), sem divisão. Cotação do **gerente**, de vendedor de
+  férias/desativado ou de nome **não reconhecido** → divisão automática. Reconhecer: `casar_vendedor` (1º `perfis.nome_movere`,
+  escolhido no /admin; senão todas as palavras do nome cadastrado estão no nome do Movere e só 1 pessoa da loja bate).
+  Mesmo telefone nas duas: fica a da loja. `ligacoes.origem` ('televendas' | 'loja'): coluna **Origem** e filtro
+  "Origem: Loja / Origem: Televendas" na lista e no Dashboard (cartão "Origem das cotações" com as duas separadas). Venda achada
+  pelo robô numa cotação da loja aparece como "Venda pelo sistema (Movere)". Preço garantido: **loja 3 dias, televendas 7 dias**
+  (roteiro da Fernanda). Nomes vistos ficam em `ligacoes_nomes_movere` (só admin lê): o **/admin** mostra "⚠️ Vendedores do
+  Movere que o sistema não reconheceu" com "É quem?", a coluna "Nome no Movere", e as Ligações do admin mostram uma faixa amarela.
+  Sem o SQL 31 o robô segue só com o televendas.
 - **As planilhas do Google (Apps Script) continuam funcionando** — decisão do TI.
 - SQL: `12_ligacoes.sql` (tabelas, `minha_loja()`, `ve_todas_ligacoes()`, `marcar_ligacao()`,
   `senha_trocada()`), 13, 14 e **`15_ligacoes_vendedores.sql`** (funções, responsável, férias, divisão).

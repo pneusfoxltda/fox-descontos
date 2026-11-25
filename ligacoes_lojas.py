@@ -67,6 +67,11 @@ HORA_ULTIMA_RODADA = 17     # a rodada das 18h (com folga de atraso do GitHub) �
 # dados, então "a data existe" não serve para saber se o dia chegou.
 HORA_MIN_IMPORTAR = 6
 STATUS_COMPROU = "venda_televendas"
+# Cotações dos VENDEDORES DAS LOJAS (decisão do TI, 25/11/2026): mesmo relatório SEM o filtro do televendas;
+# quem cotou (coluna "Vendedor") é o responsável. Só as 8 lojas das Ligações. Gerente, férias, desativado ou
+# não cadastrado → divisão automática. SQL 31 (ligacoes.origem, perfis.nome_movere, ligacoes_nomes_movere).
+LOJAS_COTACAO_LOJA = {"MATRIZ", "C.AUTO PVH", "ARIQUEMES", "JI-PARANA", "CACOAL", "C.AUTO VLH", "PARINTINS", "XAPURI"}
+INICIO_LOJA = date(2026, 11, 25)          # primeiras cotações das lojas na lista
 
 
 # ── Kommo ─────────────────────────────────────────────────────────────────────
@@ -216,7 +221,8 @@ def cotacoes(linhas: list) -> list:
         if not cot or d is None:
             continue
         g = grupos.setdefault(cot, {"cotacao": cot.strip(), "cliente": cli_.strip(), "telefone": tel.strip(),
-                                    "data": d, "loja": est.strip(), "operador": op.strip(), "valor": 0.0})
+                                    "data": d, "loja": est.strip(), "operador": op.strip(), "vendedor": r[6].strip(),
+                                    "valor": 0.0})
         g["valor"] += cv.numero_br(val)
         if not g.get("medida"):
             g["medida"] = medida_de(item)
@@ -257,6 +263,54 @@ def escolher_novas(cots: list, vendas: dict, agendados: set, ja_existem: set, te
         vistos |= chaves
         novas.append(c)
     return novas, motivos
+
+
+def _palavras(nome) -> list:
+    import unicodedata
+    t = unicodedata.normalize("NFD", str(nome or "")).encode("ascii", "ignore").decode().upper()
+    return [w for w in _re.split(r"[^A-Z]+", t) if w and w not in ("DA", "DE", "DO", "DAS", "DOS", "E")]
+
+
+def casar_vendedor(nome_movere: str, loja: str, perfis: list):
+    """Quem é, nas Ligações, o vendedor do Movere? 1º pelo "Nome no Movere" do /admin; senão, se TODAS as
+    palavras do nome cadastrado (ex.: "Edileia Brito") estão no nome do Movere ("EDILEIA BRITO DA SILVA")
+    e só uma pessoa da loja bate. Devolve o perfil (qualquer função) ou None."""
+    alvo = _palavras(nome_movere)
+    if not alvo:
+        return None
+    da_loja = [p for p in perfis if (p.get("loja") or "").upper() == loja.upper()]
+    for p in da_loja:
+        if p.get("nome_movere") and _palavras(p["nome_movere"]) == alvo:
+            return p
+    batem = [p for p in da_loja if not p.get("nome_movere") and _palavras(p.get("nome"))
+             and set(_palavras(p.get("nome"))) <= set(alvo) and _palavras(p.get("nome"))[0] == alvo[0]]
+    return batem[0] if len(batem) == 1 else None
+
+
+def responsavel_loja(c: dict, perfis: list):
+    """Cotação da loja → (perfil responsável ou None = divisão automática, perfil reconhecido ou None)."""
+    p = casar_vendedor(c.get("vendedor"), c["loja"], perfis)
+    if p and p.get("papel_ligacoes") == "vendedor" and p.get("ativo") and not p.get("ferias"):
+        return p, p
+    return None, p
+
+
+def apelido(p: dict) -> str:
+    return (p.get("apelido") or "").strip() or (str(p.get("nome") or "").strip().split(" ")[0].capitalize())
+
+
+def separar_loja(sem_filtro: list, televendas: list) -> list:
+    """Do relatório sem o filtro do televendas, só as cotações feitas nas 8 lojas pelos vendedores."""
+    cot_tv = {c["cotacao"] for c in televendas}
+    ops_tv = {c["operador"] for c in televendas if c["operador"]}
+    out = []
+    for c in sem_filtro:
+        if c["cotacao"] in cot_tv or (c["operador"] and c["operador"] in ops_tv):
+            continue
+        if c["loja"].upper() not in LOJAS_COTACAO_LOJA or c["data"] < INICIO_LOJA:
+            continue
+        out.append({**c, "origem": "loja"})
+    return out
 
 
 def data_kommo(tel, datas: dict):
@@ -367,6 +421,14 @@ def main() -> int:
                              headers=cv._sb_headers(chave)).status_code == 200
         if not tem_medida:
             print("⚠️ Falta rodar o SQL 14 (coluna da medida): sigo sem a medida do pneu.")
+        # Cotações das lojas (SQL 31): coluna ligacoes.origem e perfis.nome_movere
+        tem_origem = cli.get(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?select=origem&limit=1",
+                             headers=cv._sb_headers(chave)).status_code == 200
+        perfis = []
+        if tem_origem:
+            perfis = sb_get(cli, chave, "perfis?select=id,nome,apelido,loja,papel_ligacoes,ativo,ferias,nome_movere&limit=5000")
+        else:
+            print("ℹ️ Falta rodar o SQL 31: as cotações dos vendedores das lojas ainda não entram.")
         # Estado atual da lista
         ult = sb_get(cli, chave, "ligacoes?select=data_cotacao&order=data_cotacao.desc&limit=1")
         ultima = date.fromisoformat(ult[0]["data_cotacao"]) if ult else None
@@ -425,6 +487,13 @@ def main() -> int:
         novas = []
         dias_cot = sorted(set(prontos) | {date.fromisoformat(l["data_cotacao"]) for l in sem_medida} & set(uris_vendas))
         todas_cots = cotacoes(cv.relatorio(cli, tt, REL_COT, DASH_COT, filtro_dias([uris_vendas[d] for d in dias_cot]))) if dias_cot else []
+        # Cotações dos vendedores das lojas (SQL 31): o mesmo relatório sem o filtro do televendas
+        cots_loja = []
+        if tem_origem and dias_cot and max(dias_cot) >= INICIO_LOJA:
+            cots_loja = separar_loja(cotacoes(cv.relatorio(cli, tt, REL_COT, None,
+                                                           filtro_dias([uris_vendas[d] for d in dias_cot]))), todas_cots)
+            print(f"🏪 Cotações dos vendedores das lojas: {len(cots_loja)}")
+        DETALHES.update(cotacoes_loja=len(cots_loja))
         # Dia novo sem nenhuma cotação: ainda não chegou (fica para a próxima rodada; às 18h vira aviso)
         com_dados = {c["data"] for c in todas_cots}
         vazios = [d for d in prontos if d in dias and d not in com_dados]
@@ -432,7 +501,7 @@ def main() -> int:
             print(f"⏳ Sem nenhuma cotação ainda em {', '.join(d.strftime('%d/%m') for d in vazios)}: importo na próxima rodada.")
             prontos = [d for d in prontos if d not in vazios]
         if sem_medida and not dry:
-            medidas = {c["cotacao"]: c.get("medida") for c in todas_cots if c.get("medida")}
+            medidas = {c["cotacao"]: c.get("medida") for c in todas_cots + cots_loja if c.get("medida")}
             completas = 0
             for l in sem_medida:
                 med = medidas.get(l.get("cotacao"))
@@ -442,7 +511,9 @@ def main() -> int:
                     completas += 1
             print(f"📏 Medida do pneu completada em {completas} cotação(ões) da lista")
         if prontos:
-            cots = [c for c in todas_cots if c["data"] in prontos]
+            # Mesmo telefone nas duas: fica a da loja (quem cotou já conhece o cliente)
+            cots = sorted([c for c in todas_cots + cots_loja if c["data"] in prontos],
+                          key=lambda c: (c["data"], c.get("origem") != "loja", c["cotacao"]))
             existentes = {c["cotacao"] for c in sb_get(
                 cli, chave, "ligacoes?select=cotacao&limit=20000&data_cotacao=in.(" +
                 ",".join(d.isoformat() for d in prontos) + ")")}
@@ -463,18 +534,54 @@ def main() -> int:
                   f"atacado {motivos['loja_ignorada']}")
             if por_loja:
                 print("   por loja: " + " · ".join(f"{l} {n}" for l, n in sorted(por_loja.items())))
+            # Cotação da loja: o responsável é quem cotou (gerente, férias ou não reconhecido → divisão)
+            agora_iso = datetime.now(timezone.utc).isoformat()
+            dono = {}
+            if tem_origem:
+                for c in novas:
+                    if c.get("origem") == "loja":
+                        resp, _ = responsavel_loja(c, perfis)
+                        if resp:
+                            dono[c["cotacao"]] = resp
+                n_loja = sum(1 for c in novas if c.get("origem") == "loja")
+                DETALHES.update(novas_loja=n_loja, novas_loja_quem_cotou=len(dono), novas_loja_divisao=n_loja - len(dono))
+                print(f"   das lojas: {n_loja} (para quem cotou {len(dono)} · divisão {n_loja - len(dono)})")
             if novas and not dry:
                 corpo = [{"cotacao": c["cotacao"], "cliente": c["cliente"] or None, "telefone": c["telefone"] or None,
                           "tel_chave": cv.chave_tel(c["telefone"]) or None, "loja": c["loja"],
-                          "operador": c["operador"] or None, "valor": c["valor"],
-                          "data_cotacao": c["data"].isoformat(),
-                          **({"medida": c.get("medida")} if tem_medida else {})} for c in novas]
+                          "operador": (c.get("vendedor") if c.get("origem") == "loja" else c["operador"]) or None,
+                          "valor": c["valor"], "data_cotacao": c["data"].isoformat(),
+                          **({"medida": c.get("medida")} if tem_medida else {}),
+                          **({"origem": c.get("origem") or "televendas",
+                              "responsavel_id": dono[c["cotacao"]]["id"] if c["cotacao"] in dono else None,
+                              "responsavel_nome": apelido(dono[c["cotacao"]]) if c["cotacao"] in dono else None,
+                              "distribuido_em": agora_iso if c["cotacao"] in dono else None} if tem_origem else {})}
+                         for c in novas]
                 for i in range(0, len(corpo), 500):
                     r = cli.post(f"{cv.SUPABASE_URL}/rest/v1/ligacoes?on_conflict=cotacao",
                                  headers=cv._sb_headers(chave, {"Prefer": "resolution=ignore-duplicates,return=minimal"}),
                                  json=corpo[i:i + 500])
                     r.raise_for_status()
         RESUMO["inseridas"] = len(novas)
+        # Nomes de vendedores do Movere vistos nas cotações das lojas (o /admin avisa os não reconhecidos)
+        if cots_loja and not dry:
+            nomes = {}
+            for c in cots_loja:
+                if not c.get("vendedor"):
+                    continue
+                k = (c["loja"], c["vendedor"])
+                n = nomes.setdefault(k, {"loja": c["loja"], "nome": c["vendedor"], "cotacoes": 0, "ultima": c["data"].isoformat(),
+                                         "perfil_id": (casar_vendedor(c["vendedor"], c["loja"], perfis) or {}).get("id"),
+                                         "atualizado_em": datetime.now(timezone.utc).isoformat()})
+                n["cotacoes"] += 1
+                n["ultima"] = max(n["ultima"], c["data"].isoformat())
+            if nomes:
+                r = cli.post(f"{cv.SUPABASE_URL}/rest/v1/ligacoes_nomes_movere?on_conflict=loja,nome",
+                             headers=cv._sb_headers(chave, {"Prefer": "resolution=merge-duplicates,return=minimal"}),
+                             json=list(nomes.values()))
+                if r.status_code >= 300:
+                    print(f"⚠️ Não gravei os nomes do Movere ({r.status_code})")
+            DETALHES.update(nomes_movere=len(nomes), nomes_sem_ligacao=sum(1 for n in nomes.values() if not n["perfil_id"]))
 
         # 2) Reconferir a lista aberta
         bate = [l for l in abertas if cv.chaves_tel(l.get("telefone")) & agendados]
