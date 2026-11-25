@@ -350,7 +350,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **Resultado Varejo · Geral**, **Atacado** e **Truck** ("em breve", decisão do TI 24/11/2026).
 - **Varejo** (decisão do TI: base = **rotina 553**, com o dia de hoje): Vendido hoje, no mês, meta, falta (e por dia,
   contando seg–sáb), ticket médio; **ranking das lojas** (hoje, clientes, mês, meta, %, falta, clientes, ticket, itens);
-  clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
+  clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: admin e **gerente de todas as lojas** (Jonathan;
+  SQL `29_metas_varejo_jonathan.sql`, `edita_metas_varejo()` = `ve_todas_ligacoes()`; decisão do TI 25/11/2026), botão ✏️ Metas na página
   (`varejo_metas`). Sem metas, mostra "sem meta". **Dias úteis** igual ao Televendas: no ✏️ Metas, calendário do mês;
   clicar no dia marca feriado (domingo nunca conta). Feriados gravados em `varejo_metas` com `loja = 'feriado_DD'`.
   **% desejado do dia** = dias úteis até hoje ÷ dias úteis do mês; % meta **verde** se ≥ desejado, **vermelho** abaixo.

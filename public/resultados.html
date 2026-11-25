@@ -155,14 +155,16 @@ const horaPVH = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America
 const LOJAS = ["MATRIZ", "C.AUTO PVH", "ARIQUEMES", "JI-PARANA", "CACOAL", "C.AUTO VLH", "PARINTINS", "XAPURI"];
 const NOME_LOJA = {"C.AUTO PVH": "C. Automotivo PVH", "C.AUTO VLH": "C. Automotivo Vilhena", "JI-PARANA": "Ji-Paraná", "PARINTINS": "Parintins (Manaus)", "XAPURI": "Xapuri (Rio Branco)"};
 const nomeLoja = l => NOME_LOJA[l] || (l.charAt(0) + l.slice(1).toLowerCase());
-let perfil = null, ehAdmin = false;
+let perfil = null, ehAdmin = false, podeMetas = false;
 
 // ── LOGIN (qualquer pessoa com login ativo) ──
 async function entrar(sessao) {
   if (!sessao) return;
-  const { data: p } = await sb.from("perfis").select("nome,apelido,email,funcoes,ativo").eq("id", sessao.user.id).maybeSingle();
+  const { data: p } = await sb.from("perfis").select("*").eq("id", sessao.user.id).maybeSingle();
   if (!p || !p.ativo) { await sb.auth.signOut(); $("l-erro").textContent = "Seu acesso está desativado ou não existe. Fale com o TI."; return; }
   perfil = p; ehAdmin = (p.funcoes || []).includes("admin");
+  // Metas do Varejo: admin e "Gerente de todas as lojas" (Jonathan), igual ao banco (SQL 29, edita_metas_varejo)
+  podeMetas = ehAdmin || ((p.papel_ligacoes === "gerente" || !!p.dash_ligacoes) && !p.loja);
   if (ehAdmin && window.FoxTema && FoxTema.admin) try { FoxTema.admin(); } catch (e) {}
   $("login").style.display = "none"; $("app").style.display = "block";
   rota();
@@ -287,7 +289,7 @@ function desenharVarejo() {
   const kpis = `<div class="kpis">
     <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " clientes" : "ainda sem rodada hoje"}</small></div>
     <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens${T.pneus != null && !TP ? " · " + PNEU + " " + fmtN(T.pneus) + " pneus" : ""}</small></div>
-    <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i class="${cor(pctT)}" style="width:${Math.min(100, pctT)}%"></i></div><small><i class="${cor(pctT)}" style="font-style:normal;font-weight:800">${pctT.toFixed(0)}% atingido</i> · desejado hoje: ${desejado}%</small>` : `<small>${ehAdmin ? "clique em ✏️ Metas" : "o TI ainda não lançou"}</small>`}</div>
+    <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i class="${cor(pctT)}" style="width:${Math.min(100, pctT)}%"></i></div><small><i class="${cor(pctT)}" style="font-style:normal;font-weight:800">${pctT.toFixed(0)}% atingido</i> · desejado hoje: ${desejado}%</small>` : `<small>${podeMetas ? "clique em ✏️ Metas" : "ainda não lançada"}</small>`}</div>
     <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + (dr === 1 ? " dia útil restante" : " dias úteis restantes") : T.meta ? "meta batida! 🎉" : ""}</small></div>
     <div class="k"><span>Ticket médio</span><b>${fmtR(T.ticket)}</b><small>venda ÷ clientes</small></div>
     ${TP && T.pneus != null ? `<div class="k"><span>${PNEU} Pneus no mês</span><b>${fmtN(T.pneus)} <i class="pb ${cor(T.pneus / TP.m * 100)}" style="font-style:normal;font-size:13px">${(T.pneus / TP.m * 100).toFixed(0)}%</i></b>
@@ -318,8 +320,8 @@ function desenharVarejo() {
     <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : `<span class="pb ${cor(pctT)}">${pctT.toFixed(0)}%</span>`}</td>
     <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r pn">${celPneusMeta(T.pneus, T.pneusV, TP)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
 
-  const metasHtml = ehAdmin ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;feriadosEdit=null;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
-    ${editandoMetas ? `<div class="sub">Só o administrador vê este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
+  const metasHtml = podeMetas ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;feriadosEdit=null;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
+    ${editandoMetas ? `<div class="sub">Só o administrador e o gerente de todas as lojas veem este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
     <div class="metas">${LOJAS.map(l => `<label>${esc(nomeLoja(l))}<input type="number" min="0" step="1000" data-loja="${esc(l)}" value="${meta[l] || ""}">
       <span style="font-size:11px;color:var(--fx-tx3,#999)">${PNEU} Pneus: Meta · Super · Mega</span>
       <span class="pm"><input type="number" min="0" data-pn="m" data-l="${esc(l)}" value="${metaP[l] ? metaP[l].m : ""}" placeholder="Meta"><input type="number" min="0" data-pn="s" data-l="${esc(l)}" value="${metaP[l] ? metaP[l].s || "" : ""}" placeholder="Super"><input type="number" min="0" data-pn="g" data-l="${esc(l)}" value="${metaP[l] ? metaP[l].g || "" : ""}" placeholder="Mega"></span></label>`).join("")}</div>
