@@ -17,6 +17,12 @@ FAMILIAS_VAREJO = [
 # Coluna "Pneus" do Resultado Varejo (pedido do TI, 24/11/2026): só as famílias de PNEU (as outras são peças,
 # lubrificantes, mercadorias e serviços).
 FAMILIAS_PNEUS = ["DUNLOP", "FAMÍLIA PASSEIO PIRELLI", "MULTIMARCAS CAR", "PASSEIO BRIDGESTONE", "PNEUS IMPORTADOS CAR"]
+# Resultado ATACADO (pedido do TI, 25/11/2026): rotina 553 com a Tabela de Preço 2 ATACADO + 5 ATACADO PREMIUM, todas as
+# lojas e todas as famílias. Pneus do Atacado: famílias com medida no nome (conferido no Analytics em 25/11/2026; TRUCK
+# PROMETEON tem pneus de caminhão e câmaras; RECAPAGEM é serviço e fica fora).
+TABELAS_ATACADO = ["ATACADO", "ATACADO PREMIUM"]
+FAMILIAS_PNEUS_ATACADO = ["DUNLOP", "FAMÍLIA PASSEIO PIRELLI", "MULTIMARCAS CAR", "MULTIMARCAS TRUCK", "PASSEIO BRIDGESTONE",
+                          "PNEUS IMPORTADOS CAR", "PNEUS IMPORTADOS TRUCK", "TRUCK PROMETEON", "TRUCK/AGRO BRIDGESTONE"]
 TABELAS_VAREJO = [
     "COLABORADORES", "CP 1", "CP 2", "CP 3", "CP 4", "CP 5", "CP SEM DEFINIÇÃO", "CTR",
     "FROTAS LEVE", "FROTAS TICKET LOG", "Não Atribuído", "RECAPAGEM DIFERENCIADA", "VAREJO",

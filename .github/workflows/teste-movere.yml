@@ -18,9 +18,11 @@ jobs:
 
       - name: Roda teste
         env:
-          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
-          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
-        run: python3 diag_familias_pneu.py
+          MOVERE_USER: ${{ secrets.MOVERE_USER }}
+          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
+          DRY_RUN: '1'
+          MOSTRAR_TRANCADO: '1'
+        run: python3 resultados_atacado.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
