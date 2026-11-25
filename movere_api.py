@@ -115,6 +115,34 @@ def vendas_por_orcamento(ns: list) -> dict:
     return v
 
 
+def cotacoes_para_os(cli, tok, desde: date, ate: date, log=print) -> dict:
+    """{nº da cotação: nº da O.S.} das O.S. que viraram nota no período (ConsultaOrcamentos com status 2 = Nota gerada).
+    Nos descontos, "Orçamento" = nº da COTAÇÃO e "O.S." = nº da ordem de serviço (a nota traz o nº da O.S.)."""
+    out = {}
+    for loja in lojas(cli, tok):
+        for p in range(1, 400):
+            l = _lista(_get(cli, tok, "/api/ConsultaOrcamentos",
+                            {"codigoLoja": loja, "emissaoInicial": desde.isoformat(), "emissaoFinal": ate.isoformat(),
+                             "status": 2, "pagina": p}))
+            for x in l:
+                o = x.get("orcamento") or x
+                if o.get("idcotacao") and o.get("idorcamento"):
+                    out[str(o["idcotacao"])] = str(o["idorcamento"])
+            if len(l) < POR_PAGINA:
+                break
+    log(f"🛰️ API do Movere: {len(out)} cotações que viraram O.S. com nota")
+    return out
+
+
+def por_numero(vendas_os: dict, cot_os: dict) -> dict:
+    """{('os', nº): (dia, valor), ('cotacao', nº): (dia, valor)} para achar o desconto pelo número certo do seu tipo."""
+    out = {("os", k): v for k, v in vendas_os.items()}
+    for cot, os_ in cot_os.items():
+        if os_ in vendas_os:
+            out[("cotacao", cot)] = vendas_os[os_]
+    return out
+
+
 def juntar(a: dict, b: dict) -> dict:
     """Junta dois {telefone: [(dia, valor)]} sem repetir a mesma venda."""
     out = {k: list(v) for k, v in a.items()}
@@ -127,7 +155,8 @@ def juntar(a: dict, b: dict) -> dict:
 
 
 def buscar(desde: date, ate: date, log=print):
-    """(por_telefone, por_orcamento) da API, ou ({}, {}) se a API não estiver configurada ou falhar."""
+    """(por_telefone, por_numero) da API, ou ({}, {}) se a API não estiver configurada ou falhar.
+    por_numero = {('os', nº da O.S.) ou ('cotacao', nº da cotação): (dia, valor)}."""
     if not configurada():
         log("ℹ️ API do Movere não configurada (segredos MOVERE_API_*): segue só com o Analytics")
         return {}, {}
@@ -135,7 +164,12 @@ def buscar(desde: date, ate: date, log=print):
         with httpx.Client(timeout=120) as cli:
             tok = login(cli)
             ns = notas(cli, tok, desde, ate, log)
-        return vendas_por_telefone(ns), vendas_por_orcamento(ns)
+            try:
+                cot_os = cotacoes_para_os(cli, tok, desde, ate, log)
+            except Exception as e:   # sem a ligação cotação → O.S., ainda acha pela O.S. e pelo telefone
+                log(f"⚠️ Cotações da API falharam ({type(e).__name__}): segue pela O.S. e pelo telefone")
+                cot_os = {}
+        return vendas_por_telefone(ns), por_numero(vendas_por_orcamento(ns), cot_os)
     except Exception as e:
         log(f"⚠️ API do Movere falhou ({type(e).__name__}): segue só com o Analytics")
         return {}, {}
