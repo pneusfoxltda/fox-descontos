@@ -382,9 +382,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   (3 caixinhas por loja). Vendedor: só o número (sem meta por vendedor).
 - SQL **`26_resultados_varejo.sql`**: `varejo_lojas`, `varejo_vendedores` (periodo `mes`/`hoje`), `varejo_conferencia`,
   `varejo_metas`, `perfil_ativo()`. Testes: `python tests/test_resultados_varejo.py`.
-- Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo; ARIQUEMES −1.266,00 = devolução REVENDA (cliente
-  239846, nota 1301); C.AUTO PVH +516,77 era REVENDA e o segmento foi corrigido no Movere. Segmento REVENDA não existe
-  como filtro na 553 (procurado nas 21 listas).
+- Conferido em 24/11/2026 (01 a 21/11): 6 lojas batem no centavo com o Analytics; a diferença das outras é REVENDA
+  (devoluções/vendas de clientes com segmento REVENDA). Segmento REVENDA não existe como filtro na 553 (procurado nas 21 listas).
 
 ## 📦 Resultado Atacado — branch `resultado-atacado`
 
@@ -401,7 +400,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
   mês (+ pneus do mês com `FAMILIAS_PNEUS_ATACADO`: inclui TRUCK, MULTIMARCAS TRUCK, TRUCK/AGRO e TRUCK PROMETEON, que tem
   câmaras; RECAPAGEM fica fora) e os últimos 5 dias úteis (hoje e o dia anterior sempre; os outros só se faltarem;
   linha `TOTAL` em `atacado_lojas` marca o dia lido). Nos dias 1–3 fecha o mês anterior. ≈ 2–5 min.
-  Conferido em 25/11/2026: mês = **R$ 4.341.217,09** (igual ao relatório 553 do TI), 30 vendedores, 13 lojas.
+  Conferido em 25/11/2026: o total do mês bateu com o relatório 553 do TI (soma dos vendedores = total).
 - SQL **`30_resultados_atacado.sql`**: `atacado_vendedores`, `atacado_lojas` (periodo `mes`/`dia`), `atacado_metas`
   (`v:COD` e `feriado_DD`; metas de EXEMPLO de nov/2026, 8 vendedores, R$ 5,2 mi). Testes: `python tests/test_resultados_atacado.py`.
 
