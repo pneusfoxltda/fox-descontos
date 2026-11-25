@@ -351,7 +351,11 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Varejo** (decisão do TI: base = **rotina 553**, com o dia de hoje): Vendido hoje, no mês, meta, falta (e por dia,
   contando seg–sáb), ticket médio; **ranking das lojas** (hoje, clientes, mês, meta, %, falta, clientes, ticket, itens);
   clicar na loja mostra os **vendedores** (a soma bate com a loja: ✅). **Metas**: só o admin, botão ✏️ Metas na página
-  (`varejo_metas`). Sem metas, mostra "sem meta".
+  (`varejo_metas`). Sem metas, mostra "sem meta". **Dias úteis** igual ao Televendas: no ✏️ Metas, calendário do mês;
+  clicar no dia marca feriado (domingo nunca conta). Feriados gravados em `varejo_metas` com `loja = 'feriado_DD'`.
+  **% desejado do dia** = dias úteis até hoje ÷ dias úteis do mês; % meta **verde** se ≥ desejado, **vermelho** abaixo.
+  Ícone de pneu em SVG (`PNEU`; o emoji 🛞 não aparece no Windows). Em cima só "Atualizado em…"; as explicações
+  ficam em "🔻 Mais informações sobre atualização", lá embaixo (pedido do TI, 25/11/2026). Página até 1700 px de largura.
 - **Seta vermelha lá embaixo** (pedido do TI): a 553 até ontem (mês − hoje) comparada com o Analytics
   "Jonathan - Faturamento Varejo" (1111480), por loja, com os motivos: **REVENDA** (o Analytics tira, a 553 não tem o
   filtro) com o código do cliente, nota, dia e vendedor; o que sobrar vira "Diferença sem explicação automática".

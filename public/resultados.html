@@ -23,7 +23,7 @@ button{font-family:inherit;cursor:pointer}
 .top{position:sticky;top:0;z-index:10;background:var(--fx-bg,#111);border-bottom:1px solid var(--fx-bd,#222);padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .top img{width:32px}.top h1{font-size:17px}.top small{color:var(--fx-tx3,#888);font-size:12px;display:block}
 .top .sp{flex:1}
-.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.wrap{max-width:1700px;margin:0 auto;padding:16px}
 .abas{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .aba{background:var(--fx-s1,#161616);border:1px solid var(--fx-bd,#2E2E2E);color:var(--fx-tx2,#ddd);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;text-decoration:none}
 .aba.on{background:var(--fx-ac,#CC1F1F);border-color:var(--fx-ac,#CC1F1F);color:#fff}
@@ -48,7 +48,7 @@ button{font-family:inherit;cursor:pointer}
 .tabw{overflow:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;color:var(--fx-tx3,#888);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;padding:7px 8px;border-bottom:1px solid var(--fx-bd,#2A2A2A);white-space:nowrap}
-td{padding:9px 8px;border-bottom:1px solid var(--fx-bd,#1C1C1C);white-space:nowrap}
+td{padding:9px 7px;border-bottom:1px solid var(--fx-bd,#1C1C1C);white-space:nowrap}
 td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
 tr.loja{cursor:pointer}tr.loja:hover td{background:var(--fx-s2,#1d1d1d)}
 tr.loja td:first-child{font-weight:800;color:var(--fx-tx3,#888)}
@@ -63,6 +63,20 @@ tr.vend td:first-child{color:var(--fx-tx3,#777)}
 .pct{display:inline-block;min-width:44px;text-align:right;font-weight:700}
 .mini{height:6px;background:var(--fx-s2,#262626);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}.mini i{display:block;height:100%;background:#22C55E}
 .medalha{font-size:15px}
+.pneu-ic{width:14px;height:14px;vertical-align:-2px;display:inline-block}
+.pb{display:inline-block;min-width:46px;text-align:center;border-radius:6px;padding:2px 6px;font-weight:800;font-size:12px}
+.pb.vd{background:var(--fx-okbg,#0C2A18);color:var(--fx-oktx,#4ADE80)}.pb.vm{background:var(--fx-erbg,#2A1212);color:var(--fx-ertx,#F87171)}
+.mini i.vm,.prog i.vm{background:#EF4444}
+.k .vd{color:var(--fx-oktx,#4ADE80)}.k .vm{color:var(--fx-ertx,#F87171)}
+.atu{font-size:12px;font-weight:500;color:var(--fx-tx3,#888);margin-left:auto}
+.info-bt{background:none;border:none;color:var(--fx-ertx,#F87171);font-size:12.5px;font-weight:700;padding:6px 2px;cursor:pointer}
+#info-corpo{display:none;font-size:12px;color:var(--fx-tx3,#999);line-height:1.6;padding:4px 2px 10px}
+.cal{display:grid;grid-template-columns:repeat(7,38px);gap:4px;margin:8px 0}
+.cal b{font-size:10px;color:var(--fx-tx3,#888);text-align:center}
+.cal span{font-size:12px;text-align:center;padding:7px 0;border-radius:6px}
+.cal .u{background:var(--fx-s2,#262626);cursor:pointer;font-weight:700}.cal .u:hover{outline:1px solid var(--fx-ac,#CC1F1F)}
+.cal .f{background:var(--fx-erbg,#3A1414);color:var(--fx-ertx,#F87171);cursor:pointer;font-weight:800;text-decoration:line-through}
+.cal .d{color:var(--fx-tx4,#555)}
 .emv{display:block;font-size:10.5px;color:var(--fx-tx3,#888);font-weight:500}
 th.pn,td.pn{background:rgba(34,197,94,.06)}
 .nota{font-size:11.5px;color:var(--fx-tx3,#888);margin-top:8px;line-height:1.5}
@@ -124,6 +138,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "
 const fmtR = v => "R$ " + Number(v || 0).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtR0 = v => "R$ " + Math.round(Number(v || 0)).toLocaleString("pt-BR");
 const fmtN = v => Math.round(Number(v || 0)).toLocaleString("pt-BR");
+const PNEU = '<svg class="pneu-ic" viewBox="0 0 24 24" aria-label="pneu"><circle cx="12" cy="12" r="10.5" fill="#2b2b2b" stroke="#888" stroke-width="1.2"/><circle cx="12" cy="12" r="5.2" fill="#9CA3AF"/><circle cx="12" cy="12" r="2" fill="#4B5563"/><g stroke="#666" stroke-width="1.4"><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></g></svg>';
 // Pneus: quantos pneus e em quantas vendas (vazio até o robô ler, ou sem o SQL 27)
 const celPneus = (q, n) => q == null ? "" : `<b>${fmtN(q)}</b><small class="emv">em ${fmtN(n)} venda${Number(n) === 1 ? "" : "s"}</small>`;
 const fmtD = iso => { if (!iso) return ""; const [a, m, d] = String(iso).slice(0, 10).split("-"); return d + "/" + m; };
@@ -189,12 +204,12 @@ function inicio() {
 
 // ── VAREJO ──
 let V = null, aberta = null, editandoMetas = false;
-// Dias de venda (seg a sáb) que faltam no mês, contando hoje
-function diasRestantes(iso) {
-  const d = new Date(iso + "T12:00:00"), fim = new Date(d.getFullYear(), d.getMonth() + 1, 0, 12);
-  let n = 0;
-  for (const x = new Date(d); x <= fim; x.setDate(x.getDate() + 1)) if (x.getDay() !== 0) n++;
-  return n;
+// Dias úteis do mês (igual ao Televendas): seg a sáb, menos os feriados marcados em ✏️ Metas (domingo nunca conta)
+let feriados = new Set(), feriadosEdit = null;
+function diasUteis(mesIso) {
+  const a = Number(mesIso.slice(0, 4)), m = Number(mesIso.slice(5, 7)), fim = new Date(a, m, 0).getDate(), out = [];
+  for (let d = 1; d <= fim; d++) if (new Date(a, m - 1, d).getDay() !== 0 && !feriados.has(d)) out.push(d);
+  return out;
 }
 async function carregarVarejo() {
   $("sub-top").textContent = "Resultado Varejo · Geral";
@@ -210,7 +225,9 @@ async function carregarVarejo() {
     $("tela").innerHTML = `<div class="vazio">${/varejo_lojas|does not exist|schema cache/i.test(l.error.message || "") ? "O Resultado Varejo ainda não está pronto: falta rodar o passo 26 no Supabase. Avise o TI." : "Não consegui carregar: " + esc(l.error.message)}</div>`;
     return;
   }
-  V = {hoje, mes, lojas: l.data || [], vend: v.data || [], conf: c.data || [], metas: m.data || []};
+  const mt = m.data || [];   // feriados ficam junto das metas: loja = "feriado_DD"
+  feriados = new Set(mt.filter(x => /^feriado_\d+$/.test(x.loja)).map(x => Number(x.loja.slice(8))));
+  V = {hoje, mes, lojas: l.data || [], vend: v.data || [], conf: c.data || [], metas: mt.filter(x => !/^feriado_/.test(x.loja))};
   desenharVarejo();
 }
 function desenharVarejo() {
@@ -233,16 +250,20 @@ function desenharVarejo() {
     pneus: ranking.some(x => x.mes.pneus != null) ? soma(ranking, x => x.mes.pneus) : null, pneusV: soma(ranking, x => x.mes.pneus_vendas),
   };
   T.ticket = T.cli ? T.mes / T.cli : 0;
-  const dr = diasRestantes(hoje), falta = Math.max(0, T.meta - T.mes);
+  const du = diasUteis(V.mes), diaHoje = Number(hoje.slice(8, 10));
+  const duPass = du.filter(d => d <= diaHoje).length, dr = du.filter(d => d >= diaHoje).length;
+  const desejado = du.length ? Math.round(duPass / du.length * 100) : 0;   // % da meta que já devia ter até hoje
+  const cor = p => Math.round(p) >= desejado ? "vd" : "vm";
+  const falta = Math.max(0, T.meta - T.mes);
   const atual = mesL.reduce((m, x) => x.atualizado_em > m ? x.atualizado_em : m, "");
   const temHoje = hojeL.length > 0;
   const pctT = T.meta ? T.mes / T.meta * 100 : null;
 
   const kpis = `<div class="kpis">
     <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " clientes" : "ainda sem rodada hoje"}</small></div>
-    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens${T.pneus != null ? " · 🛞 " + fmtN(T.pneus) + " pneus" : ""}</small></div>
-    <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i style="width:${Math.min(100, pctT)}%"></i></div><small>${pctT.toFixed(0)}% atingido</small>` : `<small>${ehAdmin ? "clique em ✏️ Metas" : "o TI ainda não lançou"}</small>`}</div>
-    <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + " dia(s) de venda" : T.meta ? "meta batida! 🎉" : ""}</small></div>
+    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens${T.pneus != null ? " · " + PNEU + " " + fmtN(T.pneus) + " pneus" : ""}</small></div>
+    <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i class="${cor(pctT)}" style="width:${Math.min(100, pctT)}%"></i></div><small><i class="${cor(pctT)}" style="font-style:normal;font-weight:800">${pctT.toFixed(0)}% atingido</i> · desejado hoje: ${desejado}%</small>` : `<small>${ehAdmin ? "clique em ✏️ Metas" : "o TI ainda não lançou"}</small>`}</div>
+    <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + (dr === 1 ? " dia útil restante" : " dias úteis restantes") : T.meta ? "meta batida! 🎉" : ""}</small></div>
     <div class="k"><span>Ticket médio</span><b>${fmtR(T.ticket)}</b><small>venda ÷ clientes</small></div>
   </div>`;
 
@@ -257,7 +278,7 @@ function desenharVarejo() {
       <td class="r">${temHoje ? fmtN(x.hoje.clientes) : ""}</td>
       <td class="r"><b>${fmtR(x.mes.venda)}</b></td>
       <td class="r">${x.meta ? fmtR0(x.meta) : ""}</td>
-      <td class="r">${p == null ? "" : `<span class="pct">${p.toFixed(0)}%</span><span class="mini"><i style="width:${Math.min(100, p)}%"></i></span>`}</td>
+      <td class="r">${p == null ? "" : `<span class="pb ${cor(p)}">${p.toFixed(0)}%</span><span class="mini"><i class="${cor(p)}" style="width:${Math.min(100, p)}%"></i></span>`}</td>
       <td class="r">${x.meta ? fmtR0(Math.max(0, x.meta - x.mes.venda)) : ""}</td>
       <td class="r">${fmtN(x.mes.clientes)}</td>
       <td class="r pn">${celPneus(x.mes.pneus, x.mes.pneus_vendas)}</td>
@@ -266,19 +287,29 @@ function desenharVarejo() {
     if (aberta === x.loja) linhas += vendedoresDaLoja(x.loja, temHoje);
   });
   linhas += `<tr class="total"><td></td><td>Total Varejo</td><td class="r">${temHoje ? fmtR(T.hoje) : ""}</td><td class="r">${temHoje ? fmtN(T.cliHoje) : ""}</td>
-    <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : pctT.toFixed(0) + "%"}</td>
+    <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : `<span class="pb ${cor(pctT)}">${pctT.toFixed(0)}%</span>`}</td>
     <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r pn">${celPneus(T.pneus, T.pneusV)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
 
-  const metasHtml = ehAdmin ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
+  const metasHtml = ehAdmin ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;feriadosEdit=null;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
     ${editandoMetas ? `<div class="sub">Só o administrador vê este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
     <div class="metas">${LOJAS.map(l => `<label>${esc(nomeLoja(l))}<input type="number" min="0" step="1000" data-loja="${esc(l)}" value="${meta[l] || ""}"></label>`).join("")}</div>
-    <button class="btn" onclick="salvarMetas()">Salvar metas</button> <span id="metas-msg" class="nota"></span>` : `<div class="sub">Total: ${T.meta ? fmtR0(T.meta) : "nenhuma meta lançada"}.</div>`}</div>` : "";
+    <div class="sub" style="margin-top:14px"><b>Dias úteis de ${esc(fmtMes(V.mes))}</b>: clique num dia para marcar como <b>feriado</b> (não conta). Domingo já não conta.
+      <span id="du-info"></span></div>
+    <div class="cal" id="cal-fer">${calFeriados()}</div>
+    <button class="btn" onclick="salvarMetas()">Salvar metas e feriados</button> <span id="metas-msg" class="nota"></span>` : `<div class="sub">Total: ${T.meta ? fmtR0(T.meta) : "nenhuma meta lançada"}.</div>`}</div>` : "";
 
-  $("tela").innerHTML = kpis + `<div class="sec"><h2>🏆 Ranking das lojas</h2>
-    <div class="sub">Clique na loja para ver os vendedores. Ordem pela venda do mês. Atualizado ${atual ? "em " + horaPVH(atual) : ""} · rotina 553 do Movere, de hora em hora (seg a sáb).</div>
-    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r pn">🛞 Pneus</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
-    <p class="nota">Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. 🛞 Pneus = pneus vendidos no mês (só as famílias de pneu) e em quantas vendas. Ticket médio = venda ÷ clientes.</p></div>`
-    + metasHtml + conferencia(conf);
+  $("tela").innerHTML = kpis + `<div class="sec"><h2>🏆 Ranking das lojas <span class="atu">${atual ? "Atualizado em " + horaPVH(atual) : ""}</span></h2>
+    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r" title="Verde: no ritmo (% atingido ≥ ${desejado}% desejado hoje). Vermelho: abaixo do ritmo.">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r pn">${PNEU} Pneus</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
+    </div>`
+    + metasHtml + conferencia(conf)
+    + `<button class="info-bt" onclick="const c=$('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
+    <div id="info-corpo">
+      · Atualizado ${atual ? "em " + horaPVH(atual) : ""}, pela rotina 553 do Movere, de hora em hora (seg a sáb, 7h45 às 17h45, e às 19h10).<br>
+      · Clique na loja para ver os vendedores. Ordem pela venda do mês.<br>
+      · Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.<br>
+      · ${PNEU} Pneus = pneus vendidos no mês (só as famílias de pneu) e em quantas vendas.<br>
+      · % meta: <span class="pb vd">verde</span> no ritmo (% atingido ≥ % desejado do dia) · <span class="pb vm">vermelho</span> abaixo do ritmo. Hoje o desejado é ${desejado}% (${duPass} de ${du.length} dias úteis; domingos e feriados não contam).
+    </div>`;
 }
 const fmtMes = iso => ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][Number(iso.slice(5, 7)) - 1] + "/" + iso.slice(0, 4);
 function vendedoresDaLoja(loja, temHoje) {
@@ -296,11 +327,31 @@ function vendedoresDaLoja(loja, temHoje) {
       <td colspan="7">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
 }
 function abrirLoja(loja) { aberta = aberta === loja ? null : loja; desenharVarejo(); }
+function calFeriados() {
+  if (!feriadosEdit) feriadosEdit = new Set(feriados);
+  const a = Number(V.mes.slice(0, 4)), m = Number(V.mes.slice(5, 7)), fim = new Date(a, m, 0).getDate();
+  let h = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"].map(d => `<b>${d}</b>`).join("") + "<span></span>".repeat(new Date(a, m - 1, 1).getDay());
+  let uteis = 0;
+  for (let d = 1; d <= fim; d++) {
+    const dom = new Date(a, m - 1, d).getDay() === 0, f = feriadosEdit.has(d);
+    if (!dom && !f) uteis++;
+    h += dom ? `<span class="d">${d}</span>` : `<span class="${f ? "f" : "u"}" onclick="trocaFeriado(${d})" title="${f ? "Feriado: clique para voltar a contar" : "Clique para marcar como feriado"}">${d}</span>`;
+  }
+  setTimeout(() => { const e = $("du-info"); if (e) e.textContent = `· ${uteis} dias úteis` + (feriadosEdit.size ? ` (${feriadosEdit.size} feriado(s))` : ""); });
+  return h;
+}
+function trocaFeriado(d) { feriadosEdit.has(d) ? feriadosEdit.delete(d) : feriadosEdit.add(d); $("cal-fer").innerHTML = calFeriados(); }
 async function salvarMetas() {
   const linhas = [...document.querySelectorAll(".metas input")].filter(i => i.value !== "").map(i => ({mes: V.mes, loja: i.dataset.loja, meta: Number(i.value), alterado_por: perfil.nome || perfil.email, alterado_em: new Date().toISOString()}));
   const { error } = await sb.from("varejo_metas").upsert(linhas, {onConflict: "mes,loja"});
   if (error) { $("metas-msg").textContent = "Não consegui salvar: " + error.message; return; }
-  editandoMetas = false; carregarVarejo();
+  if (feriadosEdit) {   // feriados: apaga os do mês e grava os marcados (loja = "feriado_DD")
+    const del = await sb.from("varejo_metas").delete().eq("mes", V.mes).like("loja", "feriado_%");
+    if (del.error) { $("metas-msg").textContent = "Não consegui salvar os feriados: " + del.error.message; return; }
+    const fer = [...feriadosEdit].map(d => ({mes: V.mes, loja: "feriado_" + String(d).padStart(2, "0"), meta: 0, alterado_por: perfil.nome || perfil.email, alterado_em: new Date().toISOString()}));
+    if (fer.length) { const ins = await sb.from("varejo_metas").insert(fer); if (ins.error) { $("metas-msg").textContent = "Não consegui salvar os feriados: " + ins.error.message; return; } }
+  }
+  editandoMetas = false; feriadosEdit = null; carregarVarejo();
 }
 
 // Seta vermelha: a 553 comparada com o Analytics (relatório do Jonathan), loja por loja, com os motivos
