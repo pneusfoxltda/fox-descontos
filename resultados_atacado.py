@@ -73,8 +73,11 @@ async def gerar_553(page, ini: date, fim: date, familias: list, tentativas=(1, 2
     from varejo_filtros import TABELAS_ATACADO
     r = None
     for t in tentativas:
+        if t > 1:
+            await page.wait_for_timeout(20000)   # dá um respiro ao Movere antes de pedir de novo
         try:
-            r = await gerar(page, ini.strftime("%d/%m/%Y"), fim.strftime("%d/%m/%Y"), TABELAS_ATACADO, familias, [])
+            r = await gerar(page, ini.strftime("%d/%m/%Y"), fim.strftime("%d/%m/%Y"), TABELAS_ATACADO, familias, [],
+                            espera_max=60 if ini == fim else 120)
             if "erro" not in r:
                 return r
         except Exception as e:
@@ -93,18 +96,17 @@ async def ler(hoje: date, dias: list, meses: list) -> dict:
         b = await pw.chromium.launch(headless=True)
         page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1400, "height": 2400})).new_page()
         await login(page)
-        for ini, fim in meses:
-            print(f"▶ mês {ini:%m/%Y} até {fim:%d/%m}")
-            r = await gerar_553(page, ini, fim, [])
+
+        async def mes(pg, ini, fim, tentativas):
+            r = await gerar_553(pg, ini, fim, [], tentativas)
             if "erro" in r:
-                out["erros"].append(f"mês {ini:%m/%Y}")
-                continue
+                return False
             lojas, total = lojas_e_total(r)
             vend = vendedores(r)
             print(f"   lojas: {len(lojas)} · vendedores: {len(vend)} · soma dos vendedores = total: "
                   f"{'sim' if abs(sum(v['venda'] for v in vend) - total['venda']) < 0.05 else 'NÃO'}")
             print(f"▶ pneus do mês {ini:%m/%Y}")
-            rp = await gerar_553(page, ini, fim, FAMILIAS_PNEUS_ATACADO)
+            rp = await gerar_553(pg, ini, fim, FAMILIAS_PNEUS_ATACADO)
             if "erro" in rp:   # sem venda de pneu também cai aqui: fica zerado
                 rp = {}
             lp, tp = lojas_e_total(rp) if rp else ([], {"itens": 0.0, "clientes": 0})
@@ -112,16 +114,44 @@ async def ler(hoje: date, dias: list, meses: list) -> dict:
             juntar_pneus(vend, vendedores(rp) if rp else [], "cod")
             total["pneus"], total["pneus_vendas"] = tp["itens"], tp["clientes"]
             out["meses"][ini] = {"fim": fim, "lojas": lojas + [total], "vend": vend}
-        for d in dias:
-            print(f"▶ dia {d:%d/%m}")
-            r = await gerar_553(page, d, d, [], tentativas=(1,))
-            if "erro" in r:   # sem venda no dia o Movere não monta o relatório: dia zerado
-                print("   sem relatório: dia zerado")
-                out["dias"][d] = {"lojas": [{"loja": TOTAL, "cod": None, "venda": 0.0, "clientes": 0, "itens": 0.0}], "vend": []}
-                continue
+            return True
+
+        async def dia(pg, d):
+            r = await gerar_553(pg, d, d, [], tentativas=(1,))
+            if "erro" in r:
+                return False
             lojas, total = lojas_e_total(r)
             out["dias"][d] = {"lojas": lojas + [total], "vend": vendedores(r)}
             print(f"   lojas: {len(lojas)} · vendedores: {len(out['dias'][d]['vend'])}")
+            return True
+
+        falhou = []
+        for ini, fim in meses:
+            print(f"▶ mês {ini:%m/%Y} até {fim:%d/%m}")
+            if not await mes(page, ini, fim, (1, 2)):
+                falhou.append(("mes", ini, fim))
+        for d in dias:
+            print(f"▶ dia {d:%d/%m}")
+            if not await dia(page, d):
+                falhou.append(("dia", d, d))
+
+        # 2ª volta: só o que falhou, entrando no Movere de novo do zero (ele às vezes engasga por alguns minutos)
+        if falhou:
+            print(f"🔁 2ª volta para {len(falhou)} relatório(s)")
+            await page.context.close()
+            await asyncio.sleep(60)
+            page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1400, "height": 2400})).new_page()
+            await login(page)
+            for tipo, ini, fim in falhou:
+                if tipo == "mes":
+                    print(f"▶ mês {ini:%m/%Y} até {fim:%d/%m} (2ª volta)")
+                    if not await mes(page, ini, fim, (1, 2)):
+                        out["erros"].append(f"mês {ini:%m/%Y}")
+                else:
+                    print(f"▶ dia {ini:%d/%m} (2ª volta)")
+                    if not await dia(page, ini):   # sem venda no dia o Movere não monta o relatório: dia zerado
+                        print("   sem relatório: dia zerado")
+                        out["dias"][ini] = {"lojas": [{"loja": TOTAL, "cod": None, "venda": 0.0, "clientes": 0, "itens": 0.0}], "vend": []}
         await b.close()
     return out
 

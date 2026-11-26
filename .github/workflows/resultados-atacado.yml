@@ -21,7 +21,7 @@ concurrency:
 jobs:
   atacado:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +36,7 @@ jobs:
 
       - name: Rotina 553 → banco
         env:
+          PYTHONUNBUFFERED: '1'   # registro com a hora real de cada linha
           MOVERE_USER: ${{ secrets.MOVERE_USER }}
           MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

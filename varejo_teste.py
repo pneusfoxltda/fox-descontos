@@ -7,7 +7,7 @@ Gera a rotina 553 do Movere de 01/11 até hoje, só com os quadros de resumo, em
 O registro do GitHub é PÚBLICO: o resultado sai TRANCADO (criptografado com uma chave pública).
 Só quem tem a chave privada (fora do repositório) consegue ler. Nada de cliente é lido nem guardado.
 """
-import asyncio, base64, json, os, sys
+import asyncio, base64, json, os, sys, time
 from datetime import datetime, timedelta, timezone
 
 from playwright.async_api import async_playwright
@@ -41,7 +41,8 @@ def trancar(obj) -> str:
     return base64.b64encode(len(ek).to_bytes(2, "big") + ek + n + ct).decode()
 
 
-async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: list, lojas: list = None, aros: bool = False) -> dict:
+async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: list, lojas: list = None, aros: bool = False,
+                espera_max: int = 120) -> dict:
     await page.goto(RELATORIO_URL, wait_until="domcontentloaded", timeout=40000)
     await page.wait_for_timeout(2500)
     print(f"   campos limpos (lembrados pelo Movere): {await page.evaluate(JS_LIMPAR)}")
@@ -87,10 +88,12 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
       if (c) { c.click(); return (c.value || c.innerText || c.id || '').trim().slice(0, 40); }
       return null; }""")
     print(f"   botão: {clicou!r}")
-    for _ in range(150):  # até 60 s
+    t0 = time.monotonic()
+    for _ in range(int(espera_max / 0.4)):  # até 120 s (o Movere às vezes demora nos relatórios grandes)
         await page.wait_for_timeout(400)
         if capt or popups:
             break
+    espera = round(time.monotonic() - t0)
     for pg in popups:
         try:
             await pg.wait_for_load_state("domcontentloaded", timeout=30000); await pg.wait_for_timeout(4000)
@@ -106,7 +109,7 @@ async def gerar(page, data_ini: str, data_fim: str, tabelas: list, familias: lis
             pass
     page.remove_listener("response", on_resp)
     melhor = max((b for _, b in capt if "Resumo por" in b), key=len, default=None)
-    print(f"   respostas: {len(capt)} · com resumo: {'sim' if melhor else 'não'} · urls: {[u[-50:] for u, _ in capt][:5]}")
+    print(f"   respostas: {len(capt)} em {espera}s · com resumo: {'sim' if melhor else 'não'} · urls: {[u[-50:] for u, _ in capt][:5]}")
     if not melhor:
         await page.screenshot(path="screenshot_varejo_sem_relatorio.png", full_page=True)
         return {"erro": "relatório não veio", "filtros": marcados, "log": log}

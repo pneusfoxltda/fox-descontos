@@ -409,6 +409,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
   GK fora), 11 famílias, **"Frete compõe valores totais"** marcado (assim bate com o Analytics). O Movere lembra os
   filtros do login: o `sync_televendas.py` limpa lojas/tabelas/famílias/frete antes de cada relatório (não afetar o
   televendas). Registro público só com contagens. `DRY_RUN=1` testa sem gravar.
+- **Movere lento** (26/11/2026): os relatórios que falham variam a cada rodada ("respostas: 0", o Movere não devolve).
+  Varejo e Atacado esperam até **120 s** (o "hoje"/dia, 60 s), dão **20 s de pausa** antes da 2ª tentativa e, no fim,
+  fazem uma **2ª volta** só com o que falhou, com login novo após 1 min. `PYTHONUNBUFFERED=1` deixa a hora real no
+  registro ("respostas: N em Xs"). Tempo-limite: Varejo 60 min, Atacado 45 min.
 - **🛞 Pneus** (pedido do TI, 24/11/2026; coluna ao lado de "Clientes mês", na loja e no vendedor): mais uma 553 por loja
   só com as famílias de pneu (`FAMILIAS_PNEUS`: DUNLOP, FAMÍLIA PASSEIO PIRELLI, MULTIMARCAS CAR, PASSEIO BRIDGESTONE,
   PNEUS IMPORTADOS CAR) → pneus vendidos no mês (`pneus`) e em quantas vendas (`pneus_vendas`). Conferido em 25/11/2026 com a regra do TI
