@@ -27,6 +27,9 @@ button{font-family:inherit;cursor:pointer}
 .geral{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .g{flex:1;min-width:150px;border-radius:12px;padding:14px 16px;border:1px solid var(--fx-bd,#2A2A2A);background:var(--fx-s1,#161616)}
 .g b{display:block;font-size:28px;font-weight:800}.g span{font-size:12px;color:var(--fx-tx3,#aaa)}
+.g.clica{cursor:pointer}.g.clica:hover{filter:brightness(1.08)}
+@keyframes piscar{0%,100%{box-shadow:none}25%,75%{box-shadow:0 0 0 3px #F59E0B}}
+.pisca{animation:piscar 1.6s ease 2;border-radius:8px}
 .g.vm{border-color:#7F1D1D;background:var(--fx-erbg,#2A1212)}.g.am{border-color:#78590F;background:var(--fx-avbg,#221A06)}.g.vd{border-color:#14532D;background:var(--fx-okbg,#0C1F14)}
 .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
 .sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:14px 16px}
@@ -125,9 +128,20 @@ const horaPVH = () => Number(new Date().toLocaleString("en-US", {timeZone: "Amer
 const diaPVH = () => new Date().toLocaleString("en-US", {timeZone: "America/Porto_Velho", weekday: "short"});
 
 let contagem = {vd: 0, am: 0, vm: 0};
+// Clicar em "com erro" / "atenção" rola até o item (cada clique vai para o próximo) e pisca a linha
+const proximo = {vm: 0, am: 0};
+function irPara(st) {
+  const els = [...document.querySelectorAll(".st-" + st)];
+  if (!els.length) return;
+  const el = els[proximo[st]++ % els.length];
+  const r = el.getBoundingClientRect();
+  window.scrollTo({top: Math.max(0, r.top + window.scrollY - window.innerHeight / 3), behavior: "smooth"});
+  document.querySelectorAll(".pisca").forEach(x => x.classList.remove("pisca"));
+  el.classList.remove("pisca"); void el.offsetWidth; el.classList.add("pisca");
+}
 function item(st, titulo, detalhe, valor) {
   if (contagem[st] !== undefined) contagem[st]++;
-  return `<div class="it"><span class="s">${SINAL[st]}</span><div class="t"><b>${titulo}</b>${detalhe ? `<small>${detalhe}</small>` : ""}</div>${valor != null ? `<span class="v">${valor}</span>` : ""}</div>`;
+  return `<div class="it st-${st}"><span class="s">${SINAL[st]}</span><div class="t"><b>${titulo}</b>${detalhe ? `<small>${detalhe}</small>` : ""}</div>${valor != null ? `<span class="v">${valor}</span>` : ""}</div>`;
 }
 const secao = (titulo, sub, corpo, larga) => `<div class="sec ${larga ? "larga" : ""}"><h2>${titulo}</h2>${sub ? `<div class="sub">${sub}</div>` : ""}${corpo}</div>`;
 
@@ -302,7 +316,7 @@ async function carregar() {
       const desig = l.vendedores > 1 && l.maior - l.menor > Math.max(3, l.maior * 0.25);
       const st = l.vendedores === 0 ? "vm" : l.sem_resp > 0 || desig ? "am" : horas(l.ultimo_contato) > 30 ? "am" : "vd";
       contagem[st]++;
-      return `<tr><td><b>${esc(l.loja)}</b></td><td class="r">${l.vendedores}</td><td class="r">${l.ferias}</td><td class="r">${l.abertos}</td><td class="r" style="${l.sem_resp ? "color:var(--fx-avtx,#FBBF24);font-weight:700" : ""}">${l.sem_resp}</td>` +
+      return `<tr class="st-${st}"><td><b>${esc(l.loja)}</b></td><td class="r">${l.vendedores}</td><td class="r">${l.ferias}</td><td class="r">${l.abertos}</td><td class="r" style="${l.sem_resp ? "color:var(--fx-avtx,#FBBF24);font-weight:700" : ""}">${l.sem_resp}</td>` +
         `<td class="r" title="menor e maior quantidade de clientes em aberto por vendedor">${l.menor ?? 0} a ${l.maior ?? 0}${desig ? " ⚠️" : ""}</td><td class="r">${l.contatos_hoje}</td><td>${l.ultimo_contato ? quando(l.ultimo_contato) : "<span style='color:var(--fx-tx3,#888)'>nenhum ainda</span>"}</td><td>${SINAL[st]}</td></tr>`;
     }).join("") + `</table></div><p class="nota">🔴 loja sem vendedor ativo · 🟡 clientes sem responsável, divisão desigual (⚠️) ou mais de 30 h sem nenhum contato registrado pela loja. Só conta o trabalho de pessoas com o cliente.</p>`;
   html.push(secao("🏪 Lojas: divisão dos clientes e uso", "", corpo, true));
@@ -368,7 +382,7 @@ async function carregar() {
   html.push(`<div class="sec larga" id="sec-fernanda"><h2>🦊 Conversas com a Fernanda</h2><div class="sub">Carregando…</div></div>`);
   $("grade").innerHTML = html.join("");
   carregarFernanda();
-  $("geral").innerHTML = `<div class="g vm"><b>${contagem.vm}</b><span>🔴 com erro</span></div><div class="g am"><b>${contagem.am}</b><span>🟡 atenção</span></div><div class="g vd"><b>${contagem.vd}</b><span>🟢 funcionando</span></div>`;
+  $("geral").innerHTML = `<div class="g vm clica" onclick="irPara('vm')" title="Clique para ir ao item com erro"><b>${contagem.vm}</b><span>🔴 com erro${contagem.vm ? " · clique para ver" : ""}</span></div><div class="g am clica" onclick="irPara('am')" title="Clique para ir ao item de atenção (cada clique vai para o próximo)"><b>${contagem.am}</b><span>🟡 atenção${contagem.am ? " · clique para ver" : ""}</span></div><div class="g vd"><b>${contagem.vd}</b><span>🟢 funcionando</span></div>`;
   $("atualizado").textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR", {timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit"}) + " · atualiza sozinho a cada 5 min";
 }
 setInterval(() => { if ($("app").style.display === "block" && !document.hidden) carregar(); }, 5 * 60 * 1000);
