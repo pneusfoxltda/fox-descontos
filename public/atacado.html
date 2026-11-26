@@ -304,8 +304,6 @@ tr.outro td{background:var(--fx-bg,#f8fafc);font-size:12px;color:var(--fx-tx3,#6
     <p class="scroll-hint">← deslize para ver mais →</p>
     <div id="tabela-wrap"></div>
 
-    <div class="sec-titulo">🏪 Por loja</div>
-    <div id="lojas-wrap"></div>
 
     <button class="info-bt" onclick="const c=document.getElementById('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
     <div id="info-corpo"></div>
@@ -396,7 +394,7 @@ async function carregar() {
   if (v.error || l.error) {
     const e = (v.error || l.error).message || "";
     $("kpis").innerHTML = `<div class="erro" style="grid-column:1/-1">${/atacado_|does not exist|schema cache/i.test(e) ? "O Resultado Atacado ainda não está pronto: falta rodar o passo 30 no Supabase. Avise o TI." : "Não consegui carregar: " + esc(e)}</div>`;
-    $("tabela-wrap").innerHTML = ""; $("lojas-wrap").innerHTML = ""; return;
+    $("tabela-wrap").innerHTML = ""; return;
   }
   const metas = m.data || [];
   D = {mes, vend: v.data || [], lojas: l.data || [],
@@ -481,7 +479,7 @@ function render() {
       </tbody></table></div>
       <p style="font-size:11.5px;color:var(--fx-tx3,#6b7280)">Valor negativo = devolução (a venda foi feita antes com preço de Atacado e o cliente devolveu agora). Já está descontado no TOTAL SETOR, igual na rotina 553. Para alguém sair daqui e ir para a tabela de cima, é só dar uma meta em "Editar metas".</p>` : ""}`;
   const onT = Math.round(pctMeta) >= pctDesejado;
-  $("tabela-wrap").innerHTML = semDados ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13px;color:var(--fx-avtx,#92400e)">⏳ <strong>${MESES[m - 1]} ${ano}</strong> · Aguardando dados do mês. As vendas aparecem aqui depois da primeira rodada do robô (de hora em hora, seg a sáb).</div>` : `
+  $("tabela-wrap").innerHTML = semDados ? `<div style="background:#fff8e7;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-top:16px;font-size:13px;color:var(--fx-avtx,#92400e)">⏳ <strong>${MESES[m - 1]} ${ano}</strong> · Aguardando dados do mês. As vendas aparecem aqui depois da primeira rodada do robô (seg a sáb, às 8h e às 17h30).</div>` : `
   <div class="table-wrap" style="margin-top:16px;"><table>
     <thead><tr>
       <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Vendedor</th>
@@ -504,27 +502,16 @@ function render() {
       <div class="leg-item"><span class="leg-dot" style="background:var(--fx-ac,#CC1F1F)"></span> Abaixo do ritmo</div>
       <span style="margin-left:auto">Passe o mouse no valor do dia para ver clientes e itens · ordenado pelo maior % atingido</span></div></div>`;
 
-  // Por loja
-  const lMes = lojas.filter(x => x.periodo === "mes" && x.loja !== "TOTAL").sort((a, b) => b.venda - a.venda);
-  const lHoje = Object.fromEntries(lojas.filter(x => x.periodo === "dia" && x.dia === (mesCompleto ? "" : hoje)).map(x => [x.loja, x]));
-  $("lojas-wrap").innerHTML = semDados ? "" : `<div class="table-wrap"><table>
-    <thead><tr><th>Loja</th><th>Hoje</th><th>Faturamento<br>do mês</th><th>% do setor</th><th>Clientes</th><th>Itens</th><th>${PNEU} Pneus</th><th>Ticket médio</th></tr></thead>
-    <tbody>${lMes.map(x => `<tr><td style="font-size:14px;font-weight:800">${esc(nomeLoja(x.loja))}</td>
-      ${lHoje[x.loja] && Number(lHoje[x.loja].venda) ? `<td class="dia-tip" data-tip="${esc(num(lHoje[x.loja].clientes) + " clientes\n" + num(lHoje[x.loja].itens) + " itens vendidos")}">${brl(lHoje[x.loja].venda)}</td>` : "<td></td>"}
-      <td style="font-weight:700">${brl(x.venda)}</td><td>${totalMes ? pct(x.venda / totalMes * 100) : ""}</td><td>${num(x.clientes)}</td><td>${num(x.itens)}</td>
-      ${x.pneus == null ? "<td></td>" : `<td>${num(x.pneus)}<span class="pneus-sub">em ${num(x.pneus_vendas)} vendas</span></td>`}
-      <td>${x.clientes ? brl(x.venda / x.clientes) : ""}</td></tr>`).join("")}
-      <tr class="total-row"><td style="font-size:14px;font-weight:800">TOTAL</td><td>${lHoje.TOTAL ? brl(lHoje.TOTAL.venda) : ""}</td><td>${brl(totalMes)}</td><td>100%</td>
-      <td>${num(tMes.clientes)}</td><td>${num(tMes.itens)}</td>${tMes.pneus == null ? "<td></td>" : `<td>${num(tMes.pneus)}</td>`}<td>${tMes.clientes ? brl(totalMes / tMes.clientes) : ""}</td></tr>
-    </tbody></table></div>`;
+  // Sem "Por loja" (decisão do TI, 26/11/2026): só a equipe do Atacado conta, e o Movere soma todo mundo na loja.
 
   $("info-corpo").innerHTML = `
-    · Atualizado ${atual ? "em " + horaPVH(atual) : ""}: rotina 553 do Movere, de hora em hora (seg a sáb, 7h45 às 17h45, e às 19h20).<br>
+    · Atualizado ${atual ? "em " + horaPVH(atual) : ""}: rotina 553 do Movere, 2 vezes por dia (seg a sáb, 8h e 17h30).<br>
+    · Só a <b>equipe do Atacado</b> (7 funcionários) entra na página.<br>
     · Filtros da 553: Tabela de Preço <b>2 ATACADO</b> e <b>5 ATACADO PREMIUM</b>, todas as lojas e famílias, somente base de venda, frete compõe os valores totais.<br>
     · Faturamento = venda líquida (vendas menos devoluções). Clientes = vendas realizadas. Ticket médio = faturamento ÷ clientes.<br>
     · ${PNEU} Pneus = pneus vendidos no mês (famílias de pneu de carro, caminhonete, caminhão e agrícola) e em quantas vendas.<br>
     · Verde: no ritmo (% atingido ≥ % desejado do dia). Vermelho: abaixo. Hoje o desejado é ${pct(pctDesejado)} (${duFechados} de ${duTotal} dias úteis já fechados, até ontem; domingos e feriados não contam; no fim do mês chega a 100%).<br>
-    · Metas 2 e 3 = Meta 1 + 10% e + 20%. O TOTAL SETOR inclui as devoluções e os vendedores sem meta (lista abaixo).<br>` + outrosHtml;
+    · Metas 2 e 3 = Meta 1 + 10% e + 20%. O TOTAL SETOR é a soma da equipe do Atacado, já com as devoluções dela.<br>` + outrosHtml;
 }
 
 // ── Editar metas e feriados (admin e gerente de todas as lojas) ──

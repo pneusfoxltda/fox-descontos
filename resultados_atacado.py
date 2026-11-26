@@ -1,11 +1,13 @@
 """
 resultados_atacado.py · Robô do "Resultado Atacado" (página /atacado, no modelo do painel do Televendas)
 ======================================================================================================
-De hora em hora (seg–sáb), gera a ROTINA 553 do Movere com a Tabela de Preço 2 ATACADO + 5 ATACADO PREMIUM,
+Duas vezes por dia (seg–sáb, 8h e 17h30 de Porto Velho), gera a ROTINA 553 do Movere com a Tabela de Preço 2 ATACADO + 5 ATACADO PREMIUM,
 todas as lojas, todas as famílias, frete compondo os valores (igual ao relatório que o TI usa), e grava no Supabase:
-  · o MÊS até hoje, por vendedor e por loja (venda, clientes, itens) + os PNEUS do mês (famílias de pneu);
-  · cada um dos ÚLTIMOS 5 DIAS ÚTEIS (seg–sáb, menos feriados), por vendedor e por loja: as colunas do painel
+  · o MÊS até hoje, por vendedor (venda, clientes, itens) + os PNEUS do mês (famílias de pneu);
+  · cada um dos ÚLTIMOS 5 DIAS ÚTEIS (seg–sáb, menos feriados), por vendedor: as colunas do painel
     (passando o mouse no valor do dia aparecem os clientes e os itens).
+Só a EQUIPE DO ATACADO (EQUIPE_ATACADO, 7 funcionários) entra; o TOTAL SETOR é a soma dela e não há mais
+"por loja" (o Movere soma todos os vendedores na loja). Decisão do TI, 26/11/2026.
 Hoje e o dia útil anterior são sempre refeitos; os outros dias só se ainda não estiverem no banco.
 Nos 3 primeiros dias do mês também fecha o mês anterior.
 O registro do GitHub é PÚBLICO: aqui só aparecem contagens (nada de valor nem de cliente).
@@ -47,6 +49,45 @@ def lojas_e_total(r: dict) -> tuple:
     cli = int(t.get("Quantidade Clientes Atendidos") or 0) or sum(l["clientes"] for l in lojas)
     total = {"loja": TOTAL, "cod": None, "venda": venda, "clientes": cli, "itens": round(sum(l["itens"] for l in lojas), 2)}
     return lojas, total
+
+
+# Equipe do Atacado (decisão do TI, 26/11/2026): só estes funcionários entram na página e no TOTAL SETOR.
+EQUIPE_ATACADO = [
+    "RAFAELA FERNANDES DA SILVA",
+    "NIORRANA CARRIÇO GHISLERI",
+    "CAMILA DA SILVA FEITOZA",
+    "ALYSSANDRA SALES MARINHO",
+    "CAMILA RAMOS BRILHANTE",
+    "NAYZA MINELLI PEREIRA OLIVEIRA",
+    "KLEBER CAZUZA SILVA",
+]
+
+
+def _nome(s) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode()
+    return " ".join(s.upper().split())
+
+
+def da_equipe(nome: str) -> bool:
+    """O nome do relatório é de alguém da equipe? (aceita nome cortado pelo Movere, ex.: "NAYZA MINELLI PEREIRA OLIV")"""
+    n = _nome(nome)
+    if len(n) < 5:
+        return False
+    for e in map(_nome, EQUIPE_ATACADO):
+        if n == e or (len(n) >= 12 and e.startswith(n)) or n.startswith(e):
+            return True
+    return False
+
+
+def so_equipe(vend: list) -> tuple:
+    """Fica só com a equipe e monta a linha TOTAL com a soma dela (vendas, clientes, itens e pneus)."""
+    eq = [v for v in vend if da_equipe(v.get("nome"))]
+    soma = lambda k: round(sum(float(v.get(k) or 0) for v in eq), 2)
+    total = {"loja": TOTAL, "cod": None, "venda": soma("venda"), "clientes": int(soma("clientes")), "itens": soma("itens")}
+    if any("pneus" in v for v in vend):
+        total["pneus"], total["pneus_vendas"] = soma("pneus"), int(soma("pneus_vendas"))
+    return eq, total
 
 
 def vendedores(r: dict) -> list:
@@ -101,28 +142,24 @@ async def ler(hoje: date, dias: list, meses: list) -> dict:
             r = await gerar_553(pg, ini, fim, [], tentativas)
             if "erro" in r:
                 return False
-            lojas, total = lojas_e_total(r)
             vend = vendedores(r)
-            print(f"   lojas: {len(lojas)} · vendedores: {len(vend)} · soma dos vendedores = total: "
-                  f"{'sim' if abs(sum(v['venda'] for v in vend) - total['venda']) < 0.05 else 'NÃO'}")
             print(f"▶ pneus do mês {ini:%m/%Y}")
             rp = await gerar_553(pg, ini, fim, FAMILIAS_PNEUS_ATACADO)
             if "erro" in rp:   # sem venda de pneu também cai aqui: fica zerado
                 rp = {}
-            lp, tp = lojas_e_total(rp) if rp else ([], {"itens": 0.0, "clientes": 0})
-            juntar_pneus(lojas, lp, "loja")
             juntar_pneus(vend, vendedores(rp) if rp else [], "cod")
-            total["pneus"], total["pneus_vendas"] = tp["itens"], tp["clientes"]
-            out["meses"][ini] = {"fim": fim, "lojas": lojas + [total], "vend": vend}
+            eq, total = so_equipe(vend)
+            print(f"   equipe do Atacado com venda no mês: {len(eq)} de {len(EQUIPE_ATACADO)}")
+            out["meses"][ini] = {"fim": fim, "lojas": [total], "vend": eq}   # sem "por loja": o Movere soma todo mundo na loja
             return True
 
         async def dia(pg, d):
             r = await gerar_553(pg, d, d, [], tentativas=(1,))
             if "erro" in r:
                 return False
-            lojas, total = lojas_e_total(r)
-            out["dias"][d] = {"lojas": lojas + [total], "vend": vendedores(r)}
-            print(f"   lojas: {len(lojas)} · vendedores: {len(out['dias'][d]['vend'])}")
+            eq, total = so_equipe(vendedores(r))
+            out["dias"][d] = {"lojas": [total], "vend": eq}
+            print(f"   equipe com venda no dia: {len(eq)}")
             return True
 
         falhou = []
