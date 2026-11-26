@@ -448,6 +448,10 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Feitoza, Alyssandra, Camila Brilhante, Nayza, Kleber; nome do relatório comparado sem acento, aceita nome cortado).
   **TOTAL SETOR = soma deles** (com as devoluções deles). O quadro **"Por loja" saiu** da página: o Movere soma todos os
   vendedores na loja e não dá para separar. `atacado_lojas` agora só tem a linha `TOTAL`. A página continua aberta.
+  **Nomes curtos** na página (`EQUIPE_ATACADO` = nome no Movere → NAYZA, CAMILA SILVA, CAMILA RAMOS, ALYSSANDRA, NIORRANA,
+  RAFAELA, KLEBER). **Metas do Atacado = Prime / Master (Prime + 10%) / Suprema (Master + 10% = Prime × 1,21)**
+  (`META_MULT = [1, 1.1, 1.21]`, planilha do TI). Metas reais de nov/2026 no **SQL 32** (Prime do time R$ 4.830.000;
+  Kleber sem meta). Quem é da equipe e não tem meta fica no fim da tabela com "SEM META".
 - Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, antes acordado com o Varejo 7h45–17h45; grupo
   de concorrência **`movere-553`** igual ao Varejo: nunca os dois ao mesmo tempo no mesmo login): rotina 553 com
   `TABELAS_ATACADO` (2 ATACADO + 5 ATACADO PREMIUM), **todas as lojas** (`gerar(..., lojas=[])`), todas as famílias, frete;

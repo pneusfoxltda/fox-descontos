@@ -294,9 +294,9 @@ tr.outro td{background:var(--fx-bg,#f8fafc);font-size:12px;color:var(--fx-tx3,#6
     </div>
 
     <div class="metas-row" id="metas-row">
-      <div class="meta-btn active" onclick="setMeta(0)" id="meta-btn-0"><div class="meta-label">Meta 1</div><div class="meta-valor" id="meta-btn-val-0"></div></div>
-      <div class="meta-btn" onclick="setMeta(1)" id="meta-btn-1"><div class="meta-label">Meta 2 (+10%)</div><div class="meta-valor" id="meta-btn-val-1"></div></div>
-      <div class="meta-btn" onclick="setMeta(2)" id="meta-btn-2"><div class="meta-label">Meta 3 (+20%)</div><div class="meta-valor" id="meta-btn-val-2"></div></div>
+      <div class="meta-btn active" onclick="setMeta(0)" id="meta-btn-0"><div class="meta-label">Meta Prime</div><div class="meta-valor" id="meta-btn-val-0"></div></div>
+      <div class="meta-btn" onclick="setMeta(1)" id="meta-btn-1"><div class="meta-label">Meta Master (+10%)</div><div class="meta-valor" id="meta-btn-val-1"></div></div>
+      <div class="meta-btn" onclick="setMeta(2)" id="meta-btn-2"><div class="meta-label">Meta Suprema (+10%)</div><div class="meta-valor" id="meta-btn-val-2"></div></div>
       <button class="btn-editar-meta" onclick="abrirMetas()" id="btn-metas" style="display:none">✏️ Editar metas</button>
     </div>
 
@@ -314,7 +314,7 @@ tr.outro td{background:var(--fx-bg,#f8fafc);font-size:12px;color:var(--fx-tx3,#6
 <div class="modal-bg" id="modal-metas">
   <div class="modal">
     <h3>✏️ Metas do Atacado · <span id="mm-mes"></span></h3>
-    <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:10px">Meta 1 de cada vendedor (as Metas 2 e 3 são +10% e +20%). Vendedor sem meta aparece em "Outros vendedores". Deixe em branco para tirar.</div>
+    <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:10px">Meta Prime de cada vendedor (Master = Prime + 10%; Suprema = Master + 10%). Vendedor sem meta aparece em "Outros vendedores". Deixe em branco para tirar.</div>
     <div class="modal-grid" id="mm-vend"></div>
     <div class="modal-section-title">Feriados / dias não úteis <span id="mm-du" style="font-size:11px;font-weight:400;color:var(--fx-tx4,#9aabb8);"></span></div>
     <div style="font-size:11px;color:var(--fx-tx4,#9aabb8);margin-bottom:8px;">Clique em um dia útil (seg–sáb) para marcar como feriado</div>
@@ -339,7 +339,7 @@ const pct = v => Math.round(Number(v || 0)) + "%";
 const dataBR = iso => iso.slice(8, 10) + "/" + iso.slice(5, 7);
 const hojePVH = () => new Date().toLocaleDateString("en-CA", {timeZone: "America/Porto_Velho"});
 const horaPVH = iso => new Date(iso).toLocaleString("pt-BR", {timeZone: "America/Porto_Velho", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"}).replace(" ", " ");
-const META_MULT = [1, 1.1, 1.2];
+const META_MULT = [1, 1.1, 1.21];   // Prime, Master (+10%), Suprema (Master + 10%): planilha do TI, 26/11/2026
 const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const PNEU = '<svg class="pneu-ic" viewBox="0 0 24 24" aria-label="pneu"><circle cx="12" cy="12" r="10.5" fill="#2b2b2b" stroke="#888" stroke-width="1.2"/><circle cx="12" cy="12" r="5.2" fill="#9CA3AF"/><circle cx="12" cy="12" r="2" fill="#4B5563"/><g stroke="#666" stroke-width="1.4"><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></g></svg>';
 const nomeLoja = l => ({"FOX-GM": "Fox GM (Guajará-Mirim)", "C.AUTO PVH": "C. Automotivo PVH", "C.AUTO VLH": "C. Automotivo Vilhena", "JI-PARANA": "Ji-Paraná",
@@ -468,6 +468,13 @@ function render() {
       <td style="font-size:13px;font-weight:600;color:var(--fx-tx,#1a2332)">${mesCompleto ? "" : brl(op.precisa)}</td>
       <td><span class="pct-badge ${badge}" style="font-size:14px;padding:5px 12px">${pct(op.pctOp)}</span></td></tr>`;
   }).join("");
+  // Equipe sem meta (ex.: Kleber) fica na tabela principal, no fim, com "SEM META" (igual à planilha do TI, 26/11/2026)
+  const linhasSemMeta = outros.map(x => `<tr>
+      <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">${esc(String(x.nome || "").toUpperCase())}</td>
+      <td class="meta-col" style="font-size:12px;font-weight:700;color:var(--fx-tx3,#6b7280)">SEM META</td>
+      ${datas5.map(d => celDia((porDia[x.cod] || {})[d], d)).join("")}
+      <td style="font-size:15px;font-weight:700;color:var(--fx-tx,#1a2332)">${brl(x.venda)}</td>
+      ${celPneus(x)}<td></td><td></td></tr>`).join("");
   const somaOutros = outros.reduce((s, x) => s + Number(x.venda), 0);
   // "Outros vendedores" (sem meta: quase sempre devoluções) ficam lá embaixo, no 🔻 Mais informações (pedido do TI, 25/11/2026)
   const outrosHtml = !outros.length ? "" : `<button class="info-bt" style="padding-top:8px" onclick="outrosAbertos=!outrosAbertos;render()">${outrosAbertos ? "▾" : "▸"} ↩️ Devoluções e outros vendedores (${outros.length}, sem meta): ${brl(somaOutros)}</button>
@@ -490,7 +497,7 @@ function render() {
       <th rowspan="2" style="border-right:1px solid rgba(255,255,255,0.15)">Precisa por dia<br>(${duRestantes} restantes)</th>
       <th rowspan="2">% atingido</th></tr>
       <tr>${datas5.map(d => `<th class="th-dias">${dataBR(d)}</th>`).join("")}</tr></thead>
-    <tbody>${linhas}
+    <tbody>${linhas}${linhasSemMeta}
       <tr class="total-row ${onT ? "row-verde" : "row-vermelho"}">
         <td style="font-size:16px;font-weight:800;color:var(--fx-tx,#1a2332)">TOTAL SETOR</td>
         <td class="meta-col">${brl(metaSetor)}</td>
@@ -511,7 +518,8 @@ function render() {
     · Faturamento = venda líquida (vendas menos devoluções). Clientes = vendas realizadas. Ticket médio = faturamento ÷ clientes.<br>
     · ${PNEU} Pneus = pneus vendidos no mês (famílias de pneu de carro, caminhonete, caminhão e agrícola) e em quantas vendas.<br>
     · Verde: no ritmo (% atingido ≥ % desejado do dia). Vermelho: abaixo. Hoje o desejado é ${pct(pctDesejado)} (${duFechados} de ${duTotal} dias úteis já fechados, até ontem; domingos e feriados não contam; no fim do mês chega a 100%).<br>
-    · Metas 2 e 3 = Meta 1 + 10% e + 20%. O TOTAL SETOR é a soma da equipe do Atacado, já com as devoluções dela.<br>` + outrosHtml;
+    · Metas: Prime; Master = Prime + 10%; Suprema = Master + 10%. O TOTAL SETOR é a soma da equipe do Atacado, já com as devoluções dela.<br>
+    · Quem é da equipe e ainda não tem meta aparece no fim da tabela com "SEM META" (dê a meta em "Editar metas").<br>`;
 }
 
 // ── Editar metas e feriados (admin e gerente de todas as lojas) ──
