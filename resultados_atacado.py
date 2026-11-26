@@ -52,15 +52,15 @@ def lojas_e_total(r: dict) -> tuple:
 
 
 # Equipe do Atacado (decisão do TI, 26/11/2026): só estes funcionários entram na página e no TOTAL SETOR.
-EQUIPE_ATACADO = [
-    "RAFAELA FERNANDES DA SILVA",
-    "NIORRANA CARRIÇO GHISLERI",
-    "CAMILA DA SILVA FEITOZA",
-    "ALYSSANDRA SALES MARINHO",
-    "CAMILA RAMOS BRILHANTE",
-    "NAYZA MINELLI PEREIRA OLIVEIRA",
-    "KLEBER CAZUZA SILVA",
-]
+EQUIPE_ATACADO = {   # nome no Movere → nome curto na página (decisão do TI: primeiro nome, ou nome + sobrenome)
+    "RAFAELA FERNANDES DA SILVA": "RAFAELA",
+    "NIORRANA CARRIÇO GHISLERI": "NIORRANA",
+    "CAMILA DA SILVA FEITOZA": "CAMILA SILVA",
+    "ALYSSANDRA SALES MARINHO": "ALYSSANDRA",
+    "CAMILA RAMOS BRILHANTE": "CAMILA RAMOS",
+    "NAYZA MINELLI PEREIRA OLIVEIRA": "NAYZA",
+    "KLEBER CAZUZA SILVA": "KLEBER",
+}
 
 
 def _nome(s) -> str:
@@ -69,20 +69,25 @@ def _nome(s) -> str:
     return " ".join(s.upper().split())
 
 
-def da_equipe(nome: str) -> bool:
-    """O nome do relatório é de alguém da equipe? (aceita nome cortado pelo Movere, ex.: "NAYZA MINELLI PEREIRA OLIV")"""
+def apelido(nome: str):
+    """Nome curto se for alguém da equipe; None se não for. Aceita nome cortado pelo Movere ("NAYZA MINELLI PEREIRA OLIV")."""
     n = _nome(nome)
     if len(n) < 5:
-        return False
-    for e in map(_nome, EQUIPE_ATACADO):
+        return None
+    for completo, curto in EQUIPE_ATACADO.items():
+        e = _nome(completo)
         if n == e or (len(n) >= 12 and e.startswith(n)) or n.startswith(e):
-            return True
-    return False
+            return curto
+    return None
+
+
+def da_equipe(nome: str) -> bool:
+    return apelido(nome) is not None
 
 
 def so_equipe(vend: list) -> tuple:
     """Fica só com a equipe e monta a linha TOTAL com a soma dela (vendas, clientes, itens e pneus)."""
-    eq = [v for v in vend if da_equipe(v.get("nome"))]
+    eq = [dict(v, nome=apelido(v.get("nome"))) for v in vend if da_equipe(v.get("nome"))]
     soma = lambda k: round(sum(float(v.get(k) or 0) for v in eq), 2)
     total = {"loja": TOTAL, "cod": None, "venda": soma("venda"), "clientes": int(soma("clientes")), "itens": soma("itens")}
     if any("pneus" in v for v in vend):
