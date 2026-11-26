@@ -1,12 +1,14 @@
 name: Resultados Atacado (rotina 553)
 
 # Grava o "Resultado Atacado" da página /atacado (modelo do painel do Televendas): rotina 553 com as tabelas
-# 2 ATACADO + 5 ATACADO PREMIUM, todas as lojas; mês, pneus do mês e os últimos 5 dias úteis, por vendedor e por loja.
-# Acordado pelo sync-televendas de hora em hora (seg–sáb, 7h45 às 17h45). Cron 19h20 fecha o dia (reserva).
-# Mesmo grupo do Varejo ("movere-553"): os dois nunca usam o login do Movere ao mesmo tempo (um espera o outro).
+# 2 ATACADO + 5 ATACADO PREMIUM, todas as lojas; mês, pneus do mês e os últimos 5 dias úteis, só da EQUIPE DO ATACADO
+# (7 funcionários, EQUIPE_ATACADO em resultados_atacado.py; o TOTAL SETOR é a soma deles).
+# Só 2 vezes por dia (decisão do TI, 26/11/2026): seg–sáb, 8h e 17h30 de Porto Velho (UTC−4). Não é mais acordado pelo
+# sync-televendas. Mesmo grupo do Varejo ("movere-553"): os dois nunca usam o login do Movere ao mesmo tempo.
 on:
   schedule:
-    - cron: '20 23 * * 1-6'
+    - cron: '0 12 * * 1-6'    # 8h00 de Porto Velho
+    - cron: '30 21 * * 1-6'   # 17h30 de Porto Velho
   workflow_dispatch:
     inputs:
       teste:

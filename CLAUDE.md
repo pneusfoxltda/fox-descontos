@@ -443,7 +443,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Vendedores sem meta (quase sempre devoluções, valor negativo) ficam lá embaixo: 🔻 Mais informações → "↩️ Devoluções e
   outros vendedores" (pedido do TI, 25/11/2026); o TOTAL SETOR já desconta.
   **Editar metas** (admin e gerente de todas as lojas): meta 1 de cada vendedor + feriados (dias úteis igual ao Televendas).
-- Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, acordado com o Varejo 7h45–17h45 + cron 19h20; grupo
+- **Só a equipe do Atacado, 2x por dia** (decisão do TI, 26/11/2026): o robô roda **seg–sáb 8h e 17h30** (cron próprio; o
+  sync-televendas não acorda mais o Atacado, só o Varejo). Entram só os 7 de `EQUIPE_ATACADO` (Rafaela, Niorrana, Camila
+  Feitoza, Alyssandra, Camila Brilhante, Nayza, Kleber; nome do relatório comparado sem acento, aceita nome cortado).
+  **TOTAL SETOR = soma deles** (com as devoluções deles). O quadro **"Por loja" saiu** da página: o Movere soma todos os
+  vendedores na loja e não dá para separar. `atacado_lojas` agora só tem a linha `TOTAL`. A página continua aberta.
+- Robô **`resultados_atacado.py`** (workflow `resultados-atacado.yml`, antes acordado com o Varejo 7h45–17h45; grupo
   de concorrência **`movere-553`** igual ao Varejo: nunca os dois ao mesmo tempo no mesmo login): rotina 553 com
   `TABELAS_ATACADO` (2 ATACADO + 5 ATACADO PREMIUM), **todas as lojas** (`gerar(..., lojas=[])`), todas as famílias, frete;
   mês (+ pneus do mês com `FAMILIAS_PNEUS_ATACADO`: inclui TRUCK, MULTIMARCAS TRUCK, TRUCK/AGRO e TRUCK PROMETEON, que tem
