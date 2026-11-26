@@ -120,50 +120,69 @@ async def ler_553(hoje: date) -> dict:
         page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo",
                                           viewport={"width": 1400, "height": 2400})).new_page()
         await login(page)
-        for periodo, di in (("mes", ini), ("hoje", fim)):
-            for cod, loja in LOJAS_VAREJO.items():
-                print(f"▶ {periodo} · {loja}")
-                r = None
-                for tentativa in ((1, 2) if periodo == "mes" else (1,)):
-                    try:
-                        r = await gerar(page, di, fim, TABELAS_VAREJO, FAMILIAS_VAREJO, [loja])
-                        if "erro" not in r:
-                            break
-                    except Exception as e:
-                        r = {"erro": type(e).__name__}
-                    print(f"   ⚠️ tentativa {tentativa} sem relatório")
-                if not r or "erro" in r:
-                    if periodo == "hoje":   # sem venda hoje o Movere não monta o relatório: conta como zero
-                        print("   sem relatório hoje: fica zerado")
-                        res[periodo]["lojas"].append({"loja": loja, "cod": cod, "venda": 0.0, "clientes": 0, "itens": 0.0, "ticket": 0.0})
-                    else:
-                        res["erros"].append(f"{periodo} {loja}")
-                    continue
-                lj, vd = linha_loja(r, loja, cod), linhas_vendedores(r, loja)
-                soma = round(sum(v["venda"] for v in vd), 2)
-                ok = abs(soma - lj["venda"]) < 0.05
-                print(f"   vendedores: {len(vd)} · soma dos vendedores = loja: {'sim' if ok else 'NÃO'}")
-                if not ok:
-                    res["erros"].append(f"{periodo} {loja}: soma dos vendedores diferente")
-                res[periodo]["lojas"].append(lj)
-                res[periodo]["vend"].extend(vd)
-        # Coluna "Pneus" (mês): o mesmo relatório só com as famílias de pneu → pneus vendidos e em quantas vendas
-        for cod, loja in LOJAS_VAREJO.items():
-            print(f"▶ pneus · {loja}")
+
+        async def tentar(pg, di, familias, loja, tentativas):
             r = None
-            for tentativa in (1, 2):
+            for t in tentativas:
+                if t > 1:
+                    await pg.wait_for_timeout(20000)   # dá um respiro ao Movere antes de pedir de novo
                 try:
-                    r = await gerar(page, ini, fim, TABELAS_VAREJO, FAMILIAS_PNEUS, [loja])
+                    r = await gerar(pg, di, fim, TABELAS_VAREJO, familias, [loja], espera_max=60 if di == fim else 120)
                     if "erro" not in r:
-                        break
+                        return r
                 except Exception as e:
                     r = {"erro": type(e).__name__}
-                print(f"   ⚠️ tentativa {tentativa} sem relatório")
+                print(f"   ⚠️ tentativa {t} sem relatório")
+            return r
+
+        def aplicar(tipo, cod, loja, r):
+            """Guarda o relatório lido. Devolve False se ele não veio."""
             if not r or "erro" in r:
-                res["erros"].append(f"pneus {loja}")
-                continue
-            juntar_pneus(res["mes"], loja, linha_loja(r, loja, cod), linhas_vendedores(r, loja))
-            print("   pneus lidos")
+                return False
+            if tipo == "pneus":
+                juntar_pneus(res["mes"], loja, linha_loja(r, loja, cod), linhas_vendedores(r, loja))
+                print("   pneus lidos")
+                return True
+            lj, vd = linha_loja(r, loja, cod), linhas_vendedores(r, loja)
+            soma = round(sum(v["venda"] for v in vd), 2)
+            ok = abs(soma - lj["venda"]) < 0.05
+            print(f"   vendedores: {len(vd)} · soma dos vendedores = loja: {'sim' if ok else 'NÃO'}")
+            if not ok:
+                res["erros"].append(f"{tipo} {loja}: soma dos vendedores diferente")
+            res[tipo]["lojas"].append(lj)
+            res[tipo]["vend"].extend(vd)
+            return True
+
+        # 1ª volta: mês e hoje de cada loja, depois os pneus do mês
+        pedidos = [(p, cod, loja) for p in ("mes", "hoje") for cod, loja in LOJAS_VAREJO.items()] + \
+                  [("pneus", cod, loja) for cod, loja in LOJAS_VAREJO.items()]
+        di_de = {"mes": ini, "hoje": fim, "pneus": ini}
+        fam_de = {"mes": FAMILIAS_VAREJO, "hoje": FAMILIAS_VAREJO, "pneus": FAMILIAS_PNEUS}
+        falhou = []
+        for tipo, cod, loja in pedidos:
+            print(f"▶ {tipo} · {loja}")
+            r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1, 2) if tipo != "hoje" else (1,))
+            if not aplicar(tipo, cod, loja, r):
+                falhou.append((tipo, cod, loja))
+
+        # 2ª volta: só o que falhou, entrando no Movere de novo do zero (ele às vezes engasga por alguns minutos)
+        if falhou:
+            print(f"🔁 2ª volta para {len(falhou)} relatório(s): {', '.join(f'{t} {l}' for t, _, l in falhou)}")
+            await page.context.close()
+            await asyncio.sleep(60)
+            page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo",
+                                              viewport={"width": 1400, "height": 2400})).new_page()
+            await login(page)
+            for tipo, cod, loja in falhou:
+                print(f"▶ {tipo} · {loja} (2ª volta)")
+                r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1,) if tipo == "hoje" else (1, 2))
+                if aplicar(tipo, cod, loja, r):
+                    continue
+                if tipo == "hoje":   # sem venda hoje o Movere não monta o relatório: conta como zero
+                    print("   sem relatório hoje: fica zerado")
+                    res["hoje"]["lojas"].append({"loja": loja, "cod": cod, "venda": 0.0, "clientes": 0, "itens": 0.0, "ticket": 0.0})
+                else:
+                    res["erros"].append(f"{tipo} {loja}")
         await b.close()
     return res
 
