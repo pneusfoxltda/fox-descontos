@@ -476,6 +476,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   clientes por dia (14 dias); lojas (vendedores, férias, sem responsável, divisão desigual, contatos hoje,
   último contato só de pessoas); avisos no celular; descontos; televendas; páginas no ar; segurança
   (tabelas sem RLS, regras para quem não está logado, senhas antigas legíveis) e espaço do banco (500 MB).
+- **Clicar em "🔴 com erro" ou "🟡 atenção"** (os quadros do topo) rola até o item e ele pisca; cada clique vai para o
+  próximo (`irPara` no monitor.html; cada item tem a classe `st-vm`/`st-am`/`st-vd`). Pedido do TI, 26/11/2026.
 - Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).
   Se o SQL 18 não rodou, gravam sem os detalhes (não quebram). Só contagens: nada de cliente.
 - Seção **🏆 Resultados Fox Pneus (rotina 553)**: última rodada dos robôs do Varejo e do Atacado (detalhes, erros, bolinhas) e
