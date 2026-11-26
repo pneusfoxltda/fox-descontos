@@ -476,6 +476,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   clientes por dia (14 dias); lojas (vendedores, férias, sem responsável, divisão desigual, contatos hoje,
   último contato só de pessoas); avisos no celular; descontos; televendas; páginas no ar; segurança
   (tabelas sem RLS, regras para quem não está logado, senhas antigas legíveis) e espaço do banco (500 MB).
+- **GitHub sem login = 60 consultas/hora por internet**: o Monitor faz **1 consulta** para todos os robôs (`/actions/runs`,
+  100 últimas; robô que não aparecer é consultado sozinho) e, se o GitHub negar (403), usa a última resposta guardada no
+  navegador (`localStorage fox_monitor_gh`) com a hora dela. Antes eram 6 consultas a cada 5 min (estourava: 26/11/2026).
 - **Clicar em "🔴 com erro" ou "🟡 atenção"** (os quadros do topo) rola até o item e ele pisca; cada clique vai para o
   próximo (`irPara` no monitor.html; cada item tem a classe `st-vm`/`st-am`/`st-vd`). Pedido do TI, 26/11/2026.
 - Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).
