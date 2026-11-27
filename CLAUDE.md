@@ -99,6 +99,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
     preenche, pergunta o que falta, põe concorrência e anexo (App) e salva ao ouvir "salvar".
     Vendedor "Fernanda" no orçamento não é preenchido (pede o vendedor responsável).
     **CBA = coluna "Cód."** da tabela de produtos do orçamento; com vários produtos vale o **1º** (decisão do TI).
+  · **Painel do televendas · login vencido** (27/11/2026): com a página aberta muito tempo o token vencia e o painel mostrava
+    "Erro ao carregar: Supabase 401". `lerTV()` pega a sessão atual antes de cada busca, tenta renovar no 401 e, se não der,
+    lê sem login (resumo e metas são abertos); salvar metas/feriados renova o token antes (`renovarTokenTV`).
   · **Painel do televendas**: "sou a Kessya" fica guardado no navegador (`fe_tv_quem`) e ela
     responde só os números dessa pessoa (`window.FE_TV`, exposto no `render()` do mês).
     Não é segurança de verdade (qualquer um pode dizer que é a Kessya) — o painel já é aberto.

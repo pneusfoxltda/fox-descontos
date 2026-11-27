@@ -562,6 +562,23 @@ const sbAuth = supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'foxn
 let SB_TOKEN = null;
 sbAuth.auth.onAuthStateChange((_e, sessao) => { SB_TOKEN = sessao ? sessao.access_token : null; });
 const tokTV = () => SB_TOKEN || SB_KEY;
+// A sessão do login vence (≈1 h). Com o token vencido o banco responde 401 ("Erro ao carregar: Supabase 401").
+// Antes de cada busca, pega a sessão atual (o Supabase renova sozinho); se ainda der 401, lê sem login
+// (o resumo e as metas do painel são abertos).
+async function renovarTokenTV() {
+  try { const { data } = await sbAuth.auth.getSession(); SB_TOKEN = data.session ? data.session.access_token : null; } catch (e) {}
+}
+async function lerTV(url, extra) {
+  await renovarTokenTV();
+  const h = t => ({ apikey: SB_KEY, Authorization: `Bearer ${t}`, ...(extra || {}) });
+  let r = await fetch(url, { headers: h(tokTV()) });
+  if (r.status === 401 && SB_TOKEN) {
+    try { const { data } = await sbAuth.auth.refreshSession(); SB_TOKEN = data.session ? data.session.access_token : null; } catch (e) { SB_TOKEN = null; }
+    r = await fetch(url, { headers: h(tokTV()) });
+    if (r.status === 401) r = await fetch(url, { headers: h(SB_KEY) });
+  }
+  return r;
+}
 const NIVEIS_TV = ['admin', 'televendas', 'gerente'];   // quem pode ver clientes, exportar e o setor
 localStorage.removeItem('fox_tv_usuarios');             // apaga a cópia antiga das senhas guardada nos navegadores
 
@@ -628,9 +645,7 @@ function savePrefs() {
 /* ── Metas no Supabase ── */
 async function carregarMetasSupabase() {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/metas_televendas?select=*`, {
-      headers: { apikey: SB_KEY, Authorization: `Bearer ${tokTV()}` }
-    });
+    const r = await lerTV(`${SB_URL}/rest/v1/metas_televendas?select=*`);
     if (!r.ok) return;
     const rows = await r.json();
     metasPorMes = {};
@@ -659,6 +674,7 @@ async function carregarMetasSupabase() {
 }
 
 async function salvarFeriadosSupabase(chave, ferDias) {
+  await renovarTokenTV();
   try {
     // 1. Remove os feriados antigos do mês
     const filtro = encodeURIComponent('like.feriado_%');
@@ -687,6 +703,7 @@ async function salvarFeriadosSupabase(chave, ferDias) {
 }
 
 async function salvarMetasSupabase(chave, metasSalvas) {
+  await renovarTokenTV();
   const rows = Object.entries(metasSalvas).map(([cod, val]) => ({
     mes: chave,
     operador_codigo: cod,
@@ -764,7 +781,7 @@ async function buscarMes() {
   let all = [], offset = 0;
   while (true) {
     const url = `${SB_URL}/rest/v1/vendas_televendas?select=*&data_ref=gte.${ini}&data_ref=lte.${fim}&nome_cliente=is.null&order=data_ref.asc&limit=1000&offset=${offset}`;
-    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${tokTV()}`, Prefer:'count=none'}});
+    const r = await lerTV(url, {Prefer:'count=none'});
     if(!r.ok) throw new Error(`Supabase ${esc(r.status)}`);
     const rows = await r.json();
     all = all.concat(rows);
@@ -1758,7 +1775,7 @@ async function buscarDetalheDia(iso, opCodigo = null) {
     const url = `${SB_URL}/rest/v1/vendas_televendas_clientes?select=*` +
       `&data_ref=eq.${iso}${filtroOp}` +
       `&order=operador_codigo.asc,nome_cliente.asc,codigo_item.asc&limit=1000&offset=${offset}`;
-    const r = await fetch(url, {headers:{apikey:SB_KEY, Authorization:`Bearer ${tokTV()}`, Prefer:'count=none'}});
+    const r = await lerTV(url, {Prefer:'count=none'});
     if(!r.ok) throw new Error(`Supabase ${esc(r.status)}`);
     const rows = await r.json();
     all = all.concat(rows);
