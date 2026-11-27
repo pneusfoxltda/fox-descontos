@@ -185,6 +185,11 @@
     // Origem
     h += sec("10. Origem dos clientes", "Conversão por origem (utm do Kommo).", `<div class="ft-tw"><table><tr><th>Origem</th><th>Entraram</th><th>Compraram</th><th>Conversão</th></tr>` +
       Object.entries(r.origens || {}).sort((a, b) => b[1].entrou - a[1].entrou).slice(0, 10).map(([o, x]) => `<tr><td style="text-align:left">${E(o)}</td><td>${num(x.entrou)}</td><td>${num(x.comprou)}</td><td>${pct(x.entrou ? x.comprou / x.entrou : null, 1)}</td></tr>`).join("") + `</table></div>`);
+    // De onde veio cada compra (qualidade dos dados)
+    const FONTES = {os: "🧾 Cotação virou O.S. (Movere)", movere: "📄 Nota no Movere pelo telefone", venda_ganha: "✅ Coluna VENDA GANHA do Kommo", "1a_venda": "📝 Campo 1ª Venda do Kommo", sem_fonte: "Sem a informação (antes desta melhoria)"};
+    const fc = Object.entries(r.fontes_compra || {}), tf = fc.reduce((a, [, n]) => a + n, 0);
+    if (tf) h += sec("11. De onde veio cada compra", "Como o sistema soube que o cliente comprou. Quanto mais vier do Movere (O.S. ou nota), mais confiável o número.",
+      `<div class="ft-tw"><table><tr><th>Fonte</th><th>Compras</th><th>%</th></tr>` + fc.sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td style="text-align:left">${E(FONTES[k] || k)}</td><td>${num(n)}</td><td>${pct(n / tf, 1)}</td></tr>`).join("") + `</table></div>`);
     h += sec("📋 Leitura estruturada", "Texto automático com os números do período.", `<div class="ft-leitura">${leitura(r, ops)}</div>`);
     box.querySelector(".ft-corpo").innerHTML = h;
     const a1 = document.getElementById("ft-atr"), a2 = document.getElementById("ft-tod");

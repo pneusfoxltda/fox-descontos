@@ -486,8 +486,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   sem as etapas de disparo** (9 - DISPARO e 8 - Disparo Noturno; decisão do TI), últimos 4 meses. Datas pelo histórico de eventos do
   Kommo (`custom_field_ID_value_changed`): cotou = "2 - Fez cotação" ou "3 - Cotação criada pela IA" (iguais); negociou = "4 -
   Negociação realizada"; agendou = "6 - Agendamento IA" ou "7 - Agendamento". Sem marcação de cotação, vale a 1ª cotação do
-  televendas no Movere pelo telefone. **Comprou / foi à loja** = nota no Movere pelo telefone a partir da entrada; senão a coluna
-  **VENDA GANHA** do Kommo (`closed_at`) ou o campo "1ª Venda". Perdido = "venda perdida" + motivo (Kommo ou campo "Motivo de perda";
+  televendas no Movere pelo telefone. **Comprou / foi à loja** = nota no Movere pelo telefone a partir da entrada, **ou a cotação do
+  cliente virou O.S.** (TI, 27/11/2026: "cotação que virou O.S. é venda"; `movere_api.cotacoes_que_viraram_os`, status 2 com nota e 1
+  aberta; vale com outro telefone na nota); senão a coluna **VENDA GANHA** do Kommo (`closed_at`) ou o campo "1ª Venda". SQL
+  **`34_funil_cotacao_os.sql`** (rodado): `funil_leads.cotacoes` (nºs das cotações do lead) e `compra_fonte` (os · movere · venda_ganha ·
+  1a_venda), painel "11. De onde veio cada compra". Ranking: intervalo cruza a média e |z| < 1 = **"dentro do esperado"**;
+  "inconclusivo" só com menos de 30 clientes ou |z| ≥ 1 com o intervalo cruzando a média. Perdido = "venda perdida" + motivo (Kommo ou campo "Motivo de perda";
   "Motivo indefinido" = agendou e não foi). **Fora da conversão**: "Outros produtos" (produto que a Fox não trabalha), "Chamou
   errado", "Curtidas do Instagram", "Contato com RH", "Cidade sem loja", "Sem cidade".
 - **Carga desde 01/2025, aos poucos** (TI, 27/11/2026): uma linha por lead em `funil_leads` (sem nome; telefone só como código

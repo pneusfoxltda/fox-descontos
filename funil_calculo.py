@@ -247,12 +247,16 @@ def resumo(leads, hoje, desde, ate=None):
         x = origens.setdefault(o, {"entrou": 0, "comprou": 0})
         x["entrou"] += 1
         x["comprou"] += 1 if l.get("d_comprou") else 0
+    fontes = {}
+    for l in comp:
+        fo = l.get("compra_fonte") or "sem_fonte"
+        fontes[fo] = fontes.get(fo, 0) + 1
     for op in ops.values():
         op.pop("tempos", None)          # o boxplot usa mínimo, Q1, mediana, Q3 e máximo (a lista inteira não vai para o banco)
     return {"desde": desde.isoformat(), "ate": (ate or hoje).isoformat(), "total_leads": len(todos), "fora_da_conta": fora,
             "funil": f, "tempos": tempos(base), "operadoras": ops, "media_equipe": media,
             "velocidade": vel, "motivos_perda": dict(sorted(motivos.items(), key=lambda kv: -kv[1])),
-            "origens": origens, "sobrevivencia": sobrevivencia(base, hoje)}
+            "origens": origens, "fontes_compra": fontes, "sobrevivencia": sobrevivencia(base, hoje)}
 
 
 def previsao_mes(leads, hoje, modelo, ticket):

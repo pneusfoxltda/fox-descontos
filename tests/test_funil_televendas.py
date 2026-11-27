@@ -31,7 +31,7 @@ def t_linha_compra_e_venda_ganha():
     l = ft.linha_do_lead(lead(), {7: "Ana"}, {}, {"99990001"}, cot, vendas)
     assert l["d_cotou"] == entrou and l["d_comprou"] == entrou and l["valor_compra"] == 700.0 and l["operadora"] == "Ana"
     g = ft.linha_do_lead(lead(status_id=142, closed_at=1762228800), {}, {}, set(), {}, {})
-    assert g["d_comprou"] == ft._dia(1762228800) and g["_fonte"] == "venda_ganha"
+    assert g["d_comprou"] == ft._dia(1762228800) and g["compra_fonte"] == "venda_ganha"
 
 
 def t_juntar_mantem_a_primeira_data():
@@ -45,6 +45,22 @@ def t_juntar_mantem_a_primeira_data():
 
 def t_mes_anterior():
     assert ft.mes_anterior(date(2026, 11, 27), 3) == date(2026, 8, 1) and ft.mes_anterior(date(2026, 1, 5), 2) == date(2025, 11, 1)
+
+
+
+def t_cotacao_virou_os_e_venda():
+    banco = {1: {"id": 1, "d_entrou": date(2026, 11, 2), "d_comprou": None, "cotacoes": ["24"], "perdido": True, "motivo": "Preço"},
+             2: {"id": 2, "d_entrou": date(2026, 11, 10), "d_comprou": None, "cotacoes": ["30"]},          # O.S. antes da entrada: não vale
+             3: {"id": 3, "d_entrou": date(2026, 11, 1), "d_comprou": date(2026, 11, 3), "cotacoes": ["40"], "compra_fonte": "movere"}}
+    os_map = {"24": (date(2026, 11, 5), 1200.0, "nota"), "30": (date(2026, 11, 8), 900.0, "os"), "40": (date(2026, 11, 9), 500.0, "nota")}
+    m = ft.aplicar_os(banco, os_map)
+    assert [x["id"] for x in m] == [1]
+    assert banco[1]["d_comprou"] == date(2026, 11, 5) and banco[1]["valor_compra"] == 1200.0 and banco[1]["compra_fonte"] == "os"
+    assert banco[1]["perdido"] is False and banco[1]["motivo"] is None
+    assert banco[3]["compra_fonte"] == "movere"                       # a compra mais antiga continua valendo
+    j = ft.juntar({"id": 1, "cotacoes": ["24"], "d_comprou": date(2026, 11, 5), "valor_compra": 1200.0, "compra_fonte": "os"},
+                  {"id": 1, "cotacoes": ["25"], "d_comprou": date(2026, 11, 20), "valor_compra": 99.0, "compra_fonte": "venda_ganha", "perdido": False})
+    assert j["cotacoes"] == ["24", "25"] and j["d_comprou"] == date(2026, 11, 5) and j["compra_fonte"] == "os" and j["valor_compra"] == 1200.0
 
 
 if __name__ == "__main__":

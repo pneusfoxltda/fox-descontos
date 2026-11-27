@@ -8,7 +8,9 @@ Junta, por lead do Kommo (Funil Principal, sem as etapas de disparo), as datas d
   · negociou   = "4 - Negociação realizada"
   · agendou    = "6 - Agendamento IA" ou "7 - Agendamento" (+ "Data da visita", quando tiver)
   · comprou    = nota fiscal no Movere pelo telefone (vendas 742591 + API), no dia da entrada ou depois;
-                 se não achar, a coluna "VENDA GANHA" do Kommo (= foi à loja) ou o campo "1ª Venda" do cartão
+                 ou a COTAÇÃO do cliente virou O.S. (API ConsultaOrcamentos; TI, 27/11/2026: "cotação que virou O.S. é venda",
+                 vale mesmo com outro telefone na nota); se não achar, a coluna "VENDA GANHA" do Kommo (= foi à loja) ou o
+                 campo "1ª Venda" do cartão. compra_fonte guarda de onde veio (os · movere · venda_ganha · 1a_venda; SQL 34)
   · perdido    = etapa "venda perdida" (motivo do Kommo ou o campo "Motivo de perda")
 Guarda uma linha por lead em funil_leads (sem nome; o telefone só como código HMAC) e grava as contas prontas
 (funil_calculo.montar) em funil_resumo e funil_abertos (SQL 33).
@@ -175,7 +177,8 @@ def linha_do_lead(l, users, m, tels_lead, cot_tel, vendas):
             "loja": _valor_campo(l, C_LOJA), "perdido": perdido and not d_comp, "motivo": motivo if perdido else None,
             "d_entrou": entrou, "d_cotou": d_cot, "d_negociou": m.get("negociou"), "d_agendou": m.get("agendou"),
             "d_visita": _dia(vis) if vis and str(vis).isdigit() else None,
-            "d_comprou": d_comp, "valor_compra": val, "valor_cotacao": cots[0]["valor"] if cots else None, "_fonte": fonte}
+            "d_comprou": d_comp, "valor_compra": val, "valor_cotacao": cots[0]["valor"] if cots else None, "compra_fonte": fonte,
+            "cotacoes": sorted({str(c["cotacao"]) for c in cots if c.get("cotacao")}) or None}
 
 
 def juntar(antiga, nova):
@@ -183,11 +186,15 @@ def juntar(antiga, nova):
     if not antiga:
         return nova
     out = dict(antiga, **{k: v for k, v in nova.items() if v is not None and not k.startswith("d_")})
+    cs = set(antiga.get("cotacoes") or []) | set(nova.get("cotacoes") or [])
+    out["cotacoes"] = sorted(cs) or None
     for k in ("d_cotou", "d_negociou", "d_agendou", "d_visita", "d_comprou"):
         a, b = antiga.get(k), nova.get(k)
         out[k] = min(x for x in (a, b) if x) if (a or b) else None
-    if out.get("d_comprou") and out["d_comprou"] == antiga.get("d_comprou") and antiga.get("valor_compra") is not None:
-        out["valor_compra"] = antiga["valor_compra"]
+    if out.get("d_comprou") and out["d_comprou"] == antiga.get("d_comprou"):
+        if antiga.get("valor_compra") is not None:
+            out["valor_compra"] = antiga["valor_compra"]
+        out["compra_fonte"] = antiga.get("compra_fonte") or nova.get("compra_fonte")
     out["perdido"] = nova.get("perdido", antiga.get("perdido")) and not out.get("d_comprou")
     out["motivo"] = nova.get("motivo") if out["perdido"] else None
     return out
@@ -208,6 +215,61 @@ def movere(cli, seg, ini: date, fim: date):
         for kk in cv.chaves_tel(c["telefone"]):
             cot_tel.setdefault(kk, []).append(c)
     return cot_tel, vendas
+
+
+def os_das_cotacoes(desde: date, ate: date) -> dict:
+    """{nº da cotação: (dia, valor, 'nota'|'os')} das cotações que viraram O.S. (API do Movere). Falhou → {} (segue sem)."""
+    import movere_api
+    if not movere_api.configurada():
+        print("ℹ️ API do Movere não configurada: sem a regra cotação → O.S.")
+        return {}
+    try:
+        with httpx.Client(timeout=120) as c:
+            out = movere_api.cotacoes_que_viraram_os(c, movere_api.login(c), desde, ate, log=lambda *_: None)
+        print(f"🧾 Cotações que viraram O.S. ({desde:%d/%m/%Y} a {ate:%d/%m/%Y}): {len(out)}")
+        DETALHES["cotacoes_os"] = DETALHES.get("cotacoes_os", 0) + len(out)
+        return out
+    except Exception as e:
+        print(f"⚠️ API do Movere (cotação → O.S.) falhou ({type(e).__name__}): segue sem")
+        DETALHES["cotacoes_os_erro"] = type(e).__name__
+        return {}
+
+
+def preencher_cotacoes(cli, seg, sal, banco, ini: date, fim: date) -> list:
+    """Uma vez só (SQL 34): guarda os números das cotações do Movere nos leads que já estavam no banco."""
+    cot_tel, _ = movere(cli, seg, ini, fim)
+    ch = {}
+    for kk, cs in cot_tel.items():
+        ch.setdefault(codigo_tel(kk, sal), []).extend(cs)
+    mudou = []
+    for l in banco.values():
+        cs = {str(c["cotacao"]) for h in l.get("tel_hash") or [] for c in ch.get(h, [])
+              if c.get("cotacao") and c["data"] >= l["d_entrou"] - timedelta(days=1)}
+        if cs - set(l.get("cotacoes") or []):
+            nova = dict(l, cotacoes=sorted(cs | set(l.get("cotacoes") or [])))
+            banco[l["id"]] = nova
+            mudou.append(nova)
+    print(f"🧾 Cotações guardadas em {len(mudou)} leads que já estavam no banco")
+    return mudou
+
+
+def aplicar_os(banco: dict, os_map: dict) -> list:
+    """Lead com cotação que virou O.S. (no dia da entrada ou depois) = comprou. Fica a data mais antiga."""
+    mudou = []
+    if not os_map:
+        return mudou
+    for l in banco.values():
+        achou = sorted(os_map[c][:2] for c in (l.get("cotacoes") or []) if c in os_map and os_map[c][0] >= l["d_entrou"])
+        if not achou:
+            continue
+        dia, valor = achou[0]
+        if l.get("d_comprou") and l["d_comprou"] <= dia:
+            continue
+        nova = dict(l, d_comprou=dia, valor_compra=round(sum(v for d, v in achou if d == dia), 2), compra_fonte="os",
+                    perdido=False, motivo=None)
+        banco[l["id"]] = nova
+        mudou.append(nova)
+    return mudou
 
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
@@ -291,7 +353,6 @@ def processar(k, cli, seg, sal, leads, marc, ini_mov, fim_mov, banco, hoje):
         tl = set().union(*[tel.get(c["id"], set()) for c in (l.get("_embedded") or {}).get("contacts") or []] or [set()])
         nova = linha_do_lead(l, seg["_users"], m, tl, cot_tel, vendas)
         nova["tel_hash"] = sorted(codigo_tel(x, sal) for x in tl) or None
-        nova.pop("_fonte", None)
         j = juntar(banco.get(l["id"]), nova)
         banco[l["id"]] = j
         mudou.append(j)
@@ -315,11 +376,14 @@ def compras_recentes(cli, seg, sal, banco, hoje, dias=10):
             if comp:
                 nova["d_comprou"] = comp[0][0]
                 nova["valor_compra"] = round(sum(v for dv, v in comp if dv == comp[0][0]), 2)
-                nova["perdido"], nova["motivo"] = False, None
+                nova["perdido"], nova["motivo"], nova["compra_fonte"] = False, None, "movere"
         if not l.get("d_cotou"):
             cots = sorted((c for h in hs for c in ch.get(h, []) if c["data"] >= l["d_entrou"] - timedelta(days=1)), key=lambda c: c["data"])
             if cots:
                 nova["d_cotou"], nova["valor_cotacao"] = cots[0]["data"], cots[0]["valor"]
+        cots_novas = {str(c["cotacao"]) for h in hs for c in ch.get(h, []) if c.get("cotacao") and c["data"] >= l["d_entrou"] - timedelta(days=1)}
+        if cots_novas - set(l.get("cotacoes") or []):
+            nova["cotacoes"] = sorted(cots_novas | set(l.get("cotacoes") or []))
         if nova != l:
             banco[l["id"]] = nova
             mudou.append(nova)
@@ -357,6 +421,7 @@ def main() -> int:
                 marc = datas_marcacoes(k, carga)
                 m, f = processar(k, cli, seg, sal, leads, marc, carga - timedelta(days=1), hoje, banco, hoje)
                 mudaram += m; fora += f
+                mudaram += aplicar_os(banco, os_das_cotacoes(carga - timedelta(days=1), hoje))
             else:
                 # rodada do dia: leads que mudaram desde a última rodada (com 1 dia de folga)
                 desde = (ultima - timedelta(days=1)) if ultima else datetime.combine(hoje - timedelta(days=2), datetime.min.time(), cv.TZ_LOJA)
@@ -366,6 +431,11 @@ def main() -> int:
                 mudaram += m; fora += f
                 print(f"🔄 Mudaram desde {desde:%d/%m %H:%M}: {len(leads)} leads")
                 mudaram += compras_recentes(cli, seg, sal, banco, hoje)
+                mudaram += aplicar_os(banco, os_das_cotacoes(hoje - timedelta(days=10), hoje))
+                if not estado.get("cotacao_os_desde"):
+                    # 1ª rodada com o SQL 34: os leads que já estavam no banco ganham as cotações e a regra cotação → O.S.
+                    mudaram += preencher_cotacoes(cli, seg, sal, banco, carga - timedelta(days=1), hoje)
+                    mudaram += aplicar_os(banco, os_das_cotacoes(carga - timedelta(days=1), hoje))
                 # histórico: mais MESES_POR_RODADA meses para trás, até INICIO_HIST
                 if carga > INICIO_HIST:
                     novo = max(INICIO_HIST, mes_anterior(carga, MESES_POR_RODADA))
@@ -375,6 +445,7 @@ def main() -> int:
                     marc = datas_marcacoes(k, novo, min(hoje, fim + timedelta(days=DIAS_MARCACAO)))
                     m, f = processar(k, cli, seg, sal, leads, marc, novo - timedelta(days=1), min(hoje, fim + timedelta(days=DIAS_MARCACAO)), banco, hoje)
                     mudaram += m; fora += f
+                    mudaram += aplicar_os(banco, os_das_cotacoes(novo - timedelta(days=1), min(hoje, fim + timedelta(days=DIAS_MARCACAO))))
                     carga = novo
             linhas = list(banco.values())
             resumos, abertos = fc.montar(linhas, hoje, carga)
@@ -386,7 +457,8 @@ def main() -> int:
                   f"{r['funil']['etapas']['agendou']} · comprou {r['funil']['etapas']['comprou']} · em aberto {len(abertos)}")
             if DRY:
                 print("TESTE: nada foi gravado."); return 0
-            gravar(cli, chave, mudaram, {"carga_desde": carga.isoformat(), "ultima_rodada": datetime.now(cv.TZ_LOJA).isoformat()},
+            gravar(cli, chave, mudaram, {"carga_desde": carga.isoformat(), "ultima_rodada": datetime.now(cv.TZ_LOJA).isoformat(),
+                                         "cotacao_os_desde": estado.get("cotacao_os_desde") or carga.isoformat()},
                    resumos, abertos)
         print("✅ Gravado.")
         registrar(chave, True, None, inicio)
