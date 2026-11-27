@@ -107,14 +107,44 @@ def conferir(v553_ate_ontem: dict, analytics: dict, revenda: list) -> dict:
 
 
 # ── Rotina 553 ────────────────────────────────────────────────────────────────
-async def ler_553(hoje: date) -> dict:
+# Horários (decisão do TI, 25/11/2026): de dia (7h45, 10h45, 13h45, 15h45, 17h45) só o "hoje" das 8 lojas (rápido);
+# às 19h o COMPLETO: mês + pneus + conferência com o Analytics. A página soma "mês (retrato das 19h) + hoje".
+# Se o retrato do mês ficou velho (a rodada das 19h não aconteceu), a próxima rodada faz o completo.
+HORA_COMPLETO = 18
+
+
+def dia_util_anterior(d: date) -> date:
+    d -= timedelta(days=1)
+    return d - timedelta(days=1) if d.weekday() == 6 else d
+
+
+def decidir_modo(hoje: date, hora: int, ultimo_mes) -> str:
+    """'completo' (mês + pneus + conferência) ou 'hoje' (só o dia). ultimo_mes = dia do último retrato do mês."""
+    m = os.environ.get("MODO", "").strip().lower()
+    if m in ("completo", "hoje"):
+        return m
+    if hora >= HORA_COMPLETO or ultimo_mes is None or ultimo_mes < dia_util_anterior(hoje):
+        return "completo"
+    return "hoje"
+
+
+def situacao(res: dict, modo: str, hora: int) -> tuple:
+    """(ok, problemas). Amarelo no Monitor: ok com problemas (até 2). Vermelho: mais de 2 ou nada veio.
+    'hoje' sem relatório só conta depois das 10h (antes disso a loja pode não ter vendido ainda)."""
+    probs = list(res["erros"]) + ([f"hoje {l} (sem relatório)" for l in res["sem_hoje"]] if hora >= 10 else [])
+    veio = len(res["hoje"]["lojas"]) + len(res["mes"]["lojas"])
+    return (veio > 0 or (modo == "hoje" and hora < 10)) and len(probs) <= 2, probs
+
+
+async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
+    """ao_ler(periodo, lj, vd) é chamado assim que cada loja chega (grava na hora)."""
     from playwright.async_api import async_playwright
     from sync_televendas import login
     from varejo_teste import gerar
     from varejo_filtros import LOJAS_VAREJO, TABELAS_VAREJO, FAMILIAS_VAREJO, FAMILIAS_PNEUS
     os.environ["FRETE"] = "1"   # "Frete compõe valores totais" (assim bate com o Analytics)
     ini, fim = hoje.replace(day=1).strftime("%d/%m/%Y"), hoje.strftime("%d/%m/%Y")
-    res = {"mes": {"lojas": [], "vend": []}, "hoje": {"lojas": [], "vend": []}, "erros": []}
+    res = {"mes": {"lojas": [], "vend": []}, "hoje": {"lojas": [], "vend": []}, "erros": [], "sem_hoje": [], "repescados": 0}
     async with async_playwright() as pw:
         b = await pw.chromium.launch(headless=True)
         page = await (await b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo",
@@ -151,11 +181,13 @@ async def ler_553(hoje: date) -> dict:
                 res["erros"].append(f"{tipo} {loja}: soma dos vendedores diferente")
             res[tipo]["lojas"].append(lj)
             res[tipo]["vend"].extend(vd)
+            if ao_ler:
+                ao_ler(tipo, lj, vd)
             return True
 
         # 1ª volta: mês e hoje de cada loja, depois os pneus do mês
-        pedidos = [(p, cod, loja) for p in ("mes", "hoje") for cod, loja in LOJAS_VAREJO.items()] + \
-                  [("pneus", cod, loja) for cod, loja in LOJAS_VAREJO.items()]
+        periodos = ("mes", "hoje", "pneus") if modo == "completo" else ("hoje",)
+        pedidos = [(p, cod, loja) for p in periodos for cod, loja in LOJAS_VAREJO.items()]
         di_de = {"mes": ini, "hoje": fim, "pneus": ini}
         fam_de = {"mes": FAMILIAS_VAREJO, "hoje": FAMILIAS_VAREJO, "pneus": FAMILIAS_PNEUS}
         falhou = []
@@ -177,10 +209,11 @@ async def ler_553(hoje: date) -> dict:
                 print(f"▶ {tipo} · {loja} (2ª volta)")
                 r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1,) if tipo == "hoje" else (1, 2))
                 if aplicar(tipo, cod, loja, r):
+                    res["repescados"] += 1
                     continue
-                if tipo == "hoje":   # sem venda hoje o Movere não monta o relatório: conta como zero
-                    print("   sem relatório hoje: fica zerado")
-                    res["hoje"]["lojas"].append({"loja": loja, "cod": cod, "venda": 0.0, "clientes": 0, "itens": 0.0, "ticket": 0.0})
+                if tipo == "hoje":   # sem venda hoje o Movere não monta o relatório; ou ele falhou: NÃO grava zero, fica o último número
+                    print("   sem relatório hoje: fica o último número")
+                    res["sem_hoje"].append(loja)
                 else:
                     res["erros"].append(f"{tipo} {loja}")
         await b.close()
@@ -229,27 +262,30 @@ def _post(cli, url, headers, rows):
     r.raise_for_status()
 
 
-def gravar(cli, chave, hoje: date, res: dict, conf: dict):
+def gravar_loja(cli, chave, hoje: date, periodo: str, lj: dict, vd: list):
+    """Grava UMA loja (e os vendedores dela) num período: chamado assim que a loja chega."""
     H = cv._sb_headers(chave, {"Prefer": "resolution=merge-duplicates,return=minimal"})
     url = f"{cv.SUPABASE_URL}/rest/v1"
     mes, agora = hoje.replace(day=1).isoformat(), datetime.now(timezone.utc).isoformat()
-    for periodo in ("mes", "hoje"):
-        lojas = res[periodo]["lojas"]
-        if not lojas:
-            continue
-        rows = [dict(l, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora) for l in lojas]
-        _post(cli, f"{url}/varejo_lojas?on_conflict=mes,periodo,loja", H, rows)
-        # vendedores: troca os da loja inteira (quem saiu da lista some)
-        for l in lojas:
-            cli.delete(f"{url}/varejo_vendedores?mes=eq.{mes}&periodo=eq.{periodo}&loja=eq.{l['loja']}",
-                       headers=cv._sb_headers(chave)).raise_for_status()
-        vend = [dict(v, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora) for v in res[periodo]["vend"]]
-        if vend:
-            _post(cli, f"{url}/varejo_vendedores?on_conflict=mes,periodo,loja,cod", H, vend)
+    _post(cli, f"{url}/varejo_lojas?on_conflict=mes,periodo,loja", H, [dict(lj, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora)])
+    # vendedores: troca os da loja inteira (quem saiu da lista some)
+    cli.delete(f"{url}/varejo_vendedores?mes=eq.{mes}&periodo=eq.{periodo}&loja=eq.{lj['loja']}",
+               headers=cv._sb_headers(chave)).raise_for_status()
+    if vd:
+        _post(cli, f"{url}/varejo_vendedores?on_conflict=mes,periodo,loja,cod", H,
+              [dict(v, mes=mes, periodo=periodo, dia=hoje.isoformat(), atualizado_em=agora) for v in vd])
+
+
+def gravar(cli, chave, hoje: date, res: dict, conf: dict):
+    """No completo: grava de novo as lojas do mês já com os pneus, e a conferência com o Analytics."""
+    for l in res["mes"]["lojas"]:
+        gravar_loja(cli, chave, hoje, "mes", l, [v for v in res["mes"]["vend"] if v["loja"] == l["loja"]])
     if conf:
+        H = cv._sb_headers(chave, {"Prefer": "resolution=merge-duplicates,return=minimal"})
+        mes, agora = hoje.replace(day=1).isoformat(), datetime.now(timezone.utc).isoformat()
         ontem = (hoje - timedelta(days=1)).isoformat()
         rows = [{"mes": mes, "loja": k, "ate": ontem, "atualizado_em": agora, **v} for k, v in conf.items()]
-        cli.post(f"{url}/varejo_conferencia?on_conflict=mes,loja", headers=H, json=rows).raise_for_status()
+        cli.post(f"{cv.SUPABASE_URL}/rest/v1/varejo_conferencia?on_conflict=mes,loja", headers=H, json=rows).raise_for_status()
 
 
 def registrar(chave, ok: bool, msg: str, detalhes: dict, inicio: datetime):
@@ -267,28 +303,75 @@ def registrar(chave, ok: bool, msg: str, detalhes: dict, inicio: datetime):
         print(f"⚠️ Não consegui registrar a rodada: {type(e).__name__}")
 
 
+def ultimo_retrato_mes(chave, hoje: date):
+    """Dia do último retrato do mês (rodada completa) no banco, ou None."""
+    if not chave:
+        return None
+    try:
+        with httpx.Client(timeout=30) as cli:
+            r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/varejo_lojas?select=dia&mes=eq.{hoje.replace(day=1).isoformat()}"
+                        f"&periodo=eq.mes&order=dia.asc&limit=1", headers=cv._sb_headers(chave))
+            r.raise_for_status()
+            x = r.json()
+            return date.fromisoformat(x[0]["dia"]) if x else None
+    except Exception as e:
+        print(f"⚠️ Não li o último retrato do mês ({type(e).__name__}): faço o completo")
+        return None
+
+
 def main() -> int:
     inicio = datetime.now(timezone.utc)
-    hoje = datetime.now(TZ).date()
+    agora = datetime.now(TZ)
+    hoje = agora.date()
     chave = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
-    print(f"📊 Resultado Varejo · {hoje:%d/%m/%Y}{' · TESTE (não grava)' if DRY else ''}")
-    res = asyncio.run(ler_553(hoje))
-    conf, aviso = {}, ""
-    if hoje.day > 1 and len(res["mes"]["lojas"]) == 8 and len(res["hoje"]["lojas"]) == 8:
+    ultimo = ultimo_retrato_mes(chave, hoje)
+    modo = decidir_modo(hoje, agora.hour, ultimo)
+    print(f"📊 Resultado Varejo · {hoje:%d/%m/%Y} · modo {modo.upper()}"
+          f" (retrato do mês: {ultimo.strftime('%d/%m') if ultimo else 'nenhum'}){' · TESTE (não grava)' if DRY else ''}")
+    if not DRY and not chave:
+        print("❌ Falta o segredo SUPABASE_SERVICE_KEY")
+        return 1
+    cli = None if DRY else httpx.Client(timeout=60)
+    falhas_gravar = []
+
+    def ao_ler(periodo, lj, vd):
+        if cli is None:
+            return
         try:
-            analytics, revenda = ler_analytics(hoje)
-            hj = {l["loja"]: l["venda"] for l in res["hoje"]["lojas"]}
-            ate_ontem = {l["loja"]: round(l["venda"] - hj.get(l["loja"], 0), 2) for l in res["mes"]["lojas"]}
-            conf = conferir(ate_ontem, analytics, revenda) if analytics else {}
-            print(f"🔎 Conferência com o Analytics: {sum(1 for c in conf.values() if abs(c['diferenca']) >= 0.05)} loja(s) com diferença"
-                  f" · {len(revenda)} lançamento(s) de REVENDA")
-        except Exception as e:
-            aviso = f"conferência com o Analytics não rodou ({type(e).__name__})"
-            print("⚠️", aviso)
-    detalhes = {"lojas_mes": len(res["mes"]["lojas"]), "lojas_hoje": len(res["hoje"]["lojas"]),
-                "vendedores_mes": len(res["mes"]["vend"]), "erros": res["erros"][:20],
-                "lojas_com_diferenca": sum(1 for c in conf.values() if abs(c["diferenca"]) >= 0.05)}
-    print("Resumo:", {k: v for k, v in detalhes.items() if k != "erros"}, "· erros:", len(res["erros"]))
+            gravar_loja(cli, chave, hoje, periodo, lj, vd)
+        except httpx.HTTPStatusError as e:
+            falhas_gravar.append(f"{periodo} {lj['loja']} ({e.response.status_code})")
+
+    conf, aviso = {}, ""
+    try:
+        res = asyncio.run(ler_553(hoje, modo, ao_ler))
+        if modo == "completo" and hoje.day > 1 and len(res["mes"]["lojas"]) == 8 and len(res["hoje"]["lojas"]) == 8:
+            try:
+                analytics, revenda = ler_analytics(hoje)
+                hj = {l["loja"]: l["venda"] for l in res["hoje"]["lojas"]}
+                ate_ontem = {l["loja"]: round(l["venda"] - hj.get(l["loja"], 0), 2) for l in res["mes"]["lojas"]}
+                conf = conferir(ate_ontem, analytics, revenda) if analytics else {}
+                print(f"🔎 Conferência com o Analytics: {sum(1 for c in conf.values() if abs(c['diferenca']) >= 0.05)} loja(s) com diferença"
+                      f" · {len(revenda)} lançamento(s) de REVENDA")
+            except Exception as e:
+                aviso = f"conferência com o Analytics não rodou ({type(e).__name__})"
+                print("⚠️", aviso)
+        if cli is not None and modo == "completo" and res["mes"]["lojas"]:
+            try:
+                gravar(cli, chave, hoje, res, conf)   # o mês de novo, agora com os pneus, e a conferência
+            except httpx.HTTPStatusError as e:
+                falhas_gravar.append(f"mês com pneus ({e.response.status_code})")
+    finally:
+        if cli is not None:
+            cli.close()
+    ok, probs = situacao(res, modo, agora.hour)
+    if falhas_gravar:
+        ok, probs = False, probs + ["não gravou: " + ", ".join(falhas_gravar) + " (rodou o SQL 26?)"]
+    detalhes = {"modo": modo, "lojas_mes": len(res["mes"]["lojas"]), "lojas_hoje": len(res["hoje"]["lojas"]),
+                "vendedores_mes": len(res["mes"]["vend"]), "repescados": res["repescados"], "sem_hoje": res["sem_hoje"],
+                "erros": probs[:20], "lojas_com_diferenca": sum(1 for c in conf.values() if abs(c["diferenca"]) >= 0.05)}
+    print("Resumo:", {k: v for k, v in detalhes.items() if k not in ("erros", "sem_hoje")},
+          f"· sem relatório hoje: {len(res['sem_hoje'])} · problemas: {len(probs)}")
     if DRY:
         if os.environ.get("MOSTRAR_TRANCADO"):   # conferência do TI: o resultado sai criptografado no registro público
             from varejo_teste import trancar
@@ -296,21 +379,9 @@ def main() -> int:
             for i in range(0, len(b), 900):
                 print("TRANCADO:" + b[i:i + 900])
         print("TESTE: nada foi gravado.")
-        return 0 if not res["erros"] else 1
-    if not chave:
-        print("❌ Falta o segredo SUPABASE_SERVICE_KEY")
-        return 1
-    try:
-        with httpx.Client(timeout=60) as cli:
-            gravar(cli, chave, hoje, res, conf)
-        print("✅ Gravado no banco.")
-    except httpx.HTTPStatusError as e:
-        msg = f"Não gravou no banco ({e.response.status_code}). Rodou o SQL 26?"
-        print("❌", msg)
-        registrar(chave, False, msg, detalhes, inicio)
-        return 1
-    ok = not res["erros"]
-    registrar(chave, ok, "; ".join(res["erros"])[:300] if res["erros"] else aviso, detalhes, inicio)
+        return 0 if ok else 1
+    print("✅ Gravado no banco (loja por loja)." if ok else "⚠️ Rodada com problemas: " + "; ".join(probs)[:300])
+    registrar(chave, ok, "; ".join(probs)[:300] if probs else aviso, detalhes, inicio)
     return 0 if ok else 1
 
 
