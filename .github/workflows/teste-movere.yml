@@ -25,7 +25,7 @@ jobs:
           MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
           MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
           MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
-        run: python3 diag_funil.py
+        run: python3 diag_funil2.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
