@@ -168,7 +168,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
     "Li assim", onde a conversa parou e a **próxima mensagem pronta** (objeção do cliente, sinal de compra, pergunta de
     preço ou cliente sumiu → resgate), ideias de frases e a auditoria. Texto exportado do WhatsApp também é separado. **Perguntas ensinadas** (Monitor "não soube responder", 25/11/2026): "venda" (o que ela sabe de vendas),
     "insistir no contato é ruim para a imagem da Fox" (`INSISTIR`: até 3 ligações, cada contato com algo novo, respeitar o não),
-    "quero aprender a vender" (abre o treino), "ok/obrigado" (confirma), "1/2/3" logo depois do menu de treino (`ultimoMenu`) e "faltou algum?" (nas Ligações = quantos faltam; fora dela pergunta o que conferir). Respostas modelo ADAPTADAS à regra do
+    "quero aprender a vender" (abre o treino), "ok/obrigado" (confirma), "1/2/3" logo depois do menu de treino (`ultimoMenu`) , "faltou algum?" (nas Ligações = quantos faltam; fora dela pergunta o que conferir) e "WhatsApp bloqueado" (`WHATS_BLOQ`: seguir por ligação, na 3ª vez pode perder o número, cadência de 1 a 4 min entre mensagens, personalizar). Respostas modelo ADAPTADAS à regra do
     TI: sem "reservar box", sem "segurar condição 48 h", sem "pronta entrega" (nunca prometer pneu separado nem horário
     reservado); combinar o dia da visita. No Cadastrar só responde se a pessoa pedir ("cliente disse…", "treinar").
     **Módulo 2** (TI, 24/11/2026): roteiro de ligação de resgate (etapas A/B/C; nas Ligações já vem preenchido com o

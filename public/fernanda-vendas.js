@@ -363,6 +363,15 @@
     "· Horário comercial e o canal que o cliente prefere (se ele pediu WhatsApp, siga no WhatsApp).\n" +
     "· Se o cliente disse que não quer, respeite: marque \"Sem interesse\" ou \"Venda perdida\" com o motivo e pare.\n" +
     "· Lembre: quem pediu orçamento pediu ajuda. Retornar com educação é cuidado, não pressão.\n\nQuer o roteiro de ligação ou uma mensagem leve de WhatsApp?";
+  // WhatsApp bloqueado/restrito por mandar muitas mensagens (Monitor, 27/11/2026: "meu whatsapp está bloqueado por 24h")
+  const WHATS_BLOQ = "📵 Seu WhatsApp foi restringido por enviar muitas mensagens seguidas. Enquanto isso:\n" +
+    "📞 Siga pelas LIGAÇÕES: na lista, use o botão de telefone. Ligação não tem esse bloqueio e converte mais.\n\n" +
+    "⚠️ Cuidado: se o WhatsApp for bloqueado de novo, na TERCEIRA vez você pode PERDER O NÚMERO.\n\n" +
+    "Quando voltar, envie com calma (cadência):\n" +
+    "· Uma mensagem por vez e espere de 1 a 4 minutos antes da próxima.\n" +
+    "· Nada de disparar para vários clientes ao mesmo tempo.\n" +
+    "· Personalize (nome do cliente, medida do pneu): texto igual repetido é o que mais bloqueia.\n" +
+    "· Prefira responder quem já falou com você e ligar para quem não respondeu.";
   function resposta(q) {
     const n = N(q), naTelaDeCadastro = !!document.querySelector("[data-fe]");
     // "1", "2" ou "3" logo depois do menu de treino
@@ -373,6 +382,9 @@
       if (k === "1") { lancarCenario(); return true; }
       if (k === "2") { modo = "auditoria"; bot("🔎 Mande o PRINT da conversa de WhatsApp (📎 ou Ctrl+V) ou cole o texto. Eu leio, digo onde a conversa parou e te dou a próxima mensagem pronta."); chips(["Sair do treino"]); return true; }
       modo = "rapida"; bot("⚡ Me conte a objeção que o cliente fez. Ex.: \"achou mais barato na internet\", \"não quer alinhar\", \"vai falar com a esposa\"."); chips(["Sair do treino"]); return true;
+    }
+    if (/(whats|wpp|zap|whatsapp|watts|whatsap)/.test(n) && /(bloque|bloquei|banid|banimento|restri|suspens|travad|limit|24 ?h|nao (consigo|da) (mandar|enviar))/.test(n)) {
+      bot(WHATS_BLOQ); chips(["📞 Roteiro de ligação", "Por onde começo?", "🎯 Treinar vendas"]); return true;
     }
     // Insistir no contato prejudica a imagem da Fox?
     if (/(insist|insistente|incomod|chato|chatice|perturb|encher o saco|pressionar|forcar|muita ligac|ligar (muito|demais|toda hora)|imagem da fox)/.test(n) && /(client|ligar|ligac|contato|whats|mensag|imagem)/.test(n)) {
