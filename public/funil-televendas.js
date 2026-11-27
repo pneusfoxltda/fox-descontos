@@ -223,11 +223,24 @@
     const bot = document.createElement("button");
     bot.className = "ft-botao"; bot.id = "ft-abrir"; bot.type = "button"; bot.textContent = "📈 Estatísticas";
     bot.title = "Funil do televendas: entrou → cotou → agendou → comprou, tempos, ranking, previsão";
+    // Fica EMBAIXO do filtro de data (que continua no mesmo lugar) e só aparece para o admin (TI, 27/11/2026)
     const lugar = document.querySelector(".filtro-data-wrap");
-    if (lugar) lugar.insertAdjacentElement("afterend", bot); else box.insertAdjacentElement("beforebegin", bot);
+    if (lugar) {
+      const col = document.createElement("div");
+      col.style.cssText = "display:flex;flex-direction:column;align-items:flex-end;gap:8px";
+      lugar.parentNode.insertBefore(col, lugar);
+      col.appendChild(lugar); col.appendChild(bot);
+    } else box.insertAdjacentElement("beforebegin", bot);
+    bot.hidden = true;
+    const conferirAdmin = () => { const adm = typeof isAdmin === "function" && isAdmin(); bot.hidden = !adm; if (!adm) box.hidden = true; return adm; };
+    // o login do FOXNET é conferido alguns segundos depois de abrir a página: confere de novo por 20 s
+    let tentativas = 0;
+    const t = setInterval(() => { if (conferirAdmin() || ++tentativas > 20) clearInterval(t); }, 1000);
+    conferirAdmin();
     let carregado = false;
     bot.onclick = () => {
       const abrir = box.hidden;
+      if (!conferirAdmin()) return;
       if (abrir && !isAutenticado()) { exigirAcesso(() => { box.hidden = false; bot.classList.add("on"); bot.textContent = "✕ Fechar estatísticas"; carregado = true; carregar(); box.scrollIntoView({behavior: "smooth"}); }); return; }
       box.hidden = !abrir;
       bot.classList.toggle("on", abrir);
