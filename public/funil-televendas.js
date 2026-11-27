@@ -19,7 +19,9 @@
   let R = {}, ABERTOS = [], periodo = "mes", operadora = "", soAtrasados = true;
 
   const css = `
-  #funil-tv{margin-top:28px}
+  #funil-tv{margin-top:28px}#funil-tv[hidden]{display:none}
+  .ft-botao{border:1px solid var(--fx-hd,#0F1F3D);background:var(--fx-hd,#0F1F3D);color:#fff;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+  .ft-botao.on{background:var(--fx-s1,#fff);color:var(--fx-hd,#0F1F3D)}
   #funil-tv h2{font-size:20px;font-weight:800;color:var(--fx-tx0,#0f1f3d);margin:0 0 4px}
   #funil-tv .sub{font-size:12px;color:var(--fx-tx3,#7a8ba0);margin-bottom:14px}
   #funil-tv .ft-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -206,19 +208,31 @@
   function montar() {
     if (document.getElementById("funil-tv")) return;
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
-    const box = document.createElement("div"); box.id = "funil-tv";
+    const box = document.createElement("div"); box.id = "funil-tv"; box.hidden = true;   // abre pelo botão "📈 Estatísticas"
     box.innerHTML = `<h2>📈 Funil do televendas</h2><div class="sub">Kommo (entrada, cotação, agendamento, venda ganha/perdida) + Movere (cotação e nota fiscal pelo telefone) · <span class="ft-hora"></span></div>
       <div class="ft-bar"><button data-p="mes" class="on">Este mês</button><button data-p="30d">Últimos 30 dias</button><button data-p="90d">Últimos 90 dias</button>
       <select id="ft-op"><option value="">Equipe toda</option></select></div><div class="ft-corpo"></div>`;
     (document.getElementById("tabela-wrap") || document.body).insertAdjacentElement("afterend", box);
     box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { periodo = b.dataset.p; box.querySelectorAll("[data-p]").forEach(x => x.classList.toggle("on", x === b)); desenhar(); });
     box.querySelector("#ft-op").onchange = e => { operadora = e.target.value; desenhar(); };
-    if (isAutenticado()) carregar();
-    else box.querySelector(".ft-corpo").innerHTML = `<div class="ft-sec">🔒 O funil mostra o trabalho de cada operadora: <button class="btn-refresh" id="ft-entrar">Entrar para ver</button></div>`;
-    const bt = document.getElementById("ft-entrar"); if (bt) bt.onclick = () => exigirAcesso(carregar);
+    // Botão "📈 Estatísticas" no topo, ao lado do filtro de data (pedido do TI, 27/11/2026): abre e fecha o painel
+    const bot = document.createElement("button");
+    bot.className = "ft-botao"; bot.id = "ft-abrir"; bot.type = "button"; bot.textContent = "📈 Estatísticas";
+    bot.title = "Funil do televendas: entrou → cotou → agendou → comprou, tempos, ranking, previsão";
+    const lugar = document.querySelector(".filtro-data-wrap");
+    if (lugar) lugar.insertAdjacentElement("afterend", bot); else box.insertAdjacentElement("beforebegin", bot);
+    let carregado = false;
+    bot.onclick = () => {
+      const abrir = box.hidden;
+      if (abrir && !isAutenticado()) { exigirAcesso(() => { box.hidden = false; bot.classList.add("on"); bot.textContent = "✕ Fechar estatísticas"; carregado = true; carregar(); box.scrollIntoView({behavior: "smooth"}); }); return; }
+      box.hidden = !abrir;
+      bot.classList.toggle("on", abrir);
+      bot.textContent = abrir ? "✕ Fechar estatísticas" : "📈 Estatísticas";
+      if (abrir) { if (!carregado) { carregado = true; carregar(); } box.scrollIntoView({behavior: "smooth"}); }
+    };
   }
   // espera o login do FOXNET ser conferido (entrarTV) antes de decidir
-  function iniciar() { setTimeout(montar, 1800); }
+  function iniciar() { montar(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar); else iniciar();
   window.FunilTV = {carregar, desenhar};
 })();
