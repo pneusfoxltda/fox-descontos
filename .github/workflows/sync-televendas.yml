@@ -107,7 +107,11 @@ jobs:
             17) acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml ;;
             *)  echo "Nenhum robô para acordar nesta hora." ;;
           esac
-          # Resultados Fox Pneus · Varejo (decisão do TI, 25/11/2026): de dia só o "hoje" às 7h45, 10h45, 13h45, 15h45 e 17h45;
-          # o mês completo (com pneus e conferência) roda às 19h10 pelo cron do próprio robô.
-          # O Atacado não é acordado aqui: roda sozinho às 8h e às 17h30 (decisão do TI, 26/11/2026).
-          case "$H" in 7|10|13|15|17) acordar resultados-varejo.yml ;; esac
+          # Resultados Fox Pneus · Varejo (decisão do TI, 25 e 27/11/2026): de dia o "hoje" + pneus de hoje às 7h45, 10h45, 13h45 e 15h45;
+          # às 17h45 o mês COMPLETO (com pneus e conferência), em ponto: o cron das 19h10 do GitHub atrasa (26/11 rodou à 0h58)
+          # e fica só de reserva. O Atacado não é acordado aqui: roda sozinho às 8h e às 17h30 (decisão do TI, 26/11/2026).
+          case "$H" in
+            7|10|13|15) acordar resultados-varejo.yml ;;
+            17) echo "→ acordando resultados-varejo.yml (completo)"
+                gh workflow run resultados-varejo.yml --repo "$REPO" --ref main -f modo=completo || echo "⚠️ não consegui acordar resultados-varejo.yml" ;;
+          esac

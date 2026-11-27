@@ -414,10 +414,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   filtro) com o código do cliente, nota, dia e vendedor; o que sobrar vira "Diferença sem explicação automática".
   Tudo batendo: "✅ Conferido com o Analytics".
 - Robô **`resultados_varejo.py`** (workflow `resultados-varejo.yml`). **Horários (decisão do TI, 25/11/2026)**: de dia, acordado
-  pelo sync-televendas às **7h45, 10h45, 13h45, 15h45 e 17h45** (seg–sáb), lê **só o "hoje"** das 8 lojas (modo `hoje`, rápido);
-  às **19h10** (cron) o **completo**: mês + pneus + conferência com o Analytics. `decidir_modo`: 18h ou mais, sem retrato do mês ou
+  pelo sync-televendas às **7h45, 10h45, 13h45 e 15h45** (seg–sáb), lê o **"hoje" + os pneus de hoje** das 8 lojas (modo `hoje`;
+  `pneus_hoje`, TI 27/11/2026: "os pneus sobem durante o dia"; sem pneus de hoje a linha fica vazia, nunca o número de outro dia);
+  às **17h45 o completo, em ponto** (o sync acorda com `modo=completo`): mês + pneus + conferência com o Analytics. O cron das
+  **19h10** fica de reserva (o GitHub atrasa: em 26/11 rodou à 0h58 e pulou os pneus). `decidir_modo`: 18h ou mais, sem retrato do mês ou
   retrato mais velho que o dia útil anterior → completo. À mão: entrada "modo". A página soma **mês (retrato) + hoje** quando o
-  retrato é de antes de hoje (`somarHoje` no resultados.html; Pneus e seta vermelha mudam 1x por dia). Cada loja é **gravada
+  retrato é de antes de hoje (`somarHoje` no resultados.html, pneus também; a seta vermelha muda 1x por dia). Cada loja é **gravada
   assim que chega** (`gravar_loja`); "hoje" sem relatório **não vira zero** (fica o último número; `sem_hoje`). `situacao`: até 2
   problemas = ok com aviso (🟡), mais = erro; "hoje" sem relatório antes das 10h não conta. Gera a 553 **loja por loja**.
   Filtros em `varejo_filtros.py`: 8 lojas, 13 tabelas de preço (`TABELAS_VAREJO`; ATACADO, ATACADO PREMIUM, AMAGGI e
