@@ -14,7 +14,11 @@ ts_ini = int(datetime(2026, 11, 1, tzinfo=cv.TZ_LOJA).timestamp())
 seg = {}
 with httpx.Client(timeout=120) as cli:
     def get(u):
-        r = cli.get(ll.KOMMO + u, headers=H)
+        for t in range(4):
+            try:
+                r = cli.get(ll.KOMMO + u, headers=H); break
+            except httpx.TransportError:
+                import time; time.sleep(5)
         if r.status_code == 204: return None
         r.raise_for_status(); return r.json()
     pip = get("/leads/pipelines")
@@ -33,6 +37,9 @@ with httpx.Client(timeout=120) as cli:
         if not d.get("_links", {}).get("next"): break
         pg += 1
     print("leads criados em novembro:", len(leads))
+    DISPARO = {108557363, 89179007}
+    leads = [l for l in leads if l["pipeline_id"] == ll.FUNIL and l["status_id"] not in DISPARO]
+    print("leads do Funil Principal sem as etapas de disparo:", len(leads))
     por_etapa, por_resp, campos, sem_contato = {}, {}, {}, 0
     for l in leads:
         k = etapas.get(l["status_id"], ("?", str(l["status_id"])))
@@ -58,6 +65,15 @@ with httpx.Client(timeout=120) as cli:
                     tel_c[c["id"]] = {k for v in f.get("values") or [] for k in cv.chaves_tel(v.get("value"))}
     lead_tels = [set().union(*[tel_c.get(c["id"], set()) for c in (l.get("_embedded") or {}).get("contacts") or []] or [set()]) for l in leads]
     print("leads com telefone:", sum(1 for t in lead_tels if t))
+    def tem(l, nome):
+        return any(f.get("field_name") == nome and (f.get("values") or [{}])[0].get("value") not in (None, False, "") for f in l.get("custom_fields_values") or [])
+    for nome in ("2 - Fez cotação", "3 - Cotação criada pela IA", "6 - Agendamento IA", "7 - Agendamento", "Data da visita", "1ª Venda", "Motivo de perda", "utm_source", "Meta Ads fonte", "Lojas"):
+        print(f"   campo '{nome}' preenchido em {sum(1 for l in leads if tem(l, nome))} leads")
+    origem = {}
+    for l in leads:
+        o = next((str((f.get("values") or [{}])[0].get("value")) for f in l.get("custom_fields_values") or [] if f.get("field_name") == "utm_source"), "(sem origem)")
+        origem[o] = origem.get(o, 0) + 1
+    print("origem (utm_source):", sorted(origem.items(), key=lambda x: -x[1])[:8])
     # Movere: cotações do televendas e vendas em novembro
     tt = cv.login_analytics(cli, os.environ["ANALYTICS_LOGIN"], os.environ["ANALYTICS_SENHA"])
     dias = [ini + timedelta(days=i) for i in range((hoje - ini).days + 1)]
