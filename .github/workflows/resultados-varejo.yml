@@ -1,8 +1,9 @@
 name: Resultados Varejo (rotina 553)
 
 # Grava o "Resultado Varejo - Geral" da página /resultados: rotina 553 do Movere, loja por loja.
-# De dia (acordado pelo sync-televendas às 7h45, 10h45, 13h45 e 15h45, seg–sáb) o "hoje" + os pneus de hoje das 8 lojas.
-# Às 17h45 (acordado com modo=completo) o COMPLETO: mês + pneus + conferência com o Analytics (a setinha vermelha).
+# De dia (acordado no começo do sync-televendas às 7h45, 10h45, 13h45, 15h45 e 17h45, seg–sáb) o "hoje" + os pneus de hoje
+# das 8 lojas (≈ 12 min: pronto ≈ :58). Depois do Sync das 17h45 (≈ 18h10, modo=completo) o COMPLETO: mês + pneus +
+# conferência com o Analytics (a setinha vermelha).
 # O cron das 19h10 abaixo é reserva (o GitHub atrasa: em 26/11 rodou à 0h58).
 # Se o retrato do mês ficou velho (a rodada das 19h não aconteceu), a próxima rodada faz o completo sozinha.
 on:
