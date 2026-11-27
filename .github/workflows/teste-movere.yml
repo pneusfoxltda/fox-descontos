@@ -18,9 +18,14 @@ jobs:
 
       - name: Roda teste
         env:
-          MOVERE_USER: ${{ secrets.MOVERE_USER }}
-          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          KOMMO_TOKEN: ${{ secrets.KOMMO_TOKEN }}
+          MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
+          MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
+          MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
+        run: DRY_RUN=1 PYTHONUNBUFFERED=1 python3 funil_televendas.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
