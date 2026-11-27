@@ -480,7 +480,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
 ## 📈 Funil do televendas — branch `funil-televendas`
 
 - Pedido do TI (27/11/2026): botão **"📈 Estatísticas"** no topo do /televendas.html (ao lado do filtro de data) abre o painel
-  (`public/funil-televendas.js`, só com login televendas/gerente/admin; fica escondido até clicar)
+  (`public/funil-televendas.js`; o botão fica EMBAIXO do filtro de data e só aparece para o ADMIN, decisão do TI 27/11/2026)
   com o funil **entrou → cotou → agendou → comprou** e estatística (níveis 1, 2 e 3 do pedido).
 - Robô **`funil_televendas.py`** (workflow `funil-televendas.yml`, todo dia 6h30, 12h30 e 18h30): leads do Kommo do **Funil Principal
   sem as etapas de disparo** (9 - DISPARO e 8 - Disparo Noturno; decisão do TI), últimos 4 meses. Datas pelo histórico de eventos do
