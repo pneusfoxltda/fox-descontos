@@ -203,6 +203,11 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **Concorrentes** (`todasEmpresas` no App): a lista junta as padrão + as adicionadas no navegador +
   **todas as empresas já gravadas nos descontos do banco** (antes a empresa nova ficava só no navegador
   de quem criou e "sumia" nos outros). Sem repetir maiúscula/acento; a busca ignora acento.
+- **Dashboard · conversão** (TI, 27/11/2026): abre no **mês atual** (dá para mudar as datas). Os rankings por loja e por vendedor
+  contam como as abas do Consultar (`situacaoNeg`/`contarNeg` no App): **Neg.** = todas (menos erro interno) · **Fechou** = Liberados +
+  Venda concluída (Movere) · **Perd.** = marcada como perdida pela equipe · **Venc.** = passou da validade (inclui as `auto_perdida`) ·
+  **Pend.** = ainda válida · **Conv.** = Fechou ÷ Neg. "Erro interno" fica fora da conta e aparece na coluna **Erros**.
+  Antes o `filtered` tirava as perdidas (= todas as vencidas, por causa do `auto_perdida`) e a conversão dava perto de 100%.
 - O App busca os descontos **em partes de 1000** (`supa.from().select()` em `src/App.jsx`; o banco entrega
   no máximo 1000 por vez; em 23/11/2026 eram 736). Fotos da galeria numa ida só (`buscarFotos`, 40 por ida).
 
