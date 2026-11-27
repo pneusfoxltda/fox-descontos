@@ -285,6 +285,11 @@ function desenharVarejo() {
     pneus: ranking.some(x => x.mes.pneus != null) ? soma(ranking, x => x.mes.pneus) : null, pneusV: soma(ranking, x => x.mes.pneus_vendas),
   };
   T.ticket = T.cli ? T.mes / T.cli : 0;
+  // Para a Fernanda responder "quantos pneus hoje?" e "quanto vendemos hoje?" (só números, nada de cliente)
+  window.FE_RES = {hoje, lojas: ranking.map(x => ({loja: x.loja, hoje: Number(x.hoje.venda || 0), pneusHoje: x.hoje.pneus == null ? null : Number(x.hoje.pneus),
+    pneusVendasHoje: x.hoje.pneus_vendas == null ? null : Number(x.hoje.pneus_vendas), mes: Number(x.mes.venda || 0), pneusMes: x.mes.pneus == null ? null : Number(x.mes.pneus)})),
+    totalHoje: T.hoje, pneusMes: T.pneus,
+    atualizado: [...lojas].reduce((a, x) => (x.atualizado_em || "") > a ? x.atualizado_em : a, "")};
   const du = diasUteis(V.mes), diaHoje = Number(hoje.slice(8, 10));
   const duPass = du.filter(d => d <= diaHoje).length, dr = du.filter(d => d >= diaHoje).length;
   // % desejado do dia (decisão do TI, 25/11/2026): dias úteis JÁ FECHADOS (até ontem) ÷ dias úteis do mês (no fim do mês = 100%)

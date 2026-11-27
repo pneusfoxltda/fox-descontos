@@ -793,6 +793,24 @@
   }
 
   // ══════════════════════ PONTO DE ENTRADA ══════════════════════
+  // ══════════ "Quantos pneus vendemos hoje?" (números da página de Resultados · Varejo) ══════════
+  function respostaPneusHoje(q) {
+    const n = N(q);
+    if (!/\bpneus?\b/.test(n) || !/\b(hoje|do dia|no dia|agora)\b/.test(n) || !/quant|vend|sai|numero|total|resultado/.test(n)) return false;
+    const R = window.FE_RES;
+    const ir = () => { if (typeof window.feHtml === "function") window.feHtml(`<button class="fe-a" onclick="location.href='/resultados'"><b>Resultados Fox Pneus →</b><small>Varejo: vendido hoje, no mês e pneus por loja</small></button>`); };
+    if (!R) { bot("Os pneus vendidos ficam em Resultados Fox Pneus (Varejo), na coluna 🛞 Pneus de cada loja. Abra por aqui e me pergunte lá que eu te digo os números de hoje. 😊"); ir(); return true; }
+    const com = R.lojas.filter(x => x.pneusHoje != null);
+    const hora = R.atualizado ? new Date(R.atualizado).toLocaleTimeString("pt-BR", { timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit" }) : "";
+    if (!com.length) { bot("Os pneus de hoje ainda não chegaram do Movere (o robô lê de dia, depois do Televendas). " + (R.pneusMes != null ? `No mês, até agora: ${R.pneusMes.toLocaleString("pt-BR")} pneus.` : "") + " Pergunte de novo mais tarde! ⏳"); return true; }
+    const total = com.reduce((s, x) => s + x.pneusHoje, 0), vendas = com.reduce((s, x) => s + (x.pneusVendasHoje || 0), 0);
+    const lista = com.filter(x => x.pneusHoje).sort((a, b) => b.pneusHoje - a.pneusHoje).map(x => `• ${x.loja}: ${x.pneusHoje.toLocaleString("pt-BR")}`).join("\n");
+    bot(`🛞 Hoje a rede vendeu ${total.toLocaleString("pt-BR")} pneu(s)${vendas ? ` em ${vendas} venda(s)` : ""}${hora ? ` (atualizado às ${hora})` : ""}.` +
+        (lista ? "\n" + lista : "\nNenhuma loja vendeu pneu hoje ainda.") +
+        (R.pneusMes != null ? `\nNo mês: ${R.pneusMes.toLocaleString("pt-BR")} pneus.` : ""));
+    return true;
+  }
+
   window.feAjuda = function (q) {
     const n = N(q);
     if (/quem (e|eh) (voce|vc)|qual (e )?(o )?seu nome|voce e (uma )?(ia|robo)/.test(n)) {
@@ -801,6 +819,7 @@
     }
     // Treinadora de vendas (fernanda-vendas.js): simulação, auditoria, objeções. Vem antes: no meio de um
     // treino, a resposta do vendedor fala de pneu e não pode cair na parte de pneus.
+    if (respostaPneusHoje(q)) return true;
     if (window.feVendas && window.feVendas.resposta(q)) return true;
     // Conhecimento de pneus (fernanda-pneus.js): medida, segmentos, troca, DOT, etiqueta, run-flat…
     if (window.fePneus && window.fePneus.resposta(q)) return true;

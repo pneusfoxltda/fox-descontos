@@ -181,6 +181,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
     com 5% para visita em 48 h · 21x · cobrir orçamento com o gerente; regra de ouro: contrapartida = dia da visita),
     cobrir orçamento na mesma ligação. **Regras da Fox**: não faz entrega; **preço garantido pela data da cotação:
     7 dias (cotação do televendas) ou 3 dias (cotação da loja)**; nunca travar box nem separar pneu.
+  · **"Quantos pneus hoje?"** (Monitor "não soube responder", 27/11/2026): `respostaPneusHoje` no fernanda-ajuda.js (antes da
+    treinadora e dos pneus) lê `window.FE_RES` (exposto no `desenharVarejo()` do resultados.html: por loja hoje, pneus de hoje,
+    pneus do mês). Fora de /resultados leva até lá.
   · **Nome de quem está logado** em todas as telas (`feNomeLogado()`: perfil das Ligações ou a sessão
     `foxnet-auth` do navegador): "Oi, Felipe! Aqui é a Fernanda…".
 - **Informações rápidas** (no FOXNET): lojas, CNPJ, cidades → loja mais próxima, veículos
