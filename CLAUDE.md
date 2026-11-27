@@ -208,6 +208,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Venda concluída (Movere) · **Perd.** = marcada como perdida pela equipe · **Venc.** = passou da validade (inclui as `auto_perdida`) ·
   **Pend.** = ainda válida · **Conv.** = Fechou ÷ Neg. "Erro interno" fica fora da conta e aparece na coluna **Erros**.
   Antes o `filtered` tirava as perdidas (= todas as vencidas, por causa do `auto_perdida`) e a conversão dava perto de 100%.
+  Os 5 cartões do topo usam a mesma conta (`contarNeg(negociadas)`, no período). Quadros com `.scroll-anim` montados de novo ao
+  mudar filtros ganham `in-view` na hora (antes ficavam invisíveis e o Ranking de Vendedores "sumia").
 - O App busca os descontos **em partes de 1000** (`supa.from().select()` em `src/App.jsx`; o banco entrega
   no máximo 1000 por vez; em 23/11/2026 eram 736). Fotos da galeria numa ida só (`buscarFotos`, 40 por ida).
 
