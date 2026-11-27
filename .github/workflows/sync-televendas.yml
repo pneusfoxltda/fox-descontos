@@ -107,11 +107,33 @@ jobs:
             17) acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml ;;
             *)  echo "Nenhum robô para acordar nesta hora." ;;
           esac
-          # Resultados Fox Pneus · Varejo (decisão do TI, 25 e 27/11/2026): de dia o "hoje" + pneus de hoje às 7h45, 10h45, 13h45 e 15h45;
-          # às 17h45 o mês COMPLETO (com pneus e conferência), em ponto: o cron das 19h10 do GitHub atrasa (26/11 rodou à 0h58)
-          # e fica só de reserva. O Atacado não é acordado aqui: roda sozinho às 8h e às 17h30 (decisão do TI, 26/11/2026).
+          # Resultados Fox Pneus · Varejo: o "hoje" + pneus de hoje é acordado no COMEÇO (job varejo-na-hora, abaixo);
+          # aqui, depois do Sync (≈ 18h10), só o mês COMPLETO (pneus e conferência com o Analytics). O cron das 19h10 é reserva.
+          # O Atacado não é acordado aqui: roda sozinho às 8h e às 17h30 (decisão do TI, 26/11/2026).
           case "$H" in
-            7|10|13|15) acordar resultados-varejo.yml ;;
             17) echo "→ acordando resultados-varejo.yml (completo)"
                 gh workflow run resultados-varejo.yml --repo "$REPO" --ref main -f modo=completo || echo "⚠️ não consegui acordar resultados-varejo.yml" ;;
+          esac
+
+  # Resultado Varejo na hora (TI, 27/11/2026: "às 18h já estar pronto"): acordado no COMEÇO do Sync, sem esperar ele
+  # terminar (o Sync leva ≈ 25 min). Às 7h45, 10h45, 13h45, 15h45 e 17h45 o "hoje" + pneus de hoje (≈ 12 min):
+  # pronto ≈ :58. Rodar junto com o Sync não atrapalha: o Sync limpa os filtros da 553 antes de cada relatório.
+  varejo-na-hora:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Acordar o Resultado Varejo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          INICIO=$(gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null || true)
+          if [ -n "$INICIO" ]; then H=$(TZ=America/Porto_Velho date -d "$INICIO" +%-H); else H=$(TZ=America/Porto_Velho date +%-H); fi
+          echo "Hora em Porto Velho: ${H}h"
+          case "$H" in
+            7|10|13|15|17) echo "→ acordando resultados-varejo.yml (hoje + pneus de hoje)"
+                gh workflow run resultados-varejo.yml --repo "$REPO" --ref main -f modo=hoje || echo "⚠️ não consegui acordar resultados-varejo.yml" ;;
+            *) echo "Nesta hora o Varejo não roda." ;;
           esac

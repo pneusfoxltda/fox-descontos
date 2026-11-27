@@ -362,8 +362,8 @@ function desenharVarejo() {
     + metasHtml + conferencia(conf)
     + `<button class="info-bt" onclick="const c=$('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
     <div id="info-corpo">
-      · Atualizado ${atual ? "em " + horaPVH(atual) : ""}, pela rotina 553 do Movere. Durante o dia (seg a sáb, 7h45, 10h45, 13h45 e 15h45) o robô lê o
-        <b>vendido hoje</b> e os ${PNEU} <b>pneus de hoje</b>, e o mês na tela = mês até ontem + hoje. Às 17h45 (e de novo às 19h) ele lê o <b>mês completo</b>, os ${PNEU} pneus e confere com o Analytics
+      · Atualizado ${atual ? "em " + horaPVH(atual) : ""}, pela rotina 553 do Movere. Durante o dia (seg a sáb, 7h45, 10h45, 13h45, 15h45 e 17h45, pronto uns 12 minutos depois) o robô lê o
+        <b>vendido hoje</b> e os ${PNEU} <b>pneus de hoje</b>, e o mês na tela = mês até ontem + hoje. Por volta das 18h10 (e de novo às 19h) ele lê o <b>mês completo</b>, os ${PNEU} pneus e confere com o Analytics
         (por isso a coluna Pneus e a seta vermelha mudam uma vez por dia). Se o Movere não entregar o relatório de uma loja, fica o último número certo.<br>
       · Clique na loja para ver os vendedores. Ordem pela venda do mês. Passe o mouse no número de pneus para ver Meta, Super, Mega, em quantas vendas e quanto a loja fecha no ritmo de hoje.<br>
       · Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.<br>
