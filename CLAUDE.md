@@ -533,6 +533,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **GitHub sem login = 60 consultas/hora por internet**: o Monitor faz **1 consulta** para todos os robôs (`/actions/runs`,
   100 últimas; robô que não aparecer é consultado sozinho) e, se o GitHub negar (403), usa a última resposta guardada no
   navegador (`localStorage fox_monitor_gh`) com a hora dela. Antes eram 6 consultas a cada 5 min (estourava: 26/11/2026).
+- **Mural** (TI, 27/11/2026: a grade deixava buraco branco embaixo dos quadros curtos): os quadros normais ficam em colunas
+  (`.mural`, CSS `columns`), um embaixo do outro; os largos (`secao(..., true)`: Horários, Lojas, Conversas com a Fernanda)
+  vão depois, na largura toda.
 - **Clicar em "🔴 com erro" ou "🟡 atenção"** (os quadros do topo) rola até o item e ele pisca; cada clique vai para o
   próximo (`irPara` no monitor.html; cada item tem a classe `st-vm`/`st-am`/`st-vd`). Pedido do TI, 26/11/2026.
 - Robôs que gravam detalhes: `ligacoes_lojas.py` (`DETALHES`) e `avisos_ligacoes.py` (`rodar()`).

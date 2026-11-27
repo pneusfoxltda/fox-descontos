@@ -31,7 +31,10 @@ button{font-family:inherit;cursor:pointer}
 @keyframes piscar{0%,100%{box-shadow:none}25%,75%{box-shadow:0 0 0 3px #F59E0B}}
 .pisca{animation:piscar 1.6s ease 2;border-radius:8px}
 .g.vm{border-color:#7F1D1D;background:var(--fx-erbg,#2A1212)}.g.am{border-color:#78590F;background:var(--fx-avbg,#221A06)}.g.vd{border-color:#14532D;background:var(--fx-okbg,#0C1F14)}
-.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.grade{display:flex;flex-direction:column;gap:14px}
+/* Mural (pedido do TI, 27/11/2026): os quadros se encaixam em colunas, sem buraco branco embaixo dos curtos */
+.mural{columns:380px;column-gap:14px}
+.mural>.sec{break-inside:avoid;display:inline-block;width:100%;margin:0 0 14px}
 .sec{background:var(--fx-s1,#141414);border:1px solid var(--fx-bd,#262626);border-radius:12px;padding:14px 16px}
 .sec.larga{grid-column:1/-1}
 .fe-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -440,7 +443,9 @@ async function carregar() {
   html.push(secao("🗄️ Tabelas do banco", "", corpo));
 
   html.push(`<div class="sec larga" id="sec-fernanda"><h2>🦊 Conversas com a Fernanda</h2><div class="sub">Carregando…</div></div>`);
-  $("grade").innerHTML = html.join("");
+  // Quadros normais no mural (colunas, sem buraco); os largos (tabelas) embaixo, na largura toda
+  const largos = html.filter(h => /^<div class="sec larga"/.test(h)), normais = html.filter(h => !/^<div class="sec larga"/.test(h));
+  $("grade").innerHTML = `<div class="mural">${normais.join("")}</div>` + largos.join("");
   carregarFernanda();
   $("geral").innerHTML = `<div class="g vm clica" onclick="irPara('vm')" title="Clique para ir ao item com erro"><b>${contagem.vm}</b><span>🔴 com erro${contagem.vm ? " · clique para ver" : ""}</span></div><div class="g am clica" onclick="irPara('am')" title="Clique para ir ao item de atenção (cada clique vai para o próximo)"><b>${contagem.am}</b><span>🟡 atenção${contagem.am ? " · clique para ver" : ""}</span></div><div class="g vd"><b>${contagem.vd}</b><span>🟢 funcionando</span></div>`;
   $("atualizado").textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR", {timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit"}) + " · atualiza sozinho a cada 5 min";
