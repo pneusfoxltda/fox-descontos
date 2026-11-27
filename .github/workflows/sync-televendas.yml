@@ -93,47 +93,32 @@ jobs:
           # A hora de quando o despertador COMEÇOU (não a de quando terminou): o Sync às vezes passa da hora cheia
           # (24/11: começou 6h45, terminou depois das 7h e o robô das Ligações das 6h45 não foi acordado).
           INICIO=$(gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null || true)
-          if [ -n "$INICIO" ]; then H=$(TZ=America/Porto_Velho date -d "$INICIO" +%-H); else H=$(TZ=America/Porto_Velho date -d '-40 min' +%-H); fi
-          echo "Começou às ${INICIO:-?} · hora em Porto Velho: ${H}h"
-          acordar() { echo "→ acordando $1"; gh workflow run "$1" --repo "$REPO" --ref main || echo "⚠️ não consegui acordar $1"; }
+          if [ -n "$INICIO" ]; then H=$(TZ=America/Porto_Velho date -d "$INICIO" +%-H); M=$(TZ=America/Porto_Velho date -d "$INICIO" +%-M)
+          else H=$(TZ=America/Porto_Velho date -d '-40 min' +%-H); M=45; fi
+          echo "Começou às ${INICIO:-?} · hora em Porto Velho: ${H}h${M}"
+          acordar() { echo "→ acordando $1 $2"; gh workflow run "$1" --repo "$REPO" --ref main ${2:+-f modo=$2} || echo "⚠️ não consegui acordar $1"; }
+          # Ordem (TI, 27/11/2026): primeiro o Televendas (este Sync), DEPOIS os outros. Varejo "hoje" = vendido + pneus de hoje.
+          # Tudo pronto às 18h: o Sync das 16h45 chama um Sync extra assim que termina (≈ 17h10); ao terminar (≈ 17h35) esse
+          # acorda Ligações, Descontos, Varejo, Atacado e Funil (prontos ≈ 17h45–17h58). O Sync das 17h45 (o de sempre) fecha o
+          # dia com o Varejo completo (mês + pneus + conferência com o Analytics). Os crons de cada robô ficam de reserva.
           case "$H" in
             6)  acordar ligacoes-lojas.yml ;;
-            7)  acordar avisos-ligacoes.yml; acordar conferir-vendas-movere.yml ;;
+            7)  acordar avisos-ligacoes.yml; acordar conferir-vendas-movere.yml; acordar resultados-varejo.yml hoje; acordar resultados-atacado.yml ;;
             9)  acordar ligacoes-lojas.yml; acordar avisos-ligacoes.yml ;;
+            10) acordar resultados-varejo.yml hoje ;;
             12) acordar conferir-vendas-movere.yml ;;
-            13) acordar avisos-ligacoes.yml ;;
+            13) acordar avisos-ligacoes.yml; acordar resultados-varejo.yml hoje ;;
             14) acordar ligacoes-lojas.yml ;;
-            16) acordar avisos-ligacoes.yml ;;
-            17) acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml ;;
+            15) acordar resultados-varejo.yml hoje ;;
+            16) acordar avisos-ligacoes.yml
+                echo "→ Sync extra para tudo estar pronto às 18h"
+                gh workflow run sync-televendas.yml --repo "$REPO" --ref main || echo "⚠️ não consegui chamar o Sync extra" ;;
+            17) if [ "$M" -lt 40 ]; then
+                  echo "Rodada das 18h (Sync extra)"
+                  acordar ligacoes-lojas.yml; acordar conferir-vendas-movere.yml; acordar resultados-varejo.yml hoje
+                  acordar resultados-atacado.yml; acordar funil-televendas.yml
+                else
+                  acordar resultados-varejo.yml completo
+                fi ;;
             *)  echo "Nenhum robô para acordar nesta hora." ;;
-          esac
-          # Resultados Fox Pneus · Varejo: o "hoje" + pneus de hoje é acordado no COMEÇO (job varejo-na-hora, abaixo);
-          # aqui, depois do Sync (≈ 18h10), só o mês COMPLETO (pneus e conferência com o Analytics). O cron das 19h10 é reserva.
-          # O Atacado não é acordado aqui: roda sozinho às 8h e às 17h30 (decisão do TI, 26/11/2026).
-          case "$H" in
-            17) echo "→ acordando resultados-varejo.yml (completo)"
-                gh workflow run resultados-varejo.yml --repo "$REPO" --ref main -f modo=completo || echo "⚠️ não consegui acordar resultados-varejo.yml" ;;
-          esac
-
-  # Resultado Varejo na hora (TI, 27/11/2026: "às 18h já estar pronto"): acordado no COMEÇO do Sync, sem esperar ele
-  # terminar (o Sync leva ≈ 25 min). Às 7h45, 10h45, 13h45, 15h45 e 17h45 o "hoje" + pneus de hoje (≈ 12 min):
-  # pronto ≈ :58. Rodar junto com o Sync não atrapalha: o Sync limpa os filtros da 553 antes de cada relatório.
-  varejo-na-hora:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      actions: write
-    steps:
-      - name: Acordar o Resultado Varejo
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-          INICIO=$(gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at 2>/dev/null || true)
-          if [ -n "$INICIO" ]; then H=$(TZ=America/Porto_Velho date -d "$INICIO" +%-H); else H=$(TZ=America/Porto_Velho date +%-H); fi
-          echo "Hora em Porto Velho: ${H}h"
-          case "$H" in
-            7|10|13|15|17) echo "→ acordando resultados-varejo.yml (hoje + pneus de hoje)"
-                gh workflow run resultados-varejo.yml --repo "$REPO" --ref main -f modo=hoje || echo "⚠️ não consegui acordar resultados-varejo.yml" ;;
-            *) echo "Nesta hora o Varejo não roda." ;;
           esac

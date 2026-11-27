@@ -26,8 +26,12 @@ Hospedagem: **Vercel** (projeto `fox-descontos`, plano Hobby, publica a branch `
 Banco e login: **Supabase** (projeto `dxwkiaxpygibzmwzvcuz`).
 **Horário dos robôs**: o horário agendado do GitHub atrasa horas ou pula (23/11: a rodada das 7h não
 aconteceu). O `sync-televendas.yml` é disparado de fora, em ponto (seg–sáb, :45), e no fim acorda os
-outros (job `acordar-robos`, pela hora de Porto Velho em que o Sync COMEÇOU, não a de quando terminou; em 24/11 ele passou das 7h e pulou as Ligações): 6h45 Ligações · 7h45 Avisos + Vendas Movere ·
-9h45 Ligações + Avisos · 12h45 Vendas · 13h45 Avisos · 14h45 Ligações · 16h45 Avisos · 17h45 Ligações + Vendas.
+outros (job `acordar-robos`, pela hora de Porto Velho em que o Sync COMEÇOU, não a de quando terminou; em 24/11 ele passou das 7h e pulou as Ligações).
+**Ordem: primeiro o Televendas, depois os outros** (TI, 27/11/2026; o Sync leva ≈ 25 min): 6h45 Ligações · 7h45 Avisos + Vendas Movere +
+Varejo (hoje) + Atacado · 9h45 Ligações + Avisos · 10h45 Varejo · 12h45 Vendas · 13h45 Avisos + Varejo · 14h45 Ligações · 15h45 Varejo ·
+16h45 Avisos + **Sync extra** (≈ 17h10) → **rodada das 18h** (o extra, minuto < 40): Ligações + Vendas + Varejo (hoje) + Atacado + Funil,
+tudo pronto antes das 18h (TI: "às 18h todos atualizados") · 17h45 (o de sempre): Varejo completo. **Monitor → "⏰ Horários de
+atualização"** (`HORARIOS` no monitor.html): quando cada sistema roda e fica pronto + última atualização (mudou horário: atualizar lá).
 Os crons de cada robô ficam como reserva (e valem no domingo). Avisos não repetem o turno no dia (`ja_enviado`).
 Robôs: GitHub Actions `sync-televendas.yml` (Movere → Supabase, de hora em hora) e
 Google Apps Scripts fora do repositório (planilhas de ligações das lojas; e-mail de
@@ -414,8 +418,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   filtro) com o código do cliente, nota, dia e vendedor; o que sobrar vira "Diferença sem explicação automática".
   Tudo batendo: "✅ Conferido com o Analytics".
 - Robô **`resultados_varejo.py`** (workflow `resultados-varejo.yml`). **Horários (decisão do TI, 25/11/2026)**: de dia, acordado
-  no **começo** do sync-televendas (job `varejo-na-hora`, sem esperar os ≈ 25 min do Sync; TI 27/11/2026: "às 18h já pronto") às
-  **7h45, 10h45, 13h45, 15h45 e 17h45** (seg–sáb, ≈ 12 min, pronto ≈ :58), lê o **"hoje" + os pneus de hoje** das 8 lojas (modo `hoje`;
+  **depois** do sync-televendas (Televendas primeiro, TI 27/11/2026) das **7h45, 10h45, 13h45, 15h45 e na rodada das 18h** (seg–sáb,
+  ≈ 12 min, pronto ≈ :25 e ≈ 17h50), lê o **"hoje" + os pneus de hoje** das 8 lojas (modo `hoje`;
   `pneus_hoje`, TI 27/11/2026: "os pneus sobem durante o dia"; sem pneus de hoje a linha fica vazia, nunca o número de outro dia);
   **depois do Sync das 17h45 (≈ 18h10) o completo** (`acordar-robos` com `modo=completo`): mês + pneus + conferência com o Analytics. O cron das
   **19h10** fica de reserva (o GitHub atrasa: em 26/11 rodou à 0h58 e pulou os pneus). `decidir_modo`: 18h ou mais, sem retrato do mês ou
@@ -461,8 +465,8 @@ vendas para o televendas; `apps-script/` tem o do painel).
   Vendedores sem meta (quase sempre devoluções, valor negativo) ficam lá embaixo: 🔻 Mais informações → "↩️ Devoluções e
   outros vendedores" (pedido do TI, 25/11/2026); o TOTAL SETOR já desconta.
   **Editar metas** (admin e gerente de todas as lojas): meta 1 de cada vendedor + feriados (dias úteis igual ao Televendas).
-- **Só a equipe do Atacado, 2x por dia** (decisão do TI, 26/11/2026): o robô roda **seg–sáb 8h e 17h30** (cron próprio; o
-  sync-televendas não acorda mais o Atacado, só o Varejo). Entram só os 7 de `EQUIPE_ATACADO` (Rafaela, Niorrana, Camila
+- **Só a equipe do Atacado, 2x por dia** (decisão do TI, 26/11/2026): acordado pelo sync-televendas das **7h45** e na **rodada das 18h**
+  (≈ 17h40; desde 27/11/2026, o cron das 8h chegou a rodar às 16h23); os crons 8h e 17h30 ficam de reserva. Entram só os 7 de `EQUIPE_ATACADO` (Rafaela, Niorrana, Camila
   Feitoza, Alyssandra, Camila Brilhante, Nayza, Kleber; nome do relatório comparado sem acento, aceita nome cortado).
   **TOTAL SETOR = soma deles** (com as devoluções deles). O quadro **"Por loja" saiu** da página: o Movere soma todos os
   vendedores na loja e não dá para separar. `atacado_lojas` agora só tem a linha `TOTAL`. A página continua aberta.
