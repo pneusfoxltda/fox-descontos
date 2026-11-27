@@ -177,12 +177,38 @@ const ROBOS = [
   {arq: "resultados-varejo.yml", nome: "Resultados · Varejo (rotina 553)", robo: "resultados_varejo", quando: "seg a sáb, 7h45, 10h45, 13h45, 15h45 e 17h45 (hoje) e 19h10 (mês completo)", maxH: 40},
   {arq: "funil-televendas.yml", nome: "Funil do televendas (Kommo + Movere)", robo: "funil_televendas", quando: "todo dia 6h30, 12h30 e 18h30", maxH: 14},
 ];
+// GitHub sem login: no máximo 60 consultas por hora por internet. Antes era 1 consulta por robô a cada 5 min (estourava).
+// Agora: 1 consulta para todos os robôs; se o GitHub negar, usa a última resposta guardada neste navegador.
+const GH_CACHE = "fox_monitor_gh";
+let ghTodas = null;
+async function buscarRodadas() {
+  let guardado = null;
+  try { guardado = JSON.parse(localStorage.getItem(GH_CACHE) || "null"); } catch (e) {}
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=100&branch=main`, {cache: "no-store"});
+    if (!r.ok) throw new Error(r.status === 403 || r.status === 429 ? "limite" : "GitHub respondeu " + r.status);
+    const runs = (await r.json()).workflow_runs || [];
+    const enxuto = runs.map(x => ({path: x.path, status: x.status, conclusion: x.conclusion, created_at: x.created_at, run_started_at: x.run_started_at,
+      updated_at: x.updated_at, html_url: x.html_url, event: x.event, display_title: x.display_title, run_number: x.run_number, head_branch: x.head_branch}));
+    try { localStorage.setItem(GH_CACHE, JSON.stringify({em: Date.now(), runs: enxuto})); } catch (e) {}
+    return {runs: enxuto};
+  } catch (e) {
+    if (guardado && guardado.runs) return {runs: guardado.runs, antigo: guardado.em};
+    return {erro: e.message === "limite" ? "limite de consultas do GitHub (tente em alguns minutos)" : (e.message || "sem acesso ao GitHub")};
+  }
+}
 async function rodadasGithub(arq) {
+  if (!ghTodas) ghTodas = buscarRodadas();
+  const t = await ghTodas;
+  if (t.erro) return {erro: t.erro};
+  const runs = t.runs.filter(x => (x.path || "").endsWith("/" + arq)).slice(0, 8);
+  if (runs.length || t.antigo) return {runs, antigo: t.antigo};
+  // Robô que roda pouco e não apareceu nas últimas 100 rodadas: consulta só ele
   try {
     const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${arq}/runs?per_page=8&branch=main`, {cache: "no-store"});
-    if (!r.ok) return {erro: r.status === 403 ? "limite de consultas do GitHub (tente em alguns minutos)" : "GitHub respondeu " + r.status};
+    if (!r.ok) return {runs: []};
     return {runs: (await r.json()).workflow_runs || []};
-  } catch (e) { return {erro: "sem acesso ao GitHub"}; }
+  } catch (e) { return {runs: []}; }
 }
 async function paginas() {
   const lista = [["FOXNET (intranet)", "/foxnet/"], ["Ligações das lojas", "/ligacoes.html"], ["App de descontos", "/descontos"],
@@ -201,6 +227,7 @@ async function paginas() {
 async function carregar() {
   $("bt-atualizar").disabled = true; $("atualizado").textContent = "Carregando…";
   contagem = {vd: 0, am: 0, vm: 0};
+  ghTodas = null;   // 1 consulta ao GitHub por atualização (para todos os robôs)
   const ult = t => sb.from(t).select("atualizado_em,dia,periodo").order("atualizado_em", {ascending: false}).limit(1);
   const [resumo, gh, pags, senhaInicial, resV, resA] = await Promise.all([
     sb.rpc("monitor_resumo"),
@@ -231,6 +258,7 @@ async function carregar() {
     else if (horas(ult.updated_at) > rb.maxH) { st = "am"; det = `não roda há ${Math.round(horas(ult.updated_at))} h (o normal é ${rb.quando})`; }
     else { st = "vd"; det = `última rodada certa: ${quando(ult.updated_at)}`; }
     if (reg && reg.ok === false && st === "vd") { st = "vm"; det += ` · mas o robô anotou erro: ${esc(reg.mensagem || "")}`; }
+    if (g.antigo) det += ` <span style="color:var(--fx-tx3,#888)">(o GitHub pediu para esperar: informação de ${new Date(g.antigo).toLocaleTimeString("pt-BR", {timeZone: "America/Porto_Velho", hour: "2-digit", minute: "2-digit"})})</span>`;
     const bol = `<span class="bol" title="últimas rodadas (mais nova à esquerda)">${runs.slice(0, 8).map(x => `<i style="background:${x.conclusion === "success" ? COR.vd : COR.vm}"></i>`).join("")}</span>`;
     corpo += item(st, `${rb.nome}${bol}`, `${det}<br>Horário: ${rb.quando}${rodando ? " · <b>rodando agora</b>" : ""}`);
   });
