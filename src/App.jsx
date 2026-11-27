@@ -385,6 +385,12 @@ export default function App(){
     },100);
     return()=>clearTimeout(timer);
   },[tab,dashKey]);
+  // Ao mudar os filtros (datas, loja…) quadros novos são montados: mostra na hora (sem esperar a rolagem), senão ficavam invisíveis
+  useEffect(()=>{
+    if(tab!=="dashboard")return;
+    const t=setTimeout(()=>document.querySelectorAll('.scroll-anim:not(.in-view)').forEach(el=>el.classList.add('in-view')),150);
+    return()=>clearTimeout(t);
+  },[tab,dash,quotes]);
   // ── Login seguro (Supabase Auth): a sessão vem do Supabase e o nível vem da tabela perfis ──
   const destinoInicial=s=>hasRole(s,"admin")||hasRole(s,"gerente")?"dashboard":hasRole(s,"televendas")||hasRole(s,"cadastrar2")?"cadastrar":"consultar";
   const entrarComSessao=async(sess)=>{
@@ -932,34 +938,35 @@ export default function App(){
             <div style={{display:"flex",alignItems:"flex-end"}}><button className="btn-sm" onClick={()=>setDash({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""})} style={{height:40,padding:"0 14px",borderRadius:7}}>Limpar</button></div>
           </div>
         </div>
-        {/* KPIs */}
+        {/* KPIs: mesma conta dos rankings (abas do Consultar), no período escolhido */}
+        {(()=>{const K=contarNeg(negociadas);return(
         <div className="stat-grid">
           <div className="stat-card" style={{borderTop:"3px solid "+RED}}>
             <div className="stat-lbl">Total negociações</div>
-            <div className="stat-val" style={{color:RED}}><AnimatedNumber value={filtered.length}/></div>
-            <div className="stat-sub">todas as negociações</div>
+            <div className="stat-val" style={{color:RED}}><AnimatedNumber value={K.total}/></div>
+            <div className="stat-sub">no período (sem erro interno)</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid "+GREEN}}>
-            <div className="stat-lbl">Fechadas (Liberadas)</div>
-            <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={filtered.filter(q=>q.liberado).length}/></div>
-            <div className="stat-sub">{filtered.length>0?((filtered.filter(q=>q.liberado).length/filtered.length)*100).toFixed(0):0}% de conversão</div>
+            <div className="stat-lbl">Fechadas</div>
+            <div className="stat-val" style={{color:GREEN}}><AnimatedNumber value={K.fechou}/></div>
+            <div className="stat-sub">{K.conv}% de conversão · liberadas + venda no Movere</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid "+AMBER}}>
             <div className="stat-lbl">Válidos</div>
-            <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={filtered.filter(q=>!q.liberado&&!isExp(q.validade)).length}/></div>
-            <div className="stat-sub">no prazo, aguardando liberação</div>
+            <div className="stat-val" style={{color:AMBER}}><AnimatedNumber value={K.pendente}/></div>
+            <div className="stat-sub">no prazo, ainda em negociação</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid #888"}}>
             <div className="stat-lbl">Vencidas</div>
-            <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={filtered.filter(q=>isExp(q.validade)&&!q.liberado).length}/></div>
+            <div className="stat-val" style={{color:MUTED}}><AnimatedNumber value={K.vencida}/></div>
             <div className="stat-sub">não fechadas no prazo</div>
           </div>
           <div className="stat-card" style={{borderTop:"3px solid var(--fx-ac3,#8B0000)",boxShadow:"inset 0 1px 0 #8B000033"}}>
             <div className="stat-lbl" style={{display:"flex",alignItems:"center",gap:4}}>{<svg width="16" height="16" viewBox="0 0 28 28" fill="none" style={{display:"inline-block",verticalAlign:"middle",marginRight:4}}><circle cx="14" cy="14" r="13" fill="#1A0000" stroke="#8B0000" strokeWidth="1.5"/><line x1="8" y1="8" x2="20" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><line x1="20" y1="8" x2="8" y2="20" stroke="#CC2222" strokeWidth="3" strokeLinecap="round"/><path d="M14 1 L13 5 L15.5 4 L14.5 8" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M25 9 L27 13" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/><path d="M1 18 L3 16" stroke="#8B0000" strokeWidth="1" strokeLinecap="round" fill="none"/></svg>}Perdidas</div>
-            <div className="stat-val" style={{color:"var(--fx-ertx,#CC4444)"}}><AnimatedNumber value={quotes.filter(q=>q.perdida).length}/></div>
-            <div className="stat-sub">cliente foi para concorrência</div>
+            <div className="stat-val" style={{color:"var(--fx-ertx,#CC4444)"}}><AnimatedNumber value={K.perdida}/></div>
+            <div className="stat-sub">marcadas como perdidas pela equipe</div>
           </div>
-        </div>
+        </div>);})()}
         {filtered.length===0?(<div className="card"><div className="empty"><div style={{fontSize:36,opacity:.2,marginBottom:12}}>📊</div><p>Nenhum dado para os filtros.</p></div></div>):(<>
         {/* Grid: Medidas + Segmentos */}
         <div className="scroll-anim" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:10,marginBottom:10}}>
