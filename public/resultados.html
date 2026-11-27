@@ -236,18 +236,20 @@ async function carregarVarejo() {
   V = {hoje, mes, lojas: sm.lojas, vend: sm.vend, conf: c.data || [], metas: mt.filter(x => !/^feriado_/.test(x.loja))};
   desenharVarejo();
 }
-// O mês completo (com pneus) é lido às 19h; de dia o robô lê só o "hoje" (decisão do TI, 25/11/2026).
-// Por isso o mês na tela = retrato do mês (até o dia dele) + vendido hoje, quando o retrato é de antes de hoje.
+// O mês completo (com pneus) é lido às 17h45 e às 19h; de dia o robô lê só o "hoje" e os pneus de hoje (TI, 25 e 27/11/2026).
+// Por isso o mês na tela = retrato do mês (até o dia dele) + vendido hoje, quando o retrato é de antes de hoje (pneus também).
 function somarHoje(lojas, vend, hoje) {
   const hojeL = Object.fromEntries(lojas.filter(x => x.periodo === "hoje" && x.dia === hoje).map(x => [x.loja, x]));
   const soma = (a, b) => Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100;
+  const somaP = (m, h) => m == null ? m : (h == null ? m : Number(m) + Number(h));   // sem pneus do mês (sem SQL 27): continua vazio
   const atrasado = new Set();
   const L = lojas.map(x => {
     const h = hojeL[x.loja];
     if (x.periodo !== "mes" || !h || !(x.dia < hoje)) return x;
     atrasado.add(x.loja);
     const venda = soma(x.venda, h.venda), cli = Number(x.clientes || 0) + Number(h.clientes || 0);
-    return {...x, venda, clientes: cli, itens: soma(x.itens, h.itens), ticket: cli ? Math.round(venda / cli * 100) / 100 : 0, somouHoje: true};
+    return {...x, venda, clientes: cli, itens: soma(x.itens, h.itens), ticket: cli ? Math.round(venda / cli * 100) / 100 : 0, somouHoje: true,
+      pneus: somaP(x.pneus, h.pneus), pneus_vendas: somaP(x.pneus_vendas, h.pneus_vendas)};
   });
   const hojeV = vend.filter(x => x.periodo === "hoje" && x.dia === hoje && atrasado.has(x.loja));
   const V2 = vend.map(x => {
@@ -255,10 +257,11 @@ function somarHoje(lojas, vend, hoje) {
     const h = hojeV.find(y => y.loja === x.loja && y.cod === x.cod);
     if (!h) return x;
     const venda = soma(x.venda, h.venda), cli = Number(x.clientes || 0) + Number(h.clientes || 0);
-    return {...x, venda, clientes: cli, itens: soma(x.itens, h.itens), ticket: cli ? Math.round(venda / cli * 100) / 100 : 0};
+    return {...x, venda, clientes: cli, itens: soma(x.itens, h.itens), ticket: cli ? Math.round(venda / cli * 100) / 100 : 0,
+      pneus: somaP(x.pneus, h.pneus), pneus_vendas: somaP(x.pneus_vendas, h.pneus_vendas)};
   });
   hojeV.filter(h => !vend.some(x => x.periodo === "mes" && x.loja === h.loja && x.cod === h.cod))   // vendeu pela 1ª vez no mês hoje
-    .forEach(h => V2.push({...h, periodo: "mes", pneus: null, pneus_vendas: null}));
+    .forEach(h => V2.push({...h, periodo: "mes"}));
   return {lojas: L, vend: V2};
 }
 function desenharVarejo() {
@@ -359,8 +362,8 @@ function desenharVarejo() {
     + metasHtml + conferencia(conf)
     + `<button class="info-bt" onclick="const c=$('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
     <div id="info-corpo">
-      · Atualizado ${atual ? "em " + horaPVH(atual) : ""}, pela rotina 553 do Movere. Durante o dia (seg a sáb, 7h45, 10h45, 13h45, 15h45 e 17h45) o robô lê só o
-        <b>vendido hoje</b>, e o mês na tela = mês até ontem + hoje. Às 19h ele lê o <b>mês completo</b>, os ${PNEU} pneus e confere com o Analytics
+      · Atualizado ${atual ? "em " + horaPVH(atual) : ""}, pela rotina 553 do Movere. Durante o dia (seg a sáb, 7h45, 10h45, 13h45 e 15h45) o robô lê o
+        <b>vendido hoje</b> e os ${PNEU} <b>pneus de hoje</b>, e o mês na tela = mês até ontem + hoje. Às 17h45 (e de novo às 19h) ele lê o <b>mês completo</b>, os ${PNEU} pneus e confere com o Analytics
         (por isso a coluna Pneus e a seta vermelha mudam uma vez por dia). Se o Movere não entregar o relatório de uma loja, fica o último número certo.<br>
       · Clique na loja para ver os vendedores. Ordem pela venda do mês. Passe o mouse no número de pneus para ver Meta, Super, Mega, em quantas vendas e quanto a loja fecha no ritmo de hoje.<br>
       · Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.<br>

@@ -173,7 +173,21 @@ async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
                 juntar_pneus(res["mes"], loja, linha_loja(r, loja, cod), linhas_vendedores(r, loja))
                 print("   pneus lidos")
                 return True
+            if tipo == "pneus_hoje":
+                # pneus vendidos HOJE (TI, 27/11/2026: os pneus sobem durante o dia): grava a linha do "hoje" de novo, com eles
+                lj = next((l for l in res["hoje"]["lojas"] if l["loja"] == loja), None)
+                if lj is None:
+                    return True          # sem o "hoje" da loja não há onde pôr (a página fica com o mês até ontem)
+                juntar_pneus(res["hoje"], loja, linha_loja(r, loja, cod), linhas_vendedores(r, loja))
+                print("   pneus de hoje lidos")
+                if ao_ler:
+                    ao_ler("hoje", lj, [v for v in res["hoje"]["vend"] if v["loja"] == loja])
+                return True
             lj, vd = linha_loja(r, loja, cod), linhas_vendedores(r, loja)
+            if tipo == "hoje":           # pneus de hoje chegam no relatório seguinte; até lá, vazio (nunca o número de outro dia)
+                lj["pneus"] = lj["pneus_vendas"] = None
+                for v in vd:
+                    v["pneus"] = v["pneus_vendas"] = None
             soma = round(sum(v["venda"] for v in vd), 2)
             ok = abs(soma - lj["venda"]) < 0.05
             print(f"   vendedores: {len(vd)} · soma dos vendedores = loja: {'sim' if ok else 'NÃO'}")
@@ -185,15 +199,17 @@ async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
                 ao_ler(tipo, lj, vd)
             return True
 
-        # 1ª volta: mês e hoje de cada loja, depois os pneus do mês
-        periodos = ("mes", "hoje", "pneus") if modo == "completo" else ("hoje",)
-        pedidos = [(p, cod, loja) for p in periodos for cod, loja in LOJAS_VAREJO.items()]
-        di_de = {"mes": ini, "hoje": fim, "pneus": ini}
-        fam_de = {"mes": FAMILIAS_VAREJO, "hoje": FAMILIAS_VAREJO, "pneus": FAMILIAS_PNEUS}
+        # 1ª volta: mês e hoje de cada loja, depois os pneus do mês. No modo "hoje": o dia e os pneus do dia, loja por loja.
+        if modo == "completo":
+            pedidos = [(p, cod, loja) for p in ("mes", "hoje", "pneus") for cod, loja in LOJAS_VAREJO.items()]
+        else:
+            pedidos = [(p, cod, loja) for cod, loja in LOJAS_VAREJO.items() for p in ("hoje", "pneus_hoje")]
+        di_de = {"mes": ini, "hoje": fim, "pneus": ini, "pneus_hoje": fim}
+        fam_de = {"mes": FAMILIAS_VAREJO, "hoje": FAMILIAS_VAREJO, "pneus": FAMILIAS_PNEUS, "pneus_hoje": FAMILIAS_PNEUS}
         falhou = []
         for tipo, cod, loja in pedidos:
             print(f"▶ {tipo} · {loja}")
-            r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1, 2) if tipo != "hoje" else (1,))
+            r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1, 2) if tipo not in ("hoje", "pneus_hoje") else (1,))
             if not aplicar(tipo, cod, loja, r):
                 falhou.append((tipo, cod, loja))
 
@@ -207,9 +223,12 @@ async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
             await login(page)
             for tipo, cod, loja in falhou:
                 print(f"▶ {tipo} · {loja} (2ª volta)")
-                r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1,) if tipo == "hoje" else (1, 2))
+                r = await tentar(page, di_de[tipo], fam_de[tipo], loja, (1,) if tipo in ("hoje", "pneus_hoje") else (1, 2))
                 if aplicar(tipo, cod, loja, r):
                     res["repescados"] += 1
+                    continue
+                if tipo == "pneus_hoje":   # sem pneu vendido hoje o Movere não monta o relatório: a página fica com o mês até ontem
+                    print("   sem pneus de hoje")
                     continue
                 if tipo == "hoje":   # sem venda hoje o Movere não monta o relatório; ou ele falhou: NÃO grava zero, fica o último número
                     print("   sem relatório hoje: fica o último número")
