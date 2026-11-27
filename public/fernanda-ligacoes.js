@@ -161,7 +161,8 @@
       chips(["Dica para ligar", "Quantos faltam?", "Agendados de hoje"]);
       return true;
     }
-    if (tem(/quantos|falta|faltam|pendente|sem contato|em aberto|ainda tenho/)) {
+    // "faltou algum?", "ficou faltando alguém?", "esqueci de ligar para alguém?" (Monitor, 27/11/2026)
+    if (tem(/quantos|falt(a|am|ou|ando)|pendente|sem contato|em aberto|ainda tenho|esqueci|ficou (algum|alguem)|deixei (de|algum)/)) {
       const n = numeros();
       bot(`${eu.papel === "vendedor" ? "Seus números" : "Os números" + (eu.loja ? " da " + eu.loja : "")}:\n` +
         `· ${plural(n.semContato.length, "cliente sem contato", "clientes sem contato")}\n` +
