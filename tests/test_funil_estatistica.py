@@ -32,7 +32,8 @@ def t_ranking_justo():
     assert fe.classificar(3, 10, 0.2, 1.5) == "inconclusivo"          # menos de 30 clientes
     assert fe.classificar(60, 200, 0.2, 1.2) == "destaque"            # 30% [24%;37%] não cruza 20%
     assert fe.classificar(20, 200, 0.2, -1.3) == "precisa de apoio"
-    assert fe.classificar(42, 200, 0.2, 0.3) == "inconclusivo"        # 21% [16%;27%] cruza 20%
+    assert fe.classificar(42, 200, 0.2, 0.3) == "dentro do esperado"  # 21% [16%;27%] cruza 20% e z pequeno: igual à equipe
+    assert fe.classificar(48, 200, 0.2, 1.4) == "inconclusivo"        # 24% [18,6%;30%] cruza 20% mas z alto: pode ser sorte
 
 
 def t_kaplan_meier():

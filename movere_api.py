@@ -136,6 +136,35 @@ def cotacoes_para_os(cli, tok, desde: date, ate: date, log=print) -> dict:
     return out
 
 
+def cotacoes_que_viraram_os(cli, tok, desde: date, ate: date, log=print) -> dict:
+    """{nº da cotação: (dia, valor, 'nota'|'os')} das cotações que viraram O.S. no período (funil do televendas).
+    Regra do TI (27/11/2026): cotação que virou O.S. é VENDA. Status 2 = O.S. com nota (dia = data da nota);
+    status 1 = O.S. aberta, ainda sem nota (dia = criação da O.S.). Valor = valor total da O.S."""
+    out = {}
+    for loja in lojas(cli, tok):
+        for status in (2, 1):
+            for p in range(1, 400):
+                l = _lista(_get(cli, tok, "/api/ConsultaOrcamentos",
+                                {"codigoLoja": loja, "emissaoInicial": desde.isoformat(), "emissaoFinal": ate.isoformat(),
+                                 "status": status, "pagina": p}))
+                for x in l:
+                    o = x.get("orcamento") or x
+                    if not o.get("idcotacao") or not o.get("idorcamento"):
+                        continue
+                    if "VENDA" not in str(o.get("descricaoentradaesaida") or "VENDA").upper():
+                        continue
+                    dia = _dia(o.get("dataemissaonf") if status == 2 else None) or _dia(o.get("datacricaoos"))
+                    if not dia:
+                        continue
+                    k = str(o["idcotacao"])
+                    if k not in out or (status == 2 and out[k][2] != "nota"):
+                        out[k] = (dia, float(o.get("valortotalorcamento") or 0), "nota" if status == 2 else "os")
+                if len(l) < POR_PAGINA:
+                    break
+    log(f"🛰️ API do Movere: {len(out)} cotações que viraram O.S. ({sum(1 for v in out.values() if v[2] == 'nota')} com nota)")
+    return out
+
+
 def por_numero(vendas_os: dict, cot_os: dict) -> dict:
     """{('os', nº): (dia, valor), ('cotacao', nº): (dia, valor)} para achar o desconto pelo número certo do seu tipo."""
     out = {("os", k): v for k, v in vendas_os.items()}

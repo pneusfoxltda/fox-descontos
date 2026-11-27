@@ -7,7 +7,7 @@ Usado pelo robô funil_televendas.py. Cada função é pequena e testada em test
   média para comparar, Q1, Q3, P90, IQR e outliers pela regra Q1 − 1,5×IQR / Q3 + 1,5×IQR.
 · wilson: intervalo de confiança de 95% de uma taxa (bom para amostras pequenas).
 · zscores + classificar: ranking justo (z ≥ +1 destaque · entre −1 e +1 esperado · z ≤ −1 precisa de apoio),
-  "inconclusivo" quando há menos de 30 clientes ou o intervalo de Wilson cruza a média da equipe.
+  "inconclusivo" com menos de 30 clientes, ou quando parece diferente (|z| ≥ 1) mas o intervalo de Wilson cruza a média.
 · kaplan_meier: curva de sobrevivência do tempo até a compra, contando também quem ainda não comprou (censurado).
 · controle_semanal: média ± 2 desvios padrão da conversão semanal; semana fora do limite = alerta.
 · velocidade: (oportunidades × conversão × ticket médio) ÷ ciclo médio em dias = R$ que passam pelo funil por dia.
@@ -82,10 +82,17 @@ def zscores(taxas):
 
 
 def classificar(k, n, media_equipe, z, n_min=30):
-    """Classificação justa: inconclusivo com poucos clientes ou quando o intervalo de Wilson cruza a média."""
+    """Classificação justa (TI, 27/11/2026):
+    · menos de n_min clientes → inconclusivo (pouca amostra)
+    · intervalo de Wilson cruza a média da equipe: z entre −1 e +1 → dentro do esperado (igual à equipe);
+      z ≥ +1 ou ≤ −1 → inconclusivo (parece diferente, mas pode ser sorte)
+    · intervalo NÃO cruza a média: z ≥ +1 destaque · z ≤ −1 precisa de apoio · senão dentro do esperado."""
     _, lo, hi = wilson(k, n)
-    if n < n_min or (lo <= media_equipe <= hi):
+    if n < n_min:
         return "inconclusivo"
+    cruza = lo <= media_equipe <= hi
+    if cruza:
+        return "dentro do esperado" if -1 < z < 1 else "inconclusivo"
     if z >= 1:
         return "destaque"
     if z <= -1:
