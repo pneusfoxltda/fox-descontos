@@ -1,6 +1,8 @@
 -- ═════════════════════════════════════════════════════════════════════════
 -- 33) Funil do televendas · Kommo → cotação → negociação → agendamento → compra (pode rodar duas vezes)
 --
+-- Carga desde 01/2025 aos poucos (decisão do TI): a 1ª rodada lê os últimos 4 meses; cada rodada seguinte atualiza o que
+-- mudou e volta mais 2 meses no histórico, até janeiro de 2025.
 -- O robô funil_televendas.py junta o Kommo (marcações 1 a 7 do cartão do lead, motivos de perda) com o Movere
 -- (cotação, O.S. e nota fiscal pelo telefone) e grava:
 --   · funil_resumo : as contas prontas do painel (funil, tempos, velocidade, coortes, ranking justo, sobrevivência,
@@ -32,6 +34,37 @@ create table if not exists public.funil_abertos (
 );
 create index if not exists funil_abertos_operadora on public.funil_abertos (operadora);
 
+-- Uma linha por lead (a base das contas). SEM nome e SEM telefone: o telefone vira um código embaralhado (HMAC com
+-- a chave do robô), que só serve para cruzar com as vendas do Movere e não dá para voltar ao número.
+-- Só o robô lê e grava (sem regra de acesso para quem está logado).
+create table if not exists public.funil_leads (
+  id            bigint primary key,               -- nº do lead no Kommo
+  operadora     text,
+  origem        text,
+  loja          text,
+  perdido       boolean not null default false,
+  motivo        text,
+  d_entrou      date not null,
+  d_cotou       date,
+  d_negociou    date,
+  d_agendou     date,
+  d_visita      date,
+  d_comprou     date,
+  valor_compra  numeric,
+  valor_cotacao numeric,
+  tel_hash      text[],
+  atualizado_em timestamptz not null default now()
+);
+create index if not exists funil_leads_entrou on public.funil_leads (d_entrou);
+create table if not exists public.funil_estado (
+  chave text primary key,                         -- 'carga_desde' (até onde o histórico já foi carregado), 'ultima_rodada'
+  valor text,
+  atualizado_em timestamptz not null default now()
+);
+alter table public.funil_leads  enable row level security;
+alter table public.funil_estado enable row level security;
+revoke all on public.funil_leads, public.funil_estado from anon, authenticated;
+
 alter table public.funil_resumo  enable row level security;
 alter table public.funil_abertos enable row level security;
 
@@ -55,6 +88,7 @@ grant select on public.funil_resumo, public.funil_abertos to authenticated;
 
 notify pgrst, 'reload schema';
 
--- Conferência: as 2 tabelas trancadas ("sim")
+-- Conferência: as 4 tabelas trancadas ("sim")
 select c.relname as tabela, case when c.relrowsecurity then 'sim' else 'NÃO' end as trancada
-  from pg_class c where c.oid in ('public.funil_resumo'::regclass, 'public.funil_abertos'::regclass);
+  from pg_class c where c.oid in ('public.funil_resumo'::regclass, 'public.funil_abertos'::regclass,
+                                  'public.funil_leads'::regclass, 'public.funil_estado'::regclass);

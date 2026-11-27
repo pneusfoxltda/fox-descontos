@@ -490,6 +490,12 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **VENDA GANHA** do Kommo (`closed_at`) ou o campo "1ª Venda". Perdido = "venda perdida" + motivo (Kommo ou campo "Motivo de perda";
   "Motivo indefinido" = agendou e não foi). **Fora da conversão**: "Outros produtos" (produto que a Fox não trabalha), "Chamou
   errado", "Curtidas do Instagram", "Contato com RH", "Cidade sem loja", "Sem cidade".
+- **Carga desde 01/2025, aos poucos** (TI, 27/11/2026): uma linha por lead em `funil_leads` (sem nome; telefone só como código
+  HMAC com a chave do robô, para cruzar com o Movere). 1ª rodada = últimos 4 meses; cada rodada seguinte lê os leads ATUALIZADOS
+  desde a última (`filter[updated_at]`) + marcações novas + vendas/cotações dos últimos 10 dias (Analytics + API) e volta
+  **2 meses** no histórico (`MESES_POR_RODADA`) até `INICIO_HIST` (01/2025). Estado em `funil_estado` (`carga_desde`,
+  `ultima_rodada`). Datas juntadas pela mais antiga (`juntar`). **Entrou** = "1 - Contato Inicial", alguma etapa, ou aberto/ganho;
+  **"Disparo sem sucesso"** fica fora (disparo que terminou em venda perdida). Períodos: mês, 30d, 90d, ano, ano passado, tudo.
 - Contas em **`funil_calculo.py`** + **`funil_estatistica.py`** (sem bibliotecas): funil e gargalo; tempo (mediana principal, média,
   Q1–Q3, P90, outliers 1,5×IQR, histograma, boxplot); velocidade = oportunidades × conversão × ticket ÷ ciclo; aging (parado acima
   do P75 da etapa); coortes por mês de entrada (compra em 30 dias); ranking justo (z-score + Wilson 95%, "inconclusivo" com menos de

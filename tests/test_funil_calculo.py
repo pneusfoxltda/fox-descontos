@@ -26,6 +26,19 @@ def t_funil_e_gargalo():
     assert abs(r["funil"]["geral"] - 0.4) < 1e-9
 
 
+def t_disparo_sem_sucesso_fica_fora():
+    e = date(2026, 11, 2)
+    r = fc.resumo([lead(1, e, cot=0), lead(2, e, perdido=True, motivo="Disparo sem sucesso")], HOJE, date(2026, 11, 1))
+    assert r["funil"]["etapas"]["entrou"] == 1 and r["fora_da_conta"] == {"Disparo sem sucesso": 1}
+
+
+def t_periodo_ano_passado():
+    L = [lead(1, date(2025, 3, 1), cot=0, comp=5), lead(2, date(2026, 2, 1), cot=0)]
+    res, _ = fc.montar(L, HOJE)
+    assert res["2025"]["funil"]["etapas"]["entrou"] == 1 and res["ano"]["funil"]["etapas"]["entrou"] == 1
+    assert res["tudo"]["funil"]["etapas"]["entrou"] == 2 and res["2025"]["ate"] == "2025-12-31"
+
+
 def t_tempos_e_operadoras():
     e = date(2026, 10, 1)
     L = [lead(i, e, op="Ana" if i % 2 else "Kessya", cot=0, age=1, comp=c) for i, c in enumerate([2, 3, 4, 5, 40, None, None, 6])]
@@ -51,7 +64,7 @@ def t_montar_completo():
         L.append(lead(i, e, op=op, cot=cot, age=age, comp=comp, perdido=comp is None and random.random() < 0.5,
                       origem=random.choice(["facebook", "google", None])))
     res, abertos = fc.montar(L, HOJE)
-    assert set(res) == {"mes", "30d", "90d"}
+    assert {"mes", "30d", "90d", "ano", "tudo"} <= set(res)
     r = res["90d"]
     assert r["modelo"] and r["modelo"]["auc"] > 0.6                # agendar pesa muito: o modelo aprende
     assert r["previsao"]["minimo"] <= r["previsao"]["previsao"] <= r["previsao"]["maximo"]

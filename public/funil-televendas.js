@@ -119,6 +119,11 @@
 
   function desenhar() {
     const box = document.getElementById("funil-tv"); if (!box) return;
+    // Períodos: os que o robô gravou (o ano passado só aparece quando a carga do histórico chegar lá)
+    const NOMES_P = {mes: "Este mês", "30d": "Últimos 30 dias", "90d": "Últimos 90 dias", ano: "Este ano", tudo: "Desde o início"};
+    const ps = ["mes", "30d", "90d", "ano", ...Object.keys(R).filter(k => /^\d{4}$/.test(k)).sort(), "tudo"].filter(k => R[k]);
+    box.querySelector("#ft-periodos").innerHTML = ps.map(k => `<button data-p="${k}" class="${k === periodo ? "on" : ""}" style="margin-right:6px">${NOMES_P[k] || k}</button>`).join("");
+    box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { periodo = b.dataset.p; desenhar(); });
     const r = R[periodo];
     if (!r) { box.querySelector(".ft-corpo").innerHTML = `<div class="ft-sec">Ainda não há dados do funil. O robô roda às 6h30, 12h30 e 18h30.</div>`; return; }
     const ops = r.operadoras || {}, opList = Object.keys(ops).filter(n => n !== "(sem operadora)" && n !== "Fox Pneus");
@@ -127,6 +132,7 @@
       gargalo: (() => { const v = sel.passos.filter(p => p.taxa != null); return v.length ? (m => m.de + "→" + m.para)(v.reduce((a, b) => a.taxa <= b.taxa ? a : b)) : null; })()} : r.funil;
     const t = r.tempos, v = r.velocidade, prev = r.previsao || {};
     let h = "";
+    if (r.carga_desde && r.carga_desde > "2025-01-01") h += `<div class="ft-alerta" style="background:#eef6ff;border-color:#bfdbfe;color:#1e3a8a">📚 Histórico carregado desde ${fmtD(r.carga_desde)}/${r.carga_desde.slice(0, 4)}. O robô volta 2 meses por rodada até janeiro de 2025 (alguns dias).</div>`;
     if ((r.alertas || []).length) h += `<div class="ft-alerta">🔔 <b>Alertas</b><br>· ${r.alertas.map(E).join("<br>· ")}</div>`;
     h += `<div class="ft-grid">
       <div class="ft-k"><span>Entraram</span><b>${num(f.etapas.entrou)}</b><small>Funil Principal, sem disparos</small></div>
@@ -210,10 +216,8 @@
     const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
     const box = document.createElement("div"); box.id = "funil-tv"; box.hidden = true;   // abre pelo botão "📈 Estatísticas"
     box.innerHTML = `<h2>📈 Funil do televendas</h2><div class="sub">Kommo (entrada, cotação, agendamento, venda ganha/perdida) + Movere (cotação e nota fiscal pelo telefone) · <span class="ft-hora"></span></div>
-      <div class="ft-bar"><button data-p="mes" class="on">Este mês</button><button data-p="30d">Últimos 30 dias</button><button data-p="90d">Últimos 90 dias</button>
-      <select id="ft-op"><option value="">Equipe toda</option></select></div><div class="ft-corpo"></div>`;
+      <div class="ft-bar"><span id="ft-periodos"></span><select id="ft-op"><option value="">Equipe toda</option></select></div><div class="ft-corpo"></div>`;
     (document.getElementById("tabela-wrap") || document.body).insertAdjacentElement("afterend", box);
-    box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { periodo = b.dataset.p; box.querySelectorAll("[data-p]").forEach(x => x.classList.toggle("on", x === b)); desenhar(); });
     box.querySelector("#ft-op").onchange = e => { operadora = e.target.value; desenhar(); };
     // Botão "📈 Estatísticas" no topo, ao lado do filtro de data (pedido do TI, 27/11/2026): abre e fecha o painel
     const bot = document.createElement("button");

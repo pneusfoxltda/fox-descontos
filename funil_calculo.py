@@ -17,7 +17,8 @@ from datetime import date, timedelta
 
 import funil_estatistica as fe
 
-FORA = ("outros produtos", "chamou errado", "curtidas do instagram", "contato com rh", "cidade sem loja", "sem cidade")
+FORA = ("outros produtos", "chamou errado", "curtidas do instagram", "contato com rh", "cidade sem loja", "sem cidade",
+        "disparo sem sucesso")   # disparo que terminou em "venda perdida" (não é atendimento; TI, 27/11/2026)
 ETAPAS = ("entrou", "cotou", "agendou", "comprou")
 PROX = {"entrou": "cotou", "cotou": "agendou", "agendou": "comprou"}
 JANELA_COMPRA = 30      # "comprou em até 30 dias" nas coortes, no controle semanal e no lead scoring
@@ -211,9 +212,9 @@ def lead_scoring(leads, hoje):
             "fatores": sorted(zip(NOMES_CARAC, w[1:]), key=lambda t: -abs(t[1]))}
 
 
-def resumo(leads, hoje, desde):
-    """Todas as contas de um período (leads que ENTRARAM a partir de `desde`)."""
-    todos = [l for l in leads if l["d_entrou"] and l["d_entrou"] >= desde]
+def resumo(leads, hoje, desde, ate=None):
+    """Todas as contas de um período (leads que ENTRARAM de `desde` até `ate`)."""
+    todos = [l for l in leads if l["d_entrou"] and l["d_entrou"] >= desde and (ate is None or l["d_entrou"] <= ate)]
     base = [l for l in todos if not fora_da_conta(l)]
     fora = {}
     for l in todos:
@@ -248,7 +249,7 @@ def resumo(leads, hoje, desde):
         x["comprou"] += 1 if l.get("d_comprou") else 0
     for op in ops.values():
         op.pop("tempos", None)          # o boxplot usa mínimo, Q1, mediana, Q3 e máximo (a lista inteira não vai para o banco)
-    return {"desde": desde.isoformat(), "ate": hoje.isoformat(), "total_leads": len(todos), "fora_da_conta": fora,
+    return {"desde": desde.isoformat(), "ate": (ate or hoje).isoformat(), "total_leads": len(todos), "fora_da_conta": fora,
             "funil": f, "tempos": tempos(base), "operadoras": ops, "media_equipe": media,
             "velocidade": vel, "motivos_perda": dict(sorted(motivos.items(), key=lambda kv: -kv[1])),
             "origens": origens, "sobrevivencia": sobrevivencia(base, hoje)}
@@ -274,11 +275,17 @@ def previsao_mes(leads, hoje, modelo, ticket):
             "minimo": round(max(vendido, meio - margem), 2), "maximo": round(meio + margem, 2), "dias_restantes": resta}
 
 
-def montar(leads, hoje):
-    """Tudo para o banco: {periodo: resumo} + lista de abertos (aging + scoring) + modelo + previsão + alertas."""
-    periodos = {"mes": hoje.replace(day=1), "30d": hoje - timedelta(days=30), "90d": hoje - timedelta(days=90)}
-    resumos = {p: resumo(leads, hoje, d) for p, d in periodos.items()}
-    base90 = [l for l in leads if l["d_entrou"] >= periodos["90d"] and not fora_da_conta(l)]
+def montar(leads, hoje, inicio_hist=None):
+    """Tudo para o banco: {periodo: resumo} + lista de abertos (aging + scoring) + modelo + previsão + alertas.
+    Períodos: mês, 30 e 90 dias, este ano, o ano passado (quando houver dados) e desde o início da carga."""
+    periodos = {"mes": (hoje.replace(day=1), None), "30d": (hoje - timedelta(days=30), None), "90d": (hoje - timedelta(days=90), None),
+                "ano": (date(hoje.year, 1, 1), None)}
+    primeiro = min((l["d_entrou"] for l in leads if l.get("d_entrou")), default=hoje)
+    if primeiro <= date(hoje.year - 1, 12, 31):
+        periodos[str(hoje.year - 1)] = (max(date(hoje.year - 1, 1, 1), primeiro), date(hoje.year - 1, 12, 31))
+    periodos["tudo"] = (primeiro, None)
+    resumos = {p: resumo(leads, hoje, d, a) for p, (d, a) in periodos.items()}
+    base90 = [l for l in leads if l["d_entrou"] >= periodos["90d"][0] and not fora_da_conta(l)]
     modelo = lead_scoring([l for l in leads if not fora_da_conta(l)], hoje)
     p75 = tempo_na_etapa_historico(base90)
     abertos = []
@@ -310,6 +317,7 @@ def montar(leads, hoje):
     if atras:
         alertas.append(f"{atras} oportunidade(s) paradas há mais tempo que o normal da etapa")
     extra["alertas"] = alertas
+    extra["carga_desde"] = (inicio_hist or primeiro).isoformat()
     for p in resumos.values():
         p.update(extra)
     return resumos, abertos
