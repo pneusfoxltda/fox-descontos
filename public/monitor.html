@@ -175,6 +175,7 @@ const ROBOS = [
   {arq: "sync-televendas.yml", nome: "Painel do televendas (Movere)", robo: null, quando: "seg a sáb, de hora em hora (6h45 às 17h45)", maxH: 40},
   {arq: "resultados-atacado.yml", nome: "Resultados · Atacado (rotina 553)", robo: "resultados_atacado", quando: "seg a sáb, 8h e 17h30 (só a equipe do Atacado)", maxH: 40},
   {arq: "resultados-varejo.yml", nome: "Resultados · Varejo (rotina 553)", robo: "resultados_varejo", quando: "seg a sáb, 7h45, 10h45, 13h45, 15h45 e 17h45 (hoje) e 19h10 (mês completo)", maxH: 40},
+  {arq: "funil-televendas.yml", nome: "Funil do televendas (Kommo + Movere)", robo: "funil_televendas", quando: "todo dia 6h30, 12h30 e 18h30", maxH: 14},
 ];
 async function rodadasGithub(arq) {
   try {

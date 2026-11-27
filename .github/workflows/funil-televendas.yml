@@ -1,0 +1,46 @@
+name: Funil do televendas
+
+# Junta o Kommo (marcações do cartão do lead, venda ganha/perdida e motivos) com o Movere (cotação e nota fiscal pelo
+# telefone) e grava as contas do painel "Funil do televendas" (fim do /televendas.html): funil, tempos, velocidade,
+# oportunidades paradas, coortes, ranking justo, sobrevivência, controle semanal, lead scoring e previsão.
+# 3 vezes por dia: 6h30, 12h30 e 18h30 de Porto Velho (UTC−4), todos os dias.
+on:
+  schedule:
+    - cron: '30 10,16,22 * * *'
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: 'Só mostrar o que faria, sem gravar nada'
+        type: boolean
+        default: false
+
+concurrency:
+  group: funil-televendas
+  cancel-in-progress: false
+
+jobs:
+  funil:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install httpx
+
+      - name: Kommo + Movere → funil
+        env:
+          PYTHONUNBUFFERED: '1'
+          KOMMO_TOKEN: ${{ secrets.KOMMO_TOKEN }}
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
+          MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
+          MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
+          DRY_RUN: ${{ inputs.teste && '1' || '' }}
+        run: python funil_televendas.py

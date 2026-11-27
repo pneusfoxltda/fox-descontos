@@ -477,6 +477,34 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - SQL **`30_resultados_atacado.sql`**: `atacado_vendedores`, `atacado_lojas` (periodo `mes`/`dia`), `atacado_metas`
   (`v:COD` e `feriado_DD`; metas de EXEMPLO de nov/2026, 8 vendedores, R$ 5,2 mi). Testes: `python tests/test_resultados_atacado.py`.
 
+## 📈 Funil do televendas — branch `funil-televendas`
+
+- Pedido do TI (27/11/2026): botão **"📈 Estatísticas"** no topo do /televendas.html (ao lado do filtro de data) abre o painel
+  (`public/funil-televendas.js`, só com login televendas/gerente/admin; fica escondido até clicar)
+  com o funil **entrou → cotou → agendou → comprou** e estatística (níveis 1, 2 e 3 do pedido).
+- Robô **`funil_televendas.py`** (workflow `funil-televendas.yml`, todo dia 6h30, 12h30 e 18h30): leads do Kommo do **Funil Principal
+  sem as etapas de disparo** (9 - DISPARO e 8 - Disparo Noturno; decisão do TI), últimos 4 meses. Datas pelo histórico de eventos do
+  Kommo (`custom_field_ID_value_changed`): cotou = "2 - Fez cotação" ou "3 - Cotação criada pela IA" (iguais); negociou = "4 -
+  Negociação realizada"; agendou = "6 - Agendamento IA" ou "7 - Agendamento". Sem marcação de cotação, vale a 1ª cotação do
+  televendas no Movere pelo telefone. **Comprou / foi à loja** = nota no Movere pelo telefone a partir da entrada; senão a coluna
+  **VENDA GANHA** do Kommo (`closed_at`) ou o campo "1ª Venda". Perdido = "venda perdida" + motivo (Kommo ou campo "Motivo de perda";
+  "Motivo indefinido" = agendou e não foi). **Fora da conversão**: "Outros produtos" (produto que a Fox não trabalha), "Chamou
+  errado", "Curtidas do Instagram", "Contato com RH", "Cidade sem loja", "Sem cidade".
+- **Carga desde 01/2025, aos poucos** (TI, 27/11/2026): uma linha por lead em `funil_leads` (sem nome; telefone só como código
+  HMAC com a chave do robô, para cruzar com o Movere). 1ª rodada = últimos 4 meses; cada rodada seguinte lê os leads ATUALIZADOS
+  desde a última (`filter[updated_at]`) + marcações novas + vendas/cotações dos últimos 10 dias (Analytics + API) e volta
+  **2 meses** no histórico (`MESES_POR_RODADA`) até `INICIO_HIST` (01/2025). Estado em `funil_estado` (`carga_desde`,
+  `ultima_rodada`). Datas juntadas pela mais antiga (`juntar`). **Entrou** = "1 - Contato Inicial", alguma etapa, ou aberto/ganho;
+  **"Disparo sem sucesso"** fica fora (disparo que terminou em venda perdida). Períodos: mês, 30d, 90d, ano, ano passado, tudo.
+- Contas em **`funil_calculo.py`** + **`funil_estatistica.py`** (sem bibliotecas): funil e gargalo; tempo (mediana principal, média,
+  Q1–Q3, P90, outliers 1,5×IQR, histograma, boxplot); velocidade = oportunidades × conversão × ticket ÷ ciclo; aging (parado acima
+  do P75 da etapa); coortes por mês de entrada (compra em 30 dias); ranking justo (z-score + Wilson 95%, "inconclusivo" com menos de
+  30 clientes ou intervalo cruzando a média); diagnóstico (etapa em que cada uma mais perde); Kaplan-Meier; controle semanal (média ±
+  2 desvios); lead scoring (regressão logística, AUC nos 20% mais recentes); previsão do mês (vendido + Σ chance × ticket, faixa 95%);
+  alertas; leitura estruturada no fim. `window.FE_FUNIL` para a Fernanda.
+- SQL **`33_funil_televendas.sql`**: `funil_resumo` (jsonb por período mes/30d/90d) e `funil_abertos` (lead_id do Kommo, sem nome nem
+  telefone); lê quem tem `ve_funil()`. Testes: `python tests/test_funil_estatistica.py` e `python tests/test_funil_calculo.py`.
+
 ## 🩺 Monitor (só o admin) — branch `monitor`
 
 - Página **`/monitor`** (`public/monitor.html`, rewrite no `middleware.js`). Pede o login de admin; o banco
