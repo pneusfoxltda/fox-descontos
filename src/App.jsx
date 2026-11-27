@@ -80,6 +80,14 @@ const RED="var(--fx-ac,#CC1F1F)",CARD="var(--fx-s1,#1C1C1C)",TEXT="var(--fx-tx,#
 const RED22="color-mix(in srgb, var(--fx-ac,#CC1F1F) 13.3%, transparent)",RED44="color-mix(in srgb, var(--fx-ac,#CC1F1F) 26.7%, transparent)";
 const CC=["#CC1F1F","#E02020","#A01515","#FF4444","#880E0E","#FF7070","#CC5555","#991111"];
 function isExp(v){if(!v)return false;return new Date(v+"T23:59:59")<new Date();}
+// Situação de uma negociação para a conversão (igual às abas do Consultar)
+function situacaoNeg(q){
+  if(q.liberado||q.vendaMovere)return "fechou";
+  if(q.perdida&&!/^validade expirada/i.test(q.motivoPerda||""))return "perdida";   // marcada como perdida pela equipe
+  if(isExp(q.validade))return "vencida";                                          // passou da validade (o sistema marca sozinho)
+  return "pendente";
+}
+function contarNeg(lista){const c={total:lista.length,fechou:0,perdida:0,vencida:0,pendente:0};lista.forEach(q=>c[situacaoNeg(q)]++);c.conv=c.total?Math.round(c.fechou/c.total*100):0;return c;}
 function fmtVal(v){const n=parseFloat(v);return isNaN(n)?v:"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseConcObs(obs){
   if(!obs)return[];
@@ -308,7 +316,8 @@ export default function App(){
   const[notFound,setNotFound]=useState(false);
   const[toast,setToast]=useState(null);
   const[newUser,setNewUser]=useState({nome:"",email:"",pass:"",roles:["televendas"],loja:"",foto:null});
-  const[dash,setDash]=useState({dataIni:"",dataFim:"",loja:"",segmento:"",medida:""});
+  // O Dashboard abre no mês atual (pedido do TI, 27/11/2026); dá para mudar as datas
+  const[dash,setDash]=useState(()=>{const h=new Date(Date.now()-4*36e5).toISOString().slice(0,10);return {dataIni:h.slice(0,8)+"01",dataFim:"",loja:"",segmento:"",medida:""};});
   const[filtroStatus,setFiltroStatus]=useState("todos");
   const[roboStatus,setRoboStatus]=useState(null); // última rodada do robô "Conferir vendas Movere" (só admin)
   // Lista do Consultar: mostra aos poucos (60 por vez) para a tela não travar
@@ -794,6 +803,20 @@ export default function App(){
     if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
     return true;
   }),[quotes,dash]);
+  // Negociações para a CONVERSÃO (rankings de loja e de vendedor): as mesmas do Dashboard, mas COM as perdidas e vencidas
+  // (antes elas ficavam de fora e a conversão dava perto de 100%). Igual às abas do Consultar (TI, 27/11/2026):
+  // Fechou = Liberados + Venda concluída (Movere) · Perdida = marcada à mão · Vencida = passou da validade · Pendente = válida.
+  const negociadasTodas=useMemo(()=>quotes.filter(q=>{
+    if(dash.loja&&q.loja!==dash.loja)return false;
+    if(dash.segmento&&q.segmento!==dash.segmento)return false;
+    if(dash.medida&&!q.medida.toLowerCase().includes(dash.medida.toLowerCase().trim()))return false;
+    if(dash.dataIni&&q.criadoEm<dash.dataIni)return false;
+    if(dash.dataFim&&q.criadoEm>dash.dataFim+"T23:59:59")return false;
+    return true;
+  }),[quotes,dash]);
+  const negociadas=useMemo(()=>negociadasTodas.filter(q=>!q.erroInterno),[negociadasTodas]);
+  // "Erro interno" não entra na conversão: aparece só na coluna "Erros"
+  const errosPor=(campo,valor)=>negociadasTodas.filter(q=>q.erroInterno&&q[campo]===valor).length;
   const mChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.medida]=(c[q.medida]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([name,value])=>({name,value}));},[filtered]);
   const sChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.segmento]=(c[q.segmento]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
   const lChart=useMemo(()=>{const c={};filtered.forEach(q=>{c[q.loja]=(c[q.loja]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));},[filtered]);
@@ -1001,23 +1024,21 @@ export default function App(){
           <div className="chart-t">📍 Ranking por Loja</div>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
-              {["#","Loja","Total","Fechou","Válidos","Vencidas","Conv."].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+              {["#","Loja","Neg.","Fechou","Perdidas","Vencidas","Pend.","Conv.","Erros"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
             </tr></thead>
-            <tbody>{lChart.map((l,i)=>{
-              const items=filtered.filter(q=>q.loja===l.name);
-              const lib=items.filter(q=>q.liberado).length;
-              const pend=items.filter(q=>!q.liberado&&!isExp(q.validade)).length;
-              const venc=items.filter(q=>isExp(q.validade)&&!q.liberado).length;
-              const val=items.reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
-              const conv=l.value>0?((lib/l.value)*100).toFixed(0):0;
+            <tbody>{Object.entries(negociadas.reduce((m,q)=>{(m[q.loja]=m[q.loja]||[]).push(q);return m;},{})).map(([name,items])=>({name,items,c:contarNeg(items)})).sort((a,b)=>b.c.total-a.c.total).map((l,i)=>{
+              const {fechou:lib,perdida:perd,vencida:venc,pendente:pend,conv}=l.c;
+              const val=l.items.reduce((s,q)=>s+(parseFloat(q.valor)||0),0);
               return(<tr key={l.name} style={{borderBottom:"1px solid var(--fx-bd,#1C1C1C)",background:i===0?"var(--fx-erbg,#2E1A1A)":"transparent"}}>
                 <td style={{padding:"9px 10px"}}><span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:20,height:20,borderRadius:"50%",background:i===0?RED:"#2E2E2E",color:"#fff",fontSize:9,fontWeight:700}}>{i+1}</span></td>
                 <td style={{padding:"9px 10px",color:i===0?RED:TEXT,fontWeight:i===0?700:500,fontSize:13}}>{l.name}</td>
-                <td style={{padding:"9px 10px",fontWeight:700,color:TEXT}}>{l.value}</td>
+                <td style={{padding:"9px 10px",fontWeight:700,color:TEXT}}>{l.c.total}</td>
                 <td style={{padding:"9px 10px"}}><span style={{color:GREEN,fontWeight:700}}>{lib}</span></td>
-                <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:RED,fontWeight:700}}>{perd}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontWeight:700}}>{venc}</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:AMBER,fontWeight:700}}>{pend}</span></td>
                 <td style={{padding:"9px 10px"}}><span style={{background:parseInt(conv)>=50?GREEN+"22":RED22,color:parseInt(conv)>=50?GREEN:RED,borderRadius:4,padding:"2px 8px",fontWeight:700,fontSize:12}}>{conv}%</span></td>
+                <td style={{padding:"9px 10px"}}><span style={{color:MUTED,fontSize:12}} title="Marcadas como erro interno: fora da conversão">{errosPor("loja",l.name)||""}</span></td>
               </tr>);})}
             </tbody>
           </table>
@@ -1027,13 +1048,12 @@ export default function App(){
         {/* Ranking Vendedores */}
         {(()=>{
           const byV={};
-          filtered.filter(q=>q.vendedor).forEach(q=>{
-            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,pend:0,venc:0,val:0};
-            byV[q.vendedor].total++;
-            if(q.liberado)byV[q.vendedor].lib++;
-            else if(isExp(q.validade))byV[q.vendedor].venc++;
-            else byV[q.vendedor].pend++;
-            byV[q.vendedor].val+=(parseFloat(q.valor)||0);
+          negociadas.filter(q=>q.vendedor).forEach(q=>{
+            if(!byV[q.vendedor])byV[q.vendedor]={nome:q.vendedor,total:0,lib:0,perd:0,pend:0,venc:0,val:0};
+            const v=byV[q.vendedor], st=situacaoNeg(q);
+            v.total++;
+            if(st==="fechou")v.lib++; else if(st==="perdida")v.perd++; else if(st==="vencida")v.venc++; else v.pend++;
+            v.val+=(parseFloat(q.valor)||0);
           });
           const vList=Object.values(byV).sort((a,b)=>b.lib-a.lib||b.total-a.total);
           const fotoMap={...FOTOS_VENDEDORES}; users.forEach(u=>{if(u.foto)fotoMap[u.nome]=u.foto;});
@@ -1042,7 +1062,7 @@ export default function App(){
             <div className="chart-t">👤 Ranking de Vendedores · Negociações e Fechamentos</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{borderBottom:"1px solid var(--fx-bd,#2E2E2E)"}}>
-                {["#","Vendedor","Neg.","Fechou","Pend.","Venc.","Conv."].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
+                {["#","Vendedor","Neg.","Fechou","Perd.","Venc.","Pend.","Conv.","Erros"].map(h=><th key={h} style={{padding:"5px 8px",textAlign:"left",fontSize:9,fontWeight:700,color:MUTED,letterSpacing:1,textTransform:"uppercase"}}>{h}</th>)}
               </tr></thead>
               <tbody>{vList.map((v,i)=>{
                 const conv=v.total>0?((v.lib/v.total)*100).toFixed(0):0;
@@ -1062,8 +1082,9 @@ export default function App(){
                   </td>
                   <td style={{padding:"10px 10px"}}><span style={{background:RED22,color:RED,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.total}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{background:GREEN+"22",color:GREEN,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.lib}</span></td>
-                  <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{color:RED,fontWeight:700,fontSize:13}}>{v.perd}</span></td>
                   <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontWeight:700,fontSize:13}}>{v.venc}</span></td>
+                  <td style={{padding:"10px 10px"}}><span style={{background:AMBER+"22",color:AMBER,borderRadius:4,padding:"2px 10px",fontWeight:700,fontSize:13}}>{v.pend}</span></td>
                   <td style={{padding:"10px 10px",minWidth:120}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div style={{flex:1,height:8,background:"var(--fx-s2,#2E2E2E)",borderRadius:4,overflow:"hidden"}}>
@@ -1072,6 +1093,7 @@ export default function App(){
                       <span style={{fontSize:12,fontWeight:700,color:parseInt(conv)>=50?GREEN:parseInt(conv)>=30?AMBER:RED,minWidth:35}}>{conv}%</span>
                     </div>
                   </td>
+                  <td style={{padding:"10px 10px"}}><span style={{color:MUTED,fontSize:12}} title="Marcadas como erro interno: fora da conversão">{errosPor("vendedor",v.nome)||""}</span></td>
                 </tr>);})}
               </tbody>
             </table>
