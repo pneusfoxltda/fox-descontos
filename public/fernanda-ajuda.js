@@ -807,6 +807,12 @@
     if (respostaConta(q)) return true;
     // Tela das Ligações: a Fernanda conhece os clientes da pessoa (fernanda-ligacoes.js)
     if (/\/ligacoes/.test(location.pathname) && window.feLig && window.feLig.resposta(q)) return true;
+    // "faltou algum?" fora das Ligações e do Cadastrar: pergunta o que a pessoa quer conferir
+    if (!telaCadastro() && /^(sera que )?(faltou|falta|ficou faltando|esqueci)( de)? (algum|alguma|alguem|algo|coisa|nada)/.test(n)) {
+      bot("Faltou o quê? 🤔 Me diga o que você quer conferir:\n· Clientes para ligar: abra as Ligações e pergunte \"quantos faltam?\"\n· Um desconto: na tela de Cadastrar eu digo o que falta preencher\n· A meta: no painel do Televendas pergunte \"quanto falta para a meta?\"");
+      chips(["Ligações das lojas", "Cadastrar desconto", "Painel do televendas"]);
+      return true;
+    }
     const tela = telaCadastro();
     if (tela) {
       const r = ajudaCadastro(q, tela);
