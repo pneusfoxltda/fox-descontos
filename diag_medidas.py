@@ -43,7 +43,8 @@ for x in q:
         d["so_conc"] += 1; continue
     d["neg"] += 1; seg = x.get("segmento") or "?"; d["segmento"][seg] = d["segmento"].get(seg, 0) + 1
     fechou = bool(x.get("liberado") or x.get("venda_movere"))
-    vencida = bool(x.get("validade")) and date.fromisoformat(x["validade"][:10]) < hoje
+    try: vencida = bool(x.get("validade")) and date.fromisoformat(x["validade"][:10]) < hoje
+    except ValueError: vencida = False   # validade digitada errada (ex.: ano com 5 números)
     if fechou: d["fechou"] += 1
     elif vencida or x.get("perdida"): d["nao_fechou"] += 1
     else: d["pend"] += 1
