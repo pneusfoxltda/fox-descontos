@@ -40,6 +40,7 @@ PERDIDA, GANHA = 143, 142                        # "venda perdida" e "VENDA GANH
 CAMPOS = {"cotou": (586966, 798926), "negociou": (822817,), "agendou": (586976, 822865)}
 C_VISITA, C_1VENDA, C_MOTIVO, C_LOJA = 774304, 813604, 783662, 776466
 C_CONTATO = 586964                                    # "1 - Contato Inicial"
+C_DISPARO = 777920                                    # "Disparo" (grupo Disparos): o que o cliente respondeu ao disparo
 MESES_INICIAIS = 4                                    # 1ª rodada: os últimos 4 meses
 MESES_POR_RODADA = 2                                  # depois, volta 2 meses por rodada no histórico
 INICIO_HIST = date(2025, 1, 1)
@@ -160,6 +161,22 @@ def campos_do_lead(lead) -> list:
             if v is True or str(v).lower() in ("1", "true", "sim"):
                 out.add(nome[0])
     return sorted(out)
+
+
+def disparo_do_lead(lead) -> tuple:
+    """Grupo "Disparos" do Kommo (TI, 28/11/2026): ("Respondeu", "Disparo") = se respondeu e o que respondeu
+    (ex.: "Sucesso no disparo", "Não tem interesse no disparo", "Não respondeu 48h no disparo"). Só o texto da opção."""
+    resp = disp = None
+    for f in lead.get("custom_fields_values") or []:
+        nome = str(f.get("field_name") or "").strip().lower()
+        v = (f.get("values") or [{}])[0].get("value")
+        if v in (None, ""):
+            continue
+        if f.get("field_id") == C_DISPARO or nome == "disparo":
+            disp = str(v).strip()[:60]
+        elif nome == "respondeu":
+            resp = str(v).strip()[:60]
+    return resp, disp
 
 
 def etapa_do_lead(lead) -> str:
@@ -327,7 +344,7 @@ def gravar(cli, chave, linhas_mudadas, estado, resumos, abertos):
     L = [dict(_linha_banco(l), atualizado_em=agora) for l in unicas.values()]
     chaves = {k for x in L for k in x}
     L = [{k: x.get(k) for k in chaves} for x in L]
-    novas = ("campos", "etapa", "entrou")                  # SQL 35: sem ele, grava sem essas colunas (e sem os "adicionados")
+    novas = ("campos", "etapa", "entrou", "respondeu", "disparo")                  # SQL 35: sem ele, grava sem essas colunas (e sem os "adicionados")
     sem35 = False
     for i in range(0, len(L), 500):
         r = cli.post(f"{url}/funil_leads?on_conflict=id", headers=H, json=L[i:i + 500])
@@ -374,7 +391,7 @@ def linha_minima(l, users) -> dict:
     """Lead que NÃO conta como 'entrou' (adicionado sem Contato Inicial): só o necessário para o quadro 'Pelo Kommo'."""
     return {"id": l["id"], "operadora": users.get(l.get("responsible_user_id")), "origem": _origem(l), "loja": _valor_campo(l, C_LOJA),
             "d_entrou": _dia(l.get("created_at")), "entrou": False, "campos": campos_do_lead(l), "etapa": etapa_do_lead(l),
-            "perdido": l.get("status_id") == PERDIDA}
+            "perdido": l.get("status_id") == PERDIDA, **dict(zip(("respondeu", "disparo"), disparo_do_lead(l)))}
 
 
 def atualizar_campos(banco, leads, users) -> list:
@@ -385,7 +402,8 @@ def atualizar_campos(banco, leads, users) -> list:
         if x is None:
             x = linha_minima(l, users)
         else:
-            x = dict(x, campos=campos_do_lead(l), etapa=etapa_do_lead(l), entrou=x.get("entrou", True) is not False)
+            x = dict(x, campos=campos_do_lead(l), etapa=etapa_do_lead(l), entrou=x.get("entrou", True) is not False,
+                     **dict(zip(("respondeu", "disparo"), disparo_do_lead(l))))
         banco[l["id"]] = x
         mudou.append(x)
     return mudou
@@ -409,6 +427,7 @@ def processar(k, cli, seg, sal, leads, marc, ini_mov, fim_mov, banco, hoje):
         nova = linha_do_lead(l, seg["_users"], m, tl, cot_tel, vendas)
         nova["tel_hash"] = sorted(codigo_tel(x, sal) for x in tl) or None
         nova["entrou"], nova["campos"], nova["etapa"] = True, campos_do_lead(l), etapa_do_lead(l)
+        nova["respondeu"], nova["disparo"] = disparo_do_lead(l)
         j = juntar(banco.get(l["id"]), nova)
         banco[l["id"]] = j
         mudou.append(j)

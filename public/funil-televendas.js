@@ -162,7 +162,17 @@
                 lin("🟢 VENDA GANHA (etapa)", K.venda_ganha, `com o Movere (nota ou O.S.): ${num(K.comprou_real)} compraram`) +
         lin("🔴 venda perdida (etapa)", K.venda_perdida, "") +
         lin("5 · Recuperação Inicial (disparo noturno)", K.recuperacao, `passou pela etapa Disparo Noturno e recebeu a mensagem das 19h30 · ${num(K.recuperacao_comprou)} compraram depois`) +
-        `</table></div>`, true);
+        `</table></div>`);
+      const D = K.disparo;
+      if (D && D.recebeu && D.recebeu.n) {
+        const tx = (a, b) => b ? pct(a / b, 1) : "";
+        const lin2 = (nome, x) => `<tr><td style="text-align:left">${E(nome)}</td><td><b>${num(x.n)}</b></td><td>${num(x.cotou)}</td><td>${num(x.agendou)} <i style="color:#64748b;font-style:normal">${tx(x.agendou, x.n)}</i></td><td>${num(x.ganha)}</td><td>${num(x.comprou_real)} <i style="color:#64748b;font-style:normal">${tx(x.comprou_real, x.n)}</i></td></tr>`;
+        const cab = `<tr><th style="text-align:left"></th><th>Clientes</th><th>Fez cotação</th><th>Agendou</th><th>VENDA GANHA</th><th>Comprou (Movere)</th></tr>`;
+        h += sec("🌙 Disparo noturno (19h30)", "Quem passou pela etapa Disparo Noturno (campo 5) comparado com quem não passou, e o que cada um respondeu (grupo Disparos do Kommo: campos Respondeu e Disparo).",
+          `<div class="ft-tw"><table>${cab}${lin2("Recebeu a mensagem", D.recebeu)}${lin2("Não recebeu (com Contato Inicial)", D.nao_recebeu)}</table></div>` +
+          `<h4 style="margin:12px 0 6px">Respondeu?</h4><div class="ft-tw"><table>${cab}${Object.entries(D.respondeu || {}).sort((a, b) => b[1].n - a[1].n).map(([k, x]) => lin2(k, x)).join("")}</table></div>` +
+          `<h4 style="margin:12px 0 6px">O que respondeu (campo Disparo)</h4><div class="ft-tw"><table>${cab}${Object.entries(D.resposta || {}).sort((a, b) => b[1].n - a[1].n).map(([k, x]) => lin2(k, x)).join("")}</table></div>`);
+      }
     }
     h += `<div class="ft-2">` + sec("1. Funil de vendas" + (sel ? " · " + E(operadora) : ""), "Quem comprou conta como tendo passado pelas etapas anteriores. Em vermelho, o gargalo (a passagem com a menor conversão).", barrasFunil(f))
       + sec("Por que perdemos", "Motivo da venda perdida (Kommo). Fora da conta (não eram oportunidade): " + Object.entries(r.fora_da_conta || {}).map(([k, n]) => E(k) + " " + num(n)).join(" · "),

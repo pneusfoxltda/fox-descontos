@@ -279,6 +279,19 @@ def previsao_mes(leads, hoje, modelo, ticket):
             "minimo": round(max(vendido, meio - margem), 2), "maximo": round(meio + margem, 2), "dias_restantes": resta}
 
 
+def disparos(L, c):
+    """Disparo noturno (TI, 28/11/2026): quem recebeu (campo 5), se respondeu e o que respondeu (campo "Disparo"),
+    e quantos de cada resposta cotaram, agendaram e compraram (VENDA GANHA e Movere)."""
+    rec = [l for l in L if "5" in c(l)]
+    def bloco(xs):
+        return {"n": len(xs), "cotou": sum(1 for l in xs if "2" in c(l)), "agendou": sum(1 for l in xs if c(l) & {"6", "7"}),
+                "ganha": sum(1 for l in xs if l.get("etapa") == "ganha"), "comprou_real": sum(1 for l in xs if l.get("d_comprou"))}
+    grupos = lambda chave: {k: bloco([l for l in rec if (l.get(chave) or "(vazio)") == k])
+                            for k in sorted({l.get(chave) or "(vazio)" for l in rec})}
+    return {"recebeu": bloco(rec), "nao_recebeu": bloco([l for l in L if "1" in c(l) and "5" not in c(l)]),
+            "respondeu": grupos("respondeu"), "resposta": grupos("disparo")}
+
+
 def pelo_kommo(todos, desde, ate=None):
     """Contas como os filtros do Kommo (campos do Trackeamento AGORA = Sim), pedido do TI 28/11/2026.
     todos = todos os leads do Funil Principal sem disparo (inclusive os que nunca tiveram Contato Inicial)."""
@@ -309,7 +322,8 @@ def pelo_kommo(todos, desde, ate=None):
             "caminho_cot_agia": n(ci, lambda l: {"2", "6"} <= c(l)),
             "caminho_cot_agia_ganha": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "ganha"),
             "caminho_cot_agia_perdida": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "perdida"),
-            "agendou_ganha": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "ganha"),
+            "disparo": disparos(L, c),
+                        "agendou_ganha": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "ganha"),
             "agendou_perdida": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "perdida")}
 
 

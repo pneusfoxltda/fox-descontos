@@ -72,8 +72,11 @@ def t_campos_do_lead():
         {"field_name": "6 - Agendamento IA", "values": [{"value": True}]},
         {"field_name": "1ª Venda", "values": [{"value": 1764000000}]}]}
     assert ft.campos_do_lead(l) == ["1", "3", "6"] and ft.etapa_do_lead(l) == "ganha"
+    l["custom_fields_values"] += [{"field_id": 777920, "field_name": "Disparo", "values": [{"value": "Sucesso no disparo"}]},
+                                  {"field_name": "Respondeu", "values": [{"value": "Sim"}]}]
+    assert ft.disparo_do_lead(l) == ("Sim", "Sucesso no disparo")
     m = ft.linha_minima(dict(l, id=9, created_at=1764000000), {})
-    assert m["entrou"] is False and m["campos"] == ["1", "3", "6"]
+    assert m["entrou"] is False and m["campos"] == ["1", "3", "6"] and m["disparo"] == "Sucesso no disparo"
 
 
 if __name__ == "__main__":

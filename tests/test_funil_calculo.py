@@ -88,6 +88,12 @@ def t_pelo_kommo():
     assert k["ag_ia"] == 2 and k["ag_equipe"] == 2 and k["ag_ia_e_equipe"] == 1 and k["ag_so_ia"] == 1 and k["ag_so_equipe"] == 1 and k["agendou"] == 3
     assert k["ag_conf_ganha"] == 1 and k["ag_conf_perdida"] == 0 and k["venda_perdida"] == 1 and k["agendou_perdida"] == 1
     assert k["caminho_cot_agia"] == 0
+    L2 = [{"id": 1, "d_entrou": d, "campos": ["1", "5", "2"], "etapa": "ganha", "respondeu": "Sim", "disparo": "Sucesso no disparo", "d_comprou": d},
+          {"id": 2, "d_entrou": d, "campos": ["1", "5"], "etapa": "aberto", "respondeu": "Não", "disparo": "Não respondeu 48h no disparo"},
+          {"id": 3, "d_entrou": d, "campos": ["1"], "etapa": "aberto"}]
+    D = fc.pelo_kommo(L2, date(2026, 11, 1))["disparo"]
+    assert D["recebeu"]["n"] == 2 and D["recebeu"]["comprou_real"] == 1 and D["nao_recebeu"]["n"] == 1
+    assert D["resposta"]["Sucesso no disparo"]["ganha"] == 1 and D["respondeu"]["Não"]["n"] == 1
     assert fc.pelo_kommo([{"id": 1, "d_entrou": d}], date(2026, 11, 1)) is None
     r, _ = fc.montar(L, date(2026, 11, 28))
     assert r["mes"]["kommo"]["contato"] == 4 and r["mes"]["total_leads"] == 5     # o "adicionado" (entrou False) fica fora do funil

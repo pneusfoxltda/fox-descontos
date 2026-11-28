@@ -523,6 +523,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   sozinha agendou · 7 Agendamento = a equipe agendou ou conferiu o da IA (IA confirmada = 6 e 7). Nov/2026 no Kommo: alguma forma 16.073 ·
   Contato 11.136 · cotou (só o campo 2 "Fez cotação", o geral) 7.212 · cotação da IA (campo 3) 7.102 (a diferença = cotou sem passar pela IA) · sem Contato e cotou 71 · adicionados 4.937 · Agend. IA 1.758 · Agend. 1.828 · os dois 1.632 (VENDA GANHA 462 ·
   perdida 820). A 1ª rodada com o SQL 35 relê os cartões só para os campos (`campos_desde` em `funil_estado`).
+  **🌙 Disparo noturno** (mesmo SQL 35: `respondeu`, `disparo` = grupo "Disparos" do Kommo, campos "Respondeu" e "Disparo" id 777920 com 9
+  opções: Sucesso no disparo, Não tem interesse, Não respondeu 48h, Falha no envio, Outras respostas, Oferta 5 anos, Avaliação, Resgate, Já recebeu
+  tentativa de resgate): recebeu (campo 5) × não recebeu, por resposta → cotou, agendou, VENDA GANHA e compra no Movere (`disparos` no funil_calculo).
 - SQL **`33_funil_televendas.sql`**: `funil_resumo` (jsonb por período mes/30d/90d) e `funil_abertos` (lead_id do Kommo, sem nome nem
   telefone); lê quem tem `ve_funil()`. Testes: `python tests/test_funil_estatistica.py` e `python tests/test_funil_calculo.py`.
 
