@@ -18,9 +18,10 @@ jobs:
 
       - name: Roda teste
         env:
-          MOVERE_USER: ${{ secrets.MOVERE_USER }}
-          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+          ANALYTICS_LOGIN: ${{ secrets.ANALYTICS_LOGIN }}
+          ANALYTICS_SENHA: ${{ secrets.ANALYTICS_SENHA }}
+          KOMMO_TOKEN: ${{ secrets.KOMMO_TOKEN }}
+        run: PYTHONUNBUFFERED=1 python3 diag_funil_entrou.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
