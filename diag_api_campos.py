@@ -10,13 +10,16 @@ import movere_api as m
 import conferir_vendas_movere as cv
 from varejo_filtros import LOJAS_VAREJO, TABELAS_VAREJO
 
-hoje = datetime.now(cv.TZ_LOJA).date()
+from datetime import timedelta
+agora = datetime.now(cv.TZ_LOJA).date()
+fim = agora - timedelta(days=1)          # ontem (fechado)
+ini = fim.replace(day=1)
 chave = os.environ.get("SUPABASE_SERVICE_KEY", "")
 with httpx.Client(timeout=120) as cli:
-    r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/varejo_lojas?select=loja,venda,clientes,dia,periodo&periodo=eq.hoje&dia=eq.{hoje.isoformat()}",
+    r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/varejo_lojas?select=loja,venda,clientes,dia,periodo&periodo=eq.mes&mes=eq.{ini.isoformat()}",
                 headers=cv._sb_headers(chave))
     banco = {x["loja"]: x for x in (r.json() if r.status_code == 200 else [])}
-    print(f"553 'hoje' no banco ({hoje:%d/%m}): {len(banco)} lojas")
+    print(f"553 'mês' no banco: {len(banco)} lojas · retrato do dia {sorted({x['dia'] for x in banco.values()})} · API de {ini:%d/%m} a {fim:%d/%m}")
     tok = m.login(cli)
     tipos = Counter()
     soma = defaultdict(lambda: defaultdict(float))
@@ -24,9 +27,9 @@ with httpx.Client(timeout=120) as cli:
     com_vend = 0
     total = 0
     for cod, loja in LOJAS_VAREJO.items():
-        for p in range(1, 50):
-            l = m._lista(m._get(cli, tok, "/api/NotasFiscaisEmitidas", {"codigoLoja": cod, "emissaoInicial": hoje.isoformat(),
-                         "emissaoFinal": hoje.isoformat(), "pagina": p}))
+        for p in range(1, 400):
+            l = m._lista(m._get(cli, tok, "/api/NotasFiscaisEmitidas", {"codigoLoja": cod, "emissaoInicial": ini.isoformat(),
+                         "emissaoFinal": fim.isoformat(), "pagina": p}))
             for x in l:
                 nf = x.get("NF") or x
                 desc = str(nf.get("descricaoentradaesaida") or "").upper()
@@ -43,7 +46,7 @@ with httpx.Client(timeout=120) as cli:
                     qtd[loja][tp] += sinal
             if len(l) < m.POR_PAGINA:
                 break
-    print(f"Notas hoje: {total} · com vendedor: {com_vend}")
+    print(f"Notas no período: {total} · com vendedor: {com_vend}")
     print("tipopreco × operação (contagem):")
     for (tp, d), n in tipos.most_common(40):
         print(f"   {tp!r:40} {d:30} {n}")
