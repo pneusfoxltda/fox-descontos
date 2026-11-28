@@ -293,6 +293,7 @@ def pelo_kommo(todos, desde, ate=None):
             # Cotou = "2 - Fez cotação: Sim" (filtro do TI no Kommo, 28/11/2026: nov 7.212); o 3 (IA) aparece à parte
             "cotou": n(ci, lambda l: "2" in c(l)), "cotou_ia": n(ci, lambda l: "3" in c(l)),
             "cotou_ia_e_2": n(ci, lambda l: {"2", "3"} <= c(l)), "so_cotacao_ia": n(ci, lambda l: "3" in c(l) and "2" not in c(l)),
+            "cotou_sem_ia": n(ci, lambda l: "2" in c(l) and "3" not in c(l)),     # cotou sem passar pela IA (a equipe fez)
             "cotou_sem_contato": n(sem, lambda l: c(l) & {"2", "3"}), "negociou": n(ci, lambda l: "4" in c(l)),
             "recuperacao": n(L, lambda l: "5" in c(l)), "recuperacao_comprou": n(L, lambda l: "5" in c(l) and l.get("d_comprou")),
             "ag_ia": n(ci, lambda l: "6" in c(l)), "ag_equipe": n(ci, lambda l: "7" in c(l)),

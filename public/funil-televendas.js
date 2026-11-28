@@ -151,7 +151,8 @@
         lin("Entrou no Kommo de alguma forma", K.alguma_forma, "todos os cartões criados") +
         lin("1 · Entrou (Contato Inicial)", K.contato, `${num(K.sem_contato)} adicionados sem Contato Inicial`) +
         lin("2 · Fez cotação", K.cotou, `${pc(K.cotou, K.contato).trim()} dos que entraram · cotou sem Contato Inicial: ${num(K.cotou_sem_contato)}`) +
-        lin("&nbsp;&nbsp;3 · Cotação criada pela IA", K.cotou_ia, `${num(K.cotou_ia_e_2)} também com o "Fez cotação" · ${num(K.so_cotacao_ia)} só com o da IA`) +
+        lin("&nbsp;&nbsp;3 · Cotação criada pela IA", K.cotou_ia, `orçamento que a IA fez${pc(K.cotou_ia, K.cotou)}${K.so_cotacao_ia ? ` · ${num(K.so_cotacao_ia)} sem o "Fez cotação"` : ""}`) +
+        lin("&nbsp;&nbsp;Cotou sem passar pela IA", K.cotou_sem_ia, "a equipe fez o orçamento (Fez cotação sem o campo da IA)") +
         lin("4 · Negociou", K.negociou, "") +
         lin("6/7 · Agendou (IA ou equipe)", K.agendou, `só IA ${num(K.ag_so_ia)} · IA confirmado pela equipe ${num(K.ag_ia_e_equipe)} · só equipe ${num(K.ag_so_equipe)}`) +
         lin("&nbsp;&nbsp;Agendamento IA (campo 6)", K.ag_ia, "") +
