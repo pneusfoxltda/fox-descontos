@@ -526,6 +526,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   **🌙 Disparo noturno** (mesmo SQL 35: `respondeu`, `disparo` = grupo "Disparos" do Kommo, campos "Respondeu" e "Disparo" id 777920 com 9
   opções: Sucesso no disparo, Não tem interesse, Não respondeu 48h, Falha no envio, Outras respostas, Oferta 5 anos, Avaliação, Resgate, Já recebeu
   tentativa de resgate): recebeu (campo 5) × não recebeu, por resposta → cotou, agendou, VENDA GANHA e compra no Movere (`disparos` no funil_calculo).
+  **Perda pela equipe × automática** (SQL 35 `perda_auto`, TI 28/11/2026): motivo na etapa "venda perdida" (loss_reason) = a equipe marcou;
+  motivo só no campo "Motivo de perda" (783662) = o Kommo perdeu sozinho (ex.: Não respondeu, Não respondeu as tentativas, Agendou e não foi
+  na loja, Cotação: Pendente de encerramento). "Por que perdemos" mostra as duas tabelas (`motivos_equipe` / `motivos_auto`).
 - SQL **`33_funil_televendas.sql`**: `funil_resumo` (jsonb por período mes/30d/90d) e `funil_abertos` (lead_id do Kommo, sem nome nem
   telefone); lê quem tem `ve_funil()`. Testes: `python tests/test_funil_estatistica.py` e `python tests/test_funil_calculo.py`.
 

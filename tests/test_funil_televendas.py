@@ -79,6 +79,15 @@ def t_campos_do_lead():
     assert m["entrou"] is False and m["campos"] == ["1", "3", "6"] and m["disparo"] == "Sucesso no disparo"
 
 
+
+def t_perda_equipe_ou_automatica():
+    base = {"id": 5, "created_at": 1764000000, "status_id": 143, "responsible_user_id": 1, "_embedded": {}}
+    eq = ft.linha_do_lead(dict(base, _embedded={"loss_reason": [{"name": "Preço"}]}), {}, {}, set(), {}, {})
+    au = ft.linha_do_lead(dict(base, custom_fields_values=[{"field_id": 783662, "values": [{"value": "Não respondeu"}]}]), {}, {}, set(), {}, {})
+    assert eq["motivo"] == "Preço" and eq["perda_auto"] is False
+    assert au["motivo"] == "Não respondeu" and au["perda_auto"] is True
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):

@@ -176,7 +176,12 @@
     }
     h += `<div class="ft-2">` + sec("1. Funil de vendas" + (sel ? " · " + E(operadora) : ""), "Quem comprou conta como tendo passado pelas etapas anteriores. Em vermelho, o gargalo (a passagem com a menor conversão).", barrasFunil(f))
       + sec("Por que perdemos", "Motivo da venda perdida (Kommo). Fora da conta (não eram oportunidade): " + Object.entries(r.fora_da_conta || {}).map(([k, n]) => E(k) + " " + num(n)).join(" · "),
-        `<div class="ft-tw"><table><tr><th>Motivo</th><th>Clientes</th></tr>${Object.entries(r.motivos_perda || {}).slice(0, 12).map(([k, n]) => `<tr><td style="text-align:left">${E(k)}</td><td>${num(n)}</td></tr>`).join("")}</table></div>`) + `</div>`;
+        (() => {
+          const tab = (o, tit) => `<div class="ft-tw"><table><tr><th style="text-align:left">${tit}</th><th>Clientes</th></tr>${Object.entries(o || {}).slice(0, 12).map(([k, n]) => `<tr><td style="text-align:left">${E(k)}</td><td>${num(n)}</td></tr>`).join("")}</table></div>`;
+          const tE = Object.values(r.motivos_equipe || {}).reduce((a, b) => a + b, 0), tA = Object.values(r.motivos_auto || {}).reduce((a, b) => a + b, 0);
+          return (tE || tA) ? tab(r.motivos_equipe, `👤 Perdida pela equipe (motivo da etapa) · ${num(tE)}`) + `<div style="height:10px"></div>` + tab(r.motivos_auto, `🤖 Perdida automática (campo Motivo de perda) · ${num(tA)}`)
+                            : tab(r.motivos_perda, "Motivo");
+        })()) + `</div>`;
     // Ranking justo + diagnóstico
     h += sec("2. Desempenho das operadoras (ranking justo)", "z-score da conversão em relação à equipe e intervalo de confiança de 95% (Wilson). Com menos de 30 clientes ou quando o intervalo cruza a média da equipe (" + pct(r.media_equipe, 1) + "), a diferença pode ser sorte: fica \"inconclusivo\".",
       `<div class="ft-tw"><table><tr><th>Operadora</th><th>Clientes</th><th>Cotou</th><th>Agendou</th><th>Comprou</th><th>Conversão (IC 95%)</th><th>Entrou→Cotou</th><th>Cotou→Agendou</th><th>Agendou→Comprou</th><th>Receita</th><th>Ticket</th><th>Tempo mediano</th><th>z</th><th>Situação</th><th>Onde mais perde</th></tr>` +

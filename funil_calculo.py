@@ -236,11 +236,14 @@ def resumo(leads, hoje, desde, ate=None):
         ab = sum(1 for l in abertos if (l.get("operadora") or "(sem operadora)") == op)
         x["velocidade"] = fe.velocidade(ab, x["conversao"] or 0, x["ticket"] or 0, max(x["tempo_mediano"] or 0, 1)) if x["comprou"] else 0
         x["abertos"] = ab
-    motivos = {}
+    motivos, motivos_equipe, motivos_auto = {}, {}, {}
     for l in base:
         if l.get("perdido") and not l.get("d_comprou"):
             m = (l.get("motivo") or "Sem motivo").strip()
             motivos[m] = motivos.get(m, 0) + 1
+            alvo = motivos_auto if l.get("perda_auto") else motivos_equipe if l.get("perda_auto") is False else None
+            if alvo is not None:
+                alvo[m] = alvo.get(m, 0) + 1
     origens = {}
     for l in base:
         o = l.get("origem") or "(sem origem)"
@@ -256,6 +259,8 @@ def resumo(leads, hoje, desde, ate=None):
     return {"desde": desde.isoformat(), "ate": (ate or hoje).isoformat(), "total_leads": len(todos), "fora_da_conta": fora,
             "funil": f, "tempos": tempos(base), "operadoras": ops, "media_equipe": media,
             "velocidade": vel, "motivos_perda": dict(sorted(motivos.items(), key=lambda kv: -kv[1])),
+            "motivos_equipe": dict(sorted(motivos_equipe.items(), key=lambda kv: -kv[1])),
+            "motivos_auto": dict(sorted(motivos_auto.items(), key=lambda kv: -kv[1])),
             "origens": origens, "fontes_compra": fontes, "sobrevivencia": sobrevivencia(base, hoje)}
 
 

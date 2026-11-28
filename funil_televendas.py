@@ -206,10 +206,14 @@ def linha_do_lead(l, users, m, tels_lead, cot_tel, vendas):
                 d_comp, fonte = d1, "1a_venda"
     perdido = l.get("status_id") == PERDIDA
     lr = ((l.get("_embedded") or {}).get("loss_reason") or [{}])
-    motivo = (lr[0].get("name") if lr and isinstance(lr[0], dict) else None) or _valor_campo(l, C_MOTIVO)
+    # motivo da etapa "venda perdida" = a equipe marcou; só o campo "Motivo de perda" = o Kommo perdeu sozinho (TI, 28/11/2026)
+    m_etapa = lr[0].get("name") if lr and isinstance(lr[0], dict) else None
+    motivo = m_etapa or _valor_campo(l, C_MOTIVO)
+    perda_auto = bool(perdido and not m_etapa and motivo)
     vis = _valor_campo(l, C_VISITA)
     return {"id": l["id"], "operadora": users.get(l.get("responsible_user_id")), "origem": _origem(l),
             "loja": _valor_campo(l, C_LOJA), "perdido": perdido and not d_comp, "motivo": motivo if perdido else None,
+            "perda_auto": perda_auto if perdido else None,
             "d_entrou": entrou, "d_cotou": d_cot, "d_negociou": m.get("negociou"), "d_agendou": m.get("agendou"),
             "d_visita": _dia(vis) if vis and str(vis).isdigit() else None,
             "d_comprou": d_comp, "valor_compra": val, "valor_cotacao": cots[0]["valor"] if cots else None, "compra_fonte": fonte,
@@ -232,6 +236,7 @@ def juntar(antiga, nova):
         out["compra_fonte"] = antiga.get("compra_fonte") or nova.get("compra_fonte")
     out["perdido"] = nova.get("perdido", antiga.get("perdido")) and not out.get("d_comprou")
     out["motivo"] = nova.get("motivo") if out["perdido"] else None
+    out["perda_auto"] = nova.get("perda_auto") if out["perdido"] else None
     return out
 
 
@@ -344,7 +349,7 @@ def gravar(cli, chave, linhas_mudadas, estado, resumos, abertos):
     L = [dict(_linha_banco(l), atualizado_em=agora) for l in unicas.values()]
     chaves = {k for x in L for k in x}
     L = [{k: x.get(k) for k in chaves} for x in L]
-    novas = ("campos", "etapa", "entrou", "respondeu", "disparo")                  # SQL 35: sem ele, grava sem essas colunas (e sem os "adicionados")
+    novas = ("campos", "etapa", "entrou", "respondeu", "disparo", "perda_auto")                  # SQL 35: sem ele, grava sem essas colunas (e sem os "adicionados")
     sem35 = False
     for i in range(0, len(L), 500):
         r = cli.post(f"{url}/funil_leads?on_conflict=id", headers=H, json=L[i:i + 500])
@@ -402,7 +407,11 @@ def atualizar_campos(banco, leads, users) -> list:
         if x is None:
             x = linha_minima(l, users)
         else:
+            lr = ((l.get("_embedded") or {}).get("loss_reason") or [{}])
+            m_etapa = lr[0].get("name") if lr and isinstance(lr[0], dict) else None
+            perd = l.get("status_id") == PERDIDA and not x.get("d_comprou")
             x = dict(x, campos=campos_do_lead(l), etapa=etapa_do_lead(l), entrou=x.get("entrou", True) is not False,
+                     perda_auto=(not m_etapa and bool(_valor_campo(l, C_MOTIVO))) if perd else None,
                      **dict(zip(("respondeu", "disparo"), disparo_do_lead(l))))
         banco[l["id"]] = x
         mudou.append(x)
