@@ -508,7 +508,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   HMAC com a chave do robô, para cruzar com o Movere). 1ª rodada = últimos 4 meses; cada rodada seguinte lê os leads ATUALIZADOS
   desde a última (`filter[updated_at]`) + marcações novas + vendas/cotações dos últimos 10 dias (Analytics + API) e volta
   **2 meses** no histórico (`MESES_POR_RODADA`) até `INICIO_HIST` (01/2025). Estado em `funil_estado` (`carga_desde`,
-  `ultima_rodada`). Datas juntadas pela mais antiga (`juntar`). **Entrou** = "1 - Contato Inicial", alguma etapa, ou aberto/ganho;
+  `ultima_rodada`). Datas juntadas pela mais antiga (`juntar`). **Entrou** = "1 - Contato Inicial", alguma etapa, ou aberto/ganho (conferido 28/11/2026 com o filtro do TI no Kommo "Trackeamento ·
+  1 - Contato Inicial: Sim", nov: Kommo 11.179 × robô 11.221, 99,2% têm o Contato Inicial; o cartão "Entraram" mostra "no Kommo N (Contato
+  Inicial) · N fora da conta");
   **"Disparo sem sucesso"** fica fora (disparo que terminou em venda perdida). Períodos: mês, 30d, 90d, ano, ano passado, tudo.
 - Contas em **`funil_calculo.py`** + **`funil_estatistica.py`** (sem bibliotecas): funil e gargalo; tempo (mediana principal, média,
   Q1–Q3, P90, outliers 1,5×IQR, histograma, boxplot); velocidade = oportunidades × conversão × ticket ÷ ciclo; aging (parado acima
