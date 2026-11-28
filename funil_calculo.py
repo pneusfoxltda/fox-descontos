@@ -236,11 +236,14 @@ def resumo(leads, hoje, desde, ate=None):
         ab = sum(1 for l in abertos if (l.get("operadora") or "(sem operadora)") == op)
         x["velocidade"] = fe.velocidade(ab, x["conversao"] or 0, x["ticket"] or 0, max(x["tempo_mediano"] or 0, 1)) if x["comprou"] else 0
         x["abertos"] = ab
-    motivos = {}
+    motivos, motivos_equipe, motivos_auto = {}, {}, {}
     for l in base:
         if l.get("perdido") and not l.get("d_comprou"):
             m = (l.get("motivo") or "Sem motivo").strip()
             motivos[m] = motivos.get(m, 0) + 1
+            alvo = motivos_auto if l.get("perda_auto") else motivos_equipe if l.get("perda_auto") is False else None
+            if alvo is not None:
+                alvo[m] = alvo.get(m, 0) + 1
     origens = {}
     for l in base:
         o = l.get("origem") or "(sem origem)"
@@ -256,6 +259,8 @@ def resumo(leads, hoje, desde, ate=None):
     return {"desde": desde.isoformat(), "ate": (ate or hoje).isoformat(), "total_leads": len(todos), "fora_da_conta": fora,
             "funil": f, "tempos": tempos(base), "operadoras": ops, "media_equipe": media,
             "velocidade": vel, "motivos_perda": dict(sorted(motivos.items(), key=lambda kv: -kv[1])),
+            "motivos_equipe": dict(sorted(motivos_equipe.items(), key=lambda kv: -kv[1])),
+            "motivos_auto": dict(sorted(motivos_auto.items(), key=lambda kv: -kv[1])),
             "origens": origens, "fontes_compra": fontes, "sobrevivencia": sobrevivencia(base, hoje)}
 
 
@@ -279,9 +284,60 @@ def previsao_mes(leads, hoje, modelo, ticket):
             "minimo": round(max(vendido, meio - margem), 2), "maximo": round(meio + margem, 2), "dias_restantes": resta}
 
 
+def disparos(L, c):
+    """Disparo noturno (TI, 28/11/2026): quem recebeu (campo 5), se respondeu e o que respondeu (campo "Disparo"),
+    e quantos de cada resposta cotaram, agendaram e compraram (VENDA GANHA e Movere)."""
+    rec = [l for l in L if "5" in c(l)]
+    def bloco(xs):
+        return {"n": len(xs), "cotou": sum(1 for l in xs if "2" in c(l)), "agendou": sum(1 for l in xs if c(l) & {"6", "7"}),
+                "ganha": sum(1 for l in xs if l.get("etapa") == "ganha"), "comprou_real": sum(1 for l in xs if l.get("d_comprou"))}
+    grupos = lambda chave: {k: bloco([l for l in rec if (l.get(chave) or "(vazio)") == k])
+                            for k in sorted({l.get(chave) or "(vazio)" for l in rec})}
+    return {"recebeu": bloco(rec), "nao_recebeu": bloco([l for l in L if "1" in c(l) and "5" not in c(l)]),
+            "respondeu": grupos("respondeu"), "resposta": grupos("disparo")}
+
+
+def pelo_kommo(todos, desde, ate=None):
+    """Contas como os filtros do Kommo (campos do Trackeamento AGORA = Sim), pedido do TI 28/11/2026.
+    todos = todos os leads do Funil Principal sem disparo (inclusive os que nunca tiveram Contato Inicial)."""
+    L = [l for l in todos if l.get("d_entrou") and l["d_entrou"] >= desde and (ate is None or l["d_entrou"] <= ate)]
+    if not any(l.get("campos") is not None for l in L):
+        return None                                   # antes do SQL 35 / da 1ª rodada que lê os campos
+    c = lambda l: set(l.get("campos") or [])
+    ci = [l for l in L if "1" in c(l)]
+    sem = [l for l in L if "1" not in c(l)]
+    n = lambda xs, f: sum(1 for l in xs if f(l))
+    return {"alguma_forma": len(L), "contato": len(ci), "sem_contato": len(sem),
+            # Cotou = "2 - Fez cotação: Sim" (filtro do TI no Kommo, 28/11/2026: nov 7.212); o 3 (IA) aparece à parte
+            "cotou": n(ci, lambda l: "2" in c(l)), "cotou_ia": n(ci, lambda l: "3" in c(l)),
+            "cotou_ia_e_2": n(ci, lambda l: {"2", "3"} <= c(l)), "so_cotacao_ia": n(ci, lambda l: "3" in c(l) and "2" not in c(l)),
+            "cotou_sem_ia": n(ci, lambda l: "2" in c(l) and "3" not in c(l)),     # cotou sem passar pela IA (a equipe fez)
+            "cotou_sem_contato": n(sem, lambda l: c(l) & {"2", "3"}), "negociou": n(ci, lambda l: "4" in c(l)),
+            "recuperacao": n(L, lambda l: "5" in c(l)), "recuperacao_comprou": n(L, lambda l: "5" in c(l) and l.get("d_comprou")),
+            "ag_ia": n(ci, lambda l: "6" in c(l)), "ag_equipe": n(ci, lambda l: "7" in c(l)),
+            "ag_ia_e_equipe": n(ci, lambda l: {"6", "7"} <= c(l)), "ag_so_ia": n(ci, lambda l: "6" in c(l) and "7" not in c(l)),
+            "ag_so_equipe": n(ci, lambda l: "7" in c(l) and "6" not in c(l)), "agendou": n(ci, lambda l: c(l) & {"6", "7"}),
+            "venda_ganha": n(ci, lambda l: l.get("etapa") == "ganha"), "venda_perdida": n(ci, lambda l: l.get("etapa") == "perdida"),
+            "comprou_real": n(ci, lambda l: l.get("d_comprou")),
+            # dentro dos agendados confirmados (IA + equipe), como no Kommo do TI: 1632 → VENDA GANHA 462 · venda perdida 820
+            "ag_conf_ganha": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("etapa") == "ganha"),
+            "ag_conf_perdida": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("etapa") == "perdida"),
+            "ag_conf_comprou_real": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("d_comprou")),
+            # caminho completo (TI): Contato Inicial + Fez cotação (2) + Agendamento IA (6)
+            "caminho_cot_agia": n(ci, lambda l: {"2", "6"} <= c(l)),
+            "caminho_cot_agia_ganha": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "ganha"),
+            "caminho_cot_agia_perdida": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "perdida"),
+            "disparo": disparos(L, c),
+                        "agendou_ganha": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "ganha"),
+            "agendou_perdida": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "perdida")}
+
+
 def montar(leads, hoje, inicio_hist=None):
     """Tudo para o banco: {periodo: resumo} + lista de abertos (aging + scoring) + modelo + previsão + alertas.
-    Períodos: mês, 30 e 90 dias, este ano, o ano passado (quando houver dados) e desde o início da carga."""
+    Períodos: mês, 30 e 90 dias, este ano, o ano passado (quando houver dados) e desde o início da carga.
+    Leads com entrou = False (sem Contato Inicial nem etapa: "adicionados") só entram no quadro "Pelo Kommo"."""
+    todos_kommo = leads
+    leads = [l for l in leads if l.get("entrou") is not False]
     periodos = {"mes": (hoje.replace(day=1), None), "30d": (hoje - timedelta(days=30), None), "90d": (hoje - timedelta(days=90), None),
                 "ano": (date(hoje.year, 1, 1), None)}
     primeiro = min((l["d_entrou"] for l in leads if l.get("d_entrou")), default=hoje)
@@ -289,6 +345,8 @@ def montar(leads, hoje, inicio_hist=None):
         periodos[str(hoje.year - 1)] = (max(date(hoje.year - 1, 1, 1), primeiro), date(hoje.year - 1, 12, 31))
     periodos["tudo"] = (primeiro, None)
     resumos = {p: resumo(leads, hoje, d, a) for p, (d, a) in periodos.items()}
+    for p, (d, a) in periodos.items():
+        resumos[p]["kommo"] = pelo_kommo(todos_kommo, d, a)
     base90 = [l for l in leads if l["d_entrou"] >= periodos["90d"][0] and not fora_da_conta(l)]
     modelo = lead_scoring([l for l in leads if not fora_da_conta(l)], hoje)
     p75 = tempo_na_etapa_historico(base90)

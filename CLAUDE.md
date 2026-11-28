@@ -516,6 +516,19 @@ vendas para o televendas; `apps-script/` tem o do painel).
   30 clientes ou intervalo cruzando a média); diagnóstico (etapa em que cada uma mais perde); Kaplan-Meier; controle semanal (média ±
   2 desvios); lead scoring (regressão logística, AUC nos 20% mais recentes); previsão do mês (vendido + Σ chance × ticket, faixa 95%);
   alertas; leitura estruturada no fim. `window.FE_FUNIL` para a Fernanda.
+- **📋 Pelo Kommo (Trackeamento)** (TI, 28/11/2026; SQL **`35_funil_campos_kommo.sql`**: `funil_leads.campos` text[] com os campos "Sim"
+  AGORA '1'..'7', `etapa` aberto/ganha/perdida, `entrou` false = "adicionado" sem Contato Inicial nem etapa, guardado só para este quadro):
+  `pelo_kommo` no funil_calculo, igual aos filtros do TI no Kommo. Significado (TI): 1 Contato Inicial = entrou · 2 Fez cotação = equipe ·
+  3 Cotação criada pela IA = a IA fez o orçamento · 4 Negociação · 5 Recuperação Inicial = passou pela etapa "8 - Disparo Noturno (Cotação)" e recebeu a mensagem das 19h30 (o Kommo marca sozinho ao entrar na etapa; não quer dizer que respondeu) · 6 Agendamento IA = a IA
+  sozinha agendou · 7 Agendamento = a equipe agendou ou conferiu o da IA (IA confirmada = 6 e 7). Nov/2026 no Kommo: alguma forma 16.073 ·
+  Contato 11.136 · cotou (só o campo 2 "Fez cotação", o geral) 7.212 · cotação da IA (campo 3) 7.102 (a diferença = cotou sem passar pela IA) · sem Contato e cotou 71 · adicionados 4.937 · Agend. IA 1.758 · Agend. 1.828 · os dois 1.632 (VENDA GANHA 462 ·
+  perdida 820). A 1ª rodada com o SQL 35 relê os cartões só para os campos (`campos_desde` em `funil_estado`).
+  **🌙 Disparo noturno** (mesmo SQL 35: `respondeu`, `disparo` = grupo "Disparos" do Kommo, campos "Respondeu" e "Disparo" id 777920 com 9
+  opções: Sucesso no disparo, Não tem interesse, Não respondeu 48h, Falha no envio, Outras respostas, Oferta 5 anos, Avaliação, Resgate, Já recebeu
+  tentativa de resgate): recebeu (campo 5) × não recebeu, por resposta → cotou, agendou, VENDA GANHA e compra no Movere (`disparos` no funil_calculo).
+  **Perda pela equipe × automática** (SQL 35 `perda_auto`, TI 28/11/2026): motivo na etapa "venda perdida" (loss_reason) = a equipe marcou;
+  motivo só no campo "Motivo de perda" (783662) = o Kommo perdeu sozinho (ex.: Não respondeu, Não respondeu as tentativas, Agendou e não foi
+  na loja, Cotação: Pendente de encerramento). "Por que perdemos" mostra as duas tabelas (`motivos_equipe` / `motivos_auto`).
 - SQL **`33_funil_televendas.sql`**: `funil_resumo` (jsonb por período mes/30d/90d) e `funil_abertos` (lead_id do Kommo, sem nome nem
   telefone); lê quem tem `ve_funil()`. Testes: `python tests/test_funil_estatistica.py` e `python tests/test_funil_calculo.py`.
 

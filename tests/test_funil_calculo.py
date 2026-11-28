@@ -74,6 +74,31 @@ def t_montar_completo():
     import json; json.dumps(res)                                    # tudo cabe no banco (jsonb)
 
 
+def t_pelo_kommo():
+    d = date(2026, 11, 5)
+    L = [{"id": 1, "d_entrou": d, "campos": ["1", "2"], "etapa": "aberto"},
+         {"id": 2, "d_entrou": d, "campos": ["1", "3", "6", "7"], "etapa": "ganha", "d_comprou": d},
+         {"id": 3, "d_entrou": d, "campos": ["1", "6"], "etapa": "perdida"},
+         {"id": 4, "d_entrou": d, "campos": ["1", "7"], "etapa": "aberto"},
+         {"id": 5, "d_entrou": d, "campos": ["2"], "etapa": "aberto", "entrou": True},
+         {"id": 6, "d_entrou": d, "campos": [], "etapa": "perdida", "entrou": False},
+         {"id": 7, "d_entrou": date(2026, 10, 1), "campos": ["1"], "etapa": "aberto"}]
+    k = fc.pelo_kommo(L, date(2026, 11, 1))
+    assert k["alguma_forma"] == 6 and k["contato"] == 4 and k["sem_contato"] == 2 and k["cotou"] == 1 and k["cotou_ia"] == 1 and k["so_cotacao_ia"] == 1 and k["cotou_sem_ia"] == 1 and k["cotou_sem_contato"] == 1
+    assert k["ag_ia"] == 2 and k["ag_equipe"] == 2 and k["ag_ia_e_equipe"] == 1 and k["ag_so_ia"] == 1 and k["ag_so_equipe"] == 1 and k["agendou"] == 3
+    assert k["ag_conf_ganha"] == 1 and k["ag_conf_perdida"] == 0 and k["venda_perdida"] == 1 and k["agendou_perdida"] == 1
+    assert k["caminho_cot_agia"] == 0
+    L2 = [{"id": 1, "d_entrou": d, "campos": ["1", "5", "2"], "etapa": "ganha", "respondeu": "Sim", "disparo": "Sucesso no disparo", "d_comprou": d},
+          {"id": 2, "d_entrou": d, "campos": ["1", "5"], "etapa": "aberto", "respondeu": "Não", "disparo": "Não respondeu 48h no disparo"},
+          {"id": 3, "d_entrou": d, "campos": ["1"], "etapa": "aberto"}]
+    D = fc.pelo_kommo(L2, date(2026, 11, 1))["disparo"]
+    assert D["recebeu"]["n"] == 2 and D["recebeu"]["comprou_real"] == 1 and D["nao_recebeu"]["n"] == 1
+    assert D["resposta"]["Sucesso no disparo"]["ganha"] == 1 and D["respondeu"]["Não"]["n"] == 1
+    assert fc.pelo_kommo([{"id": 1, "d_entrou": d}], date(2026, 11, 1)) is None
+    r, _ = fc.montar(L, date(2026, 11, 28))
+    assert r["mes"]["kommo"]["contato"] == 4 and r["mes"]["total_leads"] == 5     # o "adicionado" (entrou False) fica fora do funil
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):

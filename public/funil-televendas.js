@@ -141,9 +141,47 @@
       <div class="ft-k"><span>Compraram</span><b>${num(f.etapas.comprou)}</b><small>conversão ${pct(f.geral, 1)}</small></div>
       <div class="ft-k"><span>Velocidade</span><b>${v.por_dia != null ? brl(v.por_dia) : ""}</b><small>por dia no funil</small></div>
       <div class="ft-k"><span>Previsão do mês</span><b>${brl(prev.previsao)}</b><small>${brl(prev.minimo)} a ${brl(prev.maximo)}</small></div></div>`;
+    // Pelo Kommo (Trackeamento): os mesmos números dos filtros do Kommo (campos = Sim agora), pedido do TI 28/11/2026
+    const K = r.kommo;
+    if (K && !sel) {
+      const pc = (a, b) => b ? ` <i style="color:#64748b;font-style:normal">(${pct(a / b)})</i>` : "";
+      const lin = (n, v, sub) => `<tr><td style="text-align:left">${n}</td><td><b>${num(v)}</b></td><td style="text-align:left;color:#64748b">${sub || ""}</td></tr>`;
+      h += sec("📋 Pelo Kommo (Trackeamento)", "Como os filtros do Kommo: campos do cartão marcados como Sim agora, nos cartões criados no período (Funil Principal, sem disparos). Bate com o que a equipe vê no Kommo.",
+        `<div class="ft-tw"><table><tr><th style="text-align:left">No Kommo</th><th>Cartões</th><th style="text-align:left">Detalhe</th></tr>` +
+        lin("Entrou no Kommo de alguma forma", K.alguma_forma, "todos os cartões criados") +
+        lin("1 · Entrou (Contato Inicial)", K.contato, `${num(K.sem_contato)} adicionados sem Contato Inicial`) +
+        lin("2 · Fez cotação", K.cotou, `${pc(K.cotou, K.contato).trim()} dos que entraram · cotou sem Contato Inicial: ${num(K.cotou_sem_contato)}`) +
+        lin("&nbsp;&nbsp;3 · Cotação criada pela IA", K.cotou_ia, `orçamento que a IA fez${pc(K.cotou_ia, K.cotou)}${K.so_cotacao_ia ? ` · ${num(K.so_cotacao_ia)} sem o "Fez cotação"` : ""}`) +
+        lin("&nbsp;&nbsp;Cotou sem passar pela IA", K.cotou_sem_ia, "a equipe fez o orçamento (Fez cotação sem o campo da IA)") +
+        lin("4 · Negociou", K.negociou, "") +
+        lin("6/7 · Agendou (IA ou equipe)", K.agendou, `só IA ${num(K.ag_so_ia)} · IA confirmado pela equipe ${num(K.ag_ia_e_equipe)} · só equipe ${num(K.ag_so_equipe)}`) +
+        lin("&nbsp;&nbsp;Agendamento IA (campo 6)", K.ag_ia, "") +
+        lin("&nbsp;&nbsp;Agendamento (campo 7)", K.ag_equipe, "") +
+        lin("&nbsp;&nbsp;IA + Agendamento (os dois)", K.ag_ia_e_equipe, `VENDA GANHA ${num(K.ag_conf_ganha)} · venda perdida ${num(K.ag_conf_perdida)} · comprou no Movere ${num(K.ag_conf_comprou_real)}`) +
+        lin("Contato Inicial + Fez cotação + Agendamento IA", K.caminho_cot_agia, `VENDA GANHA ${num(K.caminho_cot_agia_ganha)} · venda perdida ${num(K.caminho_cot_agia_perdida)}`) +
+                lin("🟢 VENDA GANHA (etapa)", K.venda_ganha, `com o Movere (nota ou O.S.): ${num(K.comprou_real)} compraram`) +
+        lin("🔴 venda perdida (etapa)", K.venda_perdida, "") +
+        lin("5 · Recuperação Inicial (disparo noturno)", K.recuperacao, `passou pela etapa Disparo Noturno e recebeu a mensagem das 19h30 · ${num(K.recuperacao_comprou)} compraram depois`) +
+        `</table></div>`);
+      const D = K.disparo;
+      if (D && D.recebeu && D.recebeu.n) {
+        const tx = (a, b) => b ? pct(a / b, 1) : "";
+        const lin2 = (nome, x) => `<tr><td style="text-align:left">${E(nome)}</td><td><b>${num(x.n)}</b></td><td>${num(x.cotou)}</td><td>${num(x.agendou)} <i style="color:#64748b;font-style:normal">${tx(x.agendou, x.n)}</i></td><td>${num(x.ganha)}</td><td>${num(x.comprou_real)} <i style="color:#64748b;font-style:normal">${tx(x.comprou_real, x.n)}</i></td></tr>`;
+        const cab = `<tr><th style="text-align:left"></th><th>Clientes</th><th>Fez cotação</th><th>Agendou</th><th>VENDA GANHA</th><th>Comprou (Movere)</th></tr>`;
+        h += sec("🌙 Disparo noturno (19h30)", "Quem passou pela etapa Disparo Noturno (campo 5) comparado com quem não passou, e o que cada um respondeu (grupo Disparos do Kommo: campos Respondeu e Disparo).",
+          `<div class="ft-tw"><table>${cab}${lin2("Recebeu a mensagem", D.recebeu)}${lin2("Não recebeu (com Contato Inicial)", D.nao_recebeu)}</table></div>` +
+          `<h4 style="margin:12px 0 6px">Respondeu?</h4><div class="ft-tw"><table>${cab}${Object.entries(D.respondeu || {}).sort((a, b) => b[1].n - a[1].n).map(([k, x]) => lin2(k, x)).join("")}</table></div>` +
+          `<h4 style="margin:12px 0 6px">O que respondeu (campo Disparo)</h4><div class="ft-tw"><table>${cab}${Object.entries(D.resposta || {}).sort((a, b) => b[1].n - a[1].n).map(([k, x]) => lin2(k, x)).join("")}</table></div>`);
+      }
+    }
     h += `<div class="ft-2">` + sec("1. Funil de vendas" + (sel ? " · " + E(operadora) : ""), "Quem comprou conta como tendo passado pelas etapas anteriores. Em vermelho, o gargalo (a passagem com a menor conversão).", barrasFunil(f))
       + sec("Por que perdemos", "Motivo da venda perdida (Kommo). Fora da conta (não eram oportunidade): " + Object.entries(r.fora_da_conta || {}).map(([k, n]) => E(k) + " " + num(n)).join(" · "),
-        `<div class="ft-tw"><table><tr><th>Motivo</th><th>Clientes</th></tr>${Object.entries(r.motivos_perda || {}).slice(0, 12).map(([k, n]) => `<tr><td style="text-align:left">${E(k)}</td><td>${num(n)}</td></tr>`).join("")}</table></div>`) + `</div>`;
+        (() => {
+          const tab = (o, tit) => `<div class="ft-tw"><table><tr><th style="text-align:left">${tit}</th><th>Clientes</th></tr>${Object.entries(o || {}).slice(0, 12).map(([k, n]) => `<tr><td style="text-align:left">${E(k)}</td><td>${num(n)}</td></tr>`).join("")}</table></div>`;
+          const tE = Object.values(r.motivos_equipe || {}).reduce((a, b) => a + b, 0), tA = Object.values(r.motivos_auto || {}).reduce((a, b) => a + b, 0);
+          return (tE || tA) ? tab(r.motivos_equipe, `👤 Perdida pela equipe (motivo da etapa) · ${num(tE)}`) + `<div style="height:10px"></div>` + tab(r.motivos_auto, `🤖 Perdida automática (campo Motivo de perda) · ${num(tA)}`)
+                            : tab(r.motivos_perda, "Motivo");
+        })()) + `</div>`;
     // Ranking justo + diagnóstico
     h += sec("2. Desempenho das operadoras (ranking justo)", "z-score da conversão em relação à equipe e intervalo de confiança de 95% (Wilson). Com menos de 30 clientes ou quando o intervalo cruza a média da equipe (" + pct(r.media_equipe, 1) + "), a diferença pode ser sorte: fica \"inconclusivo\".",
       `<div class="ft-tw"><table><tr><th>Operadora</th><th>Clientes</th><th>Cotou</th><th>Agendou</th><th>Comprou</th><th>Conversão (IC 95%)</th><th>Entrou→Cotou</th><th>Cotou→Agendou</th><th>Agendou→Comprou</th><th>Receita</th><th>Ticket</th><th>Tempo mediano</th><th>z</th><th>Situação</th><th>Onde mais perde</th></tr>` +
