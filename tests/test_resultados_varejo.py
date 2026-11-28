@@ -84,6 +84,21 @@ def t_situacao_amarelo_e_vermelho():
     assert rv.situacao(dict(base, hoje={"lojas": [], "vend": []}), "completo", 19)[0] is False   # nada veio
 
 
+
+def t_separar_por_loja():
+    r = {"estabelecimentos": [{"cod": "1", "venda": 300.0, "vendas": 3, "itens": 5.0, "ticket": 100.0},
+                              {"cod": "5", "venda": 50.0, "vendas": 1, "itens": 1.0, "ticket": 50.0},
+                              {"cod": "999", "venda": 9.0, "vendas": 1, "itens": 1.0, "ticket": 9.0}],
+         "vendedores": [{"cod": "10", "nome": "ANA", "venda": 200.0, "vendas": 2, "itens": 3.0, "ticket": 100.0},
+                        {"cod": "11", "nome": "BIA", "venda": 100.0, "vendas": 1, "itens": 2.0, "ticket": 100.0},
+                        {"cod": "20", "nome": "CAIO", "venda": 50.0, "vendas": 1, "itens": 1.0, "ticket": 50.0}]}
+    s = rv.separar_por_loja(r, {"10": "MATRIZ", "11": "MATRIZ"})          # CAIO (20) não está no mapa
+    assert set(s) == {"MATRIZ", "JI-PARANA"}
+    lj, vd, bate = s["MATRIZ"]
+    assert bate and lj["venda"] == 300.0 and lj["clientes"] == 3 and [v["cod"] for v in vd] == ["10", "11"] and vd[0]["loja"] == "MATRIZ"
+    assert s["JI-PARANA"][2] is False                                     # não bate: a loja é lida sozinha
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):

@@ -136,8 +136,29 @@ def situacao(res: dict, modo: str, hora: int) -> tuple:
     return (veio > 0 or (modo == "hoje" and hora < 10)) and len(probs) <= 2, probs
 
 
-async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
-    """ao_ler(periodo, lj, vd) é chamado assim que cada loja chega (grava na hora)."""
+def separar_por_loja(r: dict, mapa: dict) -> dict:
+    """Relatório da 553 com as 8 lojas juntas → {loja: (linha da loja, vendedores, bate)}.
+    O total de cada loja vem do quadro "Resumo por Estabelecimento"; os vendedores vão para a loja do retrato do mês
+    (mapa = {cod do vendedor: loja}). bate = a soma dos vendedores dá o total da loja (senão, a loja é lida sozinha)."""
+    from varejo_filtros import LOJAS_VAREJO
+    vend = linhas_vendedores(r, "")
+    out = {}
+    for e in r.get("estabelecimentos") or []:
+        loja = LOJAS_VAREJO.get(str(e.get("cod")).strip())
+        if not loja:
+            continue
+        lj = {"loja": loja, "cod": int(str(e["cod"]).strip()), "venda": _n(e["venda"]), "clientes": int(e["vendas"] or 0),
+              "itens": _n(e["itens"]), "ticket": _n(e["ticket"])}
+        vd = [dict(v, loja=loja) for v in vend if mapa.get(v["cod"]) == loja]
+        bate = abs(round(sum(v["venda"] for v in vd), 2) - lj["venda"]) < 0.05 and abs(sum(v["itens"] for v in vd) - lj["itens"]) < 0.01
+        out[loja] = (lj, vd, bate)
+    return out
+
+
+async def ler_553(hoje: date, modo: str = "completo", ao_ler=None, mapa=None) -> dict:
+    """ao_ler(periodo, lj, vd) é chamado assim que cada loja chega (grava na hora).
+    No modo "hoje", com o mapa dos vendedores (retrato do mês), lê as 8 lojas num relatório só (e os pneus em outro):
+    ≈ 2 relatórios em vez de 16 (cada relatório leva ≈ 45 s só para marcar os filtros). Loja que não bate é lida sozinha."""
     from playwright.async_api import async_playwright
     from sync_televendas import login
     from varejo_teste import gerar
@@ -204,6 +225,39 @@ async def ler_553(hoje: date, modo: str = "completo", ao_ler=None) -> dict:
             pedidos = [(p, cod, loja) for p in ("mes", "hoje", "pneus") for cod, loja in LOJAS_VAREJO.items()]
         else:
             pedidos = [(p, cod, loja) for cod, loja in LOJAS_VAREJO.items() for p in ("hoje", "pneus_hoje")]
+            if mapa:
+                # Rápido (TI, 28/11/2026): as 8 lojas juntas num relatório; só as que não baterem vão loja por loja
+                faltam = []
+                for tipo, fam in (("hoje", FAMILIAS_VAREJO), ("pneus_hoje", FAMILIAS_PNEUS)):
+                    print(f"▶ {tipo} · 8 lojas juntas")
+                    try:
+                        r = await gerar(page, fim, fim, TABELAS_VAREJO, fam, list(LOJAS_VAREJO.values()), espera_max=90)
+                    except Exception as e:
+                        r = {"erro": type(e).__name__}
+                    sep = separar_por_loja(r, mapa) if r and "erro" not in r else {}
+                    for cod, loja in LOJAS_VAREJO.items():
+                        x = sep.get(loja)
+                        if not x or not x[2]:
+                            faltam.append((tipo, cod, loja))
+                            continue
+                        lj, vd, _ = x
+                        if tipo == "hoje":
+                            for o in [lj] + vd:
+                                o["pneus"] = o["pneus_vendas"] = None
+                            res["hoje"]["lojas"].append(lj); res["hoje"]["vend"].extend(vd)
+                            if ao_ler:
+                                ao_ler("hoje", lj, vd)
+                        else:
+                            if not any(l["loja"] == loja for l in res["hoje"]["lojas"]):
+                                faltam.append((tipo, cod, loja))
+                                continue
+                            juntar_pneus(res["hoje"], loja, lj, vd)
+                            if ao_ler:
+                                ao_ler("hoje", next(l for l in res["hoje"]["lojas"] if l["loja"] == loja),
+                                       [v for v in res["hoje"]["vend"] if v["loja"] == loja])
+                    print(f"   juntas: {sum(1 for x in sep.values() if x[2])} de 8 lojas batendo")
+                res["juntas"] = 16 - len(faltam)
+                pedidos = faltam
         di_de = {"mes": ini, "hoje": fim, "pneus": ini, "pneus_hoje": fim}
         fam_de = {"mes": FAMILIAS_VAREJO, "hoje": FAMILIAS_VAREJO, "pneus": FAMILIAS_PNEUS, "pneus_hoje": FAMILIAS_PNEUS}
         falhou = []
@@ -322,6 +376,24 @@ def registrar(chave, ok: bool, msg: str, detalhes: dict, inicio: datetime):
         print(f"⚠️ Não consegui registrar a rodada: {type(e).__name__}")
 
 
+def mapa_vendedores(chave, hoje: date) -> dict:
+    """{cod do vendedor: loja} pelo retrato do mês (só quem aparece em UMA loja). Sem banco: {} (lê loja por loja)."""
+    if not chave:
+        return {}
+    try:
+        with httpx.Client(timeout=30) as cli:
+            r = cli.get(f"{cv.SUPABASE_URL}/rest/v1/varejo_vendedores?select=cod,loja&mes=eq.{hoje.replace(day=1).isoformat()}"
+                        f"&periodo=eq.mes", headers=cv._sb_headers(chave))
+            r.raise_for_status()
+            lojas = {}
+            for x in r.json():
+                lojas.setdefault(str(x["cod"]).strip(), set()).add(x["loja"])
+            return {c: next(iter(l)) for c, l in lojas.items() if len(l) == 1}
+    except Exception as e:
+        print(f"⚠️ Sem o mapa dos vendedores ({type(e).__name__}): lê loja por loja")
+        return {}
+
+
 def ultimo_retrato_mes(chave, hoje: date):
     """Dia do último retrato do mês (rodada completa) no banco, ou None."""
     if not chave:
@@ -363,7 +435,7 @@ def main() -> int:
 
     conf, aviso = {}, ""
     try:
-        res = asyncio.run(ler_553(hoje, modo, ao_ler))
+        res = asyncio.run(ler_553(hoje, modo, ao_ler, mapa_vendedores(chave, hoje) if modo == "hoje" else None))
         if modo == "completo" and hoje.day > 1 and len(res["mes"]["lojas"]) == 8 and len(res["hoje"]["lojas"]) == 8:
             try:
                 analytics, revenda = ler_analytics(hoje)
@@ -388,6 +460,7 @@ def main() -> int:
         ok, probs = False, probs + ["não gravou: " + ", ".join(falhas_gravar) + " (rodou o SQL 26?)"]
     detalhes = {"modo": modo, "lojas_mes": len(res["mes"]["lojas"]), "lojas_hoje": len(res["hoje"]["lojas"]),
                 "vendedores_mes": len(res["mes"]["vend"]), "repescados": res["repescados"], "sem_hoje": res["sem_hoje"],
+                "juntas": res.get("juntas"),
                 "erros": probs[:20], "lojas_com_diferenca": sum(1 for c in conf.values() if abs(c["diferenca"]) >= 0.05)}
     print("Resumo:", {k: v for k, v in detalhes.items() if k not in ("erros", "sem_hoje")},
           f"· sem relatório hoje: {len(res['sem_hoje'])} · problemas: {len(probs)}")
