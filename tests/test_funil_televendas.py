@@ -63,6 +63,19 @@ def t_cotacao_virou_os_e_venda():
     assert j["cotacoes"] == ["24", "25"] and j["d_comprou"] == date(2026, 11, 5) and j["compra_fonte"] == "os" and j["valor_compra"] == 1200.0
 
 
+
+def t_campos_do_lead():
+    l = {"status_id": 142, "custom_fields_values": [
+        {"field_name": "1 - Contato Inicial", "values": [{"value": True}]},
+        {"field_name": "3 - Cotação criada pela IA", "values": [{"value": "1"}]},
+        {"field_name": "5 - Recuperação Inicial", "values": [{"value": False}]},
+        {"field_name": "6 - Agendamento IA", "values": [{"value": True}]},
+        {"field_name": "1ª Venda", "values": [{"value": 1764000000}]}]}
+    assert ft.campos_do_lead(l) == ["1", "3", "6"] and ft.etapa_do_lead(l) == "ganha"
+    m = ft.linha_minima(dict(l, id=9, created_at=1764000000), {})
+    assert m["entrou"] is False and m["campos"] == ["1", "3", "6"]
+
+
 if __name__ == "__main__":
     n = 0
     for nome, f in list(globals().items()):

@@ -149,6 +149,24 @@ def codigo_tel(k8: str, sal: bytes) -> str:
     return hmac.new(sal, k8.encode(), hashlib.sha256).hexdigest()[:24]
 
 
+def campos_do_lead(lead) -> list:
+    """Campos do Trackeamento que estão 'Sim' AGORA no cartão: '1' Contato Inicial … '7' Agendamento (SQL 35).
+    Pelo nome "N - ..." (o 5 - Recuperação Inicial não tem id fixo no código)."""
+    out = set()
+    for f in lead.get("custom_fields_values") or []:
+        nome = str(f.get("field_name") or "").strip()
+        if len(nome) > 4 and nome[0] in "1234567" and nome[1:4] == " - ":
+            v = (f.get("values") or [{}])[0].get("value")
+            if v is True or str(v).lower() in ("1", "true", "sim"):
+                out.add(nome[0])
+    return sorted(out)
+
+
+def etapa_do_lead(lead) -> str:
+    st = lead.get("status_id")
+    return "ganha" if st == GANHA else "perdida" if st == PERDIDA else "aberto"
+
+
 def entrou_de_verdade(lead, m) -> bool:
     """Conversou de verdade: "1 - Contato Inicial", alguma etapa, ou ainda aberto/ganho."""
     return bool(_valor_campo(lead, C_CONTATO) or m or lead.get("status_id") != PERDIDA)
@@ -309,8 +327,20 @@ def gravar(cli, chave, linhas_mudadas, estado, resumos, abertos):
     L = [dict(_linha_banco(l), atualizado_em=agora) for l in unicas.values()]
     chaves = {k for x in L for k in x}
     L = [{k: x.get(k) for k in chaves} for x in L]
+    novas = ("campos", "etapa", "entrou")                  # SQL 35: sem ele, grava sem essas colunas (e sem os "adicionados")
+    sem35 = False
     for i in range(0, len(L), 500):
-        cli.post(f"{url}/funil_leads?on_conflict=id", headers=H, json=L[i:i + 500]).raise_for_status()
+        r = cli.post(f"{url}/funil_leads?on_conflict=id", headers=H, json=L[i:i + 500])
+        if r.status_code == 400 and any(c in r.text for c in novas):
+            print("⚠️ Falta rodar o SQL 35: gravando sem os campos do Trackeamento")
+            sem35 = True
+            L = [{k: v for k, v in x.items() if k not in novas} for x in L if x.get("entrou") is not False]
+            for j in range(0, len(L), 500):
+                cli.post(f"{url}/funil_leads?on_conflict=id", headers=H, json=L[j:j + 500]).raise_for_status()
+            break
+        r.raise_for_status()
+    if sem35:
+        estado = {k: v for k, v in estado.items() if k != "campos_desde"}   # a leitura dos campos fica para depois do SQL 35
     cli.post(f"{url}/funil_estado?on_conflict=chave", headers=H,
              json=[{"chave": k, "valor": v, "atualizado_em": agora} for k, v in estado.items()]).raise_for_status()
     cli.post(f"{url}/funil_resumo?on_conflict=periodo", headers=H,
@@ -340,6 +370,27 @@ def mes_anterior(d: date, n=1) -> date:
     return d
 
 
+def linha_minima(l, users) -> dict:
+    """Lead que NÃO conta como 'entrou' (adicionado sem Contato Inicial): só o necessário para o quadro 'Pelo Kommo'."""
+    return {"id": l["id"], "operadora": users.get(l.get("responsible_user_id")), "origem": _origem(l), "loja": _valor_campo(l, C_LOJA),
+            "d_entrou": _dia(l.get("created_at")), "entrou": False, "campos": campos_do_lead(l), "etapa": etapa_do_lead(l),
+            "perdido": l.get("status_id") == PERDIDA}
+
+
+def atualizar_campos(banco, leads, users) -> list:
+    """Uma vez só (SQL 35): campos do Trackeamento e etapa dos leads que já estavam no banco + os 'adicionados' que faltavam."""
+    mudou = []
+    for l in leads:
+        x = banco.get(l["id"])
+        if x is None:
+            x = linha_minima(l, users)
+        else:
+            x = dict(x, campos=campos_do_lead(l), etapa=etapa_do_lead(l), entrou=x.get("entrou", True) is not False)
+        banco[l["id"]] = x
+        mudou.append(x)
+    return mudou
+
+
 def processar(k, cli, seg, sal, leads, marc, ini_mov, fim_mov, banco, hoje):
     """Leads do Kommo + Movere → linhas juntas com o banco. Devolve as linhas que mudaram."""
     tel = telefones(k, leads)
@@ -347,12 +398,17 @@ def processar(k, cli, seg, sal, leads, marc, ini_mov, fim_mov, banco, hoje):
     mudou, fora = [], 0
     for l in leads:
         m = marc.get(l["id"], {})
-        if not entrou_de_verdade(l, m) and l["id"] not in banco:
-            fora += 1
+        ok = entrou_de_verdade(l, m) or bool((banco.get(l["id"]) or {}).get("entrou", l["id"] in banco))
+        if not ok:
+            fora += 1                       # "adicionado" (sem Contato Inicial nem etapa): só para o quadro "Pelo Kommo"
+            nova = linha_minima(l, seg["_users"])
+            banco[l["id"]] = dict(banco.get(l["id"]) or {}, **nova)
+            mudou.append(banco[l["id"]])
             continue
         tl = set().union(*[tel.get(c["id"], set()) for c in (l.get("_embedded") or {}).get("contacts") or []] or [set()])
         nova = linha_do_lead(l, seg["_users"], m, tl, cot_tel, vendas)
         nova["tel_hash"] = sorted(codigo_tel(x, sal) for x in tl) or None
+        nova["entrou"], nova["campos"], nova["etapa"] = True, campos_do_lead(l), etapa_do_lead(l)
         j = juntar(banco.get(l["id"]), nova)
         banco[l["id"]] = j
         mudou.append(j)
@@ -432,6 +488,12 @@ def main() -> int:
                 print(f"🔄 Mudaram desde {desde:%d/%m %H:%M}: {len(leads)} leads")
                 mudaram += compras_recentes(cli, seg, sal, banco, hoje)
                 mudaram += aplicar_os(banco, os_das_cotacoes(hoje - timedelta(days=10), hoje))
+                if not estado.get("campos_desde"):
+                    # 1ª rodada com o SQL 35: relê os cartões já carregados só para os campos do Trackeamento (sem Movere)
+                    leads = ler_leads(k, f"filter%5Bcreated_at%5D%5Bfrom%5D={_ts(carga)}")
+                    m = atualizar_campos(banco, leads, seg["_users"])
+                    print(f"🏷️ Campos do Trackeamento lidos em {len(m)} cartões")
+                    mudaram += m
                 if not estado.get("cotacao_os_desde"):
                     # 1ª rodada com o SQL 34: os leads que já estavam no banco ganham as cotações e a regra cotação → O.S.
                     mudaram += preencher_cotacoes(cli, seg, sal, banco, carga - timedelta(days=1), hoje)
@@ -455,10 +517,16 @@ def main() -> int:
             print(f"📊 No banco: {len(linhas)} leads (histórico desde {carga:%m/%Y}) · mudaram {len(mudaram)} · sem conversa (fora) {fora}")
             print(f"📊 Mês: entrou {r['funil']['etapas']['entrou']} · cotou {r['funil']['etapas']['cotou']} · agendou "
                   f"{r['funil']['etapas']['agendou']} · comprou {r['funil']['etapas']['comprou']} · em aberto {len(abertos)}")
+            K = r.get("kommo")
+            if K:
+                print(f"📋 Pelo Kommo (mês): alguma forma {K['alguma_forma']} · Contato Inicial {K['contato']} · cotou {K['cotou']} "
+                      f"(sem Contato {K['cotou_sem_contato']}) · Agend. IA {K['ag_ia']} · Agend. {K['ag_equipe']} · os dois {K['ag_ia_e_equipe']} "
+                      f"(ganha {K['ag_conf_ganha']}, perdida {K['ag_conf_perdida']}) · contato+cotou+IA {K['caminho_cot_agia']}")
             if DRY:
                 print("TESTE: nada foi gravado."); return 0
             gravar(cli, chave, mudaram, {"carga_desde": carga.isoformat(), "ultima_rodada": datetime.now(cv.TZ_LOJA).isoformat(),
-                                         "cotacao_os_desde": estado.get("cotacao_os_desde") or carga.isoformat()},
+                                         "cotacao_os_desde": estado.get("cotacao_os_desde") or carga.isoformat(),
+                                         "campos_desde": estado.get("campos_desde") or carga.isoformat()},
                    resumos, abertos)
         print("✅ Gravado.")
         registrar(chave, True, None, inicio)
