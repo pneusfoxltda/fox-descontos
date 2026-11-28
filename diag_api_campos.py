@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import movere_api as m
 import conferir_vendas_movere as cv
 from varejo_filtros import LOJAS_VAREJO, TABELAS_VAREJO
+from resultados_atacado import da_equipe
 
 from datetime import timedelta
 agora = datetime.now(cv.TZ_LOJA).date()
@@ -36,7 +37,7 @@ with httpx.Client(timeout=120) as cli:
                 if (nf.get("Cancelamento") or {}).get("dtacancelamento"):
                     continue
                 co = nf.get("Comercial") or {}
-                tp = str(co.get("tipopreco") or "(vazio)")
+                tp = "ATACADO_EQUIPE" if da_equipe(co.get("nomevendedor") or "") else "OUTROS"
                 tipos[(tp, desc[:30])] += 1
                 total += 1
                 com_vend += 1 if co.get("nomevendedor") else 0
@@ -54,9 +55,9 @@ with httpx.Client(timeout=120) as cli:
     print("Comparação com a 553 (só %, sem reais): loja · API varejo ÷ 553")
     for loja in LOJAS_VAREJO.values():
         b = banco.get(loja)
-        api_var = sum(v for tp, v in soma[loja].items() if any(t.upper() in tp.upper() or tp.upper() in t.upper() for t in TABELAS_VAREJO))
+        api_var = soma[loja].get("OUTROS", 0.0)
         api_tudo = sum(soma[loja].values())
         if b and b.get("venda"):
-            print(f"   {loja:12} varejo {api_var / b['venda'] * 100:6.1f}% · tudo {api_tudo / b['venda'] * 100:6.1f}% · vendas API {sum(qtd[loja].values())} × 553 {b.get('clientes')}")
+            print(f"   {loja:12} sem a equipe do Atacado {api_var / b['venda'] * 100:6.1f}% · tudo {api_tudo / b['venda'] * 100:6.1f}% · vendas API {qtd[loja].get('OUTROS', 0)} × 553 {b.get('clientes')}")
         else:
             print(f"   {loja:12} (sem 553 de hoje no banco)")
