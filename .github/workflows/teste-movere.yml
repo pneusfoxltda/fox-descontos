@@ -18,9 +18,10 @@ jobs:
 
       - name: Roda teste
         env:
-          MOVERE_USER: ${{ secrets.MOVERE_USER }}
-          MOVERE_PASS: ${{ secrets.MOVERE_PASS }}
-        run: python3 teste_movere.py
+          MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
+          MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
+          MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
+        run: PYTHONUNBUFFERED=1 python3 diag_api_campos.py
 
       - name: Sobe screenshots e HTML como artefatos
         if: always()
