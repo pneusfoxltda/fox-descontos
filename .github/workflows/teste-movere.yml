@@ -18,6 +18,7 @@ jobs:
 
       - name: Roda teste
         env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           MOVERE_API_AMBIENTE: ${{ secrets.MOVERE_API_AMBIENTE }}
           MOVERE_API_USUARIO: ${{ secrets.MOVERE_API_USUARIO }}
           MOVERE_API_SENHA: ${{ secrets.MOVERE_API_SENHA }}
