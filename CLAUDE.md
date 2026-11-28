@@ -519,7 +519,7 @@ vendas para o televendas; `apps-script/` tem o do painel).
 - **📋 Pelo Kommo (Trackeamento)** (TI, 28/11/2026; SQL **`35_funil_campos_kommo.sql`**: `funil_leads.campos` text[] com os campos "Sim"
   AGORA '1'..'7', `etapa` aberto/ganha/perdida, `entrou` false = "adicionado" sem Contato Inicial nem etapa, guardado só para este quadro):
   `pelo_kommo` no funil_calculo, igual aos filtros do TI no Kommo. Significado (TI): 1 Contato Inicial = entrou · 2 Fez cotação = equipe ·
-  3 Cotação criada pela IA = a IA fez o orçamento · 4 Negociação · 5 Recuperação Inicial = clicou no disparo (noturno) · 6 Agendamento IA = a IA
+  3 Cotação criada pela IA = a IA fez o orçamento · 4 Negociação · 5 Recuperação Inicial = passou pela etapa "8 - Disparo Noturno (Cotação)" e recebeu a mensagem das 19h30 (o Kommo marca sozinho ao entrar na etapa; não quer dizer que respondeu) · 6 Agendamento IA = a IA
   sozinha agendou · 7 Agendamento = a equipe agendou ou conferiu o da IA (IA confirmada = 6 e 7). Nov/2026 no Kommo: alguma forma 16.073 ·
   Contato 11.136 · cotou (só o campo 2 "Fez cotação", o geral) 7.212 · cotação da IA (campo 3) 7.102 (a diferença = cotou sem passar pela IA) · sem Contato e cotou 71 · adicionados 4.937 · Agend. IA 1.758 · Agend. 1.828 · os dois 1.632 (VENDA GANHA 462 ·
   perdida 820). A 1ª rodada com o SQL 35 relê os cartões só para os campos (`campos_desde` em `funil_estado`).

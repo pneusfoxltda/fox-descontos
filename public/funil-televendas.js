@@ -161,7 +161,7 @@
         lin("Contato Inicial + Fez cotação + Agendamento IA", K.caminho_cot_agia, `VENDA GANHA ${num(K.caminho_cot_agia_ganha)} · venda perdida ${num(K.caminho_cot_agia_perdida)}`) +
                 lin("🟢 VENDA GANHA (etapa)", K.venda_ganha, `com o Movere (nota ou O.S.): ${num(K.comprou_real)} compraram`) +
         lin("🔴 venda perdida (etapa)", K.venda_perdida, "") +
-        lin("5 · Recuperação Inicial (disparo)", K.recuperacao, `${num(K.recuperacao_comprou)} compraram`) +
+        lin("5 · Recuperação Inicial (disparo noturno)", K.recuperacao, `passou pela etapa Disparo Noturno e recebeu a mensagem das 19h30 · ${num(K.recuperacao_comprou)} compraram depois`) +
         `</table></div>`, true);
     }
     h += `<div class="ft-2">` + sec("1. Funil de vendas" + (sel ? " · " + E(operadora) : ""), "Quem comprou conta como tendo passado pelas etapas anteriores. Em vermelho, o gargalo (a passagem com a menor conversão).", barrasFunil(f))
