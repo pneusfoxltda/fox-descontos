@@ -436,7 +436,9 @@ vendas para o televendas; `apps-script/` tem o do painel).
   venda ainda) é lida sozinha como antes (`juntas` nos detalhes). **API do Movere NÃO serve para o Varejo** (conferido 28/11/2026, nov até
   27/11): a nota traz vendedor e `tipopreco` (tipo de preço: 1 e 11 = VAREJO), mas não a tabela de preço (Atacado = 2 ATACADO e 5 ATACADO
   PREMIUM) nem a família; MATRIZ, C.AUTO PVH, C.AUTO VLH e PARINTINS batem (99,5–99,9%), JI-PARANA, CACOAL, ARIQUEMES e XAPURI dão 130–159%.
-  Página: **sem ticket médio** (pedido do TI) e "Clientes" virou **"Vendas"** (hoje e mês).
+  Página: **sem ticket médio** e **sem itens** (pedidos do TI), "Clientes" virou **"Vendas"** (hoje e mês) e **pneus de hoje** em 3 lugares
+  (TI, 28/11/2026): cartão "Vendido hoje" ("N vendas · N pneus"), cartão "Pneus no mês" ("Hoje: N pneus") e coluna **"Pneus hoje"** no ranking
+  (loja, vendedor e total).
   Filtros em `varejo_filtros.py`: 8 lojas, 13 tabelas de preço (`TABELAS_VAREJO`; ATACADO, ATACADO PREMIUM, AMAGGI e
   GK fora), 11 famílias, **"Frete compõe valores totais"** marcado (assim bate com o Analytics). O Movere lembra os
   filtros do login: o `sync_televendas.py` limpa lojas/tabelas/famílias/frete antes de cada relatório (não afetar o
