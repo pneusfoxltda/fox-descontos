@@ -150,13 +150,14 @@
         `<div class="ft-tw"><table><tr><th style="text-align:left">No Kommo</th><th>Cartões</th><th style="text-align:left">Detalhe</th></tr>` +
         lin("Entrou no Kommo de alguma forma", K.alguma_forma, "todos os cartões criados") +
         lin("1 · Entrou (Contato Inicial)", K.contato, `${num(K.sem_contato)} adicionados sem Contato Inicial`) +
-        lin("2/3 · Cotou", K.cotou, `pela equipe ${num(K.cotou_equipe)} · pela IA ${num(K.cotou_ia)}${pc(K.cotou, K.contato)} · cotou sem Contato Inicial: ${num(K.cotou_sem_contato)}`) +
+        lin("2 · Fez cotação", K.cotou, `${pc(K.cotou, K.contato).trim()} dos que entraram · cotou sem Contato Inicial: ${num(K.cotou_sem_contato)}`) +
+        lin("&nbsp;&nbsp;3 · Cotação criada pela IA", K.cotou_ia, `${num(K.cotou_ia_e_2)} também com o "Fez cotação" · ${num(K.so_cotacao_ia)} só com o da IA`) +
         lin("4 · Negociou", K.negociou, "") +
         lin("6/7 · Agendou (IA ou equipe)", K.agendou, `só IA ${num(K.ag_so_ia)} · IA confirmado pela equipe ${num(K.ag_ia_e_equipe)} · só equipe ${num(K.ag_so_equipe)}`) +
         lin("&nbsp;&nbsp;Agendamento IA (campo 6)", K.ag_ia, "") +
         lin("&nbsp;&nbsp;Agendamento (campo 7)", K.ag_equipe, "") +
         lin("&nbsp;&nbsp;IA + Agendamento (os dois)", K.ag_ia_e_equipe, `VENDA GANHA ${num(K.ag_conf_ganha)} · venda perdida ${num(K.ag_conf_perdida)} · comprou no Movere ${num(K.ag_conf_comprou_real)}`) +
-        lin("Contato Inicial + Cotou + Agendamento IA", K.caminho_cot_agia, `VENDA GANHA ${num(K.caminho_cot_agia_ganha)} · venda perdida ${num(K.caminho_cot_agia_perdida)}`) +
+        lin("Contato Inicial + Fez cotação + Agendamento IA", K.caminho_cot_agia, `VENDA GANHA ${num(K.caminho_cot_agia_ganha)} · venda perdida ${num(K.caminho_cot_agia_perdida)}`) +
                 lin("🟢 VENDA GANHA (etapa)", K.venda_ganha, `com o Movere (nota ou O.S.): ${num(K.comprou_real)} compraram`) +
         lin("🔴 venda perdida (etapa)", K.venda_perdida, "") +
         lin("5 · Recuperação Inicial (disparo)", K.recuperacao, `${num(K.recuperacao_comprou)} compraram`) +

@@ -290,7 +290,9 @@ def pelo_kommo(todos, desde, ate=None):
     sem = [l for l in L if "1" not in c(l)]
     n = lambda xs, f: sum(1 for l in xs if f(l))
     return {"alguma_forma": len(L), "contato": len(ci), "sem_contato": len(sem),
-            "cotou": n(ci, lambda l: c(l) & {"2", "3"}), "cotou_equipe": n(ci, lambda l: "2" in c(l)), "cotou_ia": n(ci, lambda l: "3" in c(l)),
+            # Cotou = "2 - Fez cotação: Sim" (filtro do TI no Kommo, 28/11/2026: nov 7.212); o 3 (IA) aparece à parte
+            "cotou": n(ci, lambda l: "2" in c(l)), "cotou_ia": n(ci, lambda l: "3" in c(l)),
+            "cotou_ia_e_2": n(ci, lambda l: {"2", "3"} <= c(l)), "so_cotacao_ia": n(ci, lambda l: "3" in c(l) and "2" not in c(l)),
             "cotou_sem_contato": n(sem, lambda l: c(l) & {"2", "3"}), "negociou": n(ci, lambda l: "4" in c(l)),
             "recuperacao": n(L, lambda l: "5" in c(l)), "recuperacao_comprou": n(L, lambda l: "5" in c(l) and l.get("d_comprou")),
             "ag_ia": n(ci, lambda l: "6" in c(l)), "ag_equipe": n(ci, lambda l: "7" in c(l)),
@@ -302,10 +304,10 @@ def pelo_kommo(todos, desde, ate=None):
             "ag_conf_ganha": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("etapa") == "ganha"),
             "ag_conf_perdida": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("etapa") == "perdida"),
             "ag_conf_comprou_real": n(ci, lambda l: {"6", "7"} <= c(l) and l.get("d_comprou")),
-            # caminho completo (TI): Contato Inicial + cotou (2 ou 3) + Agendamento IA (6)
-            "caminho_cot_agia": n(ci, lambda l: c(l) & {"2", "3"} and "6" in c(l)),
-            "caminho_cot_agia_ganha": n(ci, lambda l: c(l) & {"2", "3"} and "6" in c(l) and l.get("etapa") == "ganha"),
-            "caminho_cot_agia_perdida": n(ci, lambda l: c(l) & {"2", "3"} and "6" in c(l) and l.get("etapa") == "perdida"),
+            # caminho completo (TI): Contato Inicial + Fez cotação (2) + Agendamento IA (6)
+            "caminho_cot_agia": n(ci, lambda l: {"2", "6"} <= c(l)),
+            "caminho_cot_agia_ganha": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "ganha"),
+            "caminho_cot_agia_perdida": n(ci, lambda l: {"2", "6"} <= c(l) and l.get("etapa") == "perdida"),
             "agendou_ganha": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "ganha"),
             "agendou_perdida": n(ci, lambda l: c(l) & {"6", "7"} and l.get("etapa") == "perdida")}
 

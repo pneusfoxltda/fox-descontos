@@ -520,7 +520,7 @@ def main() -> int:
             K = r.get("kommo")
             if K:
                 print(f"📋 Pelo Kommo (mês): alguma forma {K['alguma_forma']} · Contato Inicial {K['contato']} · cotou {K['cotou']} "
-                      f"(sem Contato {K['cotou_sem_contato']}) · Agend. IA {K['ag_ia']} · Agend. {K['ag_equipe']} · os dois {K['ag_ia_e_equipe']} "
+                      f"(IA {K['cotou_ia']}, sem Contato {K['cotou_sem_contato']}) · Agend. IA {K['ag_ia']} · Agend. {K['ag_equipe']} · os dois {K['ag_ia_e_equipe']} "
                       f"(ganha {K['ag_conf_ganha']}, perdida {K['ag_conf_perdida']}) · contato+cotou+IA {K['caminho_cot_agia']}")
             if DRY:
                 print("TESTE: nada foi gravado."); return 0
