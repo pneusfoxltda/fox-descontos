@@ -318,11 +318,10 @@ function desenharVarejo() {
   const pctT = T.meta ? T.mes / T.meta * 100 : null;
 
   const kpis = `<div class="kpis">
-    <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " clientes" : "ainda sem rodada hoje"}</small></div>
-    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} clientes · ${fmtN(T.itens)} itens${T.pneus != null && !TP ? " · " + PNEU + " " + fmtN(T.pneus) + " pneus" : ""}</small></div>
+    <div class="k dest"><span>Vendido hoje</span><b>${temHoje ? fmtR0(T.hoje) : "…"}</b><small>${temHoje ? fmtN(T.cliHoje) + " vendas" : "ainda sem rodada hoje"}</small></div>
+    <div class="k dest"><span>Vendido no mês</span><b>${fmtR0(T.mes)}</b><small>${fmtN(T.cli)} vendas · ${fmtN(T.itens)} itens${T.pneus != null && !TP ? " · " + PNEU + " " + fmtN(T.pneus) + " pneus" : ""}</small></div>
     <div class="k"><span>Meta do mês</span><b>${T.meta ? fmtR0(T.meta) : "sem meta"}</b>${T.meta ? `<div class="prog"><i class="${cor(pctT)}" style="width:${Math.min(100, pctT)}%"></i></div><small><i class="${cor(pctT)}" style="font-style:normal;font-weight:800">${pctT.toFixed(0)}% atingido</i> · desejado hoje: ${desejado}%</small>` : `<small>${podeMetas ? "clique em ✏️ Metas" : "ainda não lançada"}</small>`}</div>
     <div class="k"><span>Falta para a meta</span><b>${T.meta ? fmtR0(falta) : ""}</b><small>${T.meta && falta ? fmtR0(falta / Math.max(1, dr)) + " por dia · " + dr + (dr === 1 ? " dia útil restante" : " dias úteis restantes") : T.meta ? "meta batida! 🎉" : ""}</small></div>
-    <div class="k"><span>Ticket médio</span><b>${fmtR(T.ticket)}</b><small>venda ÷ clientes</small></div>
     ${TP && T.pneus != null ? `<div class="k"><span>${PNEU} Pneus no mês</span><b>${fmtN(T.pneus)} <i class="pb ${cor(T.pneus / TP.m * 100)}" style="font-style:normal;font-size:13px">${(T.pneus / TP.m * 100).toFixed(0)}%</i></b>
       <div class="tri"><i class="${cor(T.pneus / TP.m * 100)}" style="width:${Math.min(100, T.pneus / Math.max(TP.g, T.pneus) * 100)}%"></i>${[TP.m, TP.s, TP.g].map(v => `<u style="left:${v / Math.max(TP.g, T.pneus) * 100}%"></u>`).join("")}</div>
       <small>Meta ${fmtN(TP.m)} · Super ${fmtN(TP.s)} · Mega ${fmtN(TP.g)}<br>no ritmo de hoje fecha com <em>${fmtN(projetar(T.pneus))}</em> ${faixaDe(projetar(T.pneus), TP) || "(abaixo da Meta)"}</small></div>` : ""}
@@ -343,13 +342,13 @@ function desenharVarejo() {
       <td class="r">${x.meta ? fmtR0(Math.max(0, x.meta - x.mes.venda)) : ""}</td>
       <td class="r">${fmtN(x.mes.clientes)}</td>
       <td class="r pn">${celPneusMeta(x.mes.pneus, x.mes.pneus_vendas, x.mp)}</td>
-      <td class="r">${fmtR(x.mes.ticket)}</td>
+
       <td class="r">${fmtN(x.mes.itens)}</td></tr>`;
     if (aberta === x.loja) linhas += vendedoresDaLoja(x.loja, temHoje);
   });
   linhas += `<tr class="total"><td></td><td>Total Varejo</td><td class="r">${temHoje ? fmtR(T.hoje) : ""}</td><td class="r">${temHoje ? fmtN(T.cliHoje) : ""}</td>
     <td class="r">${fmtR(T.mes)}</td><td class="r">${T.meta ? fmtR0(T.meta) : ""}</td><td class="r">${pctT == null ? "" : `<span class="pb ${cor(pctT)}">${pctT.toFixed(0)}%</span>`}</td>
-    <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r pn">${celPneusMeta(T.pneus, T.pneusV, TP)}</td><td class="r">${fmtR(T.ticket)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
+    <td class="r">${T.meta ? fmtR0(falta) : ""}</td><td class="r">${fmtN(T.cli)}</td><td class="r pn">${celPneusMeta(T.pneus, T.pneusV, TP)}</td><td class="r">${fmtN(T.itens)}</td></tr>`;
 
   const metasHtml = podeMetas ? `<div class="sec"><h2>🎯 Metas de ${esc(fmtMes(V.mes))} <button class="btn cz" onclick="editandoMetas=!editandoMetas;feriadosEdit=null;desenharVarejo()">${editandoMetas ? "Fechar" : "✏️ Metas"}</button></h2>
     ${editandoMetas ? `<div class="sub">Só o administrador e o gerente de todas as lojas veem este quadro. Valor em reais, sem centavos (ex.: 650000).</div>
@@ -362,7 +361,7 @@ function desenharVarejo() {
     <button class="btn" onclick="salvarMetas()">Salvar metas e feriados</button> <span id="metas-msg" class="nota"></span>` : `<div class="sub">Total: ${T.meta ? fmtR0(T.meta) : "nenhuma meta lançada"}.</div>`}</div>` : "";
 
   $("tela").innerHTML = kpis + `<div class="sec"><h2>🏆 Ranking das lojas <span class="atu">${atual ? "Atualizado em " + horaPVH(atual) : ""}</span></h2>
-    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Clientes hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r" title="Verde: no ritmo (% atingido ≥ ${desejado}% desejado hoje). Vermelho: abaixo do ritmo.">% meta</th><th class="r">Falta</th><th class="r">Clientes mês</th><th class="r pn">${PNEU} Pneus</th><th class="r">Ticket médio</th><th class="r">Itens</th></tr>${linhas}</table></div>
+    <div class="tabw"><table><tr><th></th><th>Loja</th><th class="r">Hoje</th><th class="r">Vendas hoje</th><th class="r">Mês</th><th class="r">Meta</th><th class="r" title="Verde: no ritmo (% atingido ≥ ${desejado}% desejado hoje). Vermelho: abaixo do ritmo.">% meta</th><th class="r">Falta</th><th class="r">Vendas mês</th><th class="r pn">${PNEU} Pneus</th><th class="r">Itens</th></tr>${linhas}</table></div>
     </div>`
     + metasHtml + conferencia(conf)
     + `<button class="info-bt" onclick="const c=$('info-corpo');c.style.display=c.style.display==='block'?'none':'block'">🔻 Mais informações sobre atualização</button>
@@ -371,7 +370,7 @@ function desenharVarejo() {
         <b>vendido hoje</b> e os ${PNEU} <b>pneus de hoje</b>, e o mês na tela = mês até ontem + hoje. Por volta das 18h10 (e de novo às 19h) ele lê o <b>mês completo</b>, os ${PNEU} pneus e confere com o Analytics
         (por isso a coluna Pneus e a seta vermelha mudam uma vez por dia). Se o Movere não entregar o relatório de uma loja, fica o último número certo.<br>
       · Clique na loja para ver os vendedores. Ordem pela venda do mês. Passe o mouse no número de pneus para ver Meta, Super, Mega, em quantas vendas e quanto a loja fecha no ritmo de hoje.<br>
-      · Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Clientes = vendas realizadas. Ticket médio = venda ÷ clientes.<br>
+      · Venda líquida (vendas menos devoluções) com o frete, das tabelas de preço e famílias do Varejo. Vendas = quantidade de vendas (clientes atendidos).<br>
       · ${PNEU} Pneus = pneus vendidos no mês (só as famílias de pneu) e em quantas vendas. Com metas de pneus: o % é sobre a <b>Meta</b>
         (verde no ritmo do dia, vermelho abaixo); a barrinha tem 3 marcas (Meta, Super, Mega) e o selo mostra a faixa já alcançada
         (✅ Meta · ⭐ Super · 🏆 Mega). "No ritmo" = quantos pneus a loja fecha o mês se continuar vendendo como até hoje.<br>
@@ -382,16 +381,16 @@ const fmtMes = iso => ["janeiro", "fevereiro", "março", "abril", "maio", "junho
 function vendedoresDaLoja(loja, temHoje) {
   const m = V.vend.filter(v => v.loja === loja && v.periodo === "mes").sort((a, b) => b.venda - a.venda);
   const h = Object.fromEntries(V.vend.filter(v => v.loja === loja && v.periodo === "hoje" && v.dia === V.hoje).map(v => [v.cod, v]));
-  if (!m.length) return `<tr class="vend"><td></td><td colspan="11">Sem vendedores no mês.</td></tr>`;
+  if (!m.length) return `<tr class="vend"><td></td><td colspan="10">Sem vendedores no mês.</td></tr>`;
   const total = V.lojas.find(x => x.loja === loja && x.periodo === "mes");
   const somaMes = m.reduce((s, v) => s + Number(v.venda), 0), somaHoje = Object.values(h).reduce((s, v) => s + Number(v.venda), 0);
   const bate = total && Math.abs(somaMes - Number(total.venda)) < 0.05;
   return m.map((v, i) => `<tr class="vend"><td class="r">${i + 1}º</td><td>&nbsp;&nbsp;&nbsp;👤 ${esc(v.nome)}</td>
       <td class="r">${temHoje ? fmtR(h[v.cod] ? h[v.cod].venda : 0) : ""}</td><td class="r">${temHoje ? fmtN(h[v.cod] ? h[v.cod].clientes : 0) : ""}</td>
       <td class="r">${fmtR(v.venda)}</td><td class="r"></td><td class="r">${total && total.venda ? (v.venda / total.venda * 100).toFixed(0) + "% da loja" : ""}</td><td></td>
-      <td class="r">${fmtN(v.clientes)}</td><td class="r pn">${celPneus(v.pneus, v.pneus_vendas)}</td><td class="r">${fmtR(v.ticket)}</td><td class="r">${fmtN(v.itens)}</td></tr>`).join("")
+      <td class="r">${fmtN(v.clientes)}</td><td class="r pn">${celPneus(v.pneus, v.pneus_vendas)}</td><td class="r">${fmtN(v.itens)}</td></tr>`).join("")
     + `<tr class="soma"><td></td><td>&nbsp;&nbsp;&nbsp;Soma dos vendedores</td><td class="r">${temHoje ? fmtR(somaHoje) : ""}</td><td></td><td class="r">${fmtR(somaMes)}</td>
-      <td colspan="7">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
+      <td colspan="6">${bate ? '<span class="ok">✅ bate com o total da loja</span>' : '<span class="ruim">⚠️ diferente do total da loja</span>'}</td></tr>`;
 }
 function abrirLoja(loja) { aberta = aberta === loja ? null : loja; desenharVarejo(); }
 function calFeriados() {
