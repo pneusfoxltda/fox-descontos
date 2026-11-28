@@ -37,7 +37,9 @@ with httpx.Client(timeout=120) as cli:
                 if (nf.get("Cancelamento") or {}).get("dtacancelamento"):
                     continue
                 co = nf.get("Comercial") or {}
-                tp = "ATACADO_EQUIPE" if da_equipe(co.get("nomevendedor") or "") else "OUTROS"
+                tp = str(co.get("tipopreco") or "")
+                if da_equipe(co.get("nomevendedor") or ""):
+                    tp = "EQ" + tp
                 tipos[(tp, desc[:30])] += 1
                 total += 1
                 com_vend += 1 if co.get("nomevendedor") else 0
@@ -55,9 +57,13 @@ with httpx.Client(timeout=120) as cli:
     print("Comparação com a 553 (só %, sem reais): loja · API varejo ÷ 553")
     for loja in LOJAS_VAREJO.values():
         b = banco.get(loja)
-        api_var = soma[loja].get("OUTROS", 0.0)
+        api_var = soma[loja].get("1", 0.0) + soma[loja].get("11", 0.0)
+        api_var_sem_eq = api_var
+        api_var_todos = api_var + soma[loja].get("EQ1", 0.0) + soma[loja].get("EQ11", 0.0)
         api_tudo = sum(soma[loja].values())
         if b and b.get("venda"):
-            print(f"   {loja:12} sem a equipe do Atacado {api_var / b['venda'] * 100:6.1f}% · tudo {api_tudo / b['venda'] * 100:6.1f}% · vendas API {qtd[loja].get('OUTROS', 0)} × 553 {b.get('clientes')}")
+            pc = lambda v: f"{v / b['venda'] * 100:6.1f}%"
+            outros = {k: round(v / b['venda'] * 100, 1) for k, v in soma[loja].items() if k not in ("1", "11") and abs(v) > 0}
+            print(f"   {loja:12} tipo 1/11 sem equipe Atacado {pc(api_var)} · tipo 1/11 com equipe {pc(api_var_todos)} · tudo {pc(api_tudo)} · outros tipos (%): {outros}")
         else:
             print(f"   {loja:12} (sem 553 de hoje no banco)")
